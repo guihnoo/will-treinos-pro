@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, User, Phone, Mail, AtSign, Camera, CheckCircle2, Image as ImageIcon, RefreshCw, X } from "lucide-react";
 import Link from "next/link";
@@ -9,13 +9,14 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { hasSupabaseEnv } from "@/lib/supabaseClient";
 
 const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7","serve8","jump9","team10","coach11","pro12"];
 
 type PhotoMode = "avatar" | "photo";
 
 export default function RegistrationPage() {
-  const { addStudent, addNotification } = useApp();
+  const { user, authResolved, usingSupabaseSession, addStudent, addNotification } = useApp();
   const router = useRouter();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -31,6 +32,15 @@ export default function RegistrationPage() {
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   useBodyScrollLock(showPhotoOptions);
   const premiumAvatarSrc = photoMode === "photo" && customPhoto ? customPhoto : `https://api.dicebear.com/7.x/avataaars/svg?seed=${form.avatarSeed}`;
+  const supabaseReady = hasSupabaseEnv();
+
+  useEffect(() => {
+    if (!authResolved) return;
+    if (!supabaseReady) return;
+    if (user) return;
+    toast("Faça login para concluir sua matrícula.", "info");
+    router.replace("/login?next=/cadastro");
+  }, [authResolved, supabaseReady, user, toast, router]);
 
   const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,18 +63,25 @@ export default function RegistrationPage() {
     setForm(p => ({ ...p, phone: formatted }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabaseReady || !usingSupabaseSession || !user) {
+      toast("Sessão não validada. Faça login novamente para concluir o cadastro.", "error");
+      router.replace("/login?next=/cadastro");
+      return;
+    }
     if (!form.name || !form.phone) {
       toast("⚠️ Preencha nome e telefone obrigatórios.");
       return;
     }
 
     // Add Student to context with "pending" status
-    addStudent({
+    const studentEmail = form.email.trim().toLowerCase() || user.email?.trim().toLowerCase() || "";
+    try {
+      await addStudent({
       name: form.name,
       phone: form.phone,
-      email: form.email,
+      email: studentEmail,
       instagram: form.instagram,
       avatar: photoMode === "photo" && customPhoto ? customPhoto : form.avatarSeed,
       status: "pending",
@@ -75,8 +92,13 @@ export default function RegistrationPage() {
       joinedAt: new Date().toISOString().split("T")[0],
       frequency: 0,
       totalClasses: 0,
-      notes: ""
+      notes: "",
+      authUserId: user.authSubjectId || user.id,
     });
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Não foi possível concluir o cadastro agora.", "error");
+      return;
+    }
 
     // Notify Admin
     addNotification({
@@ -88,7 +110,7 @@ export default function RegistrationPage() {
     });
 
     setSubmitted(true);
-    toast("✅ Cadastro enviado com sucesso!");
+    toast("✅ Cadastro enviado com sucesso! Aguarde aprovação do administrador.");
     
     // Redirect after 3s
     setTimeout(() => {
@@ -98,6 +120,18 @@ export default function RegistrationPage() {
 
   const regenerateAvatar = () =>
     setForm(p => ({ ...p, avatarSeed: AVATAR_SEEDS[Math.floor(Math.random()*AVATAR_SEEDS.length)] }));
+
+  if (!authResolved && supabaseReady) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="h-9 w-9 rounded-full border-2 border-zinc-800 border-t-[#EAB308] animate-spin" aria-hidden />
+      </div>
+    );
+  }
+
+  if (!user && supabaseReady) {
+    return null;
+  }
 
   if (submitted) {
     return (
@@ -165,7 +199,7 @@ export default function RegistrationPage() {
                 aria-modal="true"
                 data-modal-overlay
                 aria-label="Escolher foto do perfil"
-                className="fixed inset-0 bg-black/70 z-[200] flex items-end" onClick={()=>setShowPhotoOptions(false)}>
+                className="fixed inset-0 z-[200] overflow-y-auto overscroll-y-contain bg-black/70 flex flex-col justify-end" onClick={()=>setShowPhotoOptions(false)}>
                 <motion.div initial={{y:100}} animate={{y:0}} exit={{y:100}} onClick={e=>e.stopPropagation()}
                   className="w-full bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl p-5">
                   <p className="text-sm font-bold text-zinc-400 text-center mb-4 uppercase tracking-wider">Escolher foto do perfil</p>

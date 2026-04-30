@@ -344,8 +344,10 @@ export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLay
 
   return (
     <motion.div {...MODAL_OVERLAY_FADE}
+      role="dialog"
+      aria-modal="true"
       data-modal-overlay
-      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex justify-end"
+      className="fixed inset-0 z-[150] overflow-y-auto overscroll-y-contain bg-black/80 backdrop-blur-md flex justify-end"
       onClick={onClose}>
       <motion.div
         {...MODAL_DRAWER_RIGHT}

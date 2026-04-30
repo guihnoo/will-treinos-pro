@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Search, CheckCircle2, XCircle, AlertTriangle,
   Phone, Mail, TrendingUp, ChevronRight, X, MessageSquare,
-  Send, Dumbbell, UserCheck, UserX, PhoneCall, DollarSign, Activity, RotateCcw, Star
+  Send, Dumbbell, UserCheck, UserX, PhoneCall, DollarSign, Activity, RotateCcw, Star, Copy, Link2,
 } from "lucide-react";
 import { useApp, Student } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
@@ -13,6 +13,12 @@ import TrainingPlanEditor from "@/components/TrainingPlanEditor";
 import PerformanceEvalModal from "@/components/PerformanceEvalModal";
 import { avatarSrc } from "@/lib/avatarSrc";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import AppPageHeader from "@/components/ui/AppPageHeader";
+import StatCard from "@/components/ui/StatCard";
+import { paymentReferenceForDate } from "@/lib/dateUtils";
+import AppEmptyState from "@/components/ui/AppEmptyState";
+import SkeletonLoader from "@/components/ui/SkeletonLoader";
+import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 function Sparkline({ data, color }: { data: { status: string }[]; color: string }) {
   if (!data || data.length === 0) return <div className="w-16 h-5" />;
@@ -30,7 +36,20 @@ function Sparkline({ data, color }: { data: { status: string }[]; color: string 
 type FilterType = "all" | "active" | "pending" | "suspended" | "trial";
 
 export default function AlunosPage() {
-  const { students, categories, payments, approveStudent, suspendStudent, updateStudent, quickMessages } = useApp();
+  const {
+    user,
+    students,
+    categories,
+    payments,
+    approveStudent,
+    suspendStudent,
+    updateStudent,
+    quickMessages,
+    usingSupabaseSession,
+    criticalDataLoading,
+    criticalDataError,
+    retryCriticalDataSync,
+  } = useApp();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
@@ -40,6 +59,12 @@ export default function AlunosPage() {
   const [trainingStudent, setTrainingStudent] = useState<Student | null>(null);
   const [evalStudent, setEvalStudent] = useState<Student | null>(null);
   const [profileTab, setProfileTab] = useState<"geral" | "desempenho" | "financeiro">("geral");
+  const [busyStudentAction, setBusyStudentAction] = useState<{ id: string; kind: "approve" | "suspend" } | null>(null);
+  const [cadastroPublicUrl, setCadastroPublicUrl] = useState("");
+  const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
+  useEffect(() => {
+    if (typeof window !== "undefined") setCadastroPublicUrl(`${window.location.origin}/cadastro`);
+  }, []);
   useBodyScrollLock(Boolean(selectedStudent || trainingStudent || evalStudent));
 
   const filtered = useMemo(() => {
@@ -63,7 +88,8 @@ export default function AlunosPage() {
     { key: "trial", label: "Trial", count: students.filter(s => s.status === "trial").length },
   ];
 
-  const getStudentPayment = (id: string) => payments.find(p => p.studentId === id && p.reference === "ABR/26");
+  const currentReference = useMemo(() => paymentReferenceForDate(), []);
+  const getStudentPayment = (id: string) => payments.find((p) => p.studentId === id && p.reference === currentReference);
 
   const applyTemplate = (template: string, student: Student) => {
     const pay = getStudentPayment(student.id);
@@ -71,7 +97,7 @@ export default function AlunosPage() {
       .replace("{nome}", student.name.split(" ")[0])
       .replace("{valor}", student.monthlyValue.toString())
       .replace("{categoria}", student.categories[0] || "aula")
-      .replace("{referencia}", pay?.reference || "ABR/26")
+      .replace("{referencia}", pay?.reference || currentReference)
       .replace("{horario}", "18:00");
   };
 
@@ -85,37 +111,113 @@ export default function AlunosPage() {
     const text = msg || `Olá ${name.split(' ')[0]}, tudo bem?`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`, '_blank');
   };
+  const markStudentActionBusy = (id: string, kind: "approve" | "suspend") => {
+    setBusyStudentAction({ id, kind });
+    window.setTimeout(() => setBusyStudentAction((current) => (current?.id === id ? null : current)), 700);
+  };
+
+  if (usingSupabaseSession && criticalDataLoading) {
+    return (
+      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+        <AppPageHeader
+          title="Gestão de Alunos"
+          subtitle="Sincronizando base em tempo real..."
+          icon={Users}
+        />
+        <div className="space-y-3">
+          <SkeletonLoader className="h-20" lines={2} />
+          <SkeletonLoader className="h-28" lines={4} />
+          <SkeletonLoader className="h-44" lines={5} />
+        </div>
+      </div>
+    );
+  }
+
+  if (usingSupabaseSession && criticalDataError) {
+    return (
+      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+        <AppPageHeader
+          title="Gestão de Alunos"
+          subtitle="Falha de sincronização. Você pode tentar novamente sem recarregar."
+          icon={Users}
+        />
+        <div className="rounded-2xl border border-red-500/35 bg-red-500/10 p-6">
+          <p className="text-sm font-bold text-red-300">Erro de sincronização</p>
+          <p className="mt-2 text-sm text-zinc-300">{criticalDataError}</p>
+          <button
+            type="button"
+            onClick={() => void retryCriticalDataSync()}
+            className={`mt-4 inline-flex rounded-xl border border-red-300/35 bg-black/35 px-4 py-2 text-xs font-bold text-red-200 hover:bg-red-500/10 ${ctaClass}`}
+          >
+            Tentar sincronizar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <Users className="w-8 h-8 text-[#EAB308]" /> Gestão de Alunos
-        </h1>
-        <p className="text-zinc-500 mt-1">Gerencie cadastros, aprovações e perfis dos alunos.</p>
-      </motion.div>
+      <AppPageHeader
+        title="Gestão de Alunos"
+        subtitle="Gerencie cadastros, aprovações e perfis dos alunos."
+        icon={Users}
+      />
+
+      {user?.role !== "aluno" && cadastroPublicUrl ? (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-5 flex flex-col gap-2 rounded-2xl border border-[#EAB308]/30 bg-[#EAB308]/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex min-w-0 items-start gap-2">
+            <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EAB308]" aria-hidden />
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-wider text-[#EAB308]">Link público de matrícula</p>
+              <p className="mt-0.5 truncate font-mono text-[11px] text-zinc-300" title={cadastroPublicUrl}>
+                {cadastroPublicUrl}
+              </p>
+              <p className="mt-1 text-[10px] text-zinc-500">Envie ao aluno para criar conta e entrar na fila de aprovação.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(cadastroPublicUrl);
+              toast("Link copiado.");
+            }}
+            className={`inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-[#EAB308]/45 bg-black/30 px-4 py-2 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/15 sm:self-center ${ctaClass}`}
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copiar
+          </button>
+        </motion.div>
+      ) : null}
 
       {/* Stats Bar */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
-          { icon: Users, label: 'Total', value: students.length, color: '#EAB308', sub: 'cadastrados' },
-          { icon: CheckCircle2, label: 'Ativos', value: students.filter(s => s.status === 'active').length, color: '#22C55E', sub: 'matriculados' },
-          { icon: DollarSign, label: 'Receita/mês', value: `R$ ${totalRevenue.toLocaleString('pt-BR')}`, color: '#06B6D4', sub: 'alunos ativos' },
-          { icon: Activity, label: 'Freq. Média', value: `${avgFreqVal}%`, color: '#8B5CF6', sub: 'presença global' },
+          { icon: Users, label: "Total", value: students.length, color: "#EAB308", sub: "cadastrados" },
+          {
+            icon: CheckCircle2,
+            label: "Ativos",
+            value: students.filter((s) => s.status === "active").length,
+            color: "#22C55E",
+            sub: "matriculados",
+          },
+          { icon: DollarSign, label: "Receita/mês", value: `R$ ${totalRevenue.toLocaleString("pt-BR")}`, color: "#06B6D4", sub: "alunos ativos" },
+          { icon: Activity, label: "Freq. Média", value: `${avgFreqVal}%`, color: "#8B5CF6", sub: "presença global" },
         ].map((stat, i) => (
-          <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.06 + i * 0.04 }}
-            className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
-            <div className="absolute -top-4 -right-4 w-14 h-14 rounded-full blur-xl opacity-20" style={{ background: stat.color }} />
-            <div className="p-2 rounded-xl flex-shrink-0" style={{ background: `${stat.color}18` }}>
-              <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-lg font-bold text-white leading-none">{stat.value}</p>
-              <p className="text-[10px] text-zinc-500 mt-0.5">{stat.label}</p>
-            </div>
-          </motion.div>
+          <StatCard
+            key={stat.label}
+            icon={stat.icon}
+            label={stat.label}
+            value={stat.value}
+            color={stat.color}
+            subtitle={stat.sub}
+            delay={0.06 + i * 0.04}
+          />
         ))}
       </motion.div>
 
@@ -134,7 +236,7 @@ export default function AlunosPage() {
           {filters.map(f => (
             <motion.button key={f.key} whileTap={{ scale: 0.95 }}
               onClick={() => setFilter(f.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${ctaClass} ${
                 filter === f.key
                   ? "bg-[#EAB308] text-black border-[#EAB308] shadow-[0_0_12px_rgba(234,179,8,0.2)]"
                   : "bg-[#0A0A0A] text-zinc-400 border-zinc-800 hover:border-zinc-600"
@@ -149,6 +251,18 @@ export default function AlunosPage() {
 
       {/* Student List */}
       <div className="space-y-2">
+        {filtered.length === 0 ? (
+          <AppEmptyState
+            icon={Users}
+            title="Nenhum aluno encontrado"
+            description="Ajuste a busca ou limpe os filtros para ver a lista completa."
+            actionLabel="Limpar filtros"
+            onAction={() => {
+              setSearch("");
+              setFilter("all");
+            }}
+          />
+        ) : null}
         {filtered.map((student, i) => {
           const status = statusConfig[student.status];
           const pay = getStudentPayment(student.id);
@@ -178,9 +292,12 @@ export default function AlunosPage() {
                   if (info.offset.x > 80) {
                      window.open(`https://wa.me/55${student.phone.replace(/\D/g, '')}?text=Olá ${student.name.split(" ")[0]}, tudo bem?`, "_blank");
                   } else if (info.offset.x < -80) {
+                     if (busyStudentAction?.id === student.id) return;
                      if (student.status === "active") {
+                        markStudentActionBusy(student.id, "suspend");
                         suspendStudent(student.id); toast(`${student.name.split(" ")[0]} suspenso`, "error");
                      } else if (student.status === "pending") {
+                        markStudentActionBusy(student.id, "approve");
                         approveStudent(student.id); toast(`✅ ${student.name.split(" ")[0]} aprovado!`);
                         setSelectedStudent({ ...student, status: "active" });
                         setProfileTab("financeiro");
@@ -217,20 +334,27 @@ export default function AlunosPage() {
                 <div className="flex items-center gap-2">
                   <motion.button whileTap={{ scale: 0.85 }}
                     onClick={e => { e.stopPropagation(); openWhatsApp(student.phone, student.name); }}
-                    className="w-8 h-8 rounded-lg bg-[#22C55E]/10 text-[#22C55E] flex items-center justify-center hover:bg-[#22C55E]/20 transition-colors flex-shrink-0">
+                    className={`w-8 h-8 rounded-lg bg-[#22C55E]/10 text-[#22C55E] flex items-center justify-center hover:bg-[#22C55E]/20 transition-colors flex-shrink-0 ${ctaClass}`}>
                     <PhoneCall className="w-3.5 h-3.5" />
                   </motion.button>
                   {student.status === "pending" && (
                     <motion.button whileTap={{ scale: 0.85 }}
                       onClick={e => { 
                         e.stopPropagation(); 
+                        if (busyStudentAction?.id === student.id) return;
+                        markStudentActionBusy(student.id, "approve");
                         approveStudent(student.id); 
                         toast(`✅ ${student.name.split(" ")[0]} aprovado!`);
                         setSelectedStudent({ ...student, status: "active" });
                         setProfileTab("financeiro");
                       }}
-                      className="w-8 h-8 rounded-lg bg-[#22C55E]/10 text-[#22C55E] flex items-center justify-center hover:bg-[#22C55E]/20 transition-colors">
-                      <CheckCircle2 className="w-4 h-4" />
+                      disabled={busyStudentAction?.id === student.id}
+                      className={`w-8 h-8 rounded-lg bg-[#22C55E]/10 text-[#22C55E] flex items-center justify-center hover:bg-[#22C55E]/20 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${ctaClass}`}>
+                      {busyStudentAction?.id === student.id && busyStudentAction.kind === "approve" ? (
+                        <RotateCcw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
                     </motion.button>
                   )}
                   {pay?.status === "late" && (
@@ -252,7 +376,7 @@ export default function AlunosPage() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Detalhe do aluno"
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex justify-end"
+            className="fixed inset-0 z-[100] overflow-y-auto overscroll-y-contain bg-black/60 backdrop-blur-sm flex justify-end"
             onClick={() => { setSelectedStudent(null); setShowMessage(false); }}
           >
             <motion.div
@@ -263,7 +387,7 @@ export default function AlunosPage() {
             >
               {/* Close */}
               <button onClick={() => { setSelectedStudent(null); setShowMessage(false); setProfileTab("geral"); }}
-                className="absolute top-4 right-4 text-zinc-500 hover:text-white p-2 rounded-lg hover:bg-zinc-900 transition-colors z-10">
+                className={`absolute top-4 right-4 text-zinc-500 hover:text-white p-2 rounded-lg hover:bg-zinc-900 transition-colors z-10 ${FOCUS_RING_GOLD}`}>
                 <X className="w-5 h-5" />
               </button>
 
@@ -289,7 +413,7 @@ export default function AlunosPage() {
                   { id: "financeiro", label: "Financeiro" }
                 ].map(tab => (
                   <button key={tab.id} onClick={() => setProfileTab(tab.id as any)}
-                    className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+                    className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${FOCUS_RING_GOLD} ${
                       profileTab === tab.id ? "text-[#EAB308] border-[#EAB308]" : "text-zinc-500 border-transparent hover:text-zinc-300"
                     }`}>
                     {tab.label}
@@ -473,41 +597,41 @@ export default function AlunosPage() {
                       setSelectedStudent(prev => prev ? { ...prev, status: "active" } : prev);
                       setProfileTab("financeiro"); 
                     }}
-                    className="w-full py-3 rounded-xl bg-[#22C55E] text-white font-bold flex items-center justify-center gap-2">
+                    className={`w-full py-3 rounded-xl bg-[#22C55E] text-white font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
                     <UserCheck className="w-4 h-4" /> Aprovar Aluno e Configurar Financeiro
                   </motion.button>
                 )}
                 {selectedStudent.status === "suspended" && (
                   <motion.button whileTap={{ scale: 0.97 }}
                     onClick={() => { approveStudent(selectedStudent.id); toast(`✅ ${selectedStudent.name.split(" ")[0]} reativado!`); setSelectedStudent(null); }}
-                    className="w-full py-3 rounded-xl bg-[#06B6D4] text-white font-bold flex items-center justify-center gap-2">
+                    className={`w-full py-3 rounded-xl bg-[#06B6D4] text-white font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
                     <RotateCcw className="w-4 h-4" /> Reativar Aluno
                   </motion.button>
                 )}
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => openWhatsApp(selectedStudent.phone, selectedStudent.name)}
-                  className="w-full py-3 rounded-xl bg-[#22C55E] text-white font-bold flex items-center justify-center gap-2">
+                  className={`w-full py-3 rounded-xl bg-[#22C55E] text-white font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
                   <PhoneCall className="w-4 h-4" /> Abrir WhatsApp
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setShowMessage(!showMessage)}
-                  className="w-full py-3 rounded-xl bg-[#EAB308] text-black font-bold flex items-center justify-center gap-2">
+                  className={`w-full py-3 rounded-xl bg-[#EAB308] text-black font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
                   <MessageSquare className="w-4 h-4" /> Enviar Mensagem via WA
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setEvalStudent(selectedStudent)}
-                  className="w-full py-3 rounded-xl bg-[#8B5CF6] text-white font-bold flex items-center justify-center gap-2">
+                  className={`w-full py-3 rounded-xl bg-[#8B5CF6] text-white font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
                   <Star className="w-4 h-4" /> Avaliar Desempenho
                 </motion.button>
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setTrainingStudent(selectedStudent)}
-                  className="w-full py-3 rounded-xl bg-zinc-900 text-white font-bold border border-zinc-800 flex items-center justify-center gap-2">
+                  className={`w-full py-3 rounded-xl bg-zinc-900 text-white font-bold border border-zinc-800 flex items-center justify-center gap-2 ${ctaClass}`}>
                   <Dumbbell className="w-4 h-4" /> Criar Treino Personalizado
                 </motion.button>
                 {selectedStudent.status === "active" && (
                   <motion.button whileTap={{ scale: 0.97 }}
                     onClick={() => { suspendStudent(selectedStudent.id); toast(`${selectedStudent.name.split(" ")[0]} foi suspenso`, "error"); setSelectedStudent(null); }}
-                    className="w-full py-3 rounded-xl bg-zinc-900 text-[#EF4444] font-bold border border-zinc-800 flex items-center justify-center gap-2">
+                    className={`w-full py-3 rounded-xl bg-zinc-900 text-[#EF4444] font-bold border border-zinc-800 flex items-center justify-center gap-2 ${ctaClass}`}>
                     <UserX className="w-4 h-4" /> Suspender
                   </motion.button>
                 )}
@@ -524,7 +648,7 @@ export default function AlunosPage() {
                         {quickMessages.map(qm => (
                           <motion.button key={qm.id} whileTap={{ scale: 0.98 }}
                             onClick={() => setMessageText(applyTemplate(qm.template, selectedStudent))}
-                            className="w-full text-left p-3 rounded-lg bg-black/50 border border-zinc-900 hover:border-zinc-700 transition-colors">
+                            className={`w-full text-left p-3 rounded-lg bg-black/50 border border-zinc-900 hover:border-zinc-700 transition-colors ${ctaClass}`}>
                             <span className="text-xs font-bold text-[#EAB308]">{qm.label}</span>
                             <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{applyTemplate(qm.template, selectedStudent)}</p>
                           </motion.button>
@@ -537,7 +661,7 @@ export default function AlunosPage() {
                           rows={3} />
                         <button
                           onClick={() => messageText && openWhatsApp(selectedStudent.phone, selectedStudent.name, messageText)}
-                          className={`absolute bottom-3 right-3 p-2 rounded-lg transition-colors ${messageText ? "bg-[#22C55E] text-white" : "text-zinc-600"}`}>
+                          className={`absolute bottom-3 right-3 p-2 rounded-lg transition-colors ${messageText ? "bg-[#22C55E] text-white" : "text-zinc-600"} ${FOCUS_RING_GOLD}`}>
                           <Send className="w-4 h-4" />
                         </button>
                       </div>

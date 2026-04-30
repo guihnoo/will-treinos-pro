@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { localDateISO } from "@/lib/dateUtils";
 
 interface Props {
   isOpen: boolean;
@@ -12,21 +13,76 @@ interface Props {
   defaultDate?: string;
 }
 
+const emptyLessonState = (categoryId: string, maxStudents: number, venueId: string) => ({
+  categoryId,
+  title: "",
+  startTime: "08:00",
+  endTime: "09:00",
+  maxStudents,
+  venueId,
+  notes: "",
+  enrolledStudents: [] as string[],
+  isTrial: false,
+  lessonType: "Grupo" as const,
+  locationUrl: "",
+});
+
 export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Props) {
   const { categories, venues, students, lessons, addLesson } = useApp();
   const { toast } = useToast();
   useBodyScrollLock(isOpen);
-  
-  const today = new Date().toISOString().split('T')[0];
-  const dateToUse = defaultDate || `2026-04-${new Date().getDate()}`;
+  const prevIsOpen = useRef(false);
+  const [lessonDate, setLessonDate] = useState(() => defaultDate || localDateISO());
   const [newLesson, setNewLesson] = useState<{
     categoryId: string; title: string; startTime: string; endTime: string;
     maxStudents: number; venueId: string; notes: string; enrolledStudents: string[];
     isTrial: boolean; lessonType: "Individual" | "Dupla" | "Trio" | "Grupo"; locationUrl: string;
   }>({
-    categoryId: "grupo", title: "", startTime: "08:00", endTime: "09:00",
-    maxStudents: 10, venueId: "v1", notes: "", enrolledStudents: [], isTrial: false, lessonType: "Grupo", locationUrl: ""
+    categoryId: "",
+    title: "",
+    startTime: "08:00",
+    endTime: "09:00",
+    maxStudents: 10,
+    venueId: "",
+    notes: "",
+    enrolledStudents: [],
+    isTrial: false,
+    lessonType: "Grupo",
+    locationUrl: "",
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      prevIsOpen.current = false;
+      return;
+    }
+    const becameOpen = !prevIsOpen.current;
+    prevIsOpen.current = true;
+    if (becameOpen) {
+      const d = defaultDate || localDateISO();
+      setLessonDate(d);
+      const cat = categories[0];
+      const ven = venues[0];
+      setNewLesson(emptyLessonState(cat?.id ?? "", cat?.maxStudents ?? 10, ven?.id ?? ""));
+    }
+  }, [isOpen, defaultDate, categories, venues]);
+
+  useEffect(() => {
+    if (!isOpen || categories.length === 0) return;
+    setNewLesson((p) => {
+      if (p.categoryId && categories.some((c) => c.id === p.categoryId)) return p;
+      const c = categories[0];
+      return { ...p, categoryId: c.id, maxStudents: c.maxStudents };
+    });
+  }, [isOpen, categories]);
+
+  useEffect(() => {
+    if (!isOpen || venues.length === 0) return;
+    setNewLesson((p) => {
+      if (p.venueId && venues.some((v) => v.id === p.venueId)) return p;
+      return { ...p, venueId: venues[0].id };
+    });
+  }, [isOpen, venues]);
 
   const applyLessonType = (lessonType: "Individual" | "Dupla" | "Trio" | "Grupo") => {
     const capacityByType: Record<"Individual" | "Dupla" | "Trio" | "Grupo", number> = {
@@ -56,7 +112,7 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
   const hasInvalidTime = toMin(newLesson.endTime) <= toMin(newLesson.startTime);
   const overbooked = newLesson.enrolledStudents.length > newLesson.maxStudents;
   const conflictingLessons = lessons.filter((lesson) => {
-    if (lesson.date !== dateToUse) return false;
+    if (lesson.date !== lessonDate) return false;
     if (lesson.venueId !== newLesson.venueId) return false;
     if (lesson.status === "completed" || lesson.status === "cancelled") return false;
     const candidateStart = toMin(newLesson.startTime);
@@ -67,7 +123,15 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
   });
 
   const handleCreate = () => {
-    if (!newLesson.title) {
+    if (!newLesson.categoryId) {
+      toast("Cadastre ao menos uma categoria em Configurações.", "error");
+      return;
+    }
+    if (!newLesson.venueId) {
+      toast("Cadastre ao menos um local em Configurações.", "error");
+      return;
+    }
+    if (!newLesson.title.trim()) {
       toast("Preencha o título da aula", "error");
       return;
     }
@@ -85,7 +149,7 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
     }
     addLesson({
       ...newLesson,
-      date: dateToUse,
+      date: lessonDate,
       enrolledStudents: newLesson.enrolledStudents,
       presentStudents: [],
       absentStudents: [],
@@ -97,7 +161,6 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
     });
     toast("Aula criada com sucesso!");
     onClose();
-    setNewLesson({ categoryId: "grupo", title: "", startTime: "08:00", endTime: "09:00", maxStudents: 10, venueId: "v1", notes: "", enrolledStudents: [], isTrial: false, lessonType: "Grupo", locationUrl: "" });
   };
 
   if (!isOpen) return null;
@@ -120,9 +183,22 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
           </div>
 
           <div className="space-y-4 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
+            <div>
+              <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Dia da aula</label>
+              <input
+                type="date"
+                value={lessonDate}
+                onChange={(e) => setLessonDate(e.target.value)}
+                className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm outline-none focus:border-[#EAB308]/50"
+              />
+            </div>
+
             {/* Category */}
             <div>
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Categoria</label>
+              {categories.length === 0 ? (
+                <p className="text-sm text-amber-300">Nenhuma categoria. Abra Configurações → Categorias.</p>
+              ) : null}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {categories.map(cat => (
                   <motion.button key={cat.id} whileTap={{ scale: 0.95 }}
@@ -207,6 +283,9 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
             {/* Venue */}
             <div>
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Local</label>
+              {venues.length === 0 ? (
+                <p className="text-sm text-amber-300">Nenhum local. Abra Configurações → Locais.</p>
+              ) : null}
               <select value={newLesson.venueId} onChange={e => setNewLesson(p => ({ ...p, venueId: e.target.value }))}
                 className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm outline-none focus:border-[#EAB308]/50">
                 {venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -240,7 +319,7 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
             <div>
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Matricular Alunos (Opcional)</label>
               <div className="bg-black border border-zinc-800 rounded-xl p-3 max-h-32 overflow-y-auto space-y-2">
-                {students.filter(s => s.status === "active").map(s => {
+                {students.filter((s) => s.status === "active" || s.status === "trial").map((s) => {
                   const isSelected = newLesson.enrolledStudents.includes(s.id);
                   return (
                     <div key={s.id} onClick={() => {
@@ -284,9 +363,13 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
 
             <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate}
               className={`w-full py-3 rounded-xl text-black font-bold text-sm mt-2 shadow-[0_0_20px_rgba(234,179,8,0.2)] ${
-                hasInvalidTime || overbooked || conflictingLessons.length > 0 ? "cursor-not-allowed bg-[#EAB308]/50" : "bg-[#EAB308]"
+                hasInvalidTime || overbooked || conflictingLessons.length > 0 || !newLesson.categoryId || !newLesson.venueId
+                  ? "cursor-not-allowed bg-[#EAB308]/50"
+                  : "bg-[#EAB308]"
               }`}
-              disabled={hasInvalidTime || overbooked || conflictingLessons.length > 0}
+              disabled={
+                hasInvalidTime || overbooked || conflictingLessons.length > 0 || !newLesson.categoryId || !newLesson.venueId
+              }
             >
               Criar Aula
             </motion.button>

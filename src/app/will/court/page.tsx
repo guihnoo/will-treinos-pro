@@ -223,14 +223,14 @@ export default function WillCourtPage() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Matriz de avaliação clínica"
-            className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm"
+            className="fixed inset-0 z-[80] overflow-y-auto overscroll-y-contain bg-black/75 backdrop-blur-sm flex flex-col justify-end"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setActiveStudentId(null)}
           >
             <motion.div
-              className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl rounded-t-3xl border border-zinc-800 bg-[#0A0A0A] p-4 sm:p-6"
+              className="mx-auto mt-auto w-full max-w-3xl rounded-t-3xl border border-zinc-800 bg-[#0A0A0A] p-4 sm:p-6"
               variants={bottomSheetVariants}
               initial="hidden"
               animate="visible"

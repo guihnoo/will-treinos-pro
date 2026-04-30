@@ -1,18 +1,21 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Camera, Phone, Mail, AtSign, Save, Edit3, LogOut,
   Trophy, Calendar, TrendingUp, Star, CheckCircle2,
   Image as ImageIcon, RefreshCw, X, Shield, ChevronRight
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type Student } from "@/context/AppContext";
+import { resolveStudentProfilePolicy } from "@/lib/studentProfilePolicy";
 import { useToast } from "@/components/Toast";
 import { useRouter } from "next/navigation";
 
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import AppPageHeader from "@/components/ui/AppPageHeader";
+import AppSectionCard from "@/components/ui/AppSectionCard";
 
 const AVATAR_SEEDS = ["Ricardo","spike","ace","beach","volei","sport","pro","elite","serve","jump","block","team"];
 const scoreColor = (s: number) => s >= 8 ? "#22C55E" : s >= 6 ? "#EAB308" : "#EF4444";
@@ -23,7 +26,12 @@ const resolveAvatarSrc = (avatar: string | null | undefined, fallbackSeed: strin
 };
 
 export default function PerfilPage() {
-  const { user, students, feedbacks, lessons, updateStudent, updateUser, logout } = useApp();
+  const { user, students, feedbacks, lessons, updateStudent, updateUser, logout, appConfig } = useApp();
+  const profilePolicy = useMemo(() => resolveStudentProfilePolicy(appConfig), [appConfig]);
+  const isStudent = user?.role === "aluno";
+  const canEditField = (key: keyof typeof profilePolicy) => !isStudent || profilePolicy[key];
+  const canEditAnyField =
+    !isStudent || Object.values(profilePolicy).some(Boolean);
   const { toast } = useToast();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -105,15 +113,15 @@ export default function PerfilPage() {
 
   const handleSave = () => {
     if (profile) {
-      updateStudent(profile.id, {
-        phone: form.phone,
-        email: form.email,
-        instagram: form.instagram,
-        notes: form.notes,
-        avatar: avatar,
-      });
+      const patch: Partial<Student> = {};
+      if (canEditField("phone")) patch.phone = form.phone;
+      if (canEditField("email")) patch.email = form.email;
+      if (canEditField("instagram")) patch.instagram = form.instagram;
+      if (canEditField("notes")) patch.notes = form.notes;
+      if (canEditField("avatar")) patch.avatar = avatar;
+      if (Object.keys(patch).length) updateStudent(profile.id, patch);
     } else if (user) {
-      updateUser(user.id, { avatar });
+      if (canEditField("avatar")) updateUser(user.id, { avatar });
     }
     setEditing(false);
     haptic([30, 40, 30]);
@@ -131,28 +139,35 @@ export default function PerfilPage() {
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoFile} />
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex justify-between items-center gap-2">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <User className="w-8 h-8 text-[#EAB308]" /> Meu Perfil
-        </h1>
-        {!editing ? (
-          <motion.button whileTap={{ scale: 0.95 }} onClick={() => { haptic(20); setEditing(true); }}
+      <AppPageHeader
+        title="Meu Perfil"
+        subtitle={
+          isStudent && !canEditAnyField
+            ? "Seus dados estão em modo somente leitura (definido pela academia em Configurações)."
+            : "Identidade esportiva, evolução e dados que você pode atualizar — conforme permissões da academia."
+        }
+        icon={User}
+        className="mb-6"
+        rightSlot={
+          !editing && canEditAnyField ? (
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => { haptic(20); setEditing(true); }}
             className="min-h-11 flex items-center gap-2 px-3 sm:px-4 py-2 bg-zinc-900/70 backdrop-blur-md border border-zinc-700 text-zinc-300 rounded-xl text-sm font-bold hover:border-[#EAB308]/60 transition-colors flex-shrink-0">
             <Edit3 className="w-4 h-4" /> Editar
           </motion.button>
-        ) : (
-          <div className="flex gap-2 flex-shrink-0">
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => { haptic(15); setEditing(false); }}
+          ) : editing ? (
+            <div className="flex gap-2 flex-shrink-0">
+              <motion.button whileTap={{ scale: 0.95 }} onClick={() => { haptic(15); setEditing(false); }}
               className="min-h-11 px-3 sm:px-4 py-2 bg-zinc-900/70 backdrop-blur-md border border-zinc-800 text-zinc-400 rounded-xl text-sm font-bold">
               Cancelar
-            </motion.button>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={handleSave}
+              </motion.button>
+              <motion.button whileTap={{ scale: 0.95 }} onClick={handleSave}
               className="min-h-11 flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold shadow-[0_0_20px_rgba(234,179,8,0.25)]">
               <Save className="w-4 h-4" /> Salvar
-            </motion.button>
-          </div>
-        )}
-      </motion.div>
+              </motion.button>
+            </div>
+          ) : null
+        }
+      />
 
       {/* Athlete Identity Card */}
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
@@ -162,21 +177,21 @@ export default function PerfilPage() {
         <div className="flex items-center gap-4 sm:gap-5">
           {/* Avatar with edit button */}
           <div className="relative flex-shrink-0">
-            <motion.div whileTap={{ scale: 0.95 }} onClick={() => editing && setShowPhotoSheet(true)}
-              className={`relative ${editing ? "cursor-pointer" : ""}`}>
+            <motion.div whileTap={{ scale: 0.95 }} onClick={() => editing && canEditField("avatar") && setShowPhotoSheet(true)}
+              className={`relative ${editing && canEditField("avatar") ? "cursor-pointer" : ""}`}>
               <UserAvatar
                 name={user?.name || "Aluno"}
                 photo={currentAvatar}
                 size="lg"
                 className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-[#EAB308]/65"
               />
-              {editing && (
+              {editing && canEditField("avatar") && (
                 <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
                   <Camera className="w-6 h-6 text-white" />
                 </div>
               )}
             </motion.div>
-            {editing && (
+            {editing && canEditField("avatar") && (
               <motion.button whileTap={{ scale: 0.9 }} onClick={() => { haptic(20); setShowPhotoSheet(true); }}
                 className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#EAB308] rounded-full flex items-center justify-center shadow-lg">
                 <Camera className="w-4 h-4 text-black" />
@@ -249,31 +264,46 @@ export default function PerfilPage() {
 
       {/* Editable Info */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-        className="bg-[#0A0A0A]/85 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 mb-5 space-y-4">
-        <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-          <Shield className="w-4 h-4 text-[#EAB308]" /> Dados de Contato
-        </h3>
+        className="mb-5">
+        <AppSectionCard
+          title="Dados de Contato"
+          subtitle={
+            isStudent
+              ? "Campos com cadeado são definidos só pela equipe (Configurações → Perfil do aluno)."
+              : "Mantenha seus canais atualizados para comunicação rápida."
+          }
+          rightSlot={<Shield className="w-4 h-4 text-[#EAB308]" />}
+          className="bg-[#0A0A0A]/85 backdrop-blur-xl border-white/[0.08]"
+          contentClassName="space-y-4 pt-3"
+        >
         {[
           { label: "WhatsApp", key: "phone", icon: Phone, placeholder: "(21) 99999-9999", type: "tel" },
           { label: "E-mail", key: "email", icon: Mail, placeholder: "seu@email.com", type: "email" },
           { label: "Instagram", key: "instagram", icon: AtSign, placeholder: "@seu.perfil", type: "text" },
         ].map(field => {
           const Icon = field.icon;
+          const fk = field.key as "phone" | "email" | "instagram";
+          const editable = canEditField(fk);
           return (
             <div key={field.key} className="flex items-center gap-3">
               <div className="w-9 h-9 bg-zinc-900/80 border border-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Icon className="w-4 h-4 text-zinc-500" />
               </div>
-              <div className="flex-1">
-                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider mb-0.5">{field.label}</p>
-                {editing ? (
+              <div className="flex-1 min-w-0">
+                <div className="mb-0.5 flex items-center gap-2">
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider">{field.label}</p>
+                  {isStudent && !editable ? (
+                    <span className="text-[9px] font-bold uppercase text-zinc-500">🔒 academia</span>
+                  ) : null}
+                </div>
+                {editing && editable ? (
                   <input type={field.type}
                     value={form[field.key as keyof typeof form]}
                     onChange={e => setForm(p => ({ ...p, [field.key]: e.target.value }))}
                     placeholder={field.placeholder}
                     className="w-full min-h-11 bg-zinc-900/75 border border-zinc-700/90 rounded-xl py-2 px-3 text-white text-sm outline-none focus:border-[#EAB308]/60 focus:ring-2 focus:ring-[#EAB308]/20 transition-all" />
                 ) : (
-                  <p className="text-sm text-white">{form[field.key as keyof typeof form] || <span className="text-zinc-600">Não informado</span>}</p>
+                  <p className="text-sm text-white truncate">{form[field.key as keyof typeof form] || <span className="text-zinc-600">Não informado</span>}</p>
                 )}
               </div>
             </div>
@@ -281,10 +311,15 @@ export default function PerfilPage() {
         })}
 
         {/* Observations */}
-        {(profile?.notes || editing) && (
+        {(profile?.notes || editing) && (canEditField("notes") || !isStudent || profile?.notes) && (
           <div>
-            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider mb-1">Observações</p>
-            {editing ? (
+            <div className="mb-1 flex items-center gap-2">
+              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider">Observações</p>
+              {isStudent && !canEditField("notes") ? (
+                <span className="text-[9px] font-bold uppercase text-zinc-500">🔒 academia</span>
+              ) : null}
+            </div>
+            {editing && canEditField("notes") ? (
               <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2}
                 placeholder="Alguma observação..."
                 className="w-full bg-zinc-900/75 border border-zinc-700/90 rounded-xl py-2.5 px-3 text-white text-sm outline-none focus:border-[#EAB308]/60 focus:ring-2 focus:ring-[#EAB308]/20 resize-none transition-all" />
@@ -303,15 +338,19 @@ export default function PerfilPage() {
             <p className="text-xs text-zinc-400 leading-relaxed">{profile.professorNotes}</p>
           </div>
         )}
+        </AppSectionCard>
       </motion.div>
 
       {/* Evolution summary */}
       {myFeedbacks.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-5 mb-5">
-          <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2 mb-3">
-            <Star className="w-4 h-4 text-[#EAB308]" /> Histórico de Avaliações
-          </h3>
+          className="mb-5">
+          <AppSectionCard
+            title="Histórico de Avaliações"
+            subtitle="Evolução técnica nas últimas sessões."
+            rightSlot={<Star className="w-4 h-4 text-[#EAB308]" />}
+            contentClassName="pt-3"
+          >
           <div className="space-y-2">
             {myFeedbacks.slice(0, 5).map((fb, i) => (
               <motion.div key={fb.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 + i * 0.05 }}
@@ -337,6 +376,7 @@ export default function PerfilPage() {
               </motion.div>
             ))}
           </div>
+          </AppSectionCard>
         </motion.div>
       )}
 
@@ -354,7 +394,7 @@ export default function PerfilPage() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Opções de foto do perfil"
-            className="fixed inset-0 bg-black/80 z-[200] flex items-end" onClick={() => setShowPhotoSheet(false)}>
+            className="fixed inset-0 z-[200] overflow-y-auto overscroll-y-contain bg-black/80 flex flex-col justify-end" onClick={() => setShowPhotoSheet(false)}>
             <motion.div
               initial={{ y: 100 }}
               animate={{ y: 0 }}

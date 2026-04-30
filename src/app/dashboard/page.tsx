@@ -8,11 +8,14 @@ import StudentShell from "@/components/student/StudentShell";
 import WillCockpit from "@/components/will/WillCockpit";
 
 export default function DashboardPage() {
-  const { user } = useApp();
+  const { user, adminMode } = useApp();
 
   if (!user) return null;
 
-  if (user.role === "admin") return <WillCockpit />;
+  if (user.role === "admin") {
+    if (adminMode === "coach") return <CoachHome />;
+    return <WillCockpit />;
+  }
   if (user.role === "coach") return <CoachHome />;
   return (
     <StudentShell>

@@ -2,28 +2,52 @@
 
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar as CalendarIcon, Clock, MapPin, Lock, CheckCircle2, Zap } from "lucide-react";
+import { Calendar as CalendarIcon, CalendarPlus, Clock, MapPin, Lock, CheckCircle2, Users, Zap } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import type { Lesson } from "@/context/types";
 import { lessonLocalDateTime, localDateISO } from "@/lib/dateUtils";
+import AppPageHeader from "@/components/ui/AppPageHeader";
+import AppSectionCard from "@/components/ui/AppSectionCard";
+import AppEmptyState from "@/components/ui/AppEmptyState";
+import CreateLessonModal from "@/components/CreateLessonModal";
+import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 export default function AgendaPage() {
   const { user, lessons, feedbacks, requestCheckIn, getCategory, getVenue } = useApp();
   const [selectedDate, setSelectedDate] = useState(localDateISO());
   const [localNow, setLocalNow] = useState<Date>(new Date());
+  const [showCreateLesson, setShowCreateLesson] = useState(false);
+  const CTA_BUTTON_CLASS = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
 
   React.useEffect(() => {
     const id = setInterval(() => setLocalNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
 
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isStaffRole = user?.role === "admin" || user?.role === "coach";
+    if (!isStaffRole) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("newLesson") !== "1") return;
+    setShowCreateLesson(true);
+    params.delete("newLesson");
+    const next = params.toString();
+    const cleanUrl = `${window.location.pathname}${next ? `?${next}` : ""}`;
+    window.history.replaceState({}, "", cleanUrl);
+  }, [user?.role]);
+
   const haptic = (pattern: number | number[]) => {
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(pattern);
   };
 
-  const myLessons = useMemo(
-    () => lessons.filter((l) => l.enrolledStudents.includes(user?.id || "")),
-    [lessons, user],
-  );
+  const isStaff = user?.role === "admin" || user?.role === "coach";
+
+  const calendarLessons = useMemo(() => {
+    if (!user) return [];
+    if (isStaff) return lessons;
+    return lessons.filter((l) => l.enrolledStudents.includes(user.id));
+  }, [lessons, user, isStaff]);
 
   const dateStrip = useMemo(() => {
     const start = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate() - 3);
@@ -36,26 +60,26 @@ export default function AgendaPage() {
   }, [localNow]);
 
   const dayLessons = useMemo(
-    () => myLessons.filter((l) => l.date === selectedDate).sort((a, b) => a.startTime.localeCompare(b.startTime)),
-    [myLessons, selectedDate],
+    () => calendarLessons.filter((l) => l.date === selectedDate).sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [calendarLessons, selectedDate],
   );
 
   const nextLesson = useMemo(
     () =>
-      myLessons
+      calendarLessons
         .filter((l) => l.status === "scheduled" || l.status === "in-progress")
         .sort((a, b) => lDate(lDateKey(a)).localeCompare(lDate(lDateKey(b))) || a.startTime.localeCompare(b.startTime))[0] ?? null,
-    [myLessons],
+    [calendarLessons],
   );
 
-  function lDateKey(lesson: (typeof myLessons)[number]) {
+  function lDateKey(lesson: Lesson) {
     return `${lesson.date}T${lesson.startTime}:00`;
   }
   function lDate(dateTime: string) {
     return new Date(dateTime).toISOString();
   }
 
-  const checkInGate = (lesson: (typeof myLessons)[number]) => {
+  const checkInGate = (lesson: Lesson) => {
     const lessonStart = lessonLocalDateTime(lesson.date, lesson.startTime);
     const lessonEnd = lessonLocalDateTime(lesson.date, lesson.endTime);
     const unlockAt = new Date(lessonStart.getTime() - 60 * 60 * 1000);
@@ -74,34 +98,57 @@ export default function AgendaPage() {
 
   const dayPerformance = useMemo(() => {
     const ids = new Set(dayLessons.map((l) => l.id));
+    if (isStaff) {
+      const matriculas = dayLessons.reduce((acc, l) => acc + l.enrolledStudents.length, 0);
+      return { count: matriculas, avg: 0, staffMatriculas: true as const };
+    }
     const evals = feedbacks.filter((f) => f.studentId === user?.id && ids.has(f.lessonId));
     const avg = evals.length ? evals.reduce((acc, item) => acc + item.rating, 0) / evals.length : 0;
-    return { count: evals.length, avg };
-  }, [dayLessons, feedbacks, user]);
+    return { count: evals.length, avg, staffMatriculas: false as const };
+  }, [dayLessons, feedbacks, user, isStaff]);
 
   if (!user) return null;
 
   return (
     <div className="p-3 sm:p-4 max-w-5xl mx-auto pb-28">
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-        <h1 className="text-[clamp(1.2rem,5vw,1.9rem)] font-black text-white flex items-center gap-2">
-          <CalendarIcon className="w-6 h-6 text-[#EAB308]" />
-          Agenda de Treinos
-        </h1>
-        <p className="text-zinc-500 text-sm mt-1">Visão única: calendário + execução + leitura técnica da sessão.</p>
-      </motion.div>
+      <AppPageHeader
+        title="Agenda de Treinos"
+        subtitle={
+          isStaff
+            ? "Grade da academia por dia: criar aula com categoria, horário, local e alunos matriculados."
+            : "Visão única: calendário + execução + leitura técnica da sessão."
+        }
+        icon={CalendarIcon}
+        rightSlot={
+          isStaff ? (
+            <button
+              type="button"
+              onClick={() => setShowCreateLesson(true)}
+              className={`inline-flex items-center gap-2 rounded-xl border border-[#EAB308]/45 bg-[#EAB308]/15 px-3 py-2 text-xs font-black text-[#EAB308] shadow-[0_0_16px_rgba(234,179,8,0.15)] ${CTA_BUTTON_CLASS}`}
+            >
+              <CalendarPlus className="h-4 w-4" />
+              Nova aula
+            </button>
+          ) : null
+        }
+      />
 
       {/* Hoje no treino */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-        className="mb-4 rounded-2xl border border-[#EAB308]/25 bg-zinc-950/60 backdrop-blur-xl p-4">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-[#EAB308] font-black">Hoje no treino</p>
+        className="mb-4">
+        <AppSectionCard
+          title={isStaff ? "Próxima na grade" : "Hoje no treino"}
+          subtitle={isStaff ? "Próxima aula agendada ou em andamento (todas as turmas)." : "Resumo da próxima sessão e status diário."}
+          highlight
+          contentClassName="pt-2"
+        >
         {nextLesson ? (
-          <div className="mt-2 flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-base font-bold text-white truncate">{nextLesson.title}</p>
               <p className="text-xs text-zinc-500">{nextLesson.date.split("-").reverse().join("/")} · {nextLesson.startTime} - {nextLesson.endTime}</p>
             </div>
-            <button onClick={() => setSelectedDate(nextLesson.date)} className="min-h-11 px-4 rounded-xl bg-[#EAB308] text-black text-xs font-black flex-shrink-0">
+            <button onClick={() => setSelectedDate(nextLesson.date)} className={`px-4 rounded-xl bg-[#EAB308] text-black text-xs font-black flex-shrink-0 ${CTA_BUTTON_CLASS}`}>
               Ver dia
             </button>
           </div>
@@ -123,16 +170,17 @@ export default function AgendaPage() {
             <p className="text-xs text-zinc-500 mt-1">Dia de recuperação ativa. Foco em mobilidade e preparação para a próxima sessão.</p>
           </div>
         )}
+        </AppSectionCard>
       </motion.div>
 
       {/* Seletor de datas premium */}
       <div className="mb-4 -mx-1 px-1 flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {dateStrip.map((item) => {
-          const total = myLessons.filter((l) => l.date === item.iso).length;
+          const total = calendarLessons.filter((l) => l.date === item.iso).length;
           const selected = item.iso === selectedDate;
           return (
             <motion.button key={item.iso} whileTap={{ scale: 0.95 }} onClick={() => setSelectedDate(item.iso)}
-              className={`min-h-11 min-w-[64px] px-2.5 py-2 rounded-xl border flex-shrink-0 transition-all ${
+              className={`min-h-11 min-w-[64px] px-2.5 py-2 rounded-xl border flex-shrink-0 transition-all ${CTA_BUTTON_CLASS} ${
                 selected
                   ? "bg-[#EAB308] text-black border-[#EAB308] shadow-[0_0_14px_rgba(234,179,8,0.35)]"
                   : "bg-zinc-950/55 border-zinc-800 text-zinc-300"
@@ -153,36 +201,40 @@ export default function AgendaPage() {
           <p className="text-sm font-black text-white mt-0.5">{dayLessons.length}</p>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-2.5">
-          <p className="text-[9px] text-zinc-500">Avaliadas</p>
+          <p className="text-[9px] text-zinc-500">{isStaff ? "Matrículas no dia" : "Avaliadas"}</p>
           <p className="text-sm font-black text-[#60A5FA] mt-0.5">{dayPerformance.count}</p>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-2.5">
-          <p className="text-[9px] text-zinc-500">Score oficial</p>
-          <p className="text-sm font-black text-[#EAB308] mt-0.5">{dayPerformance.avg ? dayPerformance.avg.toFixed(1) : "—"}</p>
+          <p className="text-[9px] text-zinc-500">{isStaff ? "Turmas ativas" : "Score oficial"}</p>
+          <p className="text-sm font-black text-[#EAB308] mt-0.5">
+            {isStaff ? dayLessons.filter((l) => l.status !== "cancelled").length : dayPerformance.avg ? dayPerformance.avg.toFixed(1) : "—"}
+          </p>
         </div>
       </div>
 
       <div className="space-y-3 relative">
         {dayLessons.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-center py-14 text-zinc-600 rounded-2xl border border-zinc-800 bg-zinc-950/45">
-            <svg viewBox="0 0 240 100" className="w-full h-24 mb-2" aria-hidden>
-              <defs>
-                <linearGradient id="emptyWave" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="rgba(234,179,8,0.1)" />
-                  <stop offset="50%" stopColor="rgba(234,179,8,0.45)" />
-                  <stop offset="100%" stopColor="rgba(234,179,8,0.1)" />
-                </linearGradient>
-              </defs>
-              <path d="M 8 68 C 42 34, 76 74, 118 49 C 146 32, 186 67, 232 38" fill="none" stroke="url(#emptyWave)" strokeWidth="3" strokeLinecap="round" />
-              <circle cx="56" cy="54" r="4.5" fill="rgba(234,179,8,0.35)" />
-              <circle cx="124" cy="49" r="4.5" fill="rgba(234,179,8,0.55)" />
-              <circle cx="200" cy="43" r="4.5" fill="rgba(234,179,8,0.35)" />
-            </svg>
-            <p className="text-lg font-bold text-zinc-300">Dia sem treino agendado</p>
-            <p className="text-sm mt-1">Use este espaço para recuperação, mobilidade e revisão tática.</p>
-          </motion.div>
+          <AppEmptyState
+            title={isStaff ? "Nenhuma aula neste dia" : "Dia sem treino agendado"}
+            description={
+              isStaff
+                ? "Crie uma sessão com categoria, horário, local e alunos na turma."
+                : "Use este espaço para recuperação, mobilidade e revisão tática."
+            }
+          />
         )}
+        {isStaff && dayLessons.length === 0 ? (
+          <motion.button
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            type="button"
+            onClick={() => setShowCreateLesson(true)}
+              className={`mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EAB308]/40 bg-[#EAB308]/12 py-3 text-sm font-black text-[#EAB308] ${CTA_BUTTON_CLASS}`}
+          >
+            <CalendarPlus className="h-4 w-4" />
+            Criar aula em {selectedDate.split("-").reverse().join("/")}
+          </motion.button>
+        ) : null}
 
         <div className="relative space-y-3 sm:space-y-4">
           {dayLessons.map((lesson, i) => {
@@ -191,7 +243,7 @@ export default function AgendaPage() {
             const isOngoing = lesson.status === "in-progress";
             const isDone = lesson.status === "completed";
             const gate = checkInGate(lesson);
-            const feedback = feedbacks.find((f) => f.studentId === user.id && f.lessonId === lesson.id);
+            const feedback = !isStaff ? feedbacks.find((f) => f.studentId === user.id && f.lessonId === lesson.id) : undefined;
 
             return (
               <motion.div key={lesson.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
@@ -235,34 +287,43 @@ export default function AgendaPage() {
                         <span className="flex items-center gap-1 whitespace-nowrap"><Clock className="w-3 h-3" />{lesson.startTime} - {lesson.endTime}</span>
                         <span className="flex items-center gap-1 truncate max-w-full"><MapPin className="w-3 h-3" />{venue?.name || "Local"}</span>
                       </div>
-                      <div className="mt-2 flex items-center gap-2 flex-wrap">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${gate.state === "open" ? "text-[#22C55E] border-[#22C55E]/35 bg-[#22C55E]/10" : gate.state === "pending" ? "text-[#EAB308] border-[#EAB308]/35 bg-[#EAB308]/10" : gate.state === "approved" ? "text-[#60A5FA] border-[#60A5FA]/35 bg-[#60A5FA]/10" : "text-zinc-500 border-zinc-700 bg-zinc-900/60"}`}>
-                          {gate.state === "open" ? "Check-in liberado" : gate.label}
-                        </span>
-                        {gate.reason ? <span className="text-[10px] text-zinc-500">{gate.reason}</span> : null}
-                        {feedback ? <span className="text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">Score oficial: {feedback.rating.toFixed(1)}</span> : null}
-                      </div>
+                      {!isStaff ? (
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${gate.state === "open" ? "text-[#22C55E] border-[#22C55E]/35 bg-[#22C55E]/10" : gate.state === "pending" ? "text-[#EAB308] border-[#EAB308]/35 bg-[#EAB308]/10" : gate.state === "approved" ? "text-[#60A5FA] border-[#60A5FA]/35 bg-[#60A5FA]/10" : "text-zinc-500 border-zinc-700 bg-zinc-900/60"}`}>
+                            {gate.state === "open" ? "Check-in liberado" : gate.label}
+                          </span>
+                          {gate.reason ? <span className="text-[10px] text-zinc-500">{gate.reason}</span> : null}
+                          {feedback ? <span className="text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 border border-[#EAB308]/25 rounded-full px-2 py-0.5">Score oficial: {feedback.rating.toFixed(1)}</span> : null}
+                        </div>
+                      ) : (
+                        <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900/60 px-2.5 py-1 text-[10px] font-bold text-zinc-300">
+                          <Users className="h-3 w-3 text-[#EAB308]" />
+                          {lesson.enrolledStudents.length}/{lesson.maxStudents} na turma
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-                      {gate.state === "open" ? (
-                        <motion.button whileTap={{ scale: 0.96 }}
-                          onClick={() => {
-                            requestCheckIn(lesson.id, user.id);
-                            haptic([80, 40, 120]);
-                          }}
-                          className="px-4 py-2 min-h-11 rounded-xl text-[11px] font-black bg-[#EAB308] text-black shadow-[0_0_14px_rgba(234,179,8,0.3)] flex items-center gap-1.5">
-                          <Zap className="w-3.5 h-3.5" /> Registrar chegada
-                        </motion.button>
-                      ) : gate.state === "approved" ? (
-                        <div className="px-3 py-2 min-h-11 rounded-xl text-[11px] font-bold bg-[#60A5FA]/10 border border-[#60A5FA]/30 text-[#60A5FA] flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Confirmado
-                        </div>
-                      ) : (
-                        <div className="px-3 py-2 min-h-11 rounded-xl text-[11px] font-bold bg-zinc-900 border border-zinc-700 text-zinc-400 flex items-center gap-1.5">
-                          <Lock className="w-3.5 h-3.5" /> Bloqueado
-                        </div>
-                      )}
+                      {!isStaff ? (
+                        gate.state === "open" ? (
+                          <motion.button whileTap={{ scale: 0.96 }}
+                            onClick={() => {
+                              requestCheckIn(lesson.id, user.id);
+                              haptic([80, 40, 120]);
+                            }}
+                            className={`px-4 py-2 min-h-11 rounded-xl text-[11px] font-black bg-[#EAB308] text-black shadow-[0_0_14px_rgba(234,179,8,0.3)] flex items-center gap-1.5 ${CTA_BUTTON_CLASS}`}>
+                            <Zap className="w-3.5 h-3.5" /> Registrar chegada
+                          </motion.button>
+                        ) : gate.state === "approved" ? (
+                          <div className="px-3 py-2 min-h-11 rounded-xl text-[11px] font-bold bg-[#60A5FA]/10 border border-[#60A5FA]/30 text-[#60A5FA] flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Confirmado
+                          </div>
+                        ) : (
+                          <div className="px-3 py-2 min-h-11 rounded-xl text-[11px] font-bold bg-zinc-900 border border-zinc-700 text-zinc-400 flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5" /> Bloqueado
+                          </div>
+                        )
+                      ) : null}
                     </div>
                   </div>
                 </motion.div>
@@ -272,6 +333,11 @@ export default function AgendaPage() {
         </div>
       </div>
 
+      <CreateLessonModal
+        isOpen={showCreateLesson}
+        onClose={() => setShowCreateLesson(false)}
+        defaultDate={selectedDate}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { studentSeesNotification } from "@/lib/notificationVisibility";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -32,10 +33,7 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
     if (!user || user.role === "admin" || user.role === "coach") {
       return notifications;
     }
-    return notifications.filter(n =>
-      n.isGlobal === true ||
-      (n.recipientId !== undefined && n.recipientId === user.id)
-    );
+    return notifications.filter((n) => studentSeesNotification(n, user.id));
   }, [notifications, user]);
 
   const unread = visibleNotifications.filter(n => !n.read).length;
@@ -52,7 +50,7 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
           aria-modal="true"
           data-modal-overlay
           aria-label="Notificações"
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+          className="fixed inset-0 z-[100] overflow-y-auto overscroll-y-contain bg-black/60 backdrop-blur-sm flex justify-end"
           onClick={onClose}>
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}

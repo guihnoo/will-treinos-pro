@@ -12,6 +12,10 @@ import Link from "next/link";
 import LessonRatingSheet from "@/components/LessonRatingSheet";
 import Confetti from "@/components/Confetti";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { studentSeesNotification } from "@/lib/notificationVisibility";
+import AppSectionCard from "@/components/ui/AppSectionCard";
+import SkeletonLoader from "@/components/ui/SkeletonLoader";
+import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 const SPORTS_QUOTES = [
   { text: "Eu posso aceitar o fracasso — todos falham em alguma coisa. Mas não consigo aceitar não tentar.", author: "Michael Jordan", role: "Basketball" },
@@ -422,7 +426,23 @@ function StudentHomeSkeleton() {
 }
 
 export default function StudentHome() {
-  const { user, lessons, students, feedbacks, requestCheckIn, notifications, markNotificationRead, lessonRatings, addLessonRating, getLessonRating, getCategory } = useApp();
+  const {
+    user,
+    lessons,
+    students,
+    feedbacks,
+    requestCheckIn,
+    notifications,
+    markNotificationRead,
+    lessonRatings,
+    addLessonRating,
+    getLessonRating,
+    getCategory,
+    usingSupabaseSession,
+    criticalDataLoading,
+    criticalDataError,
+    retryCriticalDataSync,
+  } = useApp();
   const evoChartIdHome = useId().replace(/:/g, "h");
   const evoChartIdModal = useId().replace(/:/g, "m");
   const { toast } = useToast();
@@ -441,6 +461,7 @@ export default function StudentHome() {
   const [localNow, setLocalNow] = useState<Date | null>(null);
   const [kpiCount, setKpiCount] = useState({ aulas: 0, streak: 0, nota: 0, freq: 0 });
   const [showDailyQuote, setShowDailyQuote] = useState(false);
+  const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
     showNotif ||
       lessonModal ||
@@ -749,14 +770,10 @@ export default function StudentHome() {
     return () => clearInterval(id);
   }, [nextLesson]);
 
-  // SECURITY: student sees ONLY their own (recipientId) + global broadcasts
-  // Never sees admin-only notifications (studentId without recipientId)
+  // SECURITY: same rule as financeiro CRM id (recipientId === user.id) + globals; staff sees all
   const myNotifications = (role: string | null | undefined, userId: string) => {
     if (role === "admin" || role === "coach") return notifications;
-    return notifications.filter(n =>
-      n.isGlobal === true ||
-      (n.recipientId !== undefined && n.recipientId === userId)
-    );
+    return notifications.filter((n) => studentSeesNotification(n, userId));
   };
   const visibleNotifications = myNotifications(user?.role, user?.id || "");
   const unread = visibleNotifications.filter(n => !n.read).length;
@@ -888,6 +905,35 @@ export default function StudentHome() {
 
   if (!hydrated) return <StudentHomeSkeleton />;
 
+  if (usingSupabaseSession && criticalDataLoading) {
+    return (
+      <div className="w-full space-y-4 pt-2">
+        <SkeletonLoader className="h-20" lines={2} />
+        <SkeletonLoader className="h-28" lines={4} />
+        <SkeletonLoader className="h-40" lines={5} />
+      </div>
+    );
+  }
+
+  if (usingSupabaseSession && criticalDataError) {
+    return (
+      <AppSectionCard
+        title="Falha ao sincronizar seu painel"
+        subtitle="Não foi possível carregar os dados ao vivo agora."
+        className="mt-2"
+      >
+        <p className="text-sm text-zinc-300">{criticalDataError}</p>
+        <button
+          type="button"
+          onClick={() => void retryCriticalDataSync()}
+          className={`mt-4 rounded-xl border border-red-300/35 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-200 hover:bg-red-500/15 ${ctaClass}`}
+        >
+          Tentar sincronizar novamente
+        </button>
+      </AppSectionCard>
+    );
+  }
+
   return (
     <motion.div
       className="w-full space-y-5 pt-2 sm:pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] relative"
@@ -960,7 +1006,7 @@ export default function StudentHome() {
           <h2 className="text-sm font-black uppercase tracking-[0.16em] text-[#EAB308]">Minha Semana</h2>
           <button
             onClick={() => { setSelectedDay(week7[0] ?? null); setShowAgendaPanel(true); }}
-            className="text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg"
+            className={`text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg ${ctaClass}`}
           >
             Abrir agenda
           </button>
@@ -989,7 +1035,7 @@ export default function StudentHome() {
               </div>
               <button
                 onClick={() => setLessonModal(nextLesson)}
-                className="flex-shrink-0 text-[10px] font-bold text-black bg-[#EAB308] px-2.5 py-1 rounded-lg"
+                className={`flex-shrink-0 text-[10px] font-bold text-black bg-[#EAB308] px-2.5 py-1 rounded-lg ${ctaClass}`}
               >
                 Ver aula
               </button>
@@ -1011,7 +1057,7 @@ export default function StudentHome() {
           </div>
           <button
             onClick={() => (nextLesson ? setLessonModal(nextLesson) : setEvolModal(true))}
-            className="flex-shrink-0 text-[10px] font-bold text-black bg-[#EAB308] px-2.5 py-1 rounded-lg"
+            className={`flex-shrink-0 text-[10px] font-bold text-black bg-[#EAB308] px-2.5 py-1 rounded-lg ${ctaClass}`}
           >
             Executar
           </button>
@@ -1227,7 +1273,7 @@ export default function StudentHome() {
             { title: "Conquista prioritária", value: nextTier ? `${nextTier.label} em ${Math.max(0, nextTier.min - meritScore)} pts` : "Tier máximo", color: "#A78BFA", action: () => setTrackModalId("competitive"), cta: "Abrir trilha" },
             { title: "Autoavaliação do aluno", value: selfSessionAvg > 0 ? `${selfSessionAvg.toFixed(1)}/10 nas últimas sessões` : "Ainda sem autoavaliações", color: "#22C55E", action: () => setEvolModal(true), cta: "Comparar com coach" },
           ].map((item) => (
-            <button key={item.title} onClick={() => { haptic(16); item.action(); }} className="text-left rounded-xl border border-zinc-800 bg-zinc-900/55 p-2.5 hover:border-zinc-700 transition-colors">
+            <button key={item.title} onClick={() => { haptic(16); item.action(); }} className={`text-left rounded-xl border border-zinc-800 bg-zinc-900/55 p-2.5 hover:border-zinc-700 transition-colors ${ctaClass}`}>
               <p className="text-[9px] text-zinc-500">{item.title}</p>
               <p className="text-[11px] font-bold mt-0.5 line-clamp-2" style={{ color: item.color }}>{item.value}</p>
               <p className="text-[9px] text-zinc-400 mt-1">{item.cta}</p>
@@ -1243,7 +1289,7 @@ export default function StudentHome() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Agenda da semana"
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] flex items-end" onClick={()=>setShowAgendaPanel(false)}>
+            className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-sm flex flex-col justify-end" onClick={()=>setShowAgendaPanel(false)}>
             <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring",damping:28,stiffness:300}}
               onClick={e=>e.stopPropagation()}
               className="w-full max-w-2xl mx-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl p-4 sm:p-6 max-h-[92dvh] overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
@@ -1251,8 +1297,8 @@ export default function StudentHome() {
               <div className="sticky top-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-sm flex items-center justify-between mb-3 pb-2">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-[#EAB308]"/> Agenda da semana</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setSelectedDay(week7[0] ?? null)} className="text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg">Ver hoje</button>
-                  <button onClick={() => setShowAgendaPanel(false)} className="p-1.5 hover:bg-zinc-900 rounded-lg text-zinc-500"><X className="w-4 h-4"/></button>
+                  <button onClick={() => setSelectedDay(week7[0] ?? null)} className={`text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg ${ctaClass}`}>Ver hoje</button>
+                  <button onClick={() => setShowAgendaPanel(false)} className={`p-1.5 hover:bg-zinc-900 rounded-lg text-zinc-500 ${FOCUS_RING_GOLD}`}><X className="w-4 h-4"/></button>
                 </div>
               </div>
               <div className="flex gap-2 mb-2 overflow-x-auto no-scrollbar">
@@ -1438,7 +1484,7 @@ export default function StudentHome() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-white flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#EAB308]"/> Checkpoint Técnico</h2>
             <motion.button whileTap={{scale:0.9}} onClick={()=>setEvolModal(true)}
-              className="text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors">
+              className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
               Ver relatório
             </motion.button>
           </div>
@@ -1537,7 +1583,7 @@ export default function StudentHome() {
       <motion.div variants={homeItem} className="mb-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-white flex items-center gap-2"><Target className="w-5 h-5 text-[#EAB308]"/> Evolução por Fundamentos</h2>
-          <button onClick={() => setEvolModal(true)} className="text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg">Ver detalhe</button>
+          <button onClick={() => setEvolModal(true)} className={`text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg ${ctaClass}`}>Ver detalhe</button>
         </div>
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/55 p-3">
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -1588,7 +1634,7 @@ export default function StudentHome() {
         </div>
         <button
           onClick={() => setTrackModalId("competitive")}
-          className="w-full rounded-2xl border border-zinc-800 bg-zinc-950/55 p-3 text-left hover:border-zinc-700 transition-colors"
+          className={`w-full rounded-2xl border border-zinc-800 bg-zinc-950/55 p-3 text-left hover:border-zinc-700 transition-colors ${ctaClass}`}
         >
           <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Jornada de conquistas</p>
           <p className="text-sm font-bold text-white mt-1">Acompanhe trilhas, pontuação e próximos desbloqueios</p>
@@ -1606,12 +1652,12 @@ export default function StudentHome() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Notificações do aluno"
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-end" onClick={()=>setShowNotif(false)}>
+            className="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-black/80 backdrop-blur-sm flex justify-end" onClick={()=>setShowNotif(false)}>
             <motion.div initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}} transition={{type:"spring",damping:25,stiffness:200}}
               onClick={e=>e.stopPropagation()} className="w-full max-w-sm bg-[#050505] border-l border-zinc-800 h-full flex flex-col">
               <div className="sticky top-0 z-20 bg-[#050505]/95 backdrop-blur-sm border-b border-zinc-900 p-6 flex items-center justify-between mb-2">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2"><Bell className="w-5 h-5 text-[#EAB308]"/> Notificações</h2>
-                <button onClick={()=>setShowNotif(false)} className="p-2 hover:bg-zinc-900 rounded-lg text-zinc-400"><X className="w-5 h-5"/></button>
+                <button onClick={()=>setShowNotif(false)} className={`p-2 hover:bg-zinc-900 rounded-lg text-zinc-400 ${FOCUS_RING_GOLD}`}><X className="w-5 h-5"/></button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 {visibleNotifications.length===0
@@ -1621,7 +1667,7 @@ export default function StudentHome() {
                       {!n.read && <div className="w-2 h-2 bg-[#EAB308] rounded-full mb-2"/>}
                       <p className={`text-sm font-bold ${!n.read?"text-white":"text-zinc-400"}`}>{n.title}</p>
                       <p className="text-xs text-zinc-500 mt-0.5">{n.message}</p>
-                      {!n.read && <button onClick={()=>markNotificationRead(n.id)} className="w-full mt-2 py-1.5 text-xs font-bold text-[#EAB308] bg-[#EAB308]/10 rounded-lg hover:bg-[#EAB308]/20 transition-colors">Marcar como lida</button>}
+                      {!n.read && <button onClick={()=>markNotificationRead(n.id)} className={`w-full mt-2 py-1.5 text-xs font-bold text-[#EAB308] bg-[#EAB308]/10 rounded-lg hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>Marcar como lida</button>}
                     </motion.div>
                   ))
                 }
@@ -1639,7 +1685,7 @@ export default function StudentHome() {
             aria-modal="true"
             data-modal-overlay
             aria-label={`Detalhes da aula ${lessonModal.title}`}
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] flex items-end" onClick={()=>setLessonModal(null)}>
+            className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-sm flex flex-col justify-end" onClick={()=>setLessonModal(null)}>
             <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring",damping:28,stiffness:300}}
               onClick={e=>e.stopPropagation()}
               className="w-full max-w-2xl mx-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl p-4 sm:p-6 max-h-[92dvh] overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
@@ -1655,7 +1701,7 @@ export default function StudentHome() {
                   <h2 className="text-xl font-bold text-white">{lessonModal.title}</h2>
                   <p className="text-sm text-zinc-400 mt-1">{lessonModal.date.split("-").reverse().join("/")}</p>
                 </div>
-                <button onClick={()=>setLessonModal(null)} className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-500"><X className="w-5 h-5"/></button>
+                <button onClick={()=>setLessonModal(null)} className={`p-2 hover:bg-zinc-900 rounded-xl text-zinc-500 ${FOCUS_RING_GOLD}`}><X className="w-5 h-5"/></button>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-zinc-900/60 rounded-2xl p-4 border border-zinc-800">
@@ -1719,7 +1765,7 @@ export default function StudentHome() {
                         existingRating
                           ? "bg-zinc-900 border border-zinc-700 text-zinc-300"
                           : "bg-[#EAB308] text-black shadow-[0_0_20px_rgba(234,179,8,0.2)]"
-                      }`}>
+                      } ${ctaClass}`}>
                       <Star className={`w-4 h-4 ${existingRating ? "" : "fill-black"}`}/>
                       {existingRating ? `Avaliado (${((existingRating.intensidade+existingRating.tecnica+existingRating.didatica+existingRating.evolucao)/4).toFixed(1)}/5)` : "Avaliar esse Treino"}
                     </motion.button>
@@ -1759,7 +1805,7 @@ export default function StudentHome() {
                 return (
                   <motion.button whileTap={{scale:0.96}}
                     onClick={()=>{requestCheckIn(lessonModal.id,user!.id);toast("📍 Chegada registrada!");setLessonModal(null);}}
-                    className="w-full flex items-center justify-center gap-2 py-4 bg-[#EAB308] text-black rounded-2xl font-bold text-base shadow-[0_0_20px_rgba(234,179,8,0.2)]">
+                    className={`w-full flex items-center justify-center gap-2 py-4 bg-[#EAB308] text-black rounded-2xl font-bold text-base shadow-[0_0_20px_rgba(234,179,8,0.2)] ${ctaClass}`}>
                     <MapPin className="w-5 h-5"/> Registrar Chegada
                   </motion.button>
                 );
@@ -1804,14 +1850,14 @@ export default function StudentHome() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Desempenho geral"
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] flex items-end" onClick={()=>setEvolModal(false)}>
+            className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-sm flex flex-col justify-end" onClick={()=>setEvolModal(false)}>
             <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring",damping:28,stiffness:300}}
               onClick={e=>e.stopPropagation()}
               className="w-full max-w-2xl mx-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl p-4 sm:p-6 max-h-[92dvh] flex flex-col shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
               <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5"/>
               <div className="sticky top-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-sm flex items-center justify-between mb-4 pb-2">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#EAB308]"/> Desempenho Geral</h2>
-                <button onClick={()=>setEvolModal(false)} className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-500"><X className="w-5 h-5"/></button>
+                <button onClick={()=>setEvolModal(false)} className={`p-2 hover:bg-zinc-900 rounded-xl text-zinc-500 ${FOCUS_RING_GOLD}`}><X className="w-5 h-5"/></button>
               </div>
               <div className="overflow-y-auto space-y-4 no-scrollbar flex-1">
                 {myFeedbacks.length === 0 ? (
@@ -1956,7 +2002,7 @@ export default function StudentHome() {
             aria-modal="true"
             data-modal-overlay
             aria-label={`Trilha ${activeTrack.label}`}
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] flex items-center justify-center p-5" onClick={()=>setTrackModalId(null)}>
+            className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-sm flex min-h-[100dvh] items-center justify-center p-5 py-10" onClick={()=>setTrackModalId(null)}>
             <motion.div
               initial={{scale:0.85,opacity:0,y:20}} animate={{scale:1,opacity:1,y:0}} exit={{scale:0.85,opacity:0,y:20}}
               transition={{type:"spring",stiffness:380,damping:26}}
@@ -2027,7 +2073,7 @@ export default function StudentHome() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Diagnóstico de métricas"
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] flex items-end" onClick={()=>setStatsModal(null)}>
+            className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-sm flex flex-col justify-end" onClick={()=>setStatsModal(null)}>
             <motion.div initial={{y:"100%"}} animate={{y:0}} exit={{y:"100%"}} transition={{type:"spring",damping:28,stiffness:300}}
               onClick={e=>e.stopPropagation()}
               className="w-full max-w-2xl mx-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl p-4 sm:p-6 max-h-[92dvh] flex flex-col shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
@@ -2038,7 +2084,7 @@ export default function StudentHome() {
                   {statsModal==="streak" && <><Radio className="w-5 h-5 text-[#EAB308]"/> Ritmo Competitivo - Diagnóstico</>}
                   {statsModal==="freq" && <><CheckCircle2 className="w-5 h-5 text-[#22C55E]"/> Confiabilidade de Presença</>}
                 </h2>
-                <button onClick={()=>setStatsModal(null)} className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-500"><X className="w-5 h-5"/></button>
+                <button onClick={()=>setStatsModal(null)} className={`p-2 hover:bg-zinc-900 rounded-xl text-zinc-500 ${FOCUS_RING_GOLD}`}><X className="w-5 h-5"/></button>
               </div>
               <div className="overflow-y-auto no-scrollbar flex-1 space-y-3">
                 {statsModal==="aulas" && (
@@ -2289,7 +2335,7 @@ export default function StudentHome() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Frase motivacional do dia"
-            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-6"
+            className="fixed inset-0 z-[100] overflow-y-auto overscroll-y-contain bg-black/90 backdrop-blur-md flex min-h-[100dvh] items-center justify-center p-6 py-10"
             onClick={()=>{
               localStorage.setItem("wt_daily_quote_date", new Date().toDateString());
               setShowDailyQuote(false);

@@ -6,18 +6,20 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, ImageIcon, CalendarRange, Wallet, Users,
-  Settings, LogOut, Dumbbell, Bell, User
+  Settings, LogOut, Dumbbell, Bell, User, Zap
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import NotificationsDrawer from "@/components/NotificationsDrawer";
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
 import UserAvatar from "@/components/ui/UserAvatar";
+import DevRoleImpersonationToggle from "@/components/DevRoleImpersonationToggle";
+import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
 
 // Rotas permitidas por role
 const ALLOWED_ROUTES: Record<string, string[]> = {
-  admin:  ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/treinos", "/cadastro", "/perfil"],
+  admin:  ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
   coach:  ["/dashboard", "/agenda", "/feed", "/alunos", "/perfil"],
-  aluno:  ["/dashboard", "/feed", "/financeiro", "/treinos", "/perfil"],
+  aluno:  ["/dashboard", "/agenda", "/feed", "/financeiro", "/treinos", "/perfil"],
 };
 
 export function Navigation() {
@@ -41,6 +43,7 @@ export function Navigation() {
       case "admin":
         return [
           { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
+          { name: "Will", href: "/will", icon: Zap, badge: 0 },
           { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
           { name: "Alunos", href: "/alunos", icon: Users, badge: pendingStudents },
           { name: "Financeiro", href: "/financeiro", icon: Wallet, badge: latePayments },
@@ -89,7 +92,7 @@ export function Navigation() {
           {/* Bell */}
           <motion.button onClick={() => setShowNotifs(true)}
             whileTap={{ scale: 0.95 }}
-            className="relative ml-auto flex-shrink-0 p-1.5 rounded-lg text-zinc-500 hover:text-[#EAB308] hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100">
+            className={`relative ml-auto flex-shrink-0 p-1.5 rounded-lg text-zinc-500 hover:text-[#EAB308] hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100 ${FOCUS_RING_GOLD}`}>
             <Bell className="w-4 h-4" />
             {unreadNotifications > 0 && (
               <span className="absolute -top-0.5 -right-0.5 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
@@ -105,13 +108,13 @@ export function Navigation() {
             <div className="flex bg-black rounded-lg p-1 border border-zinc-800">
               <button
                 onClick={() => setAdminMode("dashboard")}
-                className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all ${adminMode === "dashboard" ? "bg-[#EAB308] text-black" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all ${FOCUS_RING_GOLD} ${adminMode === "dashboard" ? "bg-[#EAB308] text-black" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 Admin
               </button>
               <button
                 onClick={() => setAdminMode("coach")}
-                className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all ${adminMode === "coach" ? "bg-[#EAB308] text-black" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all ${FOCUS_RING_GOLD} ${adminMode === "coach" ? "bg-[#EAB308] text-black" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 Professor
               </button>
@@ -125,7 +128,7 @@ export function Navigation() {
             const Icon = item.icon;
 
             return (
-              <Link key={item.name} href={item.href}>
+              <Link key={item.name} href={item.href} className={`block outline-none ${FOCUS_RING_GOLD}`}>
                 <motion.div
                   whileHover={{ y: -2, boxShadow: "0 0 24px rgba(234,179,8,0.14)" }}
                   whileTap={{ scale: 0.95 }}
@@ -158,7 +161,7 @@ export function Navigation() {
 
         {/* USER INFO + LOGOUT */}
         <div className="mt-auto p-4 border-t border-zinc-900 flex flex-col gap-3">
-          <Link href="/perfil" className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100 whitespace-nowrap cursor-pointer">
+          <Link href="/perfil" className={`flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100 whitespace-nowrap cursor-pointer outline-none ${FOCUS_RING_GOLD}`}>
             <UserAvatar name={user.name} photo={user.avatar} size="sm" className="h-8 w-8 border border-zinc-800" />
             <div className="flex flex-col">
               <span className="text-white font-bold text-sm leading-tight">{user.name}</span>
@@ -171,7 +174,7 @@ export function Navigation() {
           <motion.button
             onClick={logout}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-4 p-3 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-zinc-900 transition-all duration-300 cursor-pointer"
+            className={`flex items-center gap-4 p-3 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-zinc-900 transition-all duration-300 cursor-pointer ${FOCUS_RING_GOLD}`}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             <span className="font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Sair</span>
@@ -186,7 +189,7 @@ export function Navigation() {
           const Icon = item.icon;
 
           return (
-            <Link key={item.name} href={item.href}>
+            <Link key={item.name} href={item.href} className={`block outline-none ${FOCUS_RING_GOLD}`}>
               <motion.div
                 whileTap={{ scale: 0.95 }}
                 whileHover={{ y: -1 }}
@@ -207,7 +210,7 @@ export function Navigation() {
         })}
         <motion.button onClick={() => setShowNotifs(true)}
           whileTap={{ scale: 0.95 }}
-          className="relative flex flex-col items-center justify-center w-12 h-12 rounded-xl text-zinc-400 hover:text-[#EAB308] transition-colors">
+          className={`relative flex flex-col items-center justify-center w-12 h-12 rounded-xl text-zinc-400 hover:text-[#EAB308] transition-colors ${FOCUS_RING_GOLD}`}>
           <Bell className="w-5 h-5" />
           {unreadNotifications > 0 && (
             <span className="absolute top-1.5 right-1.5 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
@@ -215,7 +218,7 @@ export function Navigation() {
             </span>
           )}
         </motion.button>
-        <Link href="/perfil">
+        <Link href="/perfil" className={`block outline-none ${FOCUS_RING_GOLD}`}>
           <motion.div
             whileTap={{ scale: 0.95 }}
             whileHover={{ y: -1 }}
@@ -229,6 +232,8 @@ export function Navigation() {
 
       {/* Notifications Drawer */}
       <NotificationsDrawer open={showNotifs} onClose={() => setShowNotifs(false)} />
+
+      <DevRoleImpersonationToggle />
     </>
   );
 }

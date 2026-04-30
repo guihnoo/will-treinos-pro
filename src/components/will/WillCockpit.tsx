@@ -1,16 +1,19 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
-import Image from "next/image";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowUpRight,
+  CalendarPlus,
+  CalendarDays,
   CheckCircle2,
   Clock3,
   Coins,
+  Copy,
   CreditCard,
   MapPin,
   PlusCircle,
@@ -23,12 +26,16 @@ import {
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
-import WeatherWidget from "@/components/WeatherWidget";
-import { GoldVolleyballBadge } from "@/components/ui/WillPremiumAssets";
 import UserAvatar from "@/components/ui/UserAvatar";
+import AppEmptyState from "@/components/ui/AppEmptyState";
+import AppSectionCard from "@/components/ui/AppSectionCard";
+import KpiActionCard from "@/components/ui/KpiActionCard";
+import CockpitHero from "./CockpitHero";
+import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
+import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
 import { localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 function currencyBRL(value: number): string {
@@ -78,7 +85,8 @@ const INTERACTIVE_FOCUS_RING =
 export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
-  const { payments, students, lessons, todayLessons, user, getCategory, getStudent, approveStudent, appConfig } = useApp();
+  const { payments, students, lessons, todayLessons, user, getCategory, getStudent, approveStudent, appConfig, categories, venues } =
+    useApp();
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [showCourtModal, setShowCourtModal] = useState(false);
@@ -91,9 +99,14 @@ export default function WillCockpit() {
   const [selectedStudentLayoutId, setSelectedStudentLayoutId] = useState<string | null>(null);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [showQuickActionModal, setShowQuickActionModal] = useState<null | "novo-aluno" | "nova-aula">(null);
+  const [showCreateLesson, setShowCreateLesson] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [selectedBillingTemplate, setSelectedBillingTemplate] = useState<string | null>(null);
   const [approvalSearch, setApprovalSearch] = useState("");
+  const [cadastroPublicUrl, setCadastroPublicUrl] = useState("");
+  useEffect(() => {
+    if (typeof window !== "undefined") setCadastroPublicUrl(`${window.location.origin}/cadastro`);
+  }, []);
 
   const isAnyModalOpen =
     showApprovalModal ||
@@ -101,7 +114,8 @@ export default function WillCockpit() {
     showCourtModal ||
     showLessonModal ||
     showStudentModal ||
-    showQuickActionModal !== null;
+    showQuickActionModal !== null ||
+    showCreateLesson;
   useBodyScrollLock(isAnyModalOpen);
 
   const currentMonthReference = useMemo(() => paymentReferenceForDate(), []);
@@ -183,6 +197,23 @@ export default function WillCockpit() {
     const digits = (appConfig.whatsappNumber || "").replace(/\D/g, "");
     return digits.length >= 10;
   }, [appConfig.whatsappNumber]);
+  const openOwnerStudentIntake = () => {
+    haptic(18);
+    setShowQuickActionModal(null);
+    router.push("/cadastro");
+    setActionFeedback("Fluxo de cadastro de novo aluno aberto.");
+  };
+  const openCreateLessonFlow = () => {
+    haptic(18);
+    if (categories.length === 0 || venues.length === 0) {
+      toast("Configure ao menos 1 categoria e 1 local antes de criar aula.", "error");
+      router.push("/configuracoes");
+      return;
+    }
+    setShowQuickActionModal(null);
+    router.push("/agenda?newLesson=1");
+    setActionFeedback("Formulário de nova aula aberto.");
+  };
 
   const now = new Date();
   const todayISO = localDateISO(now);
@@ -225,6 +256,12 @@ export default function WillCockpit() {
     router.push("/agenda");
   };
   const resolverLabel = awaitingApproval > 0 || pendingPaymentsCount > 0 ? "Resolver primeiro gargalo" : "Tudo em dia";
+   const resolverHint =
+    awaitingApproval > 0
+      ? `${awaitingApproval} cadastro${awaitingApproval > 1 ? "s" : ""} aguardando aprovação`
+      : pendingPaymentsCount > 0
+        ? `${pendingPaymentsCount} pagamento${pendingPaymentsCount > 1 ? "s" : ""} pendente${pendingPaymentsCount > 1 ? "s" : ""}`
+        : "Sem pendências críticas. Priorize evolução e agenda.";
   const topDebtors = useMemo(() => {
     return payments
       .filter((p) => p.status === "late" || p.status === "pending")
@@ -258,7 +295,7 @@ export default function WillCockpit() {
 
   return (
     <LayoutGroup id="cockpit-shared-layout">
-    <motion.div variants={containerV} initial="hidden" animate="visible" className="relative isolate space-y-5 overflow-x-hidden pb-12">
+    <div className="relative isolate space-y-5 overflow-x-hidden pb-12">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-black" />
       <motion.div
         aria-hidden
@@ -275,128 +312,141 @@ export default function WillCockpit() {
         style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%)" }}
       />
 
-      <motion.section
+      <motion.div variants={containerV} initial="hidden" animate="visible" className="space-y-5">
+      <CockpitHero
         variants={itemV}
-        className="relative min-h-[240px] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#050505]/80 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.75)] ring-1 ring-[#EAB308]/20 backdrop-blur-3xl sm:p-6"
-      >
-        <Image
-          src="/assets/premium_dashboard_header.png"
-          alt="Premium Background"
-          fill
-          className="absolute inset-0 -z-10 object-cover opacity-50 pointer-events-none"
-          priority
-        />
-        <div
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            background:
-              "linear-gradient(to bottom, transparent, rgba(5,5,5,0.95))",
-          }}
-        />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#EAB308]/50 to-transparent" />
+        user={user}
+        timeGreeting={timeGreeting}
+        showPixWarning={Boolean(user.role && user.role !== "aluno" && !appConfig.pixKey?.trim())}
+        onConfigurePix={() => {
+          haptic(12);
+          router.push("/configuracoes#recebimentos");
+        }}
+        awaitingApproval={awaitingApproval}
+        pendingPaymentsCount={pendingPaymentsCount}
+        todayLessonCount={todayLessons.length}
+        athletesToday={athletesToday}
+        resolverLabel={resolverLabel}
+        resolverHint={resolverHint}
+        onResolver={handleCockpitResolver}
+      />
 
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <div className="rounded-xl border border-white/[0.08] bg-black/40 px-3 py-1.5 backdrop-blur-xl shadow-inner">
-                <WeatherWidget compact />
+      <motion.div variants={itemV}>
+        <AppSectionCard
+          title="Cadastro e grade"
+          subtitle="Convide novos atletas e monte aulas com categoria, horário e matrícula na turma."
+          rightSlot={<CalendarPlus className="h-4 w-4 text-[#EAB308]" />}
+          className="relative overflow-hidden border-[#EAB308]/20 bg-[#050505]/85 backdrop-blur-2xl"
+          contentClassName="pt-3"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_100%_at_0%_0%,rgba(234,179,8,0.12),transparent_55%)]" />
+          <div className="relative grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-zinc-800/90 bg-black/50 p-4">
+              <div className="flex items-center gap-2 text-[#EAB308]">
+                <UserPlus className="h-5 w-5" />
+                <p className="text-xs font-black uppercase tracking-wider">Novo aluno</p>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#EAB308]/40 bg-[#EAB308]/10 px-3 py-1.5 shadow-[0_0_15px_rgba(234,179,8,0.15)]">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]">WILL Cockpit</p>
+              <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                Link público de matrícula + gestão de aprovações na área Alunos.
+              </p>
+              <div className="mt-3 flex flex-col gap-2">
+                {cadastroPublicUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(cadastroPublicUrl);
+                      haptic(12);
+                      toast("Link de cadastro copiado.");
+                    }}
+                    className={`min-h-11 w-full rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/10 py-2.5 text-xs font-bold text-[#EAB308] transition hover:bg-[#EAB308]/18 ${INTERACTIVE_FOCUS_RING}`}
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar link de matrícula
+                    </span>
+                  </button>
+                ) : null}
+                <Link
+                  href="/cadastro"
+                  onClick={() => haptic(10)}
+                  className={`min-h-11 w-full rounded-xl border border-white/15 bg-white/5 py-2.5 text-center text-xs font-bold text-zinc-200 transition hover:border-[#EAB308]/35 hover:text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
+                >
+                  Abrir cadastro de aluno
+                </Link>
               </div>
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl drop-shadow-lg">Centro de Comando</h1>
-            <p className="mt-2 text-sm text-zinc-400 font-medium">
-              Resumo do que importa hoje — aprofunde nos modais ou na agenda completa.
-            </p>
-          </div>
-
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="hidden sm:block">
-              <GoldVolleyballBadge />
-            </div>
-            <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/[0.12] bg-[#050505]/60 px-4 py-3 backdrop-blur-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
-              <UserAvatar name={user.name} photo={user.avatar} size="md" />
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#EAB308]">Comando Ativo</p>
-                <p className="truncate text-sm font-black text-white">
-                  {timeGreeting}, {user.name}
-                </p>
+            <div className="rounded-2xl border border-zinc-800/90 bg-black/50 p-4">
+              <div className="flex items-center gap-2 text-[#EAB308]">
+                <CalendarPlus className="h-5 w-5" />
+                <p className="text-xs font-black uppercase tracking-wider">Nova aula</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative mt-6 space-y-3 border-t border-white/[0.08] pt-5">
-          {user.role && user.role !== "aluno" && !appConfig.pixKey?.trim() ? (
-            <div className="rounded-xl border border-amber-500/35 bg-amber-500/[0.07] px-3 py-2.5 text-[11px] leading-snug text-amber-100">
-              <span className="font-black text-amber-400">PIX </span>
-              Chave ainda não cadastrada — alunos não veem dados para pagar.{" "}
+              <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                Escolha categoria ({categories.length}), local ({venues.length}), horário e quem entra na turma.
+              </p>
               <button
                 type="button"
                 onClick={() => {
-                  haptic(12);
-                  router.push("/configuracoes#recebimentos");
+                  haptic(15);
+                  setShowCreateLesson(true);
                 }}
-                className="font-black text-[#EAB308] underline underline-offset-2 decoration-[#EAB308]/50"
+                className={`mt-3 min-h-12 w-full rounded-xl border border-[#EAB308]/45 bg-gradient-to-r from-[#EAB308]/20 to-[#EAB308]/8 py-3 text-sm font-black text-[#EAB308] shadow-[0_0_24px_rgba(234,179,8,0.12)] transition hover:border-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
               >
-                Configurar recebimentos
+                Montar aula na grade
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  haptic(8);
+                  router.push("/agenda");
+                }}
+                className={`mt-2 w-full py-2 text-[10px] font-bold uppercase tracking-wide text-zinc-500 hover:text-zinc-300 ${INTERACTIVE_FOCUS_RING}`}
+              >
+                Ver agenda no calendário
               </button>
             </div>
-          ) : null}
-          <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3">
-            <div className="rounded-xl border border-white/[0.08] bg-black/40 px-2.5 py-2 text-center min-h-11">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Cadastros</p>
-              <p className="text-xl font-black tabular-nums text-[#EAB308]">{awaitingApproval}</p>
-            </div>
-            <div className="rounded-xl border border-white/[0.08] bg-black/40 px-2.5 py-2 text-center min-h-11">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Pagamentos</p>
-              <p className="text-xl font-black tabular-nums text-amber-300">{pendingPaymentsCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/[0.08] bg-black/40 px-2.5 py-2 text-center min-h-11">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Quadra hoje</p>
-              <p className="text-xl font-black tabular-nums text-white">{todayLessons.length}</p>
-              <p className="text-[9px] font-bold text-zinc-500">{athletesToday} atletas</p>
-            </div>
           </div>
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.01 }}
-            whileTap={PRESS_SCALE}
-            onClick={handleCockpitResolver}
-            className={`flex min-h-12 w-full items-center justify-center rounded-xl border border-[#EAB308]/45 bg-[#EAB308]/12 px-4 text-sm font-black text-[#EAB308] transition hover:bg-[#EAB308]/18 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Resolver primeiro gargalo: aprovações ou financeiro"
-          >
-            {resolverLabel}
-          </motion.button>
-        </div>
-      </motion.section>
+        </AppSectionCard>
+      </motion.div>
 
       {/* Bloco 2: agenda operacional compacta (home) */}
-      <motion.section variants={itemV} className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505]/80 p-4 backdrop-blur-2xl">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(59,130,246,0.14),transparent_65%)]" />
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+      <motion.div variants={itemV}>
+        <AppSectionCard
+          title="Próximas na quadra (hoje)"
+          subtitle="Visão operacional com foco nas próximas aulas."
+          rightSlot={
+            <button
+              type="button"
+              onClick={() => {
+                haptic(12);
+                router.push("/agenda");
+              }}
+              className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
+              aria-label="Abrir calendário completo na agenda"
+            >
+              Calendário completo
+            </button>
+          }
+          className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
+          contentClassName="space-y-2 pt-3"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(59,130,246,0.14),transparent_65%)]" />
+          <div className="mb-1 flex items-center gap-2">
             <Clock3 className="h-4 w-4 text-[#EAB308]" />
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Próximas na quadra (hoje)</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Agenda operacional</p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(12);
-              router.push("/agenda");
-            }}
-            className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir calendário completo na agenda"
-          >
-            Calendário completo
-          </button>
-        </div>
-        <div className="space-y-2">
+          <div className="space-y-2">
           {lessonsDay.length === 0 ? (
-            <div className="rounded-xl border border-zinc-800/90 bg-black/45 px-3 py-2 text-[12px] text-zinc-400" role="status" aria-live="polite">
-              Nenhuma aula para hoje.
-            </div>
+            <AppEmptyState
+              icon={CalendarDays}
+              title="Nenhuma aula para hoje"
+              description="Monte a grade na agenda ou crie uma sessão agora."
+              actionLabel="Criar aula agora"
+              onAction={() => {
+                haptic(10);
+                setShowCreateLesson(true);
+              }}
+              className="border-zinc-800/90 bg-black/45"
+            />
           ) : null}
           {lessonsDayTop3.map((item, i) => {
             const lesson = item.lesson;
@@ -442,8 +492,8 @@ export default function WillCockpit() {
               +{lessonsDay.length - lessonsDayTop3.length} aula{lessonsDay.length - lessonsDayTop3.length > 1 ? "s" : ""} hoje — ver na agenda
             </p>
           ) : null}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
           <button
             type="button"
             onClick={() => {
@@ -467,27 +517,19 @@ export default function WillCockpit() {
             Agenda
             <ArrowUpRight className="h-3.5 w-3.5" />
           </button>
-        </div>
-      </motion.section>
+          </div>
+        </AppSectionCard>
+      </motion.div>
 
       {/* Bloco 3: financeiro + aprovações */}
       <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">
-        <motion.article
-          whileHover={{
-            y: -4,
-            scale: 1.01,
-            borderColor: "rgba(34,197,94,0.45)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.58), 0 0 0 1px rgba(34,197,94,0.18), 0 0 32px rgba(34,197,94,0.15)",
-          }}
-          whileTap={PRESS_SCALE}
-          className="group relative cursor-pointer overflow-hidden rounded-2xl border border-zinc-800/90 bg-[#050505]/80 p-4 backdrop-blur-2xl transition-colors hover:bg-[#0a0a0a] min-h-[176px]"
+        <KpiActionCard
+          accent="emerald"
+          title="Saúde Financeira - Mês Atual"
+          icon={WalletCards}
           onClick={() => setShowFinancialModal(true)}
+          aria-label="Abrir painel financeiro e cobrança por WhatsApp"
         >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(34,197,94,0.19),transparent_58%)] opacity-80" />
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Saúde Financeira - Mês Atual</p>
-            <WalletCards className="h-4 w-4 text-[#EAB308]" />
-          </div>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5">
               <p className="text-[10px] text-zinc-300">Recebido</p>
@@ -506,29 +548,20 @@ export default function WillCockpit() {
             <p className="text-[11px] text-zinc-500">Toque para abrir cobrança tática por WhatsApp.</p>
             <span className="text-[10px] font-bold text-zinc-400">{currentMonthReference}</span>
           </div>
-        </motion.article>
+        </KpiActionCard>
 
-        <motion.article
-          whileHover={{
-            y: -4,
-            scale: 1.01,
-            borderColor: "rgba(234,179,8,0.45)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.58), 0 0 0 1px rgba(234,179,8,0.14), 0 0 32px rgba(234,179,8,0.14)",
-          }}
-          whileTap={PRESS_SCALE}
-          className="group relative cursor-pointer overflow-hidden rounded-2xl border border-zinc-800/90 bg-[#050505]/80 p-4 backdrop-blur-2xl transition-colors hover:bg-[#0a0a0a] min-h-[176px]"
+        <KpiActionCard
+          accent="gold"
+          title="Fila de Aprovação"
+          icon={ShieldAlert}
           onClick={() => {
             setApprovalFilter("all");
             setSelectedApprovalIds([]);
             setApprovalSearch("");
             setShowApprovalModal(true);
           }}
+          aria-label="Abrir fila de aprovação de cadastros"
         >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_0%,rgba(234,179,8,0.16),transparent_56%)] opacity-80" />
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Fila de Aprovação</p>
-            <ShieldAlert className="h-4 w-4 text-[#EAB308]" />
-          </div>
           <p className="text-[11px] text-zinc-500">Pendências de entrada para resolver agora</p>
           <p className="text-4xl font-black text-white tabular-nums">{awaitingApproval}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -549,45 +582,52 @@ export default function WillCockpit() {
               }}
               className="min-h-11 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-zinc-200 transition hover:border-[#EAB308]/45 hover:text-[#EAB308]"
             >
-                Abrir fila de trial
+              Abrir fila de trial
               <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
           </div>
-        </motion.article>
+        </KpiActionCard>
       </motion.div>
 
       {/* Bloco 4: ações rápidas */}
-      <motion.section variants={itemV} className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505]/80 p-4 backdrop-blur-2xl">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(234,179,8,0.12),transparent_65%)]" />
-        <div className="mb-2 flex items-center gap-2">
-          <Coins className="h-4 w-4 text-[#EAB308]" />
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ações rápidas</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 mt-2">
-          <motion.button
-            whileHover={{ scale: 1.03, boxShadow: "0 0 20px rgba(234,179,8,0.2)" }}
-            whileTap={{ scale: 0.95 }}
-            type="button"
-            onClick={() => { haptic(20); router.push("/alunos"); }}
+      <motion.div variants={itemV}>
+        <AppSectionCard
+          title="Ações rápidas"
+          subtitle="Atalhos operacionais para acelerar o dia."
+          rightSlot={<Coins className="h-4 w-4 text-[#EAB308]" />}
+          className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
+          contentClassName="pt-3"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(234,179,8,0.12),transparent_65%)]" />
+          <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/cadastro"
+            onClick={() => {
+              haptic(20);
+              setActionFeedback("Fluxo de cadastro de novo aluno aberto.");
+            }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/40 bg-gradient-to-r from-[#EAB308]/15 to-[#EAB308]/5 px-4 py-3 text-sm font-black text-[#EAB308] transition-all hover:border-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir fluxo rápido de novo aluno"
+            aria-label="Abrir fluxo rápido de cadastro de aluno"
           >
             <UserPlus className="h-5 w-5" />
             Novo Aluno
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.03, boxShadow: "0 0 20px rgba(255,255,255,0.1)" }}
-            whileTap={{ scale: 0.95 }}
-            type="button"
-            onClick={() => { haptic(20); router.push("/agenda"); }}
+          </Link>
+          <Link
+            href="/agenda?newLesson=1"
+            onClick={() => {
+              haptic(20);
+              setActionFeedback("Fluxo de criação de aula aberto.");
+            }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition-all hover:border-white/30 hover:bg-white/10 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Abrir fluxo rápido de nova aula"
           >
             <PlusCircle className="h-5 w-5 text-[#EAB308]" />
             Nova Aula
-          </motion.button>
-        </div>
-      </motion.section>
+          </Link>
+          </div>
+        </AppSectionCard>
+      </motion.div>
+      </motion.div>
 
       <AnimatePresence>
         {showApprovalModal ? (
@@ -595,7 +635,7 @@ export default function WillCockpit() {
             role="dialog"
             aria-modal="true"
             aria-label="Modal de aprovação de alunos"
-            className="fixed inset-0 z-[70] flex items-end justify-center overflow-hidden bg-black/70 p-3 sm:items-center sm:p-6"
+            className={`fixed inset-0 z-[220] ${MODAL_FIXED_OVERLAY_SCROLL} bg-black/70`}
             {...MODAL_OVERLAY_FADE}
             onClick={() => {
               setShowApprovalModal(false);
@@ -609,16 +649,16 @@ export default function WillCockpit() {
             }}
             tabIndex={-1}
           >
-            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div className={`${MODAL_OVERLAY_CENTER_WRAP} px-3 text-left sm:px-6`}>
             <motion.section
               initial={{ opacity: 0, y: 40, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={SPRING_PREMIUM}
               onClick={(e) => e.stopPropagation()}
-              className="pointer-events-auto my-4 w-full max-w-2xl transform overflow-hidden rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 text-left shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl"
+              className={`pointer-events-auto my-auto w-full max-w-2xl rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl ${MODAL_PANEL_COLUMN}`}
             >
-              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 flex items-center justify-between gap-3">
+              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 shrink-0 flex items-center justify-between gap-3">
                 <div>
                   <motion.p {...MODAL_BADGE_ENTER} transition={SPRING_PREMIUM} className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EAB308]">Fila de Aprovação</motion.p>
                   <h3 className="text-lg font-black text-white">Ação direta de cadastro e conversão</h3>
@@ -635,6 +675,27 @@ export default function WillCockpit() {
                   <X className="h-4 w-4" />
                 </motion.button>
               </motion.div>
+
+              {cadastroPublicUrl ? (
+                <div className="mb-3 shrink-0 rounded-xl border border-[#EAB308]/30 bg-[#EAB308]/10 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#EAB308]">Link para o aluno se cadastrar</p>
+                  <p className="mt-1 truncate font-mono text-[11px] text-zinc-300" title={cadastroPublicUrl}>
+                    {cadastroPublicUrl}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(cadastroPublicUrl);
+                      haptic(12);
+                      toast("Link copiado. Cole no WhatsApp ou e-mail do atleta.");
+                    }}
+                    className={`mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#EAB308]/40 bg-black/40 py-2 text-xs font-bold text-[#EAB308] transition hover:bg-[#EAB308]/15 ${INTERACTIVE_FOCUS_RING}`}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copiar link de matrícula
+                  </button>
+                </div>
+              ) : null}
 
               <div className="mb-3 shrink-0 flex flex-wrap items-center gap-2">
                 <button
@@ -737,22 +798,20 @@ export default function WillCockpit() {
                 </div>
               ) : null}
 
-              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1 touch-pan-y [-webkit-overflow-scrolling:touch]">
+              <div className={`${MODAL_BODY_SCROLL} space-y-2`}>
                 {filteredApprovalQueue.length === 0 ? (
-                  <div className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 p-3 text-[12px] text-emerald-200" role="status" aria-live="polite">
-                    {approvalSearch
-                      ? "Nenhum atleta encontrado para essa busca. Tente outro termo."
-                      : "Nenhum atleta para esse filtro. Operação limpa para hoje."}
-                    {approvalSearch ? (
-                      <button
-                        type="button"
-                        onClick={() => setApprovalSearch("")}
-                        className="mt-2 min-h-11 w-full rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-[11px] font-bold text-emerald-100"
-                      >
-                        Limpar busca
-                      </button>
-                    ) : null}
-                  </div>
+                  <AppEmptyState
+                    icon={approvalSearch ? Search : Users}
+                    title={approvalSearch ? "Nenhum atleta encontrado" : "Fila limpa neste filtro"}
+                    description={
+                      approvalSearch
+                        ? "Tente outro termo na busca ou limpe para ver todos os cadastros elegíveis."
+                        : "Nenhum atleta pendente ou experimental para este filtro no momento."
+                    }
+                    actionLabel={approvalSearch ? "Limpar busca" : undefined}
+                    onAction={approvalSearch ? () => setApprovalSearch("") : undefined}
+                    className="border-emerald-500/35 bg-emerald-500/10 text-start"
+                  />
                 ) : (
                   filteredApprovalQueue.map((student) => {
                     const checklist = approvalChecklistMap.get(student.id);
@@ -880,7 +939,7 @@ export default function WillCockpit() {
                 )}
               </div>
               {actionFeedback ? (
-                <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-200">
+                <div className="mt-3 shrink-0 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-200">
                   {actionFeedback}
                 </div>
               ) : null}
@@ -896,7 +955,7 @@ export default function WillCockpit() {
             role="dialog"
             aria-modal="true"
             aria-label="Modal financeiro tático"
-            className="fixed inset-0 z-[70] flex items-end justify-center overflow-hidden bg-black/70 p-3 sm:items-center sm:p-6"
+            className={`fixed inset-0 z-[220] ${MODAL_FIXED_OVERLAY_SCROLL} bg-black/70`}
             {...MODAL_OVERLAY_FADE}
             onClick={() => setShowFinancialModal(false)}
             onKeyDown={(event) => {
@@ -904,24 +963,25 @@ export default function WillCockpit() {
             }}
             tabIndex={-1}
           >
+            <div className={MODAL_OVERLAY_CENTER_WRAP}>
             <motion.section
               initial={{ opacity: 0, y: 40, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={SPRING_PREMIUM}
               onClick={(e) => e.stopPropagation()}
-              className="my-2 flex h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-4 backdrop-blur-3xl sm:h-auto sm:max-h-[calc(100dvh-1.5rem)] sm:p-5"
+              className={`my-auto w-full max-w-2xl rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-4 backdrop-blur-3xl sm:p-5 ${MODAL_PANEL_COLUMN}`}
             >
-              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 flex items-center justify-between">
+              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 shrink-0 flex items-center justify-between">
                 <div>
                   <motion.p {...MODAL_BADGE_ENTER} transition={SPRING_PREMIUM} className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EAB308]">Financeiro Tático</motion.p>
                   <h3 className="text-lg font-black text-white">Painel financeiro do mes atual ({currentMonthReference})</h3>
                 </div>
-                <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => setShowFinancialModal(false)} className="min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5">
+                <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => setShowFinancialModal(false)} className={`min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5 ${INTERACTIVE_FOCUS_RING}`}>
                   <X className="mx-auto h-4 w-4 text-zinc-200" />
                 </motion.button>
               </motion.div>
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 touch-pan-y [-webkit-overflow-scrolling:touch]">
+              <div className={MODAL_BODY_SCROLL}>
                 <div className="grid gap-2 sm:grid-cols-3">
                   <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
                     <p className="text-[10px] text-zinc-300">Recebido (paid)</p>
@@ -954,7 +1014,7 @@ export default function WillCockpit() {
                           toast(`Template "${template.label}" aberto no WhatsApp.`);
                         }}
                         disabled={!canOpenBillingWhatsapp}
-                        className={`min-h-11 w-full rounded-xl border px-3 py-2 text-left text-[11px] transition ${
+                        className={`min-h-11 w-full rounded-xl border px-3 py-2 text-left text-[11px] transition ${INTERACTIVE_FOCUS_RING} ${
                           selectedBillingTemplate === template.id
                             ? "border-[#EAB308]/45 bg-[#EAB308]/12 text-[#EAB308]"
                             : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/25"
@@ -978,7 +1038,7 @@ export default function WillCockpit() {
                               setShowFinancialModal(false);
                               router.push("/financeiro");
                             }}
-                            className="flex min-h-11 w-full items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-1.5 text-left text-[11px] text-zinc-300 transition hover:border-[#EAB308]/30"
+                            className={`flex min-h-11 w-full items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-1.5 text-left text-[11px] text-zinc-300 transition hover:border-[#EAB308]/30 ${INTERACTIVE_FOCUS_RING}`}
                           >
                             <span className="min-w-0 truncate font-bold">
                               {student?.name ?? "Aluno"} · {pay.reference}
@@ -1016,9 +1076,28 @@ export default function WillCockpit() {
                   <p className="mt-2 text-[10px] leading-relaxed text-zinc-600">
                     Comprovante é só na área do aluno (Financeiro). Aqui você define a chave que aparece para ele pagar.
                   </p>
+                  {cadastroPublicUrl ? (
+                    <div className="mt-3 rounded-xl border border-white/10 bg-black/50 px-3 py-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Convite — link público</p>
+                      <p className="mt-0.5 truncate font-mono text-[10px] text-zinc-400">{cadastroPublicUrl}</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(cadastroPublicUrl);
+                          haptic(12);
+                          toast("Link de cadastro copiado.");
+                        }}
+                        className={`mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-700 py-2 text-[11px] font-bold text-zinc-200 hover:border-[#EAB308]/40 hover:text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copiar link para novo aluno
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </motion.section>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -1029,7 +1108,7 @@ export default function WillCockpit() {
             role="dialog"
             aria-modal="true"
             aria-label="Modal de escalação de hoje"
-            className="fixed inset-0 z-[70] overflow-y-auto overscroll-y-contain bg-black/80"
+            className={`fixed inset-0 z-[220] ${MODAL_FIXED_OVERLAY_SCROLL} bg-black/80`}
             {...MODAL_OVERLAY_FADE}
             onClick={() => setShowCourtModal(false)}
             onKeyDown={(event) => {
@@ -1037,29 +1116,38 @@ export default function WillCockpit() {
             }}
             tabIndex={-1}
           >
-            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div className={`${MODAL_OVERLAY_CENTER_WRAP} px-3 text-left sm:px-6`}>
             <motion.section
               initial={{ opacity: 0, y: 40, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={SPRING_PREMIUM}
               onClick={(e) => e.stopPropagation()}
-              className="my-4 w-full max-w-2xl transform overflow-hidden rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 text-left shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl"
+              className={`my-auto w-full max-w-2xl rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl ${MODAL_PANEL_COLUMN}`}
             >
-              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 flex items-center justify-between">
+              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 shrink-0 flex items-center justify-between">
                 <div>
                   <motion.p {...MODAL_BADGE_ENTER} transition={SPRING_PREMIUM} className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EAB308]">Escalação de Hoje</motion.p>
                   <h3 className="text-lg font-black text-white">Ações de quadra e avaliação individual</h3>
                 </div>
-                <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => setShowCourtModal(false)} className="min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5">
+                <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => setShowCourtModal(false)} className={`min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5 ${INTERACTIVE_FOCUS_RING}`}>
                   <X className="mx-auto h-4 w-4 text-zinc-200" />
                 </motion.button>
               </motion.div>
-              <div className="mt-4 space-y-4">
+              <div className={`${MODAL_BODY_SCROLL} mt-4 space-y-4`}>
                 {todayLessons.length === 0 ? (
-                  <div className="rounded-xl border border-zinc-800/90 bg-black/45 px-3 py-2 text-[12px] text-zinc-400">
-                    Sem aulas para hoje. Use "Nova Aula" para montar a escalação com um toque.
-                  </div>
+                  <AppEmptyState
+                    icon={MapPin}
+                    title="Sem aulas para hoje"
+                    description='Monte a escalação na agenda — use "Nova Aula" ou abra o calendário completo.'
+                    actionLabel="Ir para agenda"
+                    onAction={() => {
+                      haptic(12);
+                      setShowCourtModal(false);
+                      router.push("/agenda");
+                    }}
+                    className="border-zinc-800/90 bg-black/45 text-start"
+                  />
                 ) : (
                   todayLessons.map((lesson) => (
                     <motion.button
@@ -1073,7 +1161,7 @@ export default function WillCockpit() {
                         setShowLessonModal(true);
                       }}
                       layoutId={`lesson-card-court-${lesson.id}`}
-                      className="w-full rounded-xl border border-zinc-800/90 bg-black/45 p-3 text-left transition hover:border-[#EAB308]/35"
+                      className={`w-full rounded-xl border border-zinc-800/90 bg-black/45 p-3 text-left transition hover:border-[#EAB308]/35 ${INTERACTIVE_FOCUS_RING}`}
                     >
                       <p className="text-sm font-black text-zinc-100">{lesson.title}</p>
                       <p className="text-[11px] text-zinc-500">
@@ -1105,7 +1193,7 @@ export default function WillCockpit() {
             role="dialog"
             aria-modal="true"
             aria-label={`Modal da aula ${selectedLesson.title}`}
-            className="fixed inset-0 z-[80] flex items-end justify-center overflow-hidden bg-black/75 p-3 sm:items-center sm:p-6"
+            className={`fixed inset-0 z-[220] ${MODAL_FIXED_OVERLAY_SCROLL} bg-black/75`}
             {...MODAL_OVERLAY_FADE}
             onClick={() => {
               setShowLessonModal(false);
@@ -1119,16 +1207,16 @@ export default function WillCockpit() {
             }}
             tabIndex={-1}
           >
-            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div className={`${MODAL_OVERLAY_CENTER_WRAP} px-3 text-left sm:px-6`}>
             <motion.section
               initial={{ opacity: 0, y: 40, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.98 }}
               transition={SPRING_PREMIUM}
               onClick={(e) => e.stopPropagation()}
-              className="my-4 w-full max-w-2xl transform overflow-hidden rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 text-left shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl"
+              className={`my-auto w-full max-w-2xl rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl ${MODAL_PANEL_COLUMN}`}
             >
-              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 flex items-center justify-between">
+              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 shrink-0 flex items-center justify-between">
                 <div>
                   <motion.p {...MODAL_BADGE_ENTER} transition={SPRING_PREMIUM} className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EAB308]">Aula e Avaliação Individual</motion.p>
                   <h3 className="text-lg font-black text-white">{selectedLesson.title}</h3>
@@ -1139,11 +1227,11 @@ export default function WillCockpit() {
                 <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => {
                   setShowLessonModal(false);
                   setSelectedLessonLayoutId(null);
-                }} className="min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5">
+                }} className={`min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5 ${INTERACTIVE_FOCUS_RING}`}>
                   <X className="mx-auto h-4 w-4 text-zinc-200" />
                 </motion.button>
               </motion.div>
-              <div className="min-h-0 flex-1 overflow-y-auto pr-1 touch-pan-y [-webkit-overflow-scrolling:touch]">
+              <div className={`${MODAL_BODY_SCROLL} flex min-h-0 flex-col`}>
                 <LessonRatingsSheet 
                   lesson={selectedLesson} 
                   onSave={() => {
@@ -1166,23 +1254,23 @@ export default function WillCockpit() {
             aria-modal="true"
             data-modal-overlay
             aria-label={`Ficha do atleta ${selectedStudent.name}`}
-            className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/80"
+            className={`fixed inset-0 z-[220] ${MODAL_FIXED_OVERLAY_SCROLL} bg-black/80`}
             {...MODAL_OVERLAY_FADE}
             onClick={() => {
               setShowStudentModal(false);
               setSelectedStudentLayoutId(null);
             }}
           >
-            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div className={`${MODAL_OVERLAY_CENTER_WRAP} px-3 text-left sm:px-6`}>
             <motion.section
               initial={{ opacity: 0, y: 30, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.98 }}
               transition={SPRING_PREMIUM}
               onClick={(e) => e.stopPropagation()}
-              className="my-4 w-full max-w-xl transform overflow-hidden rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 text-left shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl"
+              className={`my-auto w-full max-w-xl rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 shadow-[0_35px_120px_rgba(0,0,0,0.75)] backdrop-blur-3xl ${MODAL_PANEL_COLUMN}`}
             >
-              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 flex items-center justify-between">
+              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 shrink-0 flex items-center justify-between">
                 <div>
                   <motion.p {...MODAL_BADGE_ENTER} transition={SPRING_PREMIUM} className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#EAB308]">Ficha do Atleta</motion.p>
                   <h3 className="text-lg font-black text-white">{selectedStudent.name}</h3>
@@ -1190,11 +1278,11 @@ export default function WillCockpit() {
                 <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => {
                   setShowStudentModal(false);
                   setSelectedStudentLayoutId(null);
-                }} className="min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5">
+                }} className={`min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5 ${INTERACTIVE_FOCUS_RING}`}>
                   <X className="mx-auto h-4 w-4 text-zinc-200" />
                 </motion.button>
               </motion.div>
-              <div className="mt-4 space-y-4 text-[12px] text-zinc-300">
+              <div className={`${MODAL_BODY_SCROLL} mt-1 space-y-4 text-[12px] text-zinc-300`}>
                 <div className="rounded-xl border border-[#EAB308]/25 bg-[#EAB308]/8 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#EAB308]">Identidade visual ativa</p>
                   <div className="mt-2 flex items-center gap-2">
@@ -1226,27 +1314,28 @@ export default function WillCockpit() {
             aria-modal="true"
             data-modal-overlay
             aria-label="Ações rápidas do cockpit"
-            className="fixed inset-0 z-[85] flex items-end justify-center overflow-hidden bg-black/75 p-3 sm:items-center sm:p-6"
+            className={`fixed inset-0 z-[220] ${MODAL_FIXED_OVERLAY_SCROLL} bg-black/75`}
             {...MODAL_OVERLAY_FADE}
             onClick={() => setShowQuickActionModal(null)}
           >
+            <div className={MODAL_OVERLAY_CENTER_WRAP}>
             <motion.section
               initial={{ opacity: 0, y: 30, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.98 }}
               transition={SPRING_PREMIUM}
               onClick={(e) => e.stopPropagation()}
-              className="my-2 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-4 backdrop-blur-3xl"
+              className={`my-auto w-full max-w-xl rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-4 backdrop-blur-3xl ${MODAL_PANEL_COLUMN}`}
             >
-              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 flex items-center justify-between">
+              <motion.div {...MODAL_HEADER_ENTER} transition={SPRING_PREMIUM} className="mb-3 shrink-0 flex items-center justify-between">
                 <h3 className="text-lg font-black text-white">
                   {showQuickActionModal === "novo-aluno" ? "Pré-cadastro rápido de atleta" : "Criar aula rápida"}
                 </h3>
-                <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => setShowQuickActionModal(null)} className="min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5">
+                <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => setShowQuickActionModal(null)} className={`min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5 ${INTERACTIVE_FOCUS_RING}`}>
                   <X className="mx-auto h-4 w-4 text-zinc-200" />
                 </motion.button>
               </motion.div>
-              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1 touch-pan-y [-webkit-overflow-scrolling:touch]">
+              <div className={`${MODAL_BODY_SCROLL} space-y-2`}>
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3 text-[12px] text-zinc-300">
                   {showQuickActionModal === "novo-aluno"
                     ? "Fluxo interno: validar dados, classificar trial/pending e enviar para fila de aprovação sem sair do cockpit."
@@ -1256,23 +1345,24 @@ export default function WillCockpit() {
                   type="button"
                   onClick={() => {
                     if (showQuickActionModal === "novo-aluno") {
-                      router.push("/alunos");
+                      openOwnerStudentIntake();
                     } else {
-                      router.push("/agenda");
+                      openCreateLessonFlow();
                     }
-                    setActionFeedback(showQuickActionModal === "novo-aluno" ? "Fluxo de novo aluno aberto." : "Fluxo de nova aula aberto.");
-                    setShowQuickActionModal(null);
                   }}
-                  className="min-h-11 w-full rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/12 px-3 py-2 text-sm font-black text-[#EAB308]"
+                  className={`min-h-11 w-full rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/12 px-3 py-2 text-sm font-black text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
                 >
-                  Abrir fluxo completo
+                  {showQuickActionModal === "novo-aluno" ? "Abrir cadastro de aluno" : "Abrir montagem de aula"}
                 </button>
               </div>
             </motion.section>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
-    </motion.div>
+
+      <CreateLessonModal isOpen={showCreateLesson} onClose={() => setShowCreateLesson(false)} defaultDate={localDateISO()} />
+    </div>
     </LayoutGroup>
   );
 }

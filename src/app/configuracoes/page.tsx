@@ -4,17 +4,24 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings, MapPin, Clock, Tag, Plus, X, Trash2, Edit3,
-  ExternalLink, Save, ChevronRight, Globe, QrCode
+  ExternalLink, Save, ChevronRight, Globe, QrCode, UserCircle, Lock, LockOpen, Eraser,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
-import type { AppConfig } from "@/context/types";
+import type { AppConfig, StudentProfileEditPolicy } from "@/context/types";
+import { resolveStudentProfilePolicy } from "@/lib/studentProfilePolicy";
+import { clearTransactionalLocalStorage } from "@/lib/willLocalDataPolicy";
+import { hasSupabaseEnv } from "@/lib/supabaseClient";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { useRouter } from "next/navigation";
+import AppPageHeader from "@/components/ui/AppPageHeader";
+import AppSectionCard from "@/components/ui/AppSectionCard";
 
-type Tab = "categorias" | "locais" | "jornada" | "recebimentos";
+type Tab = "categorias" | "locais" | "jornada" | "recebimentos" | "perfilAluno";
 
 export default function ConfigPage() {
+  const router = useRouter();
   const {
     user,
     categories, venues, workHours,
@@ -48,6 +55,7 @@ export default function ConfigPage() {
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
     ...(user?.role !== "aluno" ? [{ key: "recebimentos" as const, label: "Recebimentos PIX", icon: QrCode }] : []),
+    ...(user?.role !== "aluno" ? [{ key: "perfilAluno" as const, label: "Perfil do aluno", icon: UserCircle }] : []),
     { key: "categorias", label: "Categorias", icon: Tag },
     { key: "locais", label: "Locais", icon: MapPin },
     { key: "jornada", label: "Jornada", icon: Clock },
@@ -73,23 +81,27 @@ export default function ConfigPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto pb-28">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Settings className="w-8 h-8 text-[#EAB308]" /> Configurações
-          </h1>
-          {user ? (
-            <div onClick={() => window.location.href = '/perfil'} className="flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-black/35 px-3 py-2 cursor-pointer hover:bg-zinc-900 transition-colors">
+      <AppPageHeader
+        title="Configurações"
+        subtitle="Categorias, locais, jornada e — na área do staff — chave PIX que o aluno usa para pagar."
+        icon={Settings}
+        className="mb-6"
+        rightSlot={
+          user ? (
+            <button
+              type="button"
+              onClick={() => router.push("/perfil")}
+              className="flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-black/35 px-3 py-2 cursor-pointer hover:bg-zinc-900 transition-colors"
+            >
               <UserAvatar name={user.name} photo={user.avatar} size="sm" />
               <div className="min-w-0">
                 <p className="truncate text-xs font-bold text-white">{user.name}</p>
                 <p className="text-[10px] uppercase tracking-wide text-zinc-500">Editar Perfil</p>
               </div>
-            </div>
-          ) : null}
-        </div>
-        <p className="text-zinc-500 mt-1">Categorias, locais, jornada e — na área do staff — chave PIX que o aluno usa para pagar.</p>
-      </motion.div>
+            </button>
+          ) : null
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
@@ -109,13 +121,11 @@ export default function ConfigPage() {
       {/* ─── RECEBIMENTOS (staff): PIX exibido ao aluno — comprovante só na área do aluno ─── */}
       {tab === "recebimentos" && user?.role !== "aluno" && (
         <motion.div id="recebimentos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-[#EAB308]" /> Dados de recebimento PIX
-            </h2>
-            <p className="text-sm text-zinc-500 mb-6">
-              Você recebe nesta chave. O aluno vê estes dados em <strong className="text-zinc-400">Financeiro</strong> e registra o comprovante por lá — você confirma o pagamento no painel financeiro admin.
-            </p>
+          <AppSectionCard
+            title="Dados de recebimento PIX"
+            subtitle="Você recebe nesta chave. O aluno vê estes dados em Financeiro e registra o comprovante por lá."
+            rightSlot={<QrCode className="w-5 h-5 text-[#EAB308]" />}
+          >
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Nome no PIX (recebedor)</label>
@@ -170,54 +180,148 @@ export default function ConfigPage() {
                 <Save className="w-4 h-4" /> Salvar recebimentos
               </motion.button>
             </div>
-          </div>
+          </AppSectionCard>
+
+          <AppSectionCard
+            title="Cache local (navegador)"
+            subtitle={
+              hasSupabaseEnv()
+                ? "Os dados oficiais vêm do Supabase. O navegador pode guardar cópia antiga — limpe antes de operar só com cadastros reais."
+                : "Útil se você ainda usa dados de demonstração salvos neste aparelho."
+            }
+            rightSlot={<Eraser className="w-5 h-5 text-zinc-500" />}
+          >
+            <p className="text-[12px] leading-relaxed text-zinc-500">
+              Remove do dispositivo: alunos, aulas, pagamentos, notificações, feedbacks, planos de treino e posts locais.
+              Mantém categorias, locais, jornada e recebimentos (PIX) configurados aqui.
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    "Limpar dados transacionais deste navegador e recarregar? Você fará login de novo se a sessão depender do cache.",
+                  )
+                ) {
+                  return;
+                }
+                clearTransactionalLocalStorage();
+                toast("Cache transacional limpo. Recarregando…");
+                window.setTimeout(() => window.location.reload(), 400);
+              }}
+              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-200 hover:bg-red-500/15"
+            >
+              <Eraser className="h-4 w-4" />
+              Limpar dados de teste / cache e recarregar
+            </motion.button>
+          </AppSectionCard>
+        </motion.div>
+      )}
+
+      {tab === "perfilAluno" && user?.role !== "aluno" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <AppSectionCard
+            title="O que o aluno pode editar em /perfil"
+            subtitle="Campos bloqueados ficam só leitura no app do aluno. Dados sensíveis continuam sob controle da equipe."
+            rightSlot={<UserCircle className="w-5 h-5 text-[#EAB308]" />}
+          >
+            <p className="mb-4 text-[12px] leading-relaxed text-zinc-500">
+              Use para evitar que o aluno altere e-mail institucional, foto oficial da academia etc. Padrão: tudo liberado.
+            </p>
+            <div className="space-y-2">
+              {(
+                [
+                  { key: "phone" as const, label: "WhatsApp / telefone" },
+                  { key: "email" as const, label: "E-mail" },
+                  { key: "instagram" as const, label: "Instagram" },
+                  { key: "notes" as const, label: "Observações pessoais" },
+                  { key: "avatar" as const, label: "Foto de perfil" },
+                ] satisfies { key: keyof StudentProfileEditPolicy; label: string }[]
+              ).map((row) => {
+                const policy = resolveStudentProfilePolicy(appConfig);
+                const allowed = policy[row.key];
+                return (
+                  <div
+                    key={row.key}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800/80 bg-black/40 px-3 py-2.5"
+                  >
+                    <span className="text-sm font-bold text-zinc-200">{row.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const merged = resolveStudentProfilePolicy(appConfig);
+                        const nextVal = !merged[row.key];
+                        updateAppConfig({
+                          studentProfilePolicy: { ...appConfig.studentProfilePolicy, [row.key]: nextVal },
+                        });
+                        toast(nextVal ? `${row.label}: liberado.` : `${row.label}: bloqueado para o aluno.`);
+                      }}
+                      className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition ${
+                        allowed
+                          ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
+                          : "border-zinc-600 bg-zinc-900 text-zinc-400"
+                      }`}
+                    >
+                      {allowed ? <LockOpen className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                      {allowed ? "Liberado" : "Bloqueado"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </AppSectionCard>
         </motion.div>
       )}
 
       {/* ─── CATEGORIAS ─── */}
       {tab === "categorias" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-bold text-white">Categorias de Aula</h2>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowAddCat(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold">
-              <Plus className="w-4 h-4" /> Nova Categoria
-            </motion.button>
-          </div>
-
-          {categories.map((cat, i) => (
-            <motion.div key={cat.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className="flex items-center justify-between p-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: `${cat.color}20` }}>
-                  {cat.emoji}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">{cat.name}</span>
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: cat.color }} />
-                    {cat.isCustom && <span className="text-[9px] font-bold text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">CUSTOM</span>}
+          <AppSectionCard
+            title="Categorias de Aula"
+            subtitle="Padronize tipos de treino, capacidade e preço base."
+            rightSlot={
+              <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowAddCat(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold">
+                <Plus className="w-4 h-4" /> Nova Categoria
+              </motion.button>
+            }
+            contentClassName="space-y-3 pt-3"
+          >
+            {categories.map((cat, i) => (
+              <motion.div key={cat.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="flex items-center justify-between p-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: `${cat.color}20` }}>
+                    {cat.emoji}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">
-                    <span>Máx: {cat.maxStudents} alunos</span>
-                    <span>R$ {cat.defaultPrice}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-sm">{cat.name}</span>
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: cat.color }} />
+                      {cat.isCustom && <span className="text-[9px] font-bold text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">CUSTOM</span>}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">
+                      <span>Máx: {cat.maxStudents} alunos</span>
+                      <span>R$ {cat.defaultPrice}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {cat.isCustom && (
-                <motion.button whileTap={{ scale: 0.9 }}
-                  onClick={() => deleteCategory(cat.id)}
-                  className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100">
-                  <Trash2 className="w-4 h-4" />
-                </motion.button>
-              )}
-            </motion.div>
-          ))}
+                {cat.isCustom && (
+                  <motion.button whileTap={{ scale: 0.9 }}
+                    onClick={() => deleteCategory(cat.id)}
+                    className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100">
+                    <Trash2 className="w-4 h-4" />
+                  </motion.button>
+                )}
+              </motion.div>
+            ))}
+          </AppSectionCard>
 
           {/* Add Category Modal */}
           <AnimatePresence>
@@ -227,11 +331,11 @@ export default function ConfigPage() {
                 aria-modal="true"
                 data-modal-overlay
                 aria-label="Nova categoria"
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                className="fixed inset-0 z-[100] overflow-y-auto overscroll-y-contain bg-black/70 backdrop-blur-sm p-4 flex min-h-[100dvh] items-start justify-center py-8 sm:items-center sm:py-12"
                 onClick={() => setShowAddCat(false)}>
                 <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
                   onClick={e => e.stopPropagation()}
-                  className="bg-[#0A0A0A] border border-zinc-800 rounded-2xl p-6 max-w-md w-full">
+                  className="my-auto max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-6">
                   <div className="flex justify-between items-center mb-5">
                     <h3 className="text-lg font-bold text-white">Nova Categoria</h3>
                     <button onClick={() => setShowAddCat(false)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
@@ -291,45 +395,49 @@ export default function ConfigPage() {
       {/* ─── LOCAIS ─── */}
       {tab === "locais" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-bold text-white">Locais de Treino</h2>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowAddVenue(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold">
-              <Plus className="w-4 h-4" /> Novo Local
-            </motion.button>
-          </div>
-
-          {venues.map((v, i) => (
-            <motion.div key={v.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="p-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-all group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EAB308]/10 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-[#EAB308]" />
+          <AppSectionCard
+            title="Locais de Treino"
+            subtitle="Gerencie quadras e endereços oficiais da operação."
+            rightSlot={
+              <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowAddVenue(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold">
+                <Plus className="w-4 h-4" /> Novo Local
+              </motion.button>
+            }
+            contentClassName="space-y-3 pt-3"
+          >
+            {venues.map((v, i) => (
+              <motion.div key={v.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="p-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-all group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#EAB308]/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-[#EAB308]" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-sm">{v.name}</span>
+                      <p className="text-xs text-zinc-500 mt-0.5">{v.address}</p>
+                      <p className="text-[10px] text-zinc-600 mt-1 font-mono">{v.lat.toFixed(4)}, {v.lng.toFixed(4)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-bold text-white text-sm">{v.name}</span>
-                    <p className="text-xs text-zinc-500 mt-0.5">{v.address}</p>
-                    <p className="text-[10px] text-zinc-600 mt-1 font-mono">{v.lat.toFixed(4)}, {v.lng.toFixed(4)}</p>
+                  <div className="flex gap-1.5">
+                    <a href={getVenueMapsUrl(v.id)} target="_blank" rel="noopener"
+                      className="p-2 rounded-lg text-zinc-600 hover:text-[#EAB308] hover:bg-[#EAB308]/10 transition-colors">
+                      <Globe className="w-4 h-4" />
+                    </a>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => deleteVenue(v.id)}
+                      className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100">
+                      <Trash2 className="w-4 h-4" />
+                    </motion.button>
                   </div>
                 </div>
-                <div className="flex gap-1.5">
-                  <a href={getVenueMapsUrl(v.id)} target="_blank" rel="noopener"
-                    className="p-2 rounded-lg text-zinc-600 hover:text-[#EAB308] hover:bg-[#EAB308]/10 transition-colors">
-                    <Globe className="w-4 h-4" />
-                  </a>
-                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => deleteVenue(v.id)}
-                    className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100">
-                    <Trash2 className="w-4 h-4" />
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </AppSectionCard>
 
           {/* Add Venue Modal */}
           <AnimatePresence>
@@ -339,11 +447,11 @@ export default function ConfigPage() {
                 aria-modal="true"
                 data-modal-overlay
                 aria-label="Novo local de treino"
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                className="fixed inset-0 z-[100] overflow-y-auto overscroll-y-contain bg-black/70 backdrop-blur-sm p-4 flex min-h-[100dvh] items-start justify-center py-8 sm:items-center sm:py-12"
                 onClick={() => setShowAddVenue(false)}>
                 <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
                   onClick={e => e.stopPropagation()}
-                  className="bg-[#0A0A0A] border border-zinc-800 rounded-2xl p-6 max-w-md w-full">
+                  className="my-auto max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-6">
                   <div className="flex justify-between items-center mb-5">
                     <h3 className="text-lg font-bold text-white">Novo Local</h3>
                     <button onClick={() => setShowAddVenue(false)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
@@ -386,11 +494,11 @@ export default function ConfigPage() {
       {/* ─── JORNADA ─── */}
       {tab === "jornada" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          <div className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-6">
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#EAB308]" /> Jornada de Trabalho
-            </h2>
-            <p className="text-sm text-zinc-500 mb-6">Defina o horário de funcionamento padrão. A agenda respeitará esses limites.</p>
+          <AppSectionCard
+            title="Jornada de Trabalho"
+            subtitle="Defina o horário de funcionamento padrão. A agenda respeitará esses limites."
+            rightSlot={<Clock className="w-5 h-5 text-[#EAB308]" />}
+          >
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
@@ -430,7 +538,7 @@ export default function ConfigPage() {
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#EAB308] text-black font-bold text-sm">
               <Save className="w-4 h-4" /> Salvar Jornada
             </motion.button>
-          </div>
+          </AppSectionCard>
         </motion.div>
       )}
     </div>

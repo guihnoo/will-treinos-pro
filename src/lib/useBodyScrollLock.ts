@@ -36,6 +36,14 @@ function allowScrollWithinOpenModal(target: EventTarget | null): boolean {
     }
     el = el.parentElement;
   }
+  /** Modal backdrop can scroll (MODAL_FIXED_OVERLAY_SCROLL) — wheel on nested overflow:hidden surfaces still hits scrollable root. */
+  if (root instanceof HTMLElement) {
+    const rs = window.getComputedStyle(root);
+    const oy = rs.overflowY;
+    if ((oy === "auto" || oy === "scroll" || oy === "overlay") && root.scrollHeight > root.clientHeight + 2) {
+      return true;
+    }
+  }
   return false;
 }
 

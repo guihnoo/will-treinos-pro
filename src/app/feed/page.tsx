@@ -10,6 +10,11 @@ import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
 import { MOCK_STORIES } from "@/context/mockData";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import AppEmptyState from "@/components/ui/AppEmptyState";
+import AppSectionCard from "@/components/ui/AppSectionCard";
+import AppPageHeader from "@/components/ui/AppPageHeader";
+import SkeletonLoader from "@/components/ui/SkeletonLoader";
+import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 // ─── New Post Composer ───────────────────────────────────────────────────────
 function PostComposer({
@@ -52,6 +57,7 @@ function PostComposer({
   };
 
   const canPost = !!(text.trim() || previewImg);
+  const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const roleBadge = user?.role === "admin" ? "👑 Admin" : user?.role === "coach" ? "🏐 Coach" : null;
 
   return (
@@ -66,14 +72,14 @@ function PostComposer({
         aria-modal="true"
         data-modal-overlay
         aria-label="Novo post na Rede"
-        className="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex flex-col"
+        className="fixed inset-0 z-[200] overflow-y-auto overscroll-y-contain bg-black/90 backdrop-blur-md flex flex-col justify-end"
         onClick={onClose}>
 
         <motion.div
           initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 28, stiffness: 300 }}
           onClick={e => e.stopPropagation()}
-          className="mt-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl flex flex-col max-h-[92dvh] shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
+          className="mt-auto min-h-0 w-full bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl flex flex-col max-h-[92dvh] shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
 
           {/* Handle */}
           <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-1 flex-shrink-0" />
@@ -90,7 +96,7 @@ function PostComposer({
                 {roleBadge && <p className="text-[10px] text-[#EAB308] font-bold">{roleBadge}</p>}
               </div>
             </div>
-            <button onClick={onClose} className="p-2 rounded-xl hover:bg-zinc-900 text-zinc-500">
+            <button onClick={onClose} className={`h-10 w-10 flex items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-900 ${ctaClass}`}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -117,7 +123,7 @@ function PostComposer({
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setPreviewImg(null)}
-                    className="absolute top-2 right-2 w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white border border-zinc-700">
+                    className={`absolute top-2 right-2 w-8 h-8 bg-black/70 rounded-full flex items-center justify-center text-white border border-zinc-700 ${ctaClass}`}>
                     <X className="w-4 h-4" />
                   </motion.button>
                 </motion.div>
@@ -130,12 +136,12 @@ function PostComposer({
             <div className="flex gap-2">
               <motion.button whileTap={{ scale: 0.85 }}
                 onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-bold hover:border-[#EAB308]/50 transition-colors">
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-bold hover:border-[#EAB308]/50 transition-colors ${ctaClass}`}>
                 <ImageIcon className="w-4 h-4 text-[#EAB308]" /> Galeria
               </motion.button>
               <motion.button whileTap={{ scale: 0.85 }}
                 onClick={() => cameraRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-bold hover:border-[#EAB308]/50 transition-colors">
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-bold hover:border-[#EAB308]/50 transition-colors ${ctaClass}`}>
                 <Camera className="w-4 h-4 text-[#EAB308]" /> Câmera
               </motion.button>
             </div>
@@ -148,7 +154,7 @@ function PostComposer({
                 canPost && !publishing
                   ? "bg-[#EAB308] text-black shadow-[0_0_20px_rgba(234,179,8,0.25)]"
                   : "bg-zinc-900 text-zinc-600 cursor-not-allowed"
-              }`}>
+              } ${ctaClass}`}>
               {publishing ? (
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}>
                   <CheckCircle2 className="w-4 h-4" />
@@ -167,7 +173,18 @@ function PostComposer({
 
 // ─── Main Feed Page ──────────────────────────────────────────────────────────
 export default function FeedPage() {
-  const { user, students, posts, addPost, togglePostLike, addPostComment } = useApp();
+  const {
+    user,
+    students,
+    posts,
+    addPost,
+    togglePostLike,
+    addPostComment,
+    usingSupabaseSession,
+    criticalDataLoading,
+    criticalDataError,
+    retryCriticalDataSync,
+  } = useApp();
   const { toast } = useToast();
   const [expandedComments, setExpandedComments] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
@@ -219,27 +236,72 @@ export default function FeedPage() {
     setCommentInputs(p => ({ ...p, [postId]: "" }));
   };
 
+  const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
+
+  if (usingSupabaseSession && criticalDataLoading) {
+    return (
+      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-4">
+        <AppPageHeader title="Rede Will Treinos" subtitle="Sincronizando comunidade ao vivo..." icon={SmilePlus} />
+        <div className="space-y-3">
+          <SkeletonLoader className="h-20" lines={2} />
+          <SkeletonLoader className="h-28" lines={4} />
+          <SkeletonLoader className="h-48" lines={5} />
+        </div>
+      </div>
+    );
+  }
+
+  if (usingSupabaseSession && criticalDataError) {
+    return (
+      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-4">
+        <AppPageHeader
+          title="Rede Will Treinos"
+          subtitle="Falha de sincronização. Tente novamente sem recarregar."
+          icon={SmilePlus}
+        />
+        <AppSectionCard title="Erro de sincronização" subtitle="Não foi possível carregar o feed ao vivo.">
+          <p className="text-sm text-zinc-300">{criticalDataError}</p>
+          <button
+            type="button"
+            onClick={() => void retryCriticalDataSync()}
+            className={`mt-4 rounded-xl border border-red-300/35 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-200 hover:bg-red-500/15 ${ctaClass}`}
+          >
+            Tentar sincronizar novamente
+          </button>
+        </AppSectionCard>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto border-x border-zinc-900 min-h-screen relative pb-28">
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-xl border-b border-zinc-900 px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">
-            🏐 <span className="text-[#EAB308]">Rede</span>
+          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.18em]">Will Comunidade</p>
+          <h1 className="text-xl font-black text-white">
+            <span className="text-[#EAB308]">Rede</span> Will Treinos
           </h1>
-          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Comunidade Will Treinos</p>
+          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Compartilhe treinos, evolução e rotina</p>
         </div>
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowComposer(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+          className={`flex items-center gap-2 px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(234,179,8,0.2)] ${ctaClass}`}>
           <Camera className="w-4 h-4" /> Postar
         </motion.button>
       </header>
 
       {/* Stories */}
-      <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar border-b border-zinc-900">
+      <div className="px-4 py-3 border-b border-zinc-900">
+        <AppSectionCard
+          title="Stories da Quadra"
+          subtitle="Atalhos rápidos do que a turma está vivendo hoje."
+          contentClassName="pt-3 px-0 pb-0"
+          className="border-zinc-900/70 bg-transparent"
+        >
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
         {/* My story */}
         <motion.div whileTap={{ scale: 0.95 }} onClick={() => setShowComposer(true)}
           className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0">
@@ -262,15 +324,28 @@ export default function FeedPage() {
             <span className={`text-[10px] font-medium ${s.hasNew ? "text-white" : "text-zinc-500"}`}>{s.name}</span>
           </motion.div>
         ))}
+          </div>
+        </AppSectionCard>
       </div>
 
       {/* Feed Posts */}
+      <div className="px-4 pt-3">
+        <AppSectionCard
+          title="Feed da Turma"
+          subtitle="Atualizações da comunidade em tempo real."
+          contentClassName="p-0 pt-3"
+          className="border-zinc-900/70 bg-transparent"
+        >
       <div className="flex flex-col">
         {posts.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-4xl mb-3">🏐</p>
-            <p className="text-zinc-500 font-bold">Seja o primeiro a postar!</p>
-            <p className="text-zinc-700 text-sm mt-1">Compartilhe seus treinos com a turma</p>
+          <div className="px-4 py-12">
+            <AppEmptyState
+              icon={ImageIcon}
+              title="Seja o primeiro a postar"
+              description="Compartilhe seus treinos com a turma e movimente a comunidade."
+              actionLabel="Criar primeiro post"
+              onAction={() => setShowComposer(true)}
+            />
           </div>
         )}
 
@@ -331,7 +406,7 @@ export default function FeedPage() {
                 {/* Like */}
                 <motion.button whileTap={{ scale: 0.75 }}
                   onClick={() => { togglePostLike(post.id); if(navigator.vibrate) navigator.vibrate(post.isLiked?20:40); }}
-                  className="flex items-center gap-1.5 group">
+                  className={`flex items-center gap-1.5 group ${FOCUS_RING_GOLD}`}>
                   <motion.div animate={post.isLiked ? { scale: [1, 1.5, 1] } : {}} transition={{ duration: 0.3 }}>
                     <Heart className={`w-6 h-6 transition-colors ${post.isLiked ? "text-[#EAB308] fill-[#EAB308]" : "text-zinc-400 group-hover:text-zinc-200"}`} />
                   </motion.div>
@@ -341,7 +416,7 @@ export default function FeedPage() {
                 {/* Comment toggle */}
                 <motion.button whileTap={{ scale: 0.9 }}
                   onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
-                  className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors">
+                  className={`flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 transition-colors ${FOCUS_RING_GOLD}`}>
                   <MessageCircle className="w-6 h-6" />
                   <span className="text-sm font-medium">{post.comments.length}</span>
                 </motion.button>
@@ -349,12 +424,12 @@ export default function FeedPage() {
                 {/* Share */}
                 <motion.button whileTap={{ scale: 0.9 }}
                   onClick={() => { navigator.share?.({ text: post.content || "" }); }}
-                  className="text-zinc-400 hover:text-zinc-200 transition-colors">
+                  className={`text-zinc-400 hover:text-zinc-200 transition-colors ${FOCUS_RING_GOLD}`}>
                   <Share2 className="w-6 h-6" />
                 </motion.button>
               </div>
 
-              <motion.button whileTap={{ scale: 0.9 }}>
+              <motion.button whileTap={{ scale: 0.9 }} className={FOCUS_RING_GOLD}>
                 <Bookmark className={`w-6 h-6 transition-colors ${post.isSaved ? "text-[#EAB308] fill-[#EAB308]" : "text-zinc-400 hover:text-zinc-200"}`} />
               </motion.button>
             </div>
@@ -399,7 +474,7 @@ export default function FeedPage() {
                       />
                       <motion.button whileTap={{ scale: 0.9 }}
                         onClick={() => addComment(post.id)}
-                        className={`p-1.5 rounded-lg transition-colors ${commentInputs[post.id] ? "text-[#EAB308]" : "text-zinc-700"}`}>
+                        className={`p-1.5 rounded-lg transition-colors ${commentInputs[post.id] ? "text-[#EAB308]" : "text-zinc-700"} ${FOCUS_RING_GOLD}`}>
                         <Send className="w-4 h-4" />
                       </motion.button>
                     </div>
@@ -413,7 +488,7 @@ export default function FeedPage() {
               <div className="px-4 pb-3">
                 <button
                   onClick={() => setExpandedComments(post.id)}
-                  className="text-sm text-zinc-500 hover:text-zinc-400 transition-colors">
+                  className={`text-sm text-zinc-500 hover:text-zinc-400 transition-colors ${FOCUS_RING_GOLD}`}>
                   Ver {post.comments.length} comentário{post.comments.length > 1 ? "s" : ""}
                 </button>
               </div>
@@ -421,13 +496,15 @@ export default function FeedPage() {
           </motion.article>
         ))}
       </div>
+        </AppSectionCard>
+      </div>
 
       {/* FAB — floating post button */}
       <motion.button
         whileTap={{ scale: 0.9 }}
         whileHover={{ scale: 1.05 }}
         onClick={() => setShowComposer(true)}
-        className="fixed bottom-24 right-5 w-14 h-14 bg-[#EAB308] rounded-full shadow-[0_0_25px_rgba(234,179,8,0.4)] flex items-center justify-center z-30">
+        className={`fixed bottom-24 right-5 w-14 h-14 bg-[#EAB308] rounded-full shadow-[0_0_25px_rgba(234,179,8,0.4)] flex items-center justify-center z-30 ${FOCUS_RING_GOLD}`}>
         <Plus className="w-7 h-7 text-black" />
       </motion.button>
 

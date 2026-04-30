@@ -81,7 +81,7 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] pr-2 space-y-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pb-6 pr-2 touch-pan-y [-webkit-overflow-scrolling:touch] space-y-4">
         <AnimatePresence mode="wait">
           {tab === "squad" ? (
             <motion.div

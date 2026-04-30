@@ -1,17 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, Phone } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
 
-export default function LoginPage() {
-  const { login, loginWithPassword } = useApp();
+const POST_LOGIN_NEXT_KEY = "wt_post_login_next";
+
+function sanitizeNextPath(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith("/")) return null;
+  if (raw.startsWith("//")) return null;
+  if (raw.startsWith("/auth/")) return null;
+  return raw;
+}
+
+function LoginPageContent() {
+  const { login, loginWithPassword, loginWithOAuth } = useApp();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
@@ -20,6 +31,16 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const supabaseReady = hasSupabaseEnv();
+  const nextPath = sanitizeNextPath(searchParams.get("next"));
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search);
+    const err = q.get("error");
+    if (!err) return;
+    toast(decodeURIComponent(err), "error");
+    window.history.replaceState(null, "", "/login");
+  }, [toast]);
 
   const handleMockLogin = (role: "admin" | "coach" | "aluno") => {
     login(role);
@@ -45,11 +66,37 @@ export default function LoginPage() {
       return;
     }
     toast("✅ Sessão autenticada com sucesso.");
+    if (nextPath) {
+      router.push(nextPath);
+      return;
+    }
     if (result.role === "aluno") {
       router.push("/treinos");
       return;
     }
     router.push("/dashboard");
+  };
+
+  const handleOAuthLogin = async (provider: "google" | "facebook") => {
+    if (!supabaseReady) {
+      toast(
+        "Login social desativado: defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY (ou NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) em Vercel → Settings → Environment Variables (Production), faça redeploy e teste de novo.",
+        "error",
+      );
+      return;
+    }
+    if (nextPath && typeof window !== "undefined") {
+      sessionStorage.setItem(POST_LOGIN_NEXT_KEY, nextPath);
+    }
+    setIsSubmitting(true);
+    const result = await loginWithOAuth(provider);
+    setIsSubmitting(false);
+    if (result.ok === false) {
+      toast(
+        `${result.message} No Supabase: Authentication → Providers (Google ativo) e URL Configuration → Redirect URLs deve incluir ${window.location.origin}/auth/callback`,
+        "error",
+      );
+    }
   };
 
   return (
@@ -135,8 +182,19 @@ export default function LoginPage() {
           <div className="h-px bg-zinc-800 flex-1" />
         </div>
 
+        {!supabaseReady ? (
+          <p className="mb-4 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-100/95">
+            Google/Facebook só funcionam após configurar as variáveis públicas do Supabase no projeto da Vercel e publicar um novo deploy. Enquanto isso, use o painel de testes abaixo.
+          </p>
+        ) : null}
+
         <div className="grid grid-cols-2 gap-3 mb-8">
-          <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900/30 text-sm font-medium hover:bg-zinc-800 transition-colors">
+          <button
+            type="button"
+            onClick={() => void handleOAuthLogin("google")}
+            disabled={isSubmitting}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900/30 text-sm font-medium hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -145,7 +203,12 @@ export default function LoginPage() {
             </svg>
             Google
           </button>
-          <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900/30 text-sm font-medium hover:bg-zinc-800 transition-colors">
+          <button
+            type="button"
+            onClick={() => void handleOAuthLogin("facebook")}
+            disabled={isSubmitting}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900/30 text-sm font-medium hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          >
             <svg className="w-4 h-4 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
@@ -153,15 +216,16 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* MOCK LOGIN ACTIONS */}
-        <div className="mt-8 p-4 bg-[#EAB308]/10 border border-[#EAB308]/20 rounded-xl">
-          <p className="text-[10px] font-bold text-[#EAB308] uppercase tracking-wider mb-3 text-center">🔧 Painel de Testes</p>
-          <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => handleMockLogin("admin")} className="py-2 text-xs font-bold bg-black border border-zinc-800 rounded-lg hover:border-[#EAB308] transition-colors">Entrar como Admin</button>
-            <button onClick={() => handleMockLogin("coach")} className="py-2 text-xs font-bold bg-black border border-zinc-800 rounded-lg hover:border-[#EAB308] transition-colors">Entrar como Prof</button>
-            <button onClick={() => handleMockLogin("aluno")} className="py-2 text-xs font-bold bg-black border border-zinc-800 rounded-lg hover:border-[#EAB308] transition-colors">Entrar como Aluno</button>
+        {!supabaseReady ? (
+          <div className="mt-8 p-4 bg-[#EAB308]/10 border border-[#EAB308]/20 rounded-xl">
+            <p className="text-[10px] font-bold text-[#EAB308] uppercase tracking-wider mb-3 text-center">🔧 Painel de Testes</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={() => handleMockLogin("admin")} className="py-2 text-xs font-bold bg-black border border-zinc-800 rounded-lg hover:border-[#EAB308] transition-colors">Entrar como Admin</button>
+              <button onClick={() => handleMockLogin("coach")} className="py-2 text-xs font-bold bg-black border border-zinc-800 rounded-lg hover:border-[#EAB308] transition-colors">Entrar como Prof</button>
+              <button onClick={() => handleMockLogin("aluno")} className="py-2 text-xs font-bold bg-black border border-zinc-800 rounded-lg hover:border-[#EAB308] transition-colors">Entrar como Aluno</button>
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <p className="text-center text-xs text-zinc-500 mt-8">
           Ainda não tem conta?{" "}
@@ -169,5 +233,22 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-800 border-t-[#EAB308]"
+            aria-hidden
+          />
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

@@ -4,7 +4,16 @@ export type PaymentStatus = "paid" | "pending" | "late";
 export type LessonStatus = "scheduled" | "in-progress" | "completed" | "cancelled";
 export type LessonType = "Individual" | "Dupla" | "Trio" | "Grupo";
 
-export interface User { id: string; name: string; role: Role; avatar: string; }
+export interface User {
+  id: string;
+  name: string;
+  role: Role;
+  avatar: string;
+  /** Present when session comes from Supabase (admin tooling / impersonation). */
+  email?: string;
+  /** Supabase auth.users.id — stable across impersonation; use for storage keys when id is CRM student id. */
+  authSubjectId?: string;
+}
 
 export interface Venue {
   id: string; name: string; photo: string; address: string;
@@ -19,7 +28,10 @@ export interface LessonCategory {
 }
 
 export interface Student {
-  id: string; name: string; phone: string; email: string; avatar: string; instagram: string;
+  id: string;
+  /** When set, ties this row to Supabase Auth (auth.users.id). */
+  authUserId?: string | null;
+  name: string; phone: string; email: string; avatar: string; instagram: string;
   status: StudentStatus; plan: string; monthlyValue: number; paymentDay: number;
   categories: string[]; joinedAt: string; frequency: number; totalClasses: number; notes: string;
   professorNotes?: string;   // renamed from medicalNotes — set by admin/professor only, student reads only
@@ -127,9 +139,18 @@ export interface LessonRating {
 }
 
 // ─── App-wide Config (admin editable) ───────────────────────────────────────
+export interface StudentProfileEditPolicy {
+  phone: boolean;
+  email: boolean;
+  instagram: boolean;
+  notes: boolean;
+  avatar: boolean;
+}
+
 export interface AppConfig {
   pixKey: string;           // admin PIX key (email, CPF, phone, random)
   pixKeyType: "email" | "cpf" | "telefone" | "aleatoria";
   pixOwnerName: string;     // recipient name shown in PIX
   whatsappNumber: string;   // contact WhatsApp
+  studentProfilePolicy?: Partial<StudentProfileEditPolicy>;
 }

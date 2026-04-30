@@ -10,6 +10,10 @@ import {
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import AppPageHeader from "@/components/ui/AppPageHeader";
+import AppSectionCard from "@/components/ui/AppSectionCard";
+import SkeletonLoader from "@/components/ui/SkeletonLoader";
+import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 // ─── Rest Timer Component ────────────────────────────────────────────────────
 function parseSets(sets: string): number {
@@ -77,7 +81,10 @@ function RestTimerBanner({
           <p className="text-3xl font-bold text-[#EAB308] font-mono tabular-nums">
             {String(m).padStart(2,"0")}:{String(s).padStart(2,"0")}
           </p>
-          <button onClick={onDismiss} className="text-zinc-600 hover:text-zinc-400">
+          <button
+            onClick={onDismiss}
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center text-zinc-600 hover:text-zinc-400 ${FOCUS_RING_GOLD}`}
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -99,6 +106,7 @@ function ExerciseModal({
   onToggleSet: (key: string, restSec: number, planId: string) => void;
   onClose: () => void;
 }) {
+  const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const sets = parseSets(ex.sets);
   const restSec = ex.rest ? parseInt(ex.rest) * (ex.rest.includes("min") ? 60 : 1) : 60;
   const completedSets = Array.from({ length: sets }, (_, i) => done[`${planId}_${exIdx}_${i}`] ? 1 : 0).reduce((a,b) => a+b, 0);
@@ -110,7 +118,7 @@ function ExerciseModal({
       aria-modal="true"
       data-modal-overlay
       aria-label={`Exercício: ${ex.name}`}
-      className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[90] flex items-end"
+      className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-sm flex flex-col justify-end"
       onClick={onClose}>
       <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 28, stiffness: 300 }}
@@ -128,7 +136,7 @@ function ExerciseModal({
             </div>
             <h2 className="text-xl font-bold text-white">{ex.name}</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-500"><X className="w-5 h-5"/></button>
+          <button onClick={onClose} className={`p-2 hover:bg-zinc-900 rounded-xl text-zinc-500 ${ctaClass}`}><X className="w-5 h-5"/></button>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
@@ -169,7 +177,7 @@ function ExerciseModal({
                   isDone
                     ? "bg-[#22C55E]/10 border-[#22C55E]/30 text-[#22C55E]"
                     : "bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:border-zinc-700"
-                }`}>
+                } ${ctaClass}`}>
                 {isDone
                   ? <CheckSquare className="w-5 h-5 text-[#22C55E] flex-shrink-0" />
                   : <Square className="w-5 h-5 flex-shrink-0" />}
@@ -194,9 +202,11 @@ function ExerciseModal({
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function TreinosPage() {
-  const { user, trainingPlans } = useApp();
+  const { user, trainingPlans, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync } = useApp();
   const { toast } = useToast();
   const storageHydrated = useRef(false);
+  /** Stable while CRM user.id switches from JWT id to students.id after Supabase link */
+  const treinosStorageUserKey = user?.authSubjectId ?? user?.id;
 
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
@@ -206,6 +216,7 @@ export default function TreinosPage() {
     intervalId: ReturnType<typeof setInterval> | null;
   } | null>(null);
   const [exerciseModal, setExerciseModal] = useState<{ ex: Exercise; planId: string; exIdx: number } | null>(null);
+  const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
 
   const myPlans = trainingPlans.filter(p => p.studentId === user?.id);
   const didAutoExpand = useRef(false);
@@ -232,8 +243,8 @@ export default function TreinosPage() {
   }, [myPlans]);
 
   useEffect(() => {
-    if (!user?.id || typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(`wt_treinos_done_${user.id}`);
+    if (!treinosStorageUserKey || typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(`wt_treinos_done_${treinosStorageUserKey}`);
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as Record<string, boolean>;
@@ -245,12 +256,47 @@ export default function TreinosPage() {
       setDone({});
     }
     storageHydrated.current = true;
-  }, [user?.id]);
+  }, [treinosStorageUserKey]);
 
   useEffect(() => {
-    if (!user?.id || typeof window === "undefined" || !storageHydrated.current) return;
-    window.localStorage.setItem(`wt_treinos_done_${user.id}`, JSON.stringify(done));
-  }, [done, user?.id]);
+    if (!treinosStorageUserKey || typeof window === "undefined" || !storageHydrated.current) return;
+    window.localStorage.setItem(`wt_treinos_done_${treinosStorageUserKey}`, JSON.stringify(done));
+  }, [done, treinosStorageUserKey]);
+
+  if (usingSupabaseSession && criticalDataLoading) {
+    return (
+      <div className="p-4 md:p-6 max-w-4xl mx-auto pb-28">
+        <AppPageHeader title="Meus Treinos" subtitle="Sincronizando planos ao vivo..." icon={Dumbbell} />
+        <div className="space-y-3">
+          <SkeletonLoader className="h-24" lines={3} />
+          <SkeletonLoader className="h-40" lines={5} />
+          <SkeletonLoader className="h-40" lines={5} />
+        </div>
+      </div>
+    );
+  }
+
+  if (usingSupabaseSession && criticalDataError) {
+    return (
+      <div className="p-4 md:p-6 max-w-4xl mx-auto pb-28">
+        <AppPageHeader
+          title="Meus Treinos"
+          subtitle="Falha de sincronização dos planos."
+          icon={Dumbbell}
+        />
+        <AppSectionCard title="Erro de sincronização" subtitle="Não foi possível carregar seus treinos agora.">
+          <p className="text-sm text-zinc-300">{criticalDataError}</p>
+          <button
+            type="button"
+            onClick={() => void retryCriticalDataSync()}
+            className={`mt-4 rounded-xl border border-red-300/35 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-200 hover:bg-red-500/15 ${ctaClass}`}
+          >
+            Tentar sincronizar novamente
+          </button>
+        </AppSectionCard>
+      </div>
+    );
+  }
 
   const planProgressFromState = (
     planId: string,
@@ -318,12 +364,12 @@ export default function TreinosPage() {
 
   return (
     <div className="w-full max-w-2xl mx-auto py-1 sm:py-2">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="text-[clamp(1.35rem,6vw,1.875rem)] font-bold text-white flex items-center gap-3">
-          <Dumbbell className="w-8 h-8 text-[#EAB308]" /> Meus Treinos
-        </h1>
-        <p className="text-zinc-500 mt-1">Planos personalizados pelo professor Will.</p>
-      </motion.div>
+      <AppPageHeader
+        title="Meus Treinos"
+        subtitle="Planos personalizados pelo professor Will."
+        icon={Dumbbell}
+        className="mb-6"
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -382,7 +428,7 @@ export default function TreinosPage() {
           <h3 className="text-lg font-bold text-zinc-400 mb-2">Nenhum plano ainda</h3>
           <p className="text-sm text-zinc-600 mb-6">Solicite seu plano de treino personalizado!</p>
             <motion.button whileTap={{ scale: 0.96 }} onClick={() => { vibrate(20); openWhatsApp(); }}
-            className="inline-flex items-center gap-2 bg-[#22C55E] text-white px-6 min-h-11 py-3 rounded-2xl font-bold text-sm">
+            className={`inline-flex items-center gap-2 bg-[#22C55E] text-white px-6 py-3 rounded-2xl font-bold text-sm ${ctaClass}`}>
             <PhoneCall className="w-4 h-4" /> Solicitar via WhatsApp
           </motion.button>
         </motion.div>
@@ -406,7 +452,7 @@ export default function TreinosPage() {
                 vibrate(isExpanded ? 12 : [10, 20, 10]);
                 setExpandedPlan(isExpanded ? null : plan.id);
               }}
-              className="w-full min-h-11 p-4 sm:p-5 flex items-start gap-3 sm:gap-4 text-left">
+              className={`w-full min-h-11 p-4 sm:p-5 flex items-start gap-3 sm:gap-4 text-left ${FOCUS_RING_GOLD}`}>
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                 isComplete ? "bg-[#22C55E]/10" : "bg-[#EAB308]/10"
               }`}>
@@ -457,7 +503,7 @@ export default function TreinosPage() {
                             exDone
                               ? "bg-[#22C55E]/8 border-[#22C55E]/30"
                               : "bg-zinc-900/40 border-zinc-700/60 hover:border-[#EAB308]/25"
-                          }`}>
+                          } ${ctaClass}`}>
                           <div className="absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-[#EAB308]/60 to-transparent" />
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                             exDone ? "bg-[#22C55E]/10" : "bg-[#EAB308]/10"
@@ -503,7 +549,7 @@ export default function TreinosPage() {
                           toast("🔄 Treino resetado!");
                           vibrate([22, 22, 22]);
                         }}
-                        className="w-full min-h-11 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-zinc-800 text-zinc-500 text-sm hover:border-zinc-700 transition-colors">
+                        className={`w-full min-h-11 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-zinc-800 text-zinc-500 text-sm hover:border-zinc-700 transition-colors ${ctaClass}`}>
                         <RotateCcw className="w-3.5 h-3.5"/> Reiniciar treino
                       </motion.button>
                     )}

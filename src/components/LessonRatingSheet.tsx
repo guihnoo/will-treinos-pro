@@ -104,13 +104,13 @@ export default function LessonRatingSheet({
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       data-modal-overlay
-      className="fixed inset-0 bg-black/90 backdrop-blur-md z-[200] flex items-end"
+      className="fixed inset-0 z-[200] overflow-y-auto overscroll-y-contain bg-black/90 backdrop-blur-md flex flex-col justify-end"
       onClick={onClose}>
       <motion.div
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 26, stiffness: 280 }}
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-2xl mx-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl flex flex-col max-h-[92dvh] shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
+        className="w-full max-w-2xl mx-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl flex flex-col min-h-0 max-h-[92dvh] overflow-hidden shadow-[0_-24px_80px_rgba(0,0,0,0.55)]">
 
         {/* Handle */}
         <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-2 flex-shrink-0" />
