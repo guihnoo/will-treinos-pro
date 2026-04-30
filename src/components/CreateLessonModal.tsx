@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Search } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -29,7 +31,9 @@ const emptyLessonState = (categoryId: string, maxStudents: number, venueId: stri
 });
 
 export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Props) {
-  const { categories, venues, students, lessons, addLesson } = useApp();
+  const { students } = useStudents();
+  const { lessons, addLesson } = useLessons();
+  const { categories, venues } = useApp();
   const { toast } = useToast();
   useBodyScrollLock(isOpen);
   const prevIsOpen = useRef(false);

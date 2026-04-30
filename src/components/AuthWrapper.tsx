@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useStudents } from "@/context/StudentsContext";
 import { Navigation } from "@/components/Navigation";
 import PageTransition from "@/components/PageTransition";
 import { AlertTriangle } from "lucide-react";
@@ -13,12 +15,9 @@ const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro"]);
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, authResolved, authError, usingSupabaseSession } = useAuth();
+  const { students } = useStudents();
   const {
-    user,
-    students,
-    authResolved,
-    authError,
-    usingSupabaseSession,
     criticalDataLoading,
     criticalDataError,
     retryCriticalDataSync,

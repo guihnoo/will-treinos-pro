@@ -1,8 +1,36 @@
 # Registro de interações e atividades — Will Treinos PRO
 
+**Status:** arquivo legado de histórico. A partir de 30/04/2026, o registro oficial único passa a ser feito em `WILLPRO_MASTER_MEMORY.md` (seção "3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL").
+
 **Protocolo:** após trabalho relevante, adicionar entrada **no topo** deste arquivo com **data e hora completas** e resumo objetivo.
 
 ---
+
+### 2026-04-30 17:05:00 -03:00 — P1-B fase 5: PaymentsContext + migração de consumidores
+- **Pedido:** continuar desmontagem do God Context (usuário: «continue»).
+- **Arquivos tocados:** `src/context/PaymentsContext.tsx` (novo), `src/app/layout.tsx`, `src/app/financeiro/page.tsx`, `src/app/alunos/page.tsx`, `src/components/Navigation.tsx`, `src/components/AdminHome.tsx`, `src/components/will/WillCockpit.tsx`, `src/components/KPIDetailModal.tsx`.
+- **Resultado:** contexto dedicado a pagamentos + badge `latePayments`; financeiro/alunos/cockpit/navegação/KPI passam a usar `usePayments()` onde aplicável; `AppContext` permanece fonte única de estado. Lint OK; `pnpm run build` exit 0.
+
+### 2026-04-30 16:25:00 -03:00 — Hotfix Vercel: dashboard preso em loading + perfil duplicado + Config visível
+- **Observações do usuário:** dashboard só carregando no link da Vercel; dois ícones de perfil no menu do aluno; perfil sem atalho para configurações (rota escondida pelo guard).
+- **Causa técnica principal:** cada `TOKEN_REFRESHED` chamava `loadSupabaseCriticalData` com `criticalDataLoading=true`, e o `AuthWrapper` bloqueia o app inteiro enquanto isso — sensação de loading infinito em mobile/produção.
+- **Arquivos tocados:** `src/context/AppContext.tsx` (bootstrap + single-flight + retry com `forceBlocking`), `src/components/Navigation.tsx` (mobile sem `/perfil` duplicado + `aluno` pode `/configuracoes`), `src/app/perfil/page.tsx` (card Configurações).
+- **Resultado:** sincronizações após o 1º bootstrap não prendem mais o shell; menu inferior sem duplicidade; aluno acessa Configurações pela rota e pelo perfil; build OK (exit 0).
+
+### 2026-04-30 16:09:00 -03:00 — P1-B fase 4 (financeiro + criação de aula desacoplados)
+- **Pedido:** continuar a missão de desmontar o God Context sem regressão funcional.
+- **Arquivos tocados:** `src/components/CreateLessonModal.tsx`, `src/app/financeiro/page.tsx`.
+- **Resultado:** `CreateLessonModal` passou a consumir `students` via `useStudents` e `lessons/addLesson` via `useLessons`; `Financeiro` passou a consumir `user` via `useAuth`, `lessons` via `useLessons` e `students` via `useStudents`, mantendo `useApp` apenas para estados/ações ainda transversais (payments, appConfig, sync e marcação); lint dos arquivos sem erros; build de produção OK (exit 0).
+
+### 2026-04-30 15:37:00 -03:00 — P1-B fase 3 (agenda/alunos migrados para contextos especializados)
+- **Pedido:** continuar a missão P1-B reduzindo acoplamento ao `AppContext` sem quebrar fluxo real.
+- **Arquivos tocados:** `src/app/agenda/page.tsx`, `src/app/alunos/page.tsx`.
+- **Resultado:** `Agenda` passou a consumir `user` via `useAuth()` e `lessons` via `useLessons()`; `Alunos` passou a consumir `user` via `useAuth()` e `students/approveStudent/suspendStudent/updateStudent` via `useStudents()`; `useApp()` ficou apenas para estado/transversal (`feedbacks`, `requestCheckIn`, `categories`, `payments`, `quickMessages`, `criticalData*` etc.); lint dos arquivos sem erro; build de produção OK (exit 0).
+
+### 2026-04-30 05:07:10 -03:00 — Hotfix login: sessão Supabase não bloqueia por feed
+- **Problema:** login exibindo “Falha na sessão Supabase” após deploy, com suspeita de incompatibilidade de schema do feed em produção.
+- **Arquivos tocados:** `src/lib/supabasePersistence.ts`, `src/context/AppContext.tsx`.
+- **Resultado:** `fetchFeedPostsRemote` ganhou fallback para query legacy quando colunas de moderação ainda não existem; bootstrap crítico passou a tratar feed como não-crítico (carrega `students/payments/lessons/notifications` mesmo se feed falhar), evitando bloqueio total da sessão; build OK (exit 0).
 
 ### 2026-04-30 04:28:42 -03:00 — Missão P0-C concluída (Feed do Dono + moderação)
 - **Pedido:** reintegrar “A Rede” na área do dono/admin com superpoderes de moderação e migration de banco.

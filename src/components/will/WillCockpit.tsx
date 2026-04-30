@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { usePayments } from "@/context/PaymentsContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import AppEmptyState from "@/components/ui/AppEmptyState";
@@ -86,7 +87,8 @@ const INTERACTIVE_FOCUS_RING =
 export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
-  const { payments, students, lessons, todayLessons, user, getCategory, getStudent, approveStudent, appConfig, categories, venues } =
+  const { payments } = usePayments();
+  const { students, lessons, todayLessons, user, getCategory, getStudent, approveStudent, appConfig, categories, venues } =
     useApp();
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showFinancialModal, setShowFinancialModal] = useState(false);

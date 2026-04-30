@@ -8,6 +8,9 @@ import {
   Send, Dumbbell, UserCheck, UserX, PhoneCall, DollarSign, Activity, RotateCcw, Star, Copy, Link2,
 } from "lucide-react";
 import { useApp, Student } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useStudents } from "@/context/StudentsContext";
+import { usePayments } from "@/context/PaymentsContext";
 import { useToast } from "@/components/Toast";
 import TrainingPlanEditor from "@/components/TrainingPlanEditor";
 import PerformanceEvalModal from "@/components/PerformanceEvalModal";
@@ -36,14 +39,11 @@ function Sparkline({ data, color }: { data: { status: string }[]; color: string 
 type FilterType = "all" | "active" | "pending" | "suspended" | "trial";
 
 export default function AlunosPage() {
+  const { user } = useAuth();
+  const { students, approveStudent, suspendStudent, updateStudent } = useStudents();
+  const { payments } = usePayments();
   const {
-    user,
-    students,
     categories,
-    payments,
-    approveStudent,
-    suspendStudent,
-    updateStudent,
     quickMessages,
     usingSupabaseSession,
     criticalDataLoading,

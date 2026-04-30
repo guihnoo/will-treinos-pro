@@ -7,6 +7,7 @@ import {
   ChevronRight, CheckCircle2, Clock, UserPlus
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { usePayments } from "@/context/PaymentsContext";
 import { useToast } from "@/components/Toast";
 import {
   MODAL_BADGE_ENTER,
@@ -44,9 +45,10 @@ function AnimatedNumber({ value }: { value: number }) {
 }
 
 export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLayout) {
+  const { payments, markPayment } = usePayments();
   const {
-    payments, students, todayLessons, categories, getCategory,
-    approveStudent, markPayment, updateStudent
+    students, todayLessons, categories, getCategory,
+    approveStudent, updateStudent,
   } = useApp();
   const { toast } = useToast();
   

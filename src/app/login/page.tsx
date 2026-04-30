@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, Phone } from "lucide-react";
 import Link from "next/link";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
@@ -20,7 +20,7 @@ function sanitizeNextPath(raw: string | null | undefined): string | null {
 }
 
 function LoginPageContent() {
-  const { login, loginWithPassword, loginWithOAuth } = useApp();
+  const { login, loginWithPassword, loginWithOAuth } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();

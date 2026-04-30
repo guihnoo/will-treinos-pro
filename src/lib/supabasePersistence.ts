@@ -424,13 +424,27 @@ function mapPostTime(iso: string): string {
 }
 
 export async function fetchFeedPostsRemote(supabase: SupabaseClient, currentUserId: string): Promise<Post[]> {
-  const { data, error } = await supabase
+  const modern = await supabase
     .from("feed_posts")
     .select("id,author_name,author_avatar,author_role,content,media_url,created_at,pinned,is_official,target_role,deleted_at,feed_post_comments(id,user_name,user_avatar,text,created_at),feed_post_likes(user_id)")
     .is("deleted_at", null)
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(80);
+  let data = modern.data as DbRow[] | null;
+  let error = modern.error;
+
+  // Backward compatibility: if moderation columns aren't migrated yet, fallback to legacy query.
+  if (error && /pinned|is_official|target_role|deleted_at|column/i.test(error.message)) {
+    const legacy = await supabase
+      .from("feed_posts")
+      .select("id,author_name,author_avatar,author_role,content,media_url,created_at,feed_post_comments(id,user_name,user_avatar,text,created_at),feed_post_likes(user_id)")
+      .order("created_at", { ascending: false })
+      .limit(80);
+    data = legacy.data as DbRow[] | null;
+    error = legacy.error;
+  }
+
   if (error) {
     throw new Error(`Falha ao carregar feed: ${error.message}`);
   }

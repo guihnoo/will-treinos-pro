@@ -9,6 +9,7 @@ import {
   Volleyball
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { usePayments } from "@/context/PaymentsContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import KPIDetailModal from "@/components/KPIDetailModal";
@@ -104,11 +105,12 @@ function AlertCard({ icon: Icon, text, color, link, delay }: {
 
 export default function AdminDashboardHome() {
   const {
-    todayLessons, students, categories, notifications, payments,
-    unreadNotifications, pendingStudents, latePayments,
+    todayLessons, students, categories, notifications,
+    unreadNotifications, pendingStudents,
     monthlyRevenue, activeStudents, checkInStudent,
-    getStudent, getCategory
+    getStudent, getCategory,
   } = useApp();
+  const { latePayments } = usePayments();
 
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
   const [kpiModal, setKpiModal] = useState<"revenue" | "students" | "lessons" | "late" | null>(null);

@@ -7,9 +7,9 @@ alwaysApply: true
 
 Ao **encerrar** uma resposta que inclua alterações de código, correções de bug, migrations, ou decisões de produto relevantes:
 
-1. Abra **`WILLPRO - MASTER MEMORY/REGISTRO_INTERACOES.md`**.
-2. **Insira no topo** (abaixo do protocolo e do separador `---`) uma nova entrada com:
-   - **Título:** `### yyyy-MM-dd HH:mm:ss -03:00 — título curto` (use o fuso real do ambiente se diferente).
-   - **Corpo:** bullets com pedido do usuário, arquivos tocados e resultado (ex.: build OK).
+1. Abra **`WILLPRO_MASTER_MEMORY.md`**.
+2. **Adicione uma linha** no bloco **`3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL`** com:
+   - **Formato:** `- **[DD/MM/AAAA HH:MM BRT] (Cursor):** [descrição técnica completa da mudança]`
+   - **Conteúdo mínimo:** o que foi pedido, arquivos tocados e resultado (ex.: build OK).
 
-Não apagar entradas antigas. Não duplicar o log em `CURSOR_PROMPT_WILLPRO.md` (apenas ponteiro).
+Não apagar entradas antigas. Não duplicar o log em outros arquivos de memória.

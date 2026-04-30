@@ -3,6 +3,10 @@ import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wallet, CheckCircle2, Clock, AlertTriangle, TrendingUp, TrendingDown, DollarSign, QrCode, Copy, Check, X, PhoneCall, CalendarRange, ChevronRight, Send, Upload, FileText, Eye, RotateCcw } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+   import { useAuth } from "@/context/AuthContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
+import { usePayments } from "@/context/PaymentsContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppPageHeader from "@/components/ui/AppPageHeader";
@@ -277,7 +281,10 @@ function PaymentModal({
 
 /* ─── ALUNO VIEW ─── */
 function AlunoFinanceiro() {
-  const { user, payments, lessons, submitStudentPaymentProof, appConfig, usingSupabaseSession, criticalDataLoading, criticalDataError } = useApp();
+  const { user } = useAuth();
+  const { lessons } = useLessons();
+  const { payments, submitStudentPaymentProof } = usePayments();
+  const { appConfig, usingSupabaseSession, criticalDataLoading, criticalDataError } = useApp();
   const { toast } = useToast();
   const [selectedPay, setSelectedPay] = useState<string|null>(null);
   const myPayments = useMemo(()=>payments.filter(p=>p.studentId===user?.id).sort((a,b)=>new Date(b.dueDate).getTime()-new Date(a.dueDate).getTime()),[payments,user]);
@@ -367,7 +374,7 @@ function AlunoFinanceiro() {
 
 /* ─── COACH VIEW ─── */
 function CoachFinanceiro() {
-  const { lessons } = useApp();
+  const { lessons } = useLessons();
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   const monthLessons = lessons.filter(l=>l.date.startsWith(thisMonth)&&l.status==="completed");
@@ -556,7 +563,9 @@ function AdminPaymentDetailModal({
 
 /* ─── ADMIN VIEW ─── */
 function AdminFinanceiro() {
-  const { payments, students, markPayment, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync } = useApp();
+  const { students } = useStudents();
+  const { payments, markPayment } = usePayments();
+  const { usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync } = useApp();
   const { toast } = useToast();
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const [filter, setFilter] = useState<"all"|"paid"|"pending"|"late"|"proof_pending">("all");
@@ -757,7 +766,7 @@ function AdminFinanceiro() {
 
 /* ─── ROUTER ─── */
 export default function FinanceiroPage() {
-  const { user } = useApp();
+  const { user } = useAuth();
   if (user?.role === "aluno") return <AlunoFinanceiro/>;
   if (user?.role === "coach") return <CoachFinanceiro/>;
   return <AdminFinanceiro/>;

@@ -40,3 +40,10 @@ next-env.d.ts
 
 # java (present in folder)
 /oracleJdk-26
+
+# Supabase CLI local cache
+supabase/.temp/
+
+# next-pwa (gerados em `next build` — a Vercel recria no deploy)
+public/sw.js
+public/workbox-*.js

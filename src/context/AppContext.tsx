@@ -208,6 +208,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return "admin";
   });
   const supabaseAuthUserRef = useRef<SupabaseAuthUser | null>(null);
+  /** Evita tela global de loading a cada TOKEN_REFRESHED — só o 1º bootstrap (ou retry explícito) bloqueia o shell. */
+  const criticalBootstrapDoneRef = useRef(false);
+  const criticalLoadInflightRef = useRef<Promise<void> | null>(null);
   const [adminMode, setAdminMode] = useState<"dashboard" | "coach">("dashboard");
   const [isMounted, setIsMounted] = useState(false);
   /** Bumps on local calendar day change so todayLessons / revenue stay correct overnight. */
@@ -426,43 +429,79 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const isDevRoot = useMemo(() => isDevRootEmail(user?.email), [user?.email]);
 
-  const loadSupabaseCriticalData = useCallback(async () => {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCriticalDataError("Cliente Supabase indisponível.");
-      return;
-    }
-    setCriticalDataLoading(true);
-    setCriticalDataError(null);
-    setStudents([]);
-    setPayments([]);
-    setLessons([]);
-    setNotifications([]);
-    setPosts([]);
-    try {
-      const currentUserId = supabaseAuthUserRef.current?.id || "";
-      const [data, livePosts] = await withNetworkTimeout(
-        Promise.all([fetchLiveAppData(supabase), fetchFeedPostsRemote(supabase, currentUserId)]),
-        CRITICAL_DATA_FETCH_TIMEOUT_MS,
-        "A sincronização demorou demais. Verifique sua conexão e use Tentar novamente.",
-      );
-      setStudents(data.students);
-      setPayments(data.payments);
-      setLessons(data.lessons);
-      setNotifications(data.notifications);
-      setPosts(livePosts);
-      if (supabaseAuthUserRef.current) {
-        applySupabaseSession(supabaseAuthUserRef.current, data.students);
+  const loadSupabaseCriticalData = useCallback(
+    async (options?: { forceBlocking?: boolean }) => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setCriticalDataError("Cliente Supabase indisponível.");
+        criticalBootstrapDoneRef.current = true;
+        return;
       }
-    } catch (error) {
-      setCriticalDataError(error instanceof Error ? error.message : "Falha ao sincronizar dados ao vivo com Supabase.");
-    } finally {
-      setCriticalDataLoading(false);
-    }
-  }, [applySupabaseSession]);
+
+      if (criticalLoadInflightRef.current) {
+        await criticalLoadInflightRef.current;
+        return;
+      }
+
+      const forceBlocking = options?.forceBlocking === true;
+      const blockingSpinner = forceBlocking || !criticalBootstrapDoneRef.current;
+
+      const promise = (async () => {
+        if (blockingSpinner) setCriticalDataLoading(true);
+        setCriticalDataError(null);
+        setStudents([]);
+        setPayments([]);
+        setLessons([]);
+        setNotifications([]);
+        setPosts([]);
+        try {
+          const currentUserId = supabaseAuthUserRef.current?.id || "";
+          const data = await withNetworkTimeout(
+            fetchLiveAppData(supabase),
+            CRITICAL_DATA_FETCH_TIMEOUT_MS,
+            "A sincronização demorou demais. Verifique sua conexão e use Tentar novamente.",
+          );
+          let livePosts: Post[] = [];
+          try {
+            livePosts = await withNetworkTimeout(
+              fetchFeedPostsRemote(supabase, currentUserId),
+              CRITICAL_DATA_FETCH_TIMEOUT_MS,
+              "Feed indisponível no momento.",
+            );
+          } catch {
+            // Feed is non-critical for session bootstrap; keep login unlocked and show empty feed.
+            livePosts = [];
+          }
+          setStudents(data.students);
+          setPayments(data.payments);
+          setLessons(data.lessons);
+          setNotifications(data.notifications);
+          setPosts(livePosts);
+          if (supabaseAuthUserRef.current) {
+            applySupabaseSession(supabaseAuthUserRef.current, data.students);
+          }
+        } catch (error) {
+          setCriticalDataError(
+            error instanceof Error ? error.message : "Falha ao sincronizar dados ao vivo com Supabase.",
+          );
+        } finally {
+          if (blockingSpinner) setCriticalDataLoading(false);
+          criticalBootstrapDoneRef.current = true;
+        }
+      })();
+
+      criticalLoadInflightRef.current = promise;
+      try {
+        await promise;
+      } finally {
+        criticalLoadInflightRef.current = null;
+      }
+    },
+    [applySupabaseSession],
+  );
 
   const retryCriticalDataSync = useCallback(async () => {
-    await loadSupabaseCriticalData();
+    await loadSupabaseCriticalData({ forceBlocking: true });
   }, [loadSupabaseCriticalData]);
 
   // Bridge local-first state with real Supabase auth session.
@@ -507,6 +546,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (event === "SIGNED_OUT") {
         setUsingSupabaseSession(false);
         supabaseAuthUserRef.current = null;
+        criticalBootstrapDoneRef.current = false;
         setUser(null);
         localStorage.removeItem("will-role");
         syncWtRoleCookie(null);

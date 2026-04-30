@@ -9,6 +9,7 @@ import {
   Settings, LogOut, Dumbbell, Bell, User, Zap
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { usePayments } from "@/context/PaymentsContext";
 import NotificationsDrawer from "@/components/NotificationsDrawer";
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -19,13 +20,14 @@ import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
 const ALLOWED_ROUTES: Record<string, string[]> = {
   admin:  ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
   coach:  ["/dashboard", "/agenda", "/feed", "/alunos", "/perfil"],
-  aluno:  ["/dashboard", "/agenda", "/feed", "/financeiro", "/treinos", "/perfil"],
+  aluno:  ["/dashboard", "/agenda", "/feed", "/financeiro", "/treinos", "/perfil", "/configuracoes"],
 };
 
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, unreadNotifications, pendingStudents, latePayments, adminMode, setAdminMode } = useApp();
+  const { user, logout, unreadNotifications, pendingStudents, adminMode, setAdminMode } = useApp();
+  const { latePayments } = usePayments();
   const [showNotifs, setShowNotifs] = useState(false);
 
   // Route guard — redireciona roles restritos para /dashboard
@@ -71,6 +73,8 @@ export function Navigation() {
   };
 
   const navItems = getNavItems();
+  /** Itens da barra inferior: evita duplicar «Perfil» (já existe atalho dedicado ao lado do sino). */
+  const mobilePrimaryNavItems = navItems.filter((item) => item.href !== "/perfil");
   const showOfflineBanner = !pathname.startsWith("/will");
 
   return (
@@ -184,7 +188,7 @@ export function Navigation() {
 
       {/* MOBILE BOTTOM BAR */}
       <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-[#0A0A0A]/95 backdrop-blur-xl border border-zinc-800 z-50 rounded-2xl flex justify-around items-center p-2.5 shadow-2xl">
-        {navItems.slice(0, 5).map((item) => {
+        {mobilePrimaryNavItems.slice(0, 5).map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 
