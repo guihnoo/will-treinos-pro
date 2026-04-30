@@ -19,7 +19,7 @@ const sizeMap = {
 function isPhotoUrl(value?: string | null): boolean {
   if (!value) return false;
   const trimmed = value.trim();
-  return trimmed.startsWith("data:image/") || trimmed.startsWith("blob:") || trimmed.startsWith("http") || trimmed.startsWith("/");
+  return trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("/");
 }
 
 function initialsFromName(name: string): string {

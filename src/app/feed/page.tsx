@@ -1,32 +1,46 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, MessageCircle, Share2, Camera, Image as ImageIcon,
-  BadgeCheck, Send, X, Bookmark, SmilePlus, Plus, CheckCircle2
+  BadgeCheck, Send, X, Bookmark, SmilePlus, Plus, CheckCircle2, MoreVertical, Pin, Trash2, Trophy, AlertTriangle
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
-import { MOCK_STORIES } from "@/context/mockData";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppEmptyState from "@/components/ui/AppEmptyState";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
+import { compressImageFileToDataUrl } from "@/lib/imageCompress";
+
+function resolveStoryAvatarSrc(avatar: string): string {
+  if (!avatar) return "https://api.dicebear.com/7.x/avataaars/svg?seed=user";
+  if (avatar.startsWith("data:") || avatar.startsWith("http://") || avatar.startsWith("https://")) return avatar;
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(avatar)}`;
+}
 
 // ─── New Post Composer ───────────────────────────────────────────────────────
 function PostComposer({
-  user, onClose, onPublish
+  user, onClose, onPublish, isAdminOfficialMode
 }: {
   user: { name: string; avatar: string; role: string } | null;
   onClose: () => void;
-  onPublish: (text: string, media: string | null) => void;
+  onPublish: (
+    text: string,
+    media: string | null,
+    options?: { pinned?: boolean; isOfficial?: boolean; targetRole?: "all" | "student" | "coach" },
+  ) => void;
+  isAdminOfficialMode?: boolean;
 }) {
+  const { toast } = useToast();
   const [text, setText] = useState("");
   const [previewImg, setPreviewImg] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [pinAsAnnouncement, setPinAsAnnouncement] = useState(false);
+  const [targetRole, setTargetRole] = useState<"all" | "student" | "coach">("all");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -38,21 +52,27 @@ function PostComposer({
     return () => clearTimeout(timer);
   }, []);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setPreviewImg(ev.target?.result as string);
-    reader.readAsDataURL(file);
-    // reset so same file can be picked again
     e.target.value = "";
+    if (!file) return;
+    try {
+      const dataUrl = await compressImageFileToDataUrl(file);
+      setPreviewImg(dataUrl);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Não foi possível usar esta imagem.", "error");
+    }
   };
 
   const handlePublish = async () => {
     if (!text.trim() && !previewImg) return;
     setPublishing(true);
     await new Promise(r => setTimeout(r, 600)); // brief animation delay
-    onPublish(text, previewImg);
+    onPublish(text, previewImg, {
+      pinned: isAdminOfficialMode ? pinAsAnnouncement : false,
+      isOfficial: Boolean(isAdminOfficialMode),
+      targetRole: isAdminOfficialMode ? targetRole : "all",
+    });
     setPublishing(false);
   };
 
@@ -111,6 +131,27 @@ function PostComposer({
               rows={4}
               className="w-full bg-transparent text-white placeholder-zinc-600 border-none outline-none resize-none text-[16px] leading-relaxed"
             />
+            {isAdminOfficialMode && (
+              <div className="mt-3 rounded-2xl border border-yellow-500/35 bg-yellow-500/5 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-yellow-300">Comunicado Oficial 📢</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPinAsAnnouncement((v) => !v)}
+                    className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold ${pinAsAnnouncement ? "border-yellow-400/60 bg-yellow-500/20 text-yellow-200" : "border-zinc-700 bg-zinc-900 text-zinc-300"} ${ctaClass}`}>
+                    📌 Fixar como anúncio
+                  </button>
+                  <select
+                    value={targetRole}
+                    onChange={(e) => setTargetRole(e.target.value as "all" | "student" | "coach")}
+                    className={`rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[11px] font-bold text-zinc-200 ${ctaClass}`}>
+                    <option value="all">Todos</option>
+                    <option value="student">Apenas Alunos</option>
+                    <option value="coach">Apenas Professores</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* Image preview */}
             <AnimatePresence>
@@ -180,6 +221,8 @@ export default function FeedPage() {
     addPost,
     togglePostLike,
     addPostComment,
+    moderatePost,
+    softDeletePost,
     usingSupabaseSession,
     criticalDataLoading,
     criticalDataError,
@@ -190,7 +233,40 @@ export default function FeedPage() {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [doubleTapId, setDoubleTapId] = useState<string | null>(null);
   const [showComposer, setShowComposer] = useState(false);
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
+  const [confirmDeletePostId, setConfirmDeletePostId] = useState<string | null>(null);
+  const [alertPostId, setAlertPostId] = useState<string | null>(null);
+  const [alertMessage, setAlertMessage] = useState("");
   const tapRef = useRef<Record<string, number>>({});
+  const isAdmin = user?.role === "admin";
+  const visiblePosts = useMemo(() => {
+    if (!user) return posts;
+    return posts.filter((post) => {
+      if (!post.targetRole || post.targetRole === "all") return true;
+      if (post.targetRole === "student") return user.role === "aluno" || user.role === "admin";
+      if (post.targetRole === "coach") return user.role === "coach" || user.role === "admin";
+      return true;
+    });
+  }, [posts, user]);
+  const liveStories = useMemo(() => {
+    const seen = new Set<string>();
+    return posts
+      .filter((post) => post.user?.name && post.user?.avatar)
+      .slice(0, 30)
+      .filter((post) => {
+        const key = `${post.user.name}::${post.user.avatar}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 8)
+      .map((post, idx) => ({
+        id: `live-${idx}-${post.id}`,
+        name: post.user.name,
+        avatar: post.user.avatar,
+        hasNew: idx < 3,
+      }));
+  }, [posts]);
 
   // Get student profile for avatar (may be custom photo)
   const profile = students.find(s => s.id === user?.id);
@@ -209,7 +285,11 @@ export default function FeedPage() {
     tapRef.current[postId] = now;
   };
 
-  const handlePublish = (text: string, media: string | null) => {
+  const handlePublish = (
+    text: string,
+    media: string | null,
+    options?: { pinned?: boolean; isOfficial?: boolean; targetRole?: "all" | "student" | "coach" },
+  ) => {
     if (!text.trim() && !media) return;
     addPost({
       user: {
@@ -224,6 +304,9 @@ export default function FeedPage() {
       comments: [],
       isLiked: false,
       isSaved: false,
+      pinned: options?.pinned ?? false,
+      isOfficial: options?.isOfficial ?? false,
+      targetRole: options?.targetRole ?? "all",
     });
     setShowComposer(false);
     toast("🏐 Post publicado na Rede!");
@@ -240,7 +323,7 @@ export default function FeedPage() {
 
   if (usingSupabaseSession && criticalDataLoading) {
     return (
-      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-4">
+      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))]">
         <AppPageHeader title="Rede Will Treinos" subtitle="Sincronizando comunidade ao vivo..." icon={SmilePlus} />
         <div className="space-y-3">
           <SkeletonLoader className="h-20" lines={2} />
@@ -253,7 +336,7 @@ export default function FeedPage() {
 
   if (usingSupabaseSession && criticalDataError) {
     return (
-      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-4">
+      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))]">
         <AppPageHeader
           title="Rede Will Treinos"
           subtitle="Falha de sincronização. Tente novamente sem recarregar."
@@ -277,7 +360,7 @@ export default function FeedPage() {
     <div className="max-w-2xl mx-auto border-x border-zinc-900 min-h-screen relative pb-28">
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-xl border-b border-zinc-900 px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-xl border-b border-zinc-900 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between">
         <div>
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.18em]">Will Comunidade</p>
           <h1 className="text-xl font-black text-white">
@@ -314,11 +397,12 @@ export default function FeedPage() {
           <span className="text-[10px] text-zinc-500 font-medium">Você</span>
         </motion.div>
 
-        {MOCK_STORIES.map(s => (
+        {liveStories.map(s => (
           <motion.div key={s.id} whileTap={{ scale: 0.95 }}
             className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0">
             <div className={`w-16 h-16 rounded-full p-[2px] ${s.hasNew ? "bg-gradient-to-br from-[#EAB308] to-[#F97316]" : "bg-zinc-800"}`}>
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${s.avatar}`}
+              <img src={resolveStoryAvatarSrc(s.avatar)}
+                alt=""
                 className="w-full h-full rounded-full border-2 border-black object-cover" />
             </div>
             <span className={`text-[10px] font-medium ${s.hasNew ? "text-white" : "text-zinc-500"}`}>{s.name}</span>
@@ -337,7 +421,7 @@ export default function FeedPage() {
           className="border-zinc-900/70 bg-transparent"
         >
       <div className="flex flex-col">
-        {posts.length === 0 && (
+        {visiblePosts.length === 0 && (
           <div className="px-4 py-12">
             <AppEmptyState
               icon={ImageIcon}
@@ -349,13 +433,13 @@ export default function FeedPage() {
           </div>
         )}
 
-        {posts.map((post, i) => (
+        {visiblePosts.map((post, i) => (
           <motion.article
             key={post.id}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="border-b border-zinc-900">
+            className={`border-b border-zinc-900 ${post.pinned ? "border border-yellow-500/40 bg-yellow-500/5 shadow-[0_0_18px_rgba(234,179,8,0.08)]" : ""}`}>
 
             {/* Post Header */}
             <div className="flex items-center justify-between p-4 pb-2">
@@ -373,7 +457,55 @@ export default function FeedPage() {
                   </div>
                   <span className="text-xs text-zinc-500">{post.time}</span>
                 </div>
+                <div className="flex flex-col gap-1">
+                  {post.pinned ? <span className="text-[10px] font-bold text-yellow-300">📌 Fixado</span> : null}
+                  {post.isOfficial ? <span className="text-[10px] font-bold text-yellow-200">✅ Comunicado Oficial</span> : null}
+                </div>
               </div>
+              {isAdmin ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOpenMenuPostId((prev) => (prev === post.id ? null : post.id))}
+                    className={`rounded-lg border border-zinc-700 p-2 text-zinc-400 hover:text-white ${FOCUS_RING_GOLD}`}>
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                  <AnimatePresence>
+                    {openMenuPostId === post.id ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        className="absolute right-0 top-11 z-20 w-52 rounded-xl border border-zinc-800 bg-black/95 p-1.5 shadow-2xl backdrop-blur-xl">
+                        <button
+                          type="button"
+                          onClick={() => { moderatePost(post.id, { pinned: !post.pinned }); setOpenMenuPostId(null); toast(post.pinned ? "Post desafixado." : "Post fixado no topo."); }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-zinc-200 hover:bg-zinc-900 ${FOCUS_RING_GOLD}`}>
+                          <Pin className="h-4 w-4 text-yellow-300" /> {post.pinned ? "Desfixar post" : "Fixar post"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { moderatePost(post.id, { isOfficial: !post.isOfficial }); setOpenMenuPostId(null); toast(post.isOfficial ? "Removido selo oficial." : "Marcado como comunicado oficial."); }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-zinc-200 hover:bg-zinc-900 ${FOCUS_RING_GOLD}`}>
+                          <Trophy className="h-4 w-4 text-yellow-300" /> {post.isOfficial ? "Remover oficial" : "Marcar como oficial"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setAlertPostId(post.id); setOpenMenuPostId(null); }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-zinc-200 hover:bg-zinc-900 ${FOCUS_RING_GOLD}`}>
+                          <AlertTriangle className="h-4 w-4 text-amber-300" /> Alertar usuário
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setConfirmDeletePostId(post.id); setOpenMenuPostId(null); }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-red-300 hover:bg-red-500/10 ${FOCUS_RING_GOLD}`}>
+                          <Trash2 className="h-4 w-4" /> Remover post
+                        </button>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              ) : null}
             </div>
 
             {/* Content */}
@@ -515,8 +647,65 @@ export default function FeedPage() {
             user={user ? { name: user.name, avatar: profile?.avatar || user.avatar, role: user.role } : null}
             onClose={() => setShowComposer(false)}
             onPublish={handlePublish}
+            isAdminOfficialMode={isAdmin}
           />
         )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {confirmDeletePostId ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[240] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+            onClick={() => setConfirmDeletePostId(null)}>
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 26 }}
+              className="w-full max-w-sm rounded-2xl border border-white/10 bg-black/70 p-4 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}>
+              <p className="text-sm font-bold text-white">Remover este post?</p>
+              <p className="mt-1 text-xs text-zinc-400">A remoção é feita com soft-delete e some do feed público.</p>
+              <div className="mt-4 flex gap-2">
+                <button type="button" onClick={() => setConfirmDeletePostId(null)} className={`flex-1 rounded-xl border border-zinc-700 px-3 py-2 text-xs font-bold text-zinc-300 ${FOCUS_RING_GOLD}`}>Cancelar</button>
+                <button type="button" onClick={() => { softDeletePost(confirmDeletePostId); setConfirmDeletePostId(null); toast("Post removido da Rede."); }} className={`flex-1 rounded-xl border border-red-500/40 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-200 ${FOCUS_RING_GOLD}`}>Remover</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {alertPostId ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[240] flex flex-col justify-end bg-black/80 backdrop-blur-md"
+            onClick={() => setAlertPostId(null)}>
+            <motion.div
+              initial={{ y: 120 }}
+              animate={{ y: 0 }}
+              exit={{ y: 120 }}
+              transition={{ type: "spring", stiffness: 280, damping: 28 }}
+              className="w-full rounded-t-3xl border-t border-zinc-700 bg-[#0A0A0A] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+              onClick={(e) => e.stopPropagation()}>
+              <p className="text-sm font-bold text-white">Alertar usuário do post</p>
+              <textarea
+                rows={3}
+                value={alertMessage}
+                onChange={(e) => setAlertMessage(e.target.value)}
+                placeholder="Escreva um aviso privado para este usuário..."
+                className="mt-3 w-full rounded-xl border border-zinc-700 bg-black/70 px-3 py-2 text-sm text-white outline-none"
+              />
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={() => setAlertPostId(null)} className={`flex-1 rounded-xl border border-zinc-700 px-3 py-2 text-xs font-bold text-zinc-300 ${FOCUS_RING_GOLD}`}>Cancelar</button>
+                <button type="button" onClick={() => { if (!alertMessage.trim()) { toast("Escreva a mensagem de alerta.", "error"); return; } toast("Alerta registrado (camada privada pronta para integrar notifications)."); setAlertMessage(""); setAlertPostId(null); }} className={`flex-1 rounded-xl bg-[#EAB308] px-3 py-2 text-xs font-bold text-black ${FOCUS_RING_GOLD}`}>Enviar alerta</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
       </AnimatePresence>
     </div>
   );

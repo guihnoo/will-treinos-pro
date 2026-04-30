@@ -71,7 +71,7 @@ export interface Payment {
   /** Aluno registra texto / referência do comprovante PIX (Will confirma "Pago" no painel admin). */
   studentProofNote?: string;
   studentProofSubmittedAt?: string | null;
-  /** Foto ou PDF do comprovante (data URL, persistido localmente — limite de tamanho no app). */
+  /** URL assinada/pública do comprovante armazenado no Supabase Storage. */
   studentProofDataUrl?: string;
   studentProofFileName?: string;
   studentProofMime?: string;
@@ -117,6 +117,10 @@ export interface Post {
   comments: { user: string; avatar: string; text: string; time: string }[];
   isLiked: boolean;
   isSaved: boolean;
+  pinned?: boolean;
+  isOfficial?: boolean;
+  targetRole?: "all" | "student" | "coach";
+  deletedAt?: string | null;
 }
 
 // ─── Student Lesson Feedback ────────────────────────────────────────────────

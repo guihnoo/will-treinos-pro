@@ -11,6 +11,8 @@ import { useApp, type Student } from "@/context/AppContext";
 import { resolveStudentProfilePolicy } from "@/lib/studentProfilePolicy";
 import { useToast } from "@/components/Toast";
 import { useRouter } from "next/navigation";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import { uploadAvatarToStorage } from "@/lib/supabasePersistence";
 
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -26,7 +28,7 @@ const resolveAvatarSrc = (avatar: string | null | undefined, fallbackSeed: strin
 };
 
 export default function PerfilPage() {
-  const { user, students, feedbacks, lessons, updateStudent, updateUser, logout, appConfig } = useApp();
+  const { user, students, feedbacks, lessons, updateStudent, updateUser, logout, appConfig, usingSupabaseSession } = useApp();
   const profilePolicy = useMemo(() => resolveStudentProfilePolicy(appConfig), [appConfig]);
   const isStudent = user?.role === "aluno";
   const canEditField = (key: keyof typeof profilePolicy) => !isStudent || profilePolicy[key];
@@ -68,11 +70,35 @@ export default function PerfilPage() {
     }
   };
 
-  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast("Arquivo inválido. Selecione uma imagem.");
+      return;
+    }
+    if (usingSupabaseSession) {
+      const supabase = getSupabaseClient();
+      const storageUserId = user?.authSubjectId || profile?.authUserId || "";
+      if (!supabase || !storageUserId) {
+        toast("Sessão indisponível para upload da foto.", "error");
+        return;
+      }
+      try {
+        const avatarUrl = await uploadAvatarToStorage(supabase, storageUserId, file);
+        setCustomPhoto(null);
+        setAvatar(avatarUrl);
+        if (profile?.id) {
+          updateStudent(profile.id, { avatar: avatarUrl });
+        } else if (user?.id) {
+          updateUser(user.id, { avatar: avatarUrl });
+        }
+        setShowPhotoSheet(false);
+        toast("📸 Foto enviada e salva!");
+      } catch (error) {
+        toast(error instanceof Error ? error.message : "Não foi possível enviar a foto.", "error");
+      }
       return;
     }
     const reader = new FileReader();
@@ -108,7 +134,6 @@ export default function PerfilPage() {
       img.src = raw;
     };
     reader.readAsDataURL(file);
-    e.target.value = "";
   };
 
   const handleSave = () => {

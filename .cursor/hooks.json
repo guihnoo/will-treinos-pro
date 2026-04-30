@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "PostToolUse": {
+      "matcher": "Edit|Write",
+      "filePattern": "\\.(ts|tsx|sql|mdc)$",
+      "prompt": "Tarefa de código concluída. Invoque o subagente @memory-logger para registrar a mudança no WILLPRO_MASTER_MEMORY.md (seção 3) seguindo o formato obrigatório e confirmando com '✅ Registrado no Master Memory'."
+    }
+  }
+}

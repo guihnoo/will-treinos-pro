@@ -4,10 +4,11 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { ClipboardList, LayoutGrid, ChevronLeft, Sparkles } from "lucide-react";
+import { ClipboardList, LayoutGrid, ChevronLeft, Sparkles, Newspaper } from "lucide-react";
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
 
 const NAV = [
+  { href: "/feed", label: "A Rede (moderação)", icon: Newspaper },
   { href: "/will/court", label: "Prancheta da Quadra", icon: ClipboardList },
   { href: "/will/evaluations/templates", label: "Motor de Avaliação", icon: LayoutGrid },
 ];

@@ -7,6 +7,7 @@ import type {
   Notification,
   Payment,
   PaymentStatus,
+  Post,
   Student,
   StudentStatus,
 } from "@/context/types";
@@ -89,6 +90,51 @@ function serializeStudentPatch(patch: Partial<Student>) {
   if (patch.professorNotes !== undefined) payload.professor_notes = patch.professorNotes;
   if (patch.attendanceHistory !== undefined) payload.attendance_history = patch.attendanceHistory;
   if (patch.authUserId !== undefined) payload.auth_user_id = patch.authUserId;
+  return payload;
+}
+
+function serializeLesson(lesson: Lesson) {
+  return {
+    id: lesson.id,
+    category_id: lesson.categoryId,
+    title: lesson.title,
+    date: lesson.date,
+    start_time: lesson.startTime,
+    end_time: lesson.endTime,
+    max_students: lesson.maxStudents,
+    lesson_type: lesson.lessonType ?? null,
+    location_url: lesson.locationUrl ?? null,
+    enrolled_students: lesson.enrolledStudents ?? [],
+    present_students: lesson.presentStudents ?? [],
+    absent_students: lesson.absentStudents ?? [],
+    waitlist: lesson.waitlist ?? [],
+    status: lesson.status,
+    venue_id: lesson.venueId,
+    notes: lesson.notes ?? "",
+    is_trial: lesson.isTrial ?? false,
+    check_in_requests: lesson.checkInRequests ?? [],
+  };
+}
+
+function serializeLessonPatch(patch: Partial<Lesson>) {
+  const payload: Record<string, unknown> = {};
+  if (patch.categoryId !== undefined) payload.category_id = patch.categoryId;
+  if (patch.title !== undefined) payload.title = patch.title;
+  if (patch.date !== undefined) payload.date = patch.date;
+  if (patch.startTime !== undefined) payload.start_time = patch.startTime;
+  if (patch.endTime !== undefined) payload.end_time = patch.endTime;
+  if (patch.maxStudents !== undefined) payload.max_students = patch.maxStudents;
+  if (patch.lessonType !== undefined) payload.lesson_type = patch.lessonType ?? null;
+  if (patch.locationUrl !== undefined) payload.location_url = patch.locationUrl ?? null;
+  if (patch.enrolledStudents !== undefined) payload.enrolled_students = patch.enrolledStudents;
+  if (patch.presentStudents !== undefined) payload.present_students = patch.presentStudents;
+  if (patch.absentStudents !== undefined) payload.absent_students = patch.absentStudents;
+  if (patch.waitlist !== undefined) payload.waitlist = patch.waitlist;
+  if (patch.status !== undefined) payload.status = patch.status;
+  if (patch.venueId !== undefined) payload.venue_id = patch.venueId;
+  if (patch.notes !== undefined) payload.notes = patch.notes;
+  if (patch.isTrial !== undefined) payload.is_trial = patch.isTrial;
+  if (patch.checkInRequests !== undefined) payload.check_in_requests = patch.checkInRequests;
   return payload;
 }
 
@@ -230,6 +276,34 @@ export async function createStudentRemote(supabase: SupabaseClient, student: Stu
   return mapStudent((data || {}) as DbRow);
 }
 
+export async function createLessonRemote(supabase: SupabaseClient, lesson: Lesson): Promise<Lesson> {
+  const { data, error } = await supabase.from("lessons").insert(serializeLesson(lesson)).select("*").single();
+  if (error) {
+    throw new Error(`Falha ao criar aula: ${error.message}`);
+  }
+  return mapLesson((data || {}) as DbRow);
+}
+
+export async function updateLessonRemote(
+  supabase: SupabaseClient,
+  lessonId: string,
+  updates: Partial<Lesson>,
+): Promise<void> {
+  const payload = serializeLessonPatch(updates);
+  if (Object.keys(payload).length === 0) return;
+  const { error } = await supabase.from("lessons").update(payload).eq("id", lessonId);
+  if (error) {
+    throw new Error(`Falha ao atualizar aula: ${error.message}`);
+  }
+}
+
+export async function deleteLessonRemote(supabase: SupabaseClient, lessonId: string): Promise<void> {
+  const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
+  if (error) {
+    throw new Error(`Falha ao remover aula: ${error.message}`);
+  }
+}
+
 export async function markPaymentPaidRemote(supabase: SupabaseClient, id: string) {
   const { data, error } = await supabase
     .from("payments")
@@ -244,12 +318,52 @@ export async function markPaymentPaidRemote(supabase: SupabaseClient, id: string
   return mapPayment((data || {}) as DbRow);
 }
 
+export async function uploadAvatarToStorage(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File,
+): Promise<string> {
+  const cleanUserId = userId.trim();
+  if (!cleanUserId) throw new Error("ID de usuário inválido para upload de avatar.");
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${cleanUserId}/avatar-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
+  if (uploadError) throw new Error(`Falha ao enviar avatar: ${uploadError.message}`);
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  if (!data?.publicUrl) throw new Error("Não foi possível obter URL pública do avatar.");
+  return data.publicUrl;
+}
+
+export async function uploadPaymentProofToStorage(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File,
+): Promise<string> {
+  const cleanUserId = userId.trim();
+  if (!cleanUserId) throw new Error("ID do usuário inválido para comprovante.");
+  const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+  const path = `${cleanUserId}/proof-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from("payment-proofs")
+    .upload(path, file, { upsert: false, contentType: file.type || "application/octet-stream" });
+  if (uploadError) throw new Error(`Falha ao enviar comprovante: ${uploadError.message}`);
+  const { data, error: signedError } = await supabase.storage
+    .from("payment-proofs")
+    .createSignedUrl(path, 60 * 60 * 24 * 30);
+  if (signedError || !data?.signedUrl) {
+    throw new Error(`Falha ao gerar URL do comprovante: ${signedError?.message || "sem URL assinada"}`);
+  }
+  return data.signedUrl;
+}
+
 export async function submitStudentProofRemote(
   supabase: SupabaseClient,
   id: string,
   payload: {
     note: string;
-    attachment?: { dataUrl: string; fileName: string; mime: string } | null;
+    attachment?: { url: string; fileName: string; mime: string } | null;
   },
 ) {
   const base: Record<string, unknown> = {
@@ -261,7 +375,7 @@ export async function submitStudentProofRemote(
     base.student_proof_file_name = null;
     base.student_proof_mime = null;
   } else if (payload.attachment) {
-    base.student_proof_data_url = payload.attachment.dataUrl;
+    base.student_proof_data_url = payload.attachment.url;
     base.student_proof_file_name = payload.attachment.fileName;
     base.student_proof_mime = payload.attachment.mime;
   }
@@ -295,4 +409,180 @@ export async function fetchStaffAccessRole(
   const role = String((data as DbRow | null)?.role || "").toLowerCase();
   if (role === "admin" || role === "coach") return role;
   return null;
+}
+
+function mapPostTime(iso: string): string {
+  if (!iso) return "agora";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "agora";
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export async function fetchFeedPostsRemote(supabase: SupabaseClient, currentUserId: string): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from("feed_posts")
+    .select("id,author_name,author_avatar,author_role,content,media_url,created_at,pinned,is_official,target_role,deleted_at,feed_post_comments(id,user_name,user_avatar,text,created_at),feed_post_likes(user_id)")
+    .is("deleted_at", null)
+    .order("pinned", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(80);
+  if (error) {
+    throw new Error(`Falha ao carregar feed: ${error.message}`);
+  }
+
+  return (data || []).map((row: DbRow) => {
+    const likes = Array.isArray(row.feed_post_likes) ? (row.feed_post_likes as DbRow[]) : [];
+    const commentsRaw = Array.isArray(row.feed_post_comments) ? (row.feed_post_comments as DbRow[]) : [];
+    const comments = commentsRaw
+      .sort((a, b) => asString(a.created_at).localeCompare(asString(b.created_at)))
+      .map((comment) => ({
+        user: asString(comment.user_name, "Usuário"),
+        avatar: asString(comment.user_avatar, "user"),
+        text: asString(comment.text),
+        time: mapPostTime(asString(comment.created_at)),
+      }));
+    const authorRole = asString(row.author_role, "aluno");
+    return {
+      id: asString(row.id),
+      user: {
+        name: asString(row.author_name, "Usuário"),
+        avatar: asString(row.author_avatar, "user"),
+        isPro: authorRole === "admin" || authorRole === "coach",
+      },
+      time: mapPostTime(asString(row.created_at)),
+      content: asString(row.content),
+      media: asString(row.media_url) || null,
+      likes: likes.length,
+      comments,
+      isLiked: likes.some((like) => asString(like.user_id) === currentUserId),
+      isSaved: false,
+      pinned: Boolean(row.pinned),
+      isOfficial: Boolean(row.is_official),
+      targetRole: (asString(row.target_role, "all") as Post["targetRole"]) || "all",
+      deletedAt: (row.deleted_at as string | null) ?? null,
+    } satisfies Post;
+  });
+}
+
+export async function createFeedPostRemote(
+  supabase: SupabaseClient,
+  payload: {
+    authorName: string;
+    authorAvatar: string;
+    authorRole: string;
+    content: string;
+    mediaUrl: string | null;
+    pinned?: boolean;
+    isOfficial?: boolean;
+    targetRole?: "all" | "student" | "coach";
+  },
+): Promise<void> {
+  const { error } = await supabase.from("feed_posts").insert({
+    author_name: payload.authorName,
+    author_avatar: payload.authorAvatar,
+    author_role: payload.authorRole,
+    content: payload.content,
+    media_url: payload.mediaUrl,
+    pinned: payload.pinned ?? false,
+    is_official: payload.isOfficial ?? false,
+    target_role: payload.targetRole ?? "all",
+  });
+  if (error) {
+    throw new Error(`Falha ao publicar post: ${error.message}`);
+  }
+}
+
+export async function updateFeedPostModerationRemote(
+  supabase: SupabaseClient,
+  postId: string,
+  patch: { pinned?: boolean; isOfficial?: boolean; targetRole?: "all" | "student" | "coach" },
+): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (patch.pinned !== undefined) payload.pinned = patch.pinned;
+  if (patch.isOfficial !== undefined) payload.is_official = patch.isOfficial;
+  if (patch.targetRole !== undefined) payload.target_role = patch.targetRole;
+  if (Object.keys(payload).length === 0) return;
+  const { error } = await supabase.from("feed_posts").update(payload).eq("id", postId);
+  if (error) throw new Error(`Falha ao moderar post: ${error.message}`);
+}
+
+export async function softDeleteFeedPostRemote(supabase: SupabaseClient, postId: string): Promise<void> {
+  const { error } = await supabase.from("feed_posts").update({ deleted_at: new Date().toISOString() }).eq("id", postId);
+  if (error) throw new Error(`Falha ao remover post: ${error.message}`);
+}
+
+export async function toggleFeedPostLikeRemote(supabase: SupabaseClient, postId: string, userId: string): Promise<void> {
+  const { data: existing, error: checkError } = await supabase
+    .from("feed_post_likes")
+    .select("post_id,user_id")
+    .eq("post_id", postId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (checkError) {
+    throw new Error(`Falha ao verificar curtida: ${checkError.message}`);
+  }
+
+  if (existing) {
+    const { error } = await supabase.from("feed_post_likes").delete().eq("post_id", postId).eq("user_id", userId);
+    if (error) throw new Error(`Falha ao remover curtida: ${error.message}`);
+    return;
+  }
+
+  const { error } = await supabase.from("feed_post_likes").insert({ post_id: postId, user_id: userId });
+  if (error) {
+    throw new Error(`Falha ao registrar curtida: ${error.message}`);
+  }
+}
+
+export async function addFeedCommentRemote(
+  supabase: SupabaseClient,
+  payload: { postId: string; userId: string; userName: string; userAvatar: string; text: string },
+): Promise<void> {
+  const { error } = await supabase.from("feed_post_comments").insert({
+    post_id: payload.postId,
+    user_id: payload.userId,
+    user_name: payload.userName,
+    user_avatar: payload.userAvatar,
+    text: payload.text,
+  });
+  if (error) {
+    throw new Error(`Falha ao comentar no post: ${error.message}`);
+  }
+}
+
+export async function createPublicLeadRemote(
+  supabase: SupabaseClient,
+  payload: { name: string; phone: string; email: string; instagram: string; avatar: string },
+): Promise<void> {
+  const id = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `lead_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const { error } = await supabase.from("students").insert({
+    id,
+    name: payload.name,
+    phone: payload.phone,
+    email: payload.email,
+    avatar: payload.avatar,
+    instagram: payload.instagram,
+    status: "pending",
+    plan: "mensal",
+    monthly_value: 0,
+    payment_day: 10,
+    categories: [],
+    joined_at: new Date().toISOString().slice(0, 10),
+    frequency: 0,
+    total_classes: 0,
+    notes: "Cadastro público",
+    professor_notes: "",
+    attendance_history: [],
+    auth_user_id: null,
+  });
+  if (error) {
+    throw new Error(`Falha ao registrar cadastro público: ${error.message}`);
+  }
 }

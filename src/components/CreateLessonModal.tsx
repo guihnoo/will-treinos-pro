@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check } from "lucide-react";
+import { X, Check, Search } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { localDateISO } from "@/lib/dateUtils";
+import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 interface Props {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
   useBodyScrollLock(isOpen);
   const prevIsOpen = useRef(false);
   const [lessonDate, setLessonDate] = useState(() => defaultDate || localDateISO());
+  const [studentSearch, setStudentSearch] = useState("");
   const [newLesson, setNewLesson] = useState<{
     categoryId: string; title: string; startTime: string; endTime: string;
     maxStudents: number; venueId: string; notes: string; enrolledStudents: string[];
@@ -121,6 +123,12 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
     const lessonEnd = toMin(lesson.endTime);
     return candidateStart < lessonEnd && candidateEnd > lessonStart;
   });
+  const filteredStudents = students.filter((s) => {
+    if (s.status === "suspended") return false;
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return true;
+    return [s.name, s.phone, s.email, s.plan].filter(Boolean).join(" ").toLowerCase().includes(query);
+  });
 
   const handleCreate = () => {
     if (!newLesson.categoryId) {
@@ -174,10 +182,14 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
         <div className="min-h-full flex items-end sm:items-center justify-center py-8">
         <motion.div initial={{ scale: 0.98, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.98, y: 20 }}
           onClick={e => e.stopPropagation()}
-          className="bg-[#0A0A0A] border border-zinc-800 rounded-t-2xl sm:rounded-2xl max-w-md w-full relative flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden">
+          className="bg-[#0A0A0A] border border-zinc-800 rounded-t-2xl sm:rounded-2xl max-w-md w-full relative flex max-h-[calc(100dvh-1rem)] flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
           <div className="flex justify-between items-center p-4 sm:p-6 pb-4 shrink-0">
             <h3 className="text-lg font-bold text-white">Nova Aula</h3>
-            <button onClick={onClose} className="text-zinc-500 hover:text-white">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fechar"
+              className={`flex h-10 w-10 items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-900 hover:text-white ${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -318,8 +330,20 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
             {/* Enrolled Students */}
             <div>
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Matricular Alunos (Opcional)</label>
-              <div className="bg-black border border-zinc-800 rounded-xl p-3 max-h-32 overflow-y-auto space-y-2">
-                {students.filter((s) => s.status === "active" || s.status === "trial").map((s) => {
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-zinc-800 bg-black/60 px-3 py-2">
+                <Search className="h-4 w-4 text-zinc-500" />
+                <input
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  placeholder="Buscar por nome, telefone ou plano"
+                  className="w-full bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
+                />
+              </div>
+              <div className="bg-black border border-zinc-800 rounded-xl p-3 max-h-52 overflow-y-auto space-y-2">
+                {filteredStudents.length === 0 ? (
+                  <p className="px-1 py-2 text-xs text-zinc-500">Nenhum aluno encontrado para este filtro.</p>
+                ) : null}
+                {filteredStudents.map((s) => {
                   const isSelected = newLesson.enrolledStudents.includes(s.id);
                   return (
                     <div key={s.id} onClick={() => {
@@ -329,12 +353,17 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
                           ? p.enrolledStudents.filter(id => id !== s.id)
                           : [...p.enrolledStudents, s.id]
                       }));
-                    }} className="flex items-center gap-3 p-1.5 hover:bg-zinc-900 rounded-lg cursor-pointer transition-colors">
+                    }} className="flex items-start gap-3 p-1.5 hover:bg-zinc-900 rounded-lg cursor-pointer transition-colors">
                       <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-[#22C55E] bg-[#22C55E]' : 'border-zinc-600'}`}>
                         {isSelected && <Check className="w-3 h-3 text-black" />}
                       </div>
                       <UserAvatar name={s.name} photo={s.avatar} size="sm" />
-                      <span className="text-sm text-zinc-300 flex-1">{s.name}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-sm font-bold text-zinc-100">{s.name}</p>
+                        <p className="truncate text-[10px] text-zinc-500">
+                          {s.plan} • {s.status === "pending" ? "Aguardando aprovação" : s.status === "trial" ? "Trial" : "Ativo"}
+                        </p>
+                      </div>
                     </div>
                   );
                 })}

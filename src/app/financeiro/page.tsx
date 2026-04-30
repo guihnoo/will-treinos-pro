@@ -18,7 +18,7 @@ const MAX_DATA_URL_CHARS = 700_000;
 
 function readStudentProofFile(
   file: File,
-  onOk: (a: { dataUrl: string; fileName: string; mime: string }) => void,
+  onOk: (a: { file: File; previewUrl: string; fileName: string; mime: string }) => void,
   onErr: (msg: string) => void,
 ) {
   if (file.size > MAX_PROOF_BYTES) {
@@ -36,7 +36,7 @@ function readStudentProofFile(
       onErr("Arquivo gerou dados demais. Reduza a resolução da foto.");
       return;
     }
-    onOk({ dataUrl, fileName: file.name, mime: file.type || "application/octet-stream" });
+    onOk({ file, previewUrl: dataUrl, fileName: file.name, mime: file.type || "application/octet-stream" });
   };
   reader.onerror = () => onErr("Não foi possível ler o arquivo.");
   reader.readAsDataURL(file);
@@ -63,7 +63,7 @@ type Pay = {
   studentProofFileName?: string;
   studentProofMime?: string;
 };
-type ProofAttachment = { dataUrl: string; fileName: string; mime: string };
+type ProofAttachment = { file?: File; previewUrl?: string; fileName: string; mime: string };
 function waDigits(raw: string): string {
   const d = raw.replace(/\D/g, "");
   if (d.length < 10) return "";
@@ -105,7 +105,7 @@ function PaymentModal({
       ? localAttachment
       : pay.studentProofDataUrl
         ? {
-            dataUrl: pay.studentProofDataUrl,
+            previewUrl: pay.studentProofDataUrl,
             fileName: pay.studentProofFileName || "comprovante",
             mime: pay.studentProofMime || "image/jpeg",
           }
@@ -212,7 +212,7 @@ function PaymentModal({
                     </div>
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={displayAttachment.dataUrl} alt="Prévia do comprovante" className="max-h-40 w-full object-contain" />
+                    <img src={displayAttachment.previewUrl} alt="Prévia do comprovante" className="max-h-40 w-full object-contain" />
                   )}
                 </div>
               ) : null}
@@ -347,7 +347,7 @@ function AlunoFinanceiro() {
               const removedFile = attachment === null;
               const hasAnexo =
                 !removedFile &&
-                (Boolean(attachment?.dataUrl) ||
+                (Boolean(attachment?.previewUrl) ||
                   (attachment === undefined && Boolean(selObj.studentProofDataUrl)));
               const body = `Ola! Sou ${user.name}. Registrei no app o comprovante PIX da mensalidade ${selObj.reference} (R$ ${selObj.amount}).${hasAnexo ? " Arquivo anexado no app (professor pode abrir em Financeiro)." : ""}${note.trim() ? ` Obs: ${note.trim()}.` : ""}`;
               if (phone) {

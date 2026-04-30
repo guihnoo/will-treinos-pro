@@ -15,11 +15,22 @@ export type { DevImpersonation } from "@/lib/authPostLogin";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { transactionalSeedDefaults } from "@/lib/willLocalDataPolicy";
 import {
+
+  addFeedCommentRemote,
+  createLessonRemote,
+  createFeedPostRemote,
   createStudentRemote,
+  deleteLessonRemote,
+  fetchFeedPostsRemote,
   fetchStaffAccessRole,
   fetchLiveAppData,
   markPaymentPaidRemote,
+  softDeleteFeedPostRemote,
   submitStudentProofRemote,
+  toggleFeedPostLikeRemote,
+  updateFeedPostModerationRemote,
+  uploadPaymentProofToStorage,
+  updateLessonRemote,
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import type { Provider, User as SupabaseAuthUser } from "@supabase/supabase-js";
@@ -57,7 +68,7 @@ function withNetworkTimeout<T>(promise: Promise<T>, ms: number, message: string)
 
 // Re-export types for convenience
 export type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, AppConfig, StudentProfileEditPolicy };
-const LS_VERSION = "v13"; // bump: empty transactional seed with Supabase + wipe legacy mock cache
+const LS_VERSION = "v14"; // bump: force clean reset without mock transactional data
 const LS_PREFIX = "wt_";
 const ls = {
   get: <T,>(key: string, fallback: T): T => {
@@ -128,7 +139,7 @@ interface AppContextType {
     id: string,
     payload: {
       note: string;
-      attachment?: { dataUrl: string; fileName: string; mime: string } | null;
+      attachment?: { file?: File; previewUrl?: string; fileName: string; mime: string } | null;
     },
   ) => void;
   // Notifications
@@ -143,6 +154,11 @@ interface AppContextType {
   addPost: (p: Omit<Post, "id">) => void;
   togglePostLike: (id: string) => void;
   addPostComment: (id: string, text: string, user: string, avatar: string) => void;
+  moderatePost: (
+    id: string,
+    patch: { pinned?: boolean; isOfficial?: boolean; targetRole?: "all" | "student" | "coach" },
+  ) => void;
+  softDeletePost: (id: string) => void;
   // Check-in (legacy direct)
   checkInStudent: (lessonId: string, studentId: string, present: boolean) => void;
   // Professional check-in system
@@ -285,7 +301,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (isMounted) ls.set("categories", categories); }, [categories, isMounted]);
   useEffect(() => { if (isMounted) ls.set("feedbacks", feedbacks); }, [feedbacks, isMounted]);
   useEffect(() => { if (isMounted) ls.set("trainingPlans", trainingPlans); }, [trainingPlans, isMounted]);
-  useEffect(() => { if (isMounted) ls.set("posts", posts); }, [posts, isMounted]);
+  useEffect(() => {
+    if (isMounted && !usingSupabaseSession) ls.set("posts", posts);
+  }, [posts, isMounted, usingSupabaseSession]);
   useEffect(() => { if (isMounted) ls.set("lessonRatings", lessonRatings); }, [lessonRatings, isMounted]);
   useEffect(() => { if (isMounted) ls.set("appConfig", appConfig); }, [appConfig, isMounted]);
 
@@ -420,9 +438,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setPayments([]);
     setLessons([]);
     setNotifications([]);
+    setPosts([]);
     try {
-      const data = await withNetworkTimeout(
-        fetchLiveAppData(supabase),
+      const currentUserId = supabaseAuthUserRef.current?.id || "";
+      const [data, livePosts] = await withNetworkTimeout(
+        Promise.all([fetchLiveAppData(supabase), fetchFeedPostsRemote(supabase, currentUserId)]),
         CRITICAL_DATA_FETCH_TIMEOUT_MS,
         "A sincronização demorou demais. Verifique sua conexão e use Tentar novamente.",
       );
@@ -430,6 +450,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setPayments(data.payments);
       setLessons(data.lessons);
       setNotifications(data.notifications);
+      setPosts(livePosts);
       if (supabaseAuthUserRef.current) {
         applySupabaseSession(supabaseAuthUserRef.current, data.students);
       }
@@ -612,9 +633,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setWorkHours = useCallback((wh: WorkHours) => setWorkHoursState(wh), []);
 
   // ─── LESSONS CRUD ───
-  const addLesson = useCallback((l: Omit<Lesson, "id">) => setLessons(p => [...p, { ...l, id: `l_${uid()}` }]), []);
-  const updateLesson = useCallback((id: string, u: Partial<Lesson>) => setLessons(p => p.map(l => l.id === id ? { ...l, ...u } : l)), []);
-  const deleteLesson = useCallback((id: string) => setLessons(p => p.filter(l => l.id !== id)), []);
+  const addLesson = useCallback((l: Omit<Lesson, "id">) => {
+    const next: Lesson = { ...l, id: `l_${uid()}` };
+    if (!usingSupabaseSession) {
+      setLessons((p) => [...p, next]);
+      return;
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setCriticalDataError("Cliente Supabase indisponível para criar aula.");
+      return;
+    }
+    void createLessonRemote(supabase, next)
+      .then((created) => setLessons((p) => [...p, created]))
+      .catch((error) =>
+        setCriticalDataError(error instanceof Error ? error.message : "Falha ao criar aula no Supabase."),
+      );
+  }, [usingSupabaseSession]);
+  const updateLesson = useCallback((id: string, u: Partial<Lesson>) => {
+    if (!usingSupabaseSession) {
+      setLessons((p) => p.map((l) => (l.id === id ? { ...l, ...u } : l)));
+      return;
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setCriticalDataError("Cliente Supabase indisponível para atualizar aula.");
+      return;
+    }
+    void updateLessonRemote(supabase, id, u)
+      .then(() => setLessons((p) => p.map((l) => (l.id === id ? { ...l, ...u } : l))))
+      .catch((error) =>
+        setCriticalDataError(error instanceof Error ? error.message : "Falha ao atualizar aula no Supabase."),
+      );
+  }, [usingSupabaseSession]);
+  const deleteLesson = useCallback((id: string) => {
+    if (!usingSupabaseSession) {
+      setLessons((p) => p.filter((l) => l.id !== id));
+      return;
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setCriticalDataError("Cliente Supabase indisponível para remover aula.");
+      return;
+    }
+    void deleteLessonRemote(supabase, id)
+      .then(() => setLessons((p) => p.filter((l) => l.id !== id)))
+      .catch((error) =>
+        setCriticalDataError(error instanceof Error ? error.message : "Falha ao remover aula no Supabase."),
+      );
+  }, [usingSupabaseSession]);
   
   const addToWaitlist = useCallback((lessonId: string, studentId: string) => {
     setLessons(p => p.map(l => l.id === lessonId ? { ...l, waitlist: [...new Set([...(l.waitlist || []), studentId])] } : l));
@@ -764,7 +831,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       id: string,
       payload: {
         note: string;
-        attachment?: { dataUrl: string; fileName: string; mime: string } | null;
+        attachment?: { file?: File; previewUrl?: string; fileName: string; mime: string } | null;
       },
     ) => {
       if (!usingSupabaseSession) {
@@ -788,7 +855,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             } else if (payload.attachment) {
               next = {
                 ...next,
-                studentProofDataUrl: payload.attachment.dataUrl,
+                studentProofDataUrl: payload.attachment.previewUrl,
                 studentProofFileName: payload.attachment.fileName,
                 studentProofMime: payload.attachment.mime,
               };
@@ -803,7 +870,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCriticalDataError("Cliente Supabase indisponível.");
         return;
       }
-      void submitStudentProofRemote(supabase, id, payload)
+      const currentAuthId = supabaseAuthUserRef.current?.id;
+      if (!currentAuthId) {
+        setCriticalDataError("Sessão Supabase indisponível.");
+        return;
+      }
+      const submitRemote = async () => {
+        if (payload.attachment === null) {
+          return submitStudentProofRemote(supabase, id, { note: payload.note, attachment: null });
+        }
+        if (payload.attachment?.file) {
+          const signedUrl = await uploadPaymentProofToStorage(supabase, currentAuthId, payload.attachment.file);
+          return submitStudentProofRemote(supabase, id, {
+            note: payload.note,
+            attachment: {
+              url: signedUrl,
+              fileName: payload.attachment.fileName,
+              mime: payload.attachment.mime,
+            },
+          });
+        }
+        if (payload.attachment?.previewUrl) {
+          return submitStudentProofRemote(supabase, id, {
+            note: payload.note,
+            attachment: {
+              url: payload.attachment.previewUrl,
+              fileName: payload.attachment.fileName,
+              mime: payload.attachment.mime,
+            },
+          });
+        }
+        return submitStudentProofRemote(supabase, id, { note: payload.note, attachment: undefined });
+      };
+      void submitRemote()
         .then((updated) => setPayments((p) => p.map((pay) => (pay.id === id ? updated : pay))))
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar comprovante no Supabase."));
     },
@@ -820,11 +919,109 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addTrainingPlan = useCallback((plan: Omit<TrainingPlan, "id">) => setTrainingPlans(p => [...p, { ...plan, id: `tp_${uid()}` }]), []);
 
   // ─── FEED POSTS ───
-  const addPost = useCallback((p: Omit<Post, "id">) => setPosts(prev => [{ ...p, id: `p_${uid()}` }, ...prev]), []);
-  const togglePostLike = useCallback((id: string) => setPosts(p => p.map(post => post.id === id ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 } : post)), []);
-  const addPostComment = useCallback((id: string, text: string, user: string, avatar: string) => {
-    setPosts(p => p.map(post => post.id === id ? { ...post, comments: [...post.comments, { user, avatar, text, time: "agora" }] } : post));
-  }, []);
+  const addPost = useCallback((p: Omit<Post, "id">) => {
+    if (!usingSupabaseSession) {
+      setPosts((prev) => [{ ...p, id: `p_${uid()}` }, ...prev]);
+      return;
+    }
+    const supabase = getSupabaseClient();
+    const currentUserId = supabaseAuthUserRef.current?.id;
+    if (!supabase || !currentUserId) {
+      setCriticalDataError("Sessão Supabase indisponível para publicar no feed.");
+      return;
+    }
+    void createFeedPostRemote(supabase, {
+      authorName: p.user.name,
+      authorAvatar: p.user.avatar,
+      authorRole: p.user.isPro ? (user?.role || "coach") : "aluno",
+      content: p.content,
+      mediaUrl: p.media,
+      pinned: p.pinned ?? false,
+      isOfficial: p.isOfficial ?? false,
+      targetRole: p.targetRole ?? "all",
+    })
+      .then(() => fetchFeedPostsRemote(supabase, currentUserId))
+      .then((livePosts) => setPosts(livePosts))
+      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao publicar no feed."));
+  }, [usingSupabaseSession, user?.role]);
+  const togglePostLike = useCallback((id: string) => {
+    if (!usingSupabaseSession) {
+      setPosts((p) =>
+        p.map((post) =>
+          post.id === id ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 } : post,
+        ),
+      );
+      return;
+    }
+    const supabase = getSupabaseClient();
+    const currentUserId = supabaseAuthUserRef.current?.id;
+    if (!supabase || !currentUserId) {
+      setCriticalDataError("Sessão Supabase indisponível para curtir.");
+      return;
+    }
+    void toggleFeedPostLikeRemote(supabase, id, currentUserId)
+      .then(() => fetchFeedPostsRemote(supabase, currentUserId))
+      .then((livePosts) => setPosts(livePosts))
+      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao curtir post."));
+  }, [usingSupabaseSession]);
+  const addPostComment = useCallback((id: string, text: string, userName: string, avatar: string) => {
+    if (!usingSupabaseSession) {
+      setPosts((p) => p.map((post) => (post.id === id ? { ...post, comments: [...post.comments, { user: userName, avatar, text, time: "agora" }] } : post)));
+      return;
+    }
+    const supabase = getSupabaseClient();
+    const currentUserId = supabaseAuthUserRef.current?.id;
+    if (!supabase || !currentUserId) {
+      setCriticalDataError("Sessão Supabase indisponível para comentar.");
+      return;
+    }
+    void addFeedCommentRemote(supabase, { postId: id, userId: currentUserId, userName, userAvatar: avatar, text })
+      .then(() => fetchFeedPostsRemote(supabase, currentUserId))
+      .then((livePosts) => setPosts(livePosts))
+      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao comentar no post."));
+  }, [usingSupabaseSession]);
+  const moderatePost = useCallback(
+    (id: string, patch: { pinned?: boolean; isOfficial?: boolean; targetRole?: "all" | "student" | "coach" }) => {
+      if (!usingSupabaseSession) {
+        setPosts((prev) =>
+          prev
+            .map((post) => (post.id === id ? { ...post, ...patch } : post))
+            .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))),
+        );
+        return;
+      }
+      const supabase = getSupabaseClient();
+      const currentUserId = supabaseAuthUserRef.current?.id;
+      if (!supabase || !currentUserId) {
+        setCriticalDataError("Sessão Supabase indisponível para moderação.");
+        return;
+      }
+      void updateFeedPostModerationRemote(supabase, id, patch)
+        .then(() => fetchFeedPostsRemote(supabase, currentUserId))
+        .then((livePosts) => setPosts(livePosts))
+        .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao moderar post."));
+    },
+    [usingSupabaseSession],
+  );
+  const softDeletePost = useCallback(
+    (id: string) => {
+      if (!usingSupabaseSession) {
+        setPosts((prev) => prev.filter((post) => post.id !== id));
+        return;
+      }
+      const supabase = getSupabaseClient();
+      const currentUserId = supabaseAuthUserRef.current?.id;
+      if (!supabase || !currentUserId) {
+        setCriticalDataError("Sessão Supabase indisponível para remover post.");
+        return;
+      }
+      void softDeleteFeedPostRemote(supabase, id)
+        .then(() => fetchFeedPostsRemote(supabase, currentUserId))
+        .then((livePosts) => setPosts(livePosts))
+        .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao remover post."));
+    },
+    [usingSupabaseSession],
+  );
 
   // ─── CHECK-IN (legacy) ───
   const checkInStudent = useCallback((lessonId: string, studentId: string, present: boolean) => {
@@ -979,7 +1176,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       requestCheckIn, approveCheckIn, rejectCheckIn, endClassCheckIn,
       lessonRatings, addLessonRating, getLessonRating,
       appConfig, updateAppConfig,
-      posts, addPost, togglePostLike, addPostComment,
+      posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
       getVenueMapsUrl, getStudent, getCategory, getVenue, updateUser,
       unreadNotifications, pendingStudents, latePayments, todayLessons, monthlyRevenue, activeStudents,
     }}>

@@ -1,5 +1,15 @@
 # MASTER INSTRUCTION FOR CURSOR: REBUILDING "WILLPRO" DESIGN
 
+---
+
+## Master Memory — registro de interações (data/hora)
+
+O histórico datado de interações e decisões fica na pasta **`WILLPRO - MASTER MEMORY/`**, arquivo **`REGISTRO_INTERACOES.md`**.
+
+**Regra para o assistente:** após alterações relevantes, **acrescentar entrada no topo** daquele arquivo com data/hora completas e fuso (ex.: `-03:00`). Não duplicar o log aqui.
+
+---
+
 **Context for AI (Cursor):**
 You are a Senior Frontend Developer specializing in React Native Web, Expo Router, and TailwindCSS. We have a fully functional application in the `artifacts/willtreinos/app/login.tsx` file using Expo, but the design is outdated. Your goal is to rewrite the `login.tsx` file to perfectly reproduce the "WILLPRO" design (a premium mockup made in Vite), keeping all authentication and navigation logic intact.
 

@@ -9,7 +9,10 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-import { hasSupabaseEnv } from "@/lib/supabaseClient";
+import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
+import { createPublicLeadRemote } from "@/lib/supabasePersistence";
+import { compressImageFileToDataUrl } from "@/lib/imageCompress";
+import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7","serve8","jump9","team10","coach11","pro12"];
 
@@ -34,24 +37,18 @@ export default function RegistrationPage() {
   const premiumAvatarSrc = photoMode === "photo" && customPhoto ? customPhoto : `https://api.dicebear.com/7.x/avataaars/svg?seed=${form.avatarSeed}`;
   const supabaseReady = hasSupabaseEnv();
 
-  useEffect(() => {
-    if (!authResolved) return;
-    if (!supabaseReady) return;
-    if (user) return;
-    toast("Faça login para concluir sua matrícula.", "info");
-    router.replace("/login?next=/cadastro");
-  }, [authResolved, supabaseReady, user, toast, router]);
-
-  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      setCustomPhoto(ev.target?.result as string);
+    try {
+      const dataUrl = await compressImageFileToDataUrl(file);
+      setCustomPhoto(dataUrl);
       setPhotoMode("photo");
       setShowPhotoOptions(false);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Não foi possível usar esta foto.", "error");
+    }
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,36 +62,43 @@ export default function RegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabaseReady || !usingSupabaseSession || !user) {
-      toast("Sessão não validada. Faça login novamente para concluir o cadastro.", "error");
-      router.replace("/login?next=/cadastro");
-      return;
-    }
     if (!form.name || !form.phone) {
       toast("⚠️ Preencha nome e telefone obrigatórios.");
       return;
     }
 
-    // Add Student to context with "pending" status
-    const studentEmail = form.email.trim().toLowerCase() || user.email?.trim().toLowerCase() || "";
+    const studentEmail = form.email.trim().toLowerCase() || user?.email?.trim().toLowerCase() || "";
+    const avatar = photoMode === "photo" && customPhoto ? customPhoto : form.avatarSeed;
     try {
-      await addStudent({
-      name: form.name,
-      phone: form.phone,
-      email: studentEmail,
-      instagram: form.instagram,
-      avatar: photoMode === "photo" && customPhoto ? customPhoto : form.avatarSeed,
-      status: "pending",
-      plan: "mensal",
-      monthlyValue: 0,
-      paymentDay: 10,
-      categories: [],
-      joinedAt: new Date().toISOString().split("T")[0],
-      frequency: 0,
-      totalClasses: 0,
-      notes: "",
-      authUserId: user.authSubjectId || user.id,
-    });
+      if (supabaseReady && !user) {
+        const supabase = getSupabaseClient();
+        if (!supabase) throw new Error("Cliente Supabase indisponível.");
+        await createPublicLeadRemote(supabase, {
+          name: form.name,
+          phone: form.phone,
+          email: studentEmail,
+          instagram: form.instagram,
+          avatar,
+        });
+      } else {
+        await addStudent({
+          name: form.name,
+          phone: form.phone,
+          email: studentEmail,
+          instagram: form.instagram,
+          avatar,
+          status: "pending",
+          plan: "mensal",
+          monthlyValue: 0,
+          paymentDay: 10,
+          categories: [],
+          joinedAt: new Date().toISOString().split("T")[0],
+          frequency: 0,
+          totalClasses: 0,
+          notes: "",
+          authUserId: user?.authSubjectId || user?.id || null,
+        });
+      }
     } catch (error) {
       toast(error instanceof Error ? error.message : "Não foi possível concluir o cadastro agora.", "error");
       return;
@@ -112,25 +116,17 @@ export default function RegistrationPage() {
     setSubmitted(true);
     toast("✅ Cadastro enviado com sucesso! Aguarde aprovação do administrador.");
     
-    // Redirect after 3s
-    setTimeout(() => {
-      router.push("/login");
-    }, 3000);
   };
 
   const regenerateAvatar = () =>
     setForm(p => ({ ...p, avatarSeed: AVATAR_SEEDS[Math.floor(Math.random()*AVATAR_SEEDS.length)] }));
 
-  if (!authResolved && supabaseReady) {
+  if (!authResolved && supabaseReady && user) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="h-9 w-9 rounded-full border-2 border-zinc-800 border-t-[#EAB308] animate-spin" aria-hidden />
       </div>
     );
-  }
-
-  if (!user && supabaseReady) {
-    return null;
   }
 
   if (submitted) {
@@ -146,7 +142,7 @@ export default function RegistrationPage() {
           </motion.div>
           <h2 className="text-2xl font-bold text-white mb-2">Cadastro Enviado!</h2>
           <p className="text-zinc-500 mb-6">Seus dados foram enviados para o Will. Assim que ele aprovar, você terá acesso completo ao app.</p>
-          <p className="text-xs text-zinc-600">Redirecionando para o login...</p>
+          <p className="text-xs text-zinc-600">Você receberá atualização quando o dono aprovar seu cadastro.</p>
         </motion.div>
       </div>
     );
@@ -156,7 +152,7 @@ export default function RegistrationPage() {
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-4 relative overflow-hidden py-12">
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#EAB308] opacity-[0.03] blur-[100px] rounded-full pointer-events-none" />
 
-      <Link href="/" className="absolute top-6 left-6 text-zinc-500 hover:text-white flex items-center gap-2 transition-colors z-10">
+      <Link href="/" className={`absolute top-[max(1.5rem,env(safe-area-inset-top))] left-[max(1.5rem,env(safe-area-inset-left))] text-zinc-500 hover:text-white flex items-center gap-2 transition-colors z-10 ${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD} rounded-lg`}>
         <ArrowLeft className="w-4 h-4" /> Voltar
       </Link>
 

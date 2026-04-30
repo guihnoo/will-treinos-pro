@@ -20,6 +20,7 @@ import {
   UserPlus,
   ShieldAlert,
   Search,
+  Newspaper,
   Users,
   WalletCards,
   X,
@@ -623,6 +624,18 @@ export default function WillCockpit() {
           >
             <PlusCircle className="h-5 w-5 text-[#EAB308]" />
             Nova Aula
+          </Link>
+          <Link
+            href="/feed"
+            onClick={() => {
+              haptic(20);
+              setActionFeedback("A Rede aberta com moderação do dono.");
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-yellow-500/35 bg-yellow-500/10 px-4 py-3 text-sm font-black text-yellow-200 transition-all hover:border-yellow-400/60 hover:bg-yellow-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir A Rede com moderação ativa"
+          >
+            <Newspaper className="h-5 w-5 text-[#EAB308]" />
+            A Rede (Moderação Ativa)
           </Link>
           </div>
         </AppSectionCard>
