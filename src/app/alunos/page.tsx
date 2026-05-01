@@ -44,7 +44,7 @@ type FilterType = "all" | "active" | "pending" | "suspended" | "trial";
 
 export default function AlunosPage() {
   const { user, usingSupabaseSession } = useAuth();
-  const { students, approveStudent, suspendStudent, updateStudent } = useStudents();
+  const { students, statusCounts, activeStudents, approveStudent, suspendStudent, updateStudent } = useStudents();
   const { payments } = usePayments();
   const { cadastroInviteUrl } = useAppConfig();
   const { categories } = useCatalog();
@@ -78,10 +78,10 @@ export default function AlunosPage() {
 
   const filters: { key: FilterType; label: string; count: number }[] = [
     { key: "all", label: "Todos", count: students.length },
-    { key: "active", label: "Ativos", count: students.filter(s => s.status === "active").length },
-    { key: "pending", label: "Pendentes", count: students.filter(s => s.status === "pending").length },
-    { key: "suspended", label: "Suspensos", count: students.filter(s => s.status === "suspended").length },
-    { key: "trial", label: "Trial", count: students.filter(s => s.status === "trial").length },
+    { key: "active", label: "Ativos", count: statusCounts.active },
+    { key: "pending", label: "Pendentes", count: statusCounts.pending },
+    { key: "suspended", label: "Suspensos", count: statusCounts.suspended },
+    { key: "trial", label: "Trial", count: statusCounts.trial },
   ];
 
   const currentReference = useMemo(() => paymentReferenceForDate(), []);
@@ -97,8 +97,8 @@ export default function AlunosPage() {
       .replace("{horario}", "18:00");
   };
 
-  const totalRevenue = students.filter(s => s.status === 'active').reduce((a, s) => a + s.monthlyValue, 0);
-  const avgFreq = students.filter(s => s.status === 'active' && s.frequency > 0);
+  const totalRevenue = students.filter((s) => s.status === "active").reduce((a, s) => a + s.monthlyValue, 0);
+  const avgFreq = students.filter((s) => s.status === "active" && s.frequency > 0);
   const avgFreqVal = avgFreq.length ? Math.round(avgFreq.reduce((a, s) => a + s.frequency, 0) / avgFreq.length) : 0;
 
   const openWhatsApp = (phone: string, name: string, msg = '') => {
@@ -198,7 +198,7 @@ export default function AlunosPage() {
           {
             icon: CheckCircle2,
             label: "Ativos",
-            value: students.filter((s) => s.status === "active").length,
+            value: activeStudents,
             color: "#22C55E",
             sub: "matriculados",
           },

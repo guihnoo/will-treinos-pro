@@ -2,10 +2,12 @@
 
 import React, { createContext, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
-import type { Student } from "@/context/types";
+import type { Student, StudentStatus } from "@/context/types";
 
 type StudentsContextValue = {
   students: Student[];
+  statusCounts: Record<StudentStatus, number>;
+  approvalQueue: Student[];
   pendingStudents: number;
   activeStudents: number;
   getStudent: (id: string) => Student | undefined;
@@ -20,9 +22,27 @@ const StudentsContext = createContext<StudentsContextValue | undefined>(undefine
 
 export function StudentsProvider({ children }: { children: React.ReactNode }) {
   const app = useApp();
+  const statusCounts = useMemo<Record<StudentStatus, number>>(
+    () =>
+      app.students.reduce<Record<StudentStatus, number>>(
+        (acc, student) => {
+          acc[student.status] += 1;
+          return acc;
+        },
+        { active: 0, pending: 0, suspended: 0, trial: 0 },
+      ),
+    [app.students],
+  );
+  const approvalQueue = useMemo(
+    () => app.students.filter((student) => student.status === "pending" || student.status === "trial"),
+    [app.students],
+  );
+
   const value = useMemo<StudentsContextValue>(
     () => ({
       students: app.students,
+      statusCounts,
+      approvalQueue,
       pendingStudents: app.pendingStudents,
       activeStudents: app.activeStudents,
       getStudent: app.getStudent,
@@ -34,6 +54,8 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       app.students,
+      statusCounts,
+      approvalQueue,
       app.pendingStudents,
       app.activeStudents,
       app.getStudent,

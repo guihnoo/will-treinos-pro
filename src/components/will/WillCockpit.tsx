@@ -99,6 +99,8 @@ export default function WillCockpit() {
   const { lessons, todayLessons, todayEnrolledCount } = useLessons();
   const {
     students,
+    statusCounts,
+    approvalQueue,
     getStudent,
     approveStudent,
     updateStudent,
@@ -167,13 +169,9 @@ export default function WillCockpit() {
     return { paid, pending, late };
   }, [payments, currentMonthReference]);
 
-  const awaitingApproval = students.filter((s) => s.status === "pending" || s.status === "trial").length;
+  const awaitingApproval = approvalQueue.length;
   const athletesToday = todayEnrolledCount;
   const pendingPaymentsCount = payments.filter((p) => p.status === "pending" || p.status === "late").length;
-  const approvalQueue = useMemo(
-    () => students.filter((s) => s.status === "pending" || s.status === "trial"),
-    [students],
-  );
   const filteredApprovalQueue = useMemo(() => {
     const normalizedSearch = approvalSearch.trim().toLowerCase();
     const byFilter = approvalFilter === "all" ? approvalQueue : approvalQueue.filter((s) => s.status === approvalFilter);
@@ -629,7 +627,7 @@ export default function WillCockpit() {
           <p className="text-4xl font-black text-white tabular-nums">{awaitingApproval}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full border border-[#EAB308]/30 bg-[#EAB308]/10 px-2.5 py-1 text-[10px] font-bold text-[#EAB308]">
-              <Users className="h-3 w-3" /> {students.filter((s) => s.status === "trial").length} em experimental
+              <Users className="h-3 w-3" /> {statusCounts.trial} em experimental
             </span>
             <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold text-red-300">
               <CreditCard className="h-3 w-3" /> {pendingPaymentsCount} pagamentos pendentes
