@@ -14,13 +14,13 @@ export type { DevImpersonation } from "@/lib/authPostLogin";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { transactionalSeedDefaults } from "@/lib/willLocalDataPolicy";
 import {
-  WT_LS_PREFIX,
   WT_SESSION_DEV_IMPERSONATION_KEY,
   wtLegacyRoleGet,
   wtLegacyRoleRemove,
   wtLegacyRoleSet,
   wtLs as ls,
   wtLsGetString,
+  wtLsRemoveMany,
   wtLsSetString,
   wtSessionGet,
   wtSessionSet,
@@ -270,7 +270,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         "posts",
         "lessonRatings",
       ];
-      keys.forEach(k => localStorage.removeItem(WT_LS_PREFIX + k));
+      wtLsRemoveMany(keys);
       wtLsSetString("version", LS_VERSION);
     }
     const tx = transactionalSeedDefaults();

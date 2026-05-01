@@ -18,6 +18,17 @@ export function wtLsSet(key: string, val: unknown): void {
   if (typeof window !== "undefined") localStorage.setItem(WT_LS_PREFIX + key, JSON.stringify(val));
 }
 
+/** Remove a entrada `wt_<key>` do localStorage. */
+export function wtLsRemove(key: string): void {
+  if (typeof window !== "undefined") localStorage.removeItem(WT_LS_PREFIX + key);
+}
+
+/** Remove várias chaves com prefixo `wt_` de uma vez. */
+export function wtLsRemoveMany(keys: readonly string[]): void {
+  if (typeof window === "undefined") return;
+  for (const k of keys) localStorage.removeItem(WT_LS_PREFIX + k);
+}
+
 /**
  * Texto curto com compatibilidade a valores legados gravados sem JSON
  * (ex.: `v14` ou `Date#toDateString()` em texto puro).

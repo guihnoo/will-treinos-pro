@@ -1,4 +1,4 @@
-import { WT_LS_PREFIX } from "@/lib/willLocalStorage";
+import { wtLsRemoveMany } from "@/lib/willLocalStorage";
 
 /**
  * Política padrão do app: não semear dados fictícios.
@@ -35,5 +35,5 @@ export function clearTransactionalLocalStorage(): void {
     "posts",
     "lessonRatings",
   ];
-  keys.forEach((k) => window.localStorage.removeItem(WT_LS_PREFIX + k));
+  wtLsRemoveMany(keys);
 }
