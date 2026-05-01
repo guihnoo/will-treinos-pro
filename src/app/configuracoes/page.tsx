@@ -6,7 +6,7 @@ import {
   Settings, MapPin, Clock, Tag, Plus, X, Trash2, Edit3,
   ExternalLink, Save, ChevronRight, Globe, QrCode, UserCircle, Lock, LockOpen, Eraser,
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useToast } from "@/components/Toast";
@@ -38,7 +38,7 @@ export default function ConfigPage() {
     setWorkHours,
     getVenueMapsUrl,
   } = useCatalog();
-  const { user } = useApp();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<Tab>("categorias");

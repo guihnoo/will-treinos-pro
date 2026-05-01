@@ -8,7 +8,10 @@ import {
   Trophy, Calendar, TrendingUp, Star, CheckCircle2,
   Image as ImageIcon, RefreshCw, X, Shield, ChevronRight, Settings,
 } from "lucide-react";
-import { useApp, type Student } from "@/context/AppContext";
+import type { Student } from "@/context/types";
+import { useAuth } from "@/context/AuthContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useLessons } from "@/context/LessonsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useCoaching } from "@/context/CoachingContext";
 import { resolveStudentProfilePolicy } from "@/lib/studentProfilePolicy";
@@ -35,7 +38,9 @@ const resolveAvatarSrc = (avatar: string | null | undefined, fallbackSeed: strin
 export default function PerfilPage() {
   const { appConfig } = useAppConfig();
   const { feedbacks } = useCoaching();
-  const { user, students, lessons, updateStudent, updateUser, logout, usingSupabaseSession } = useApp();
+  const { user, updateUser, logout, usingSupabaseSession } = useAuth();
+  const { students, updateStudent } = useStudents();
+  const { lessons } = useLessons();
   const profilePolicy = useMemo(() => resolveStudentProfilePolicy(appConfig), [appConfig]);
   const isStudent = user?.role === "aluno";
   const canEditField = (key: keyof typeof profilePolicy) => !isStudent || profilePolicy[key];

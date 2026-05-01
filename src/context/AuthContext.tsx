@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useMemo } from "react";
 import type { Provider } from "@supabase/supabase-js";
 import { useApp } from "@/context/AppContext";
-import type { Role } from "@/context/types";
+import type { Role, User } from "@/context/types";
+import type { DevImpersonation } from "@/lib/authPostLogin";
 
 type LoginResult =
   | { ok: true; role: "admin" | "coach" | "aluno" | null }
@@ -20,6 +21,12 @@ type AuthContextValue = {
   loginWithPassword: (email: string, password: string) => Promise<LoginResult>;
   loginWithOAuth: (provider: Provider) => Promise<OAuthResult>;
   logout: () => void;
+  updateUser: (id: string, updates: Partial<User>) => void;
+  adminMode: "dashboard" | "coach";
+  setAdminMode: (m: "dashboard" | "coach") => void;
+  isDevRoot: boolean;
+  devImpersonation: DevImpersonation;
+  setDevImpersonation: (role: DevImpersonation) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -36,6 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loginWithPassword: app.loginWithPassword,
       loginWithOAuth: app.loginWithOAuth,
       logout: app.logout,
+      updateUser: app.updateUser,
+      adminMode: app.adminMode,
+      setAdminMode: app.setAdminMode,
+      isDevRoot: app.isDevRoot,
+      devImpersonation: app.devImpersonation,
+      setDevImpersonation: app.setDevImpersonation,
     }),
     [
       app.user,
@@ -46,6 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       app.loginWithPassword,
       app.loginWithOAuth,
       app.logout,
+      app.updateUser,
+      app.adminMode,
+      app.setAdminMode,
+      app.isDevRoot,
+      app.devImpersonation,
+      app.setDevImpersonation,
     ],
   );
 

@@ -8,7 +8,8 @@ import {
   LayoutDashboard, ImageIcon, CalendarRange, Wallet, Users,
   Settings, LogOut, Dumbbell, Bell, User, Zap
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useStudents } from "@/context/StudentsContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import NotificationsDrawer from "@/components/NotificationsDrawer";
@@ -29,7 +30,8 @@ const ALLOWED_ROUTES: Record<string, string[]> = {
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, pendingStudents, adminMode, setAdminMode, usingSupabaseSession } = useApp();
+  const { user, logout, adminMode, setAdminMode, usingSupabaseSession } = useAuth();
+  const { pendingStudents } = useStudents();
   const { unreadNotifications } = useNotifications();
   const { latePayments } = usePayments();
   const [showNotifs, setShowNotifs] = useState(false);

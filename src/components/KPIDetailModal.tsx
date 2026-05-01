@@ -6,7 +6,8 @@ import {
   X, Wallet, Users, CalendarRange, AlertTriangle, TrendingUp,
   ChevronRight, CheckCircle2, Clock, UserPlus
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useToast } from "@/components/Toast";
@@ -48,10 +49,8 @@ function AnimatedNumber({ value }: { value: number }) {
 export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLayout) {
   const { payments, markPayment } = usePayments();
   const { categories, getCategory } = useCatalog();
-  const {
-    students, todayLessons,
-    approveStudent, updateStudent,
-  } = useApp();
+  const { students, approveStudent, updateStudent } = useStudents();
+  const { todayLessons } = useLessons();
   const { toast } = useToast();
   
   const [approvingStudent, setApprovingStudent] = useState<string | null>(null);

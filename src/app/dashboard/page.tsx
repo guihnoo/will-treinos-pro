@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import CoachHome from "@/components/CoachHome";
 import StudentHome from "@/components/StudentHome";
 import StudentShell from "@/components/student/StudentShell";
 import WillCockpit from "@/components/will/WillCockpit";
 
 export default function DashboardPage() {
-  const { user, adminMode } = useApp();
+  const { user, adminMode } = useAuth();
 
   if (!user) return null;
 

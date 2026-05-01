@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Will Treinos PRO — Deploy Vercel após cada etapa
 
+**Obrigatório:** sempre que esta sessão fizer **ajustes que alterem código ou config de deploy** (features, correções, refactors, regras, migrations aplicadas ao repo, etc.), ao **encerrar esse lote de trabalho** deve haver deploy na Vercel via Git — não deixar só build local sem push.
+
 Enquanto o app **não estiver 100% finalizado**, ao **concluir uma etapa** de trabalho (lote de correções, feature, hardening, etc.) que envolva código ou configuração de produção:
 
 1. **Rodar** `pnpm run build` e corrigir erros até passar.

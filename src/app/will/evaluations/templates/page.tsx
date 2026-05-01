@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import type { CriterionDimension, EvaluationCriterionV1, EvaluationScope, EvaluationTemplateV1 } from "@/domain/v1/contracts";
 import { OFFICIAL_TENANT_V1, EVALUATION_TEMPLATES_V1, EVALUATION_CRITERIA_V1 } from "@/domain/v1/mockOrm";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 
 const LS_KEY = "wt_will_eval_engine_v1";
 
@@ -60,7 +60,7 @@ function normalizeWeights(criteria: EvaluationCriterionV1[], templateId: string)
 }
 
 export default function WillEvaluationTemplatesPage() {
-  const { user } = useApp();
+  const { user } = useAuth();
   const ownerId = user?.id ?? "admin1";
 
   const [hydrated, setHydrated] = useState(false);

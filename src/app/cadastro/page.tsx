@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, User, Phone, Mail, AtSign, Camera, CheckCircle2, Image as ImageIcon, RefreshCw, X } from "lucide-react";
 import Link from "next/link";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useStudents } from "@/context/StudentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
@@ -25,7 +26,8 @@ const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7
 type PhotoMode = "avatar" | "photo";
 
 export default function RegistrationPage() {
-  const { user, authResolved, usingSupabaseSession, addStudent } = useApp();
+  const { user, authResolved, usingSupabaseSession } = useAuth();
+  const { addStudent } = useStudents();
   const { addNotification } = useNotifications();
   const router = useRouter();
 

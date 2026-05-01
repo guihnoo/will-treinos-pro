@@ -3,7 +3,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Shield, GraduationCap, Volleyball } from "lucide-react";
-import { useApp, Role } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import type { Role } from "@/context/types";
 
 const ROLES: { role: Role; title: string; desc: string; icon: React.ElementType; color: string }[] = [
   { role: "admin", title: "Administrador", desc: "Gestão Total — Financeiro, Aprovações, Agenda, Feed", icon: Shield, color: "#EAB308" },
@@ -12,7 +13,7 @@ const ROLES: { role: Role; title: string; desc: string; icon: React.ElementType;
 ];
 
 export default function LoginPage() {
-  const { login } = useApp();
+  const { login } = useAuth();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4 relative overflow-hidden">

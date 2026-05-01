@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
 
 const ROLES = [
@@ -15,7 +15,7 @@ const ROLES = [
  * Dev-only runtime role switcher. Visible only when email ∈ NEXT_PUBLIC_DEV_ROOT_EMAILS.
  */
 export default function DevRoleImpersonationToggle() {
-  const { isDevRoot, devImpersonation, setDevImpersonation, usingSupabaseSession } = useApp();
+  const { isDevRoot, devImpersonation, setDevImpersonation, usingSupabaseSession } = useAuth();
   const showRlsHint = hasSupabaseEnv() && usingSupabaseSession;
 
   if (!isDevRoot) return null;
