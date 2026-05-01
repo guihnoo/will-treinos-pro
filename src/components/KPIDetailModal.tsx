@@ -47,9 +47,9 @@ function AnimatedNumber({ value }: { value: number }) {
 }
 
 export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLayout) {
-  const { payments, markPayment } = usePayments();
+  const { payments, totalsByStatus, markPayment } = usePayments();
   const { categories, getCategory } = useCatalog();
-  const { students, approveStudent, updateStudent } = useStudents();
+  const { students, statusCounts, approveStudent, updateStudent } = useStudents();
   const { todayLessons } = useLessons();
   const { toast } = useToast();
   
@@ -71,11 +71,9 @@ export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLay
     switch (type) {
       case "revenue": {
         const paid = payments.filter(p => p.status === "paid");
-        const pending = payments.filter(p => p.status === "pending");
-        const late = payments.filter(p => p.status === "late");
         const mockMonths = [
           { month: "Jan", val: 8000 }, { month: "Fev", val: 9500 }, { month: "Mar", val: 11200 },
-          { month: "Abr", val: paid.reduce((s, p) => s + p.amount, 0) }, { month: "Mai", val: 12000 }, { month: "Jun", val: 14500 }
+          { month: "Abr", val: totalsByStatus.paid }, { month: "Mai", val: 12000 }, { month: "Jun", val: 14500 }
         ];
         const maxVal = Math.max(...mockMonths.map(m => m.val));
 
@@ -100,17 +98,17 @@ export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLay
             <div className="grid grid-cols-3 gap-3 mb-6">
               <div className="p-3 rounded-xl bg-black/50 border border-zinc-900 text-center relative overflow-hidden group">
                 <div className="absolute inset-0 bg-[#22C55E]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <p className="text-lg font-bold text-[#22C55E]">R$ <AnimatedNumber value={paid.reduce((s, p) => s + p.amount, 0)} /></p>
+                <p className="text-lg font-bold text-[#22C55E]">R$ <AnimatedNumber value={totalsByStatus.paid} /></p>
                 <p className="text-[10px] text-zinc-500 uppercase">Recebido (Abr)</p>
               </div>
               <div className="p-3 rounded-xl bg-black/50 border border-zinc-900 text-center relative overflow-hidden group">
                 <div className="absolute inset-0 bg-[#F97316]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <p className="text-lg font-bold text-[#F97316]">R$ <AnimatedNumber value={pending.reduce((s, p) => s + p.amount, 0)} /></p>
+                <p className="text-lg font-bold text-[#F97316]">R$ <AnimatedNumber value={totalsByStatus.pending} /></p>
                 <p className="text-[10px] text-zinc-500 uppercase">Pendente</p>
               </div>
               <div className="p-3 rounded-xl bg-black/50 border border-zinc-900 text-center relative overflow-hidden group">
                 <div className="absolute inset-0 bg-[#EF4444]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <p className="text-lg font-bold text-[#EF4444]">R$ <AnimatedNumber value={late.reduce((s, p) => s + p.amount, 0)} /></p>
+                <p className="text-lg font-bold text-[#EF4444]">R$ <AnimatedNumber value={totalsByStatus.late} /></p>
                 <p className="text-[10px] text-zinc-500 uppercase">Atrasado</p>
               </div>
             </div>
@@ -139,11 +137,11 @@ export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLay
           <>
             <div className="grid grid-cols-3 gap-3 mb-5">
               <div className="p-3 rounded-xl bg-black/50 border border-zinc-900 text-center">
-                <p className="text-lg font-bold text-[#22C55E]">{active.length}</p>
+                <p className="text-lg font-bold text-[#22C55E]">{statusCounts.active}</p>
                 <p className="text-[10px] text-zinc-500 uppercase">Ativos</p>
               </div>
               <div className="p-3 rounded-xl bg-black/50 border border-zinc-900 text-center">
-                <p className="text-lg font-bold text-[#F97316]">{pending.length}</p>
+                <p className="text-lg font-bold text-[#F97316]">{statusCounts.pending}</p>
                 <p className="text-[10px] text-zinc-500 uppercase">Pendentes</p>
               </div>
               <div className="p-3 rounded-xl bg-black/50 border border-zinc-900 text-center">
