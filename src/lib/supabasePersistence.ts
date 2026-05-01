@@ -173,6 +173,17 @@ function mapLesson(row: DbRow): Lesson {
   };
 }
 
+export async function updateNotificationReadRemote(
+  supabase: SupabaseClient,
+  id: string,
+  read: boolean,
+): Promise<void> {
+  const { error } = await supabase.from("notifications").update({ is_read: read }).eq("id", id);
+  if (error) {
+    throw new Error(`Falha ao atualizar leitura da notificação: ${error.message}`);
+  }
+}
+
 export async function insertNotificationRemote(
   supabase: SupabaseClient,
   payload: Omit<Notification, "id"> & { id?: string },

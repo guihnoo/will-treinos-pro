@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
+import { canUseSocialOAuthFromLogin, setStaffOAuthGateOk } from "@/lib/enrollmentSession";
 
 const POST_LOGIN_NEXT_KEY = "wt_post_login_next";
 
@@ -78,6 +79,13 @@ function LoginPageContent() {
     if (!supabaseReady) {
       toast(
         "Login social desativado: defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY (ou NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) em Vercel → Settings → Environment Variables (Production), faça redeploy e teste de novo.",
+        "error",
+      );
+      return;
+    }
+    if (!canUseSocialOAuthFromLogin()) {
+      toast(
+        "Abra antes o link de matrícula do Will neste navegador (página Cadastro) ou use «Sou equipe» abaixo para dono/professor/staff.",
         "error",
       );
       return;
@@ -192,7 +200,7 @@ function LoginPageContent() {
           </p>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-3 mb-8">
+        <div className="grid grid-cols-2 gap-3 mb-3">
           <button
             type="button"
             onClick={() => void handleOAuthLogin("google")}
@@ -219,6 +227,27 @@ function LoginPageContent() {
             Facebook
           </button>
         </div>
+
+        {supabaseReady ? (
+          <div className="mb-8 rounded-xl border border-zinc-800/80 bg-zinc-950/50 px-3 py-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Equipe Will Treinos</p>
+            <p className="mt-1 text-[11px] leading-snug text-zinc-400">
+              Dono, professor ou staff na tabela de acesso: confirme aqui e depois use Google/Facebook.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setStaffOAuthGateOk();
+                toast("Modo equipe ativado neste navegador. Agora use Google ou Facebook.");
+              }}
+              className="mt-2 w-full rounded-lg border border-[#EAB308]/35 bg-[#EAB308]/10 py-2 text-[11px] font-bold text-[#EAB308] hover:bg-[#EAB308]/18"
+            >
+              Sou equipe (dono / professor / staff)
+            </button>
+          </div>
+        ) : (
+          <div className="mb-8" />
+        )}
 
         {!supabaseReady ? (
           <div className="mt-8 p-4 bg-[#EAB308]/10 border border-[#EAB308]/20 rounded-xl">

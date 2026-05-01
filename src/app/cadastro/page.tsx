@@ -13,6 +13,7 @@ import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { createPublicLeadRemote } from "@/lib/supabasePersistence";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
+import { setMatriculaChannelActive } from "@/lib/enrollmentSession";
 
 const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7","serve8","jump9","team10","coach11","pro12"];
 
@@ -23,8 +24,7 @@ export default function RegistrationPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    sessionStorage.setItem("wt_matricula_channel", "1");
+    setMatriculaChannelActive();
   }, []);
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);

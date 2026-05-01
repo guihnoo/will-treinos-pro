@@ -21,6 +21,7 @@ import {
   createFeedPostRemote,
   createStudentRemote,
   insertNotificationRemote,
+  updateNotificationReadRemote,
   deleteLessonRemote,
   fetchFeedPostsRemote,
   fetchStaffAccessRole,
@@ -1068,8 +1069,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
     [usingSupabaseSession],
   );
-  const markNotificationRead = useCallback((id: string) => setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n)), []);
-  const markAllNotificationsRead = useCallback(() => setNotifications(p => p.map(n => ({ ...n, read: true }))), []);
+  const markNotificationRead = useCallback(
+    (id: string) => {
+      setNotifications((p) => p.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      if (!usingSupabaseSession) return;
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+      void updateNotificationReadRemote(supabase, id, true).catch((error) =>
+        setCriticalDataError(error instanceof Error ? error.message : "Falha ao marcar notificação como lida."),
+      );
+    },
+    [usingSupabaseSession],
+  );
+  const markAllNotificationsRead = useCallback(() => {
+    setNotifications((p) => {
+      const unreadIds = p.filter((n) => !n.read).map((n) => n.id);
+      if (usingSupabaseSession && unreadIds.length > 0) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          void supabase
+            .from("notifications")
+            .update({ is_read: true })
+            .in("id", unreadIds)
+            .then(({ error }) => {
+              if (error) {
+                setCriticalDataError(`Falha ao marcar todas como lidas: ${error.message}`);
+              }
+            });
+        }
+      }
+      return p.map((n) => ({ ...n, read: true }));
+    });
+  }, [usingSupabaseSession]);
 
   // ─── FEEDBACK & TRAINING ───
   const addFeedback = useCallback((fb: Omit<PerformanceFeedback, "id">) => setFeedbacks(p => [...p, { ...fb, id: `fb_${uid()}` }]), []);
