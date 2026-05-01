@@ -6,8 +6,7 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
 import { clearStaffOAuthGate } from "@/lib/enrollmentSession";
-
-const POST_LOGIN_NEXT_KEY = "wt_post_login_next";
+import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionGet, wtSessionRemove } from "@/lib/willLocalStorage";
 
 function sanitizeNextPath(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -49,14 +48,14 @@ export default function AuthCallbackPage() {
       const code = search.get("code") ?? hash.get("code");
       const nextFromQuery = sanitizeNextPath(search.get("next") ?? hash.get("next"));
       const nextFromStorage = sanitizeNextPath(
-        typeof window !== "undefined" ? sessionStorage.getItem(POST_LOGIN_NEXT_KEY) : null,
+        typeof window !== "undefined" ? wtSessionGet(WT_SESSION_POST_LOGIN_NEXT_KEY) : null,
       );
       const preferredNext = nextFromQuery ?? nextFromStorage;
 
       const finish = (user: SupabaseAuthUser) => {
         if (cancelled) return;
         if (typeof window !== "undefined") {
-          sessionStorage.removeItem(POST_LOGIN_NEXT_KEY);
+          wtSessionRemove(WT_SESSION_POST_LOGIN_NEXT_KEY);
           clearStaffOAuthGate();
         }
         router.replace(preferredNext ?? postLoginRouteFromAuthUser(user));

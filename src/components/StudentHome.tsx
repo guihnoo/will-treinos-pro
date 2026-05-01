@@ -494,7 +494,7 @@ export default function StudentHome() {
   }, [hydrated]);
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
-    const savedTier = localStorage.getItem("wt_equipped_tier_id");
+    const savedTier = wtLsGetString("equipped_tier_id", "");
     if (savedTier) setEquippedTierId(savedTier);
   }, [hydrated]);
 

@@ -13,8 +13,7 @@ import {
   isLoginOperatorMode,
   setStaffOAuthGateOk,
 } from "@/lib/enrollmentSession";
-
-const POST_LOGIN_NEXT_KEY = "wt_post_login_next";
+import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionSet } from "@/lib/willLocalStorage";
 
 function sanitizeNextPath(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -89,7 +88,7 @@ function LoginPageContent() {
       return;
     }
     if (nextPath && typeof window !== "undefined") {
-      sessionStorage.setItem(POST_LOGIN_NEXT_KEY, nextPath);
+      wtSessionSet(WT_SESSION_POST_LOGIN_NEXT_KEY, nextPath);
     }
     setIsSubmitting(true);
     const result = await loginWithOAuth(provider);

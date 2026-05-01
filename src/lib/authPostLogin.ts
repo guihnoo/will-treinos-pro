@@ -1,5 +1,6 @@
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { appRoleFromSupabaseUser } from "@/lib/supabaseClient";
+import { WT_SESSION_DEV_IMPERSONATION_KEY, wtSessionGet } from "@/lib/willLocalStorage";
 
 export type DevImpersonation = "admin" | "coach" | "aluno";
 
@@ -15,7 +16,7 @@ export function isDevRootEmail(email: string | null | undefined): boolean {
 
 export function readDevImpersonationFromStorage(): DevImpersonation {
   if (typeof window === "undefined") return "admin";
-  const v = sessionStorage.getItem("wt_dev_impersonation");
+  const v = wtSessionGet(WT_SESSION_DEV_IMPERSONATION_KEY);
   if (v === "coach" || v === "aluno" || v === "admin") return v;
   return "admin";
 }

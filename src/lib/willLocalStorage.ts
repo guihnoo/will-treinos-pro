@@ -50,6 +50,41 @@ export function wtLsTryParse<T>(key: string): T | null {
   }
 }
 
+/**
+ * Cache local do papel em modo mock / fluxos sem Supabase (chave histórica sem prefixo `wt_`).
+ */
+export const WT_LEGACY_ROLE_KEY = "will-role";
+
+export function wtLegacyRoleGet(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(WT_LEGACY_ROLE_KEY);
+}
+
+export function wtLegacyRoleSet(role: string): void {
+  if (typeof window !== "undefined") localStorage.setItem(WT_LEGACY_ROLE_KEY, role);
+}
+
+export function wtLegacyRoleRemove(): void {
+  if (typeof window !== "undefined") localStorage.removeItem(WT_LEGACY_ROLE_KEY);
+}
+
+/** Chaves `sessionStorage` com nome completo (fluxo login/OAuth/dev). */
+export const WT_SESSION_DEV_IMPERSONATION_KEY = "wt_dev_impersonation";
+export const WT_SESSION_POST_LOGIN_NEXT_KEY = "wt_post_login_next";
+
+export function wtSessionGet(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(key);
+}
+
+export function wtSessionSet(key: string, value: string): void {
+  if (typeof window !== "undefined") sessionStorage.setItem(key, value);
+}
+
+export function wtSessionRemove(key: string): void {
+  if (typeof window !== "undefined") sessionStorage.removeItem(key);
+}
+
 /** Objeto compatível com o antigo `ls` inline do `AppContext`. */
 export const wtLs = {
   get: wtLsGet,

@@ -13,7 +13,18 @@ import {
 export type { DevImpersonation } from "@/lib/authPostLogin";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { transactionalSeedDefaults } from "@/lib/willLocalDataPolicy";
-import { WT_LS_PREFIX, wtLs as ls, wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
+import {
+  WT_LS_PREFIX,
+  WT_SESSION_DEV_IMPERSONATION_KEY,
+  wtLegacyRoleGet,
+  wtLegacyRoleRemove,
+  wtLegacyRoleSet,
+  wtLs as ls,
+  wtLsGetString,
+  wtLsSetString,
+  wtSessionGet,
+  wtSessionSet,
+} from "@/lib/willLocalStorage";
 import {
 
   addFeedCommentRemote,
@@ -211,7 +222,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [criticalDataError, setCriticalDataError] = useState<string | null>(null);
   const [devImpersonation, setDevImpersonationState] = useState<DevImpersonation>(() => {
     if (typeof window === "undefined") return "admin";
-    const v = sessionStorage.getItem("wt_dev_impersonation");
+    const v = wtSessionGet(WT_SESSION_DEV_IMPERSONATION_KEY);
     if (v === "coach" || v === "aluno" || v === "admin") return v;
     return "admin";
   });
@@ -282,7 +293,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         enrollmentInviteCode: "",
       }),
     );
-    const savedRole = localStorage.getItem("will-role") as Role;
+    const savedRole = wtLegacyRoleGet() as Role | null;
     if (savedRole && !hasSupabaseEnv()) loginUser(savedRole);
   }, []);
 
@@ -427,7 +438,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const safeRole: "admin" | "coach" | "aluno" = role === "admin" || role === "coach" || role === "aluno" ? role : "aluno";
     const mergedUser = buildSessionUser(safeRole);
     setUser(mergedUser);
-    localStorage.setItem("will-role", safeRole);
+    wtLegacyRoleSet(safeRole);
     syncWtRoleCookie(mergedUser.role);
   }, [buildSessionUser]);
 
@@ -480,9 +491,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         authSubjectId: authUser.id,
       });
       if (mergedUser.role) {
-        localStorage.setItem("will-role", mergedUser.role);
+        wtLegacyRoleSet(mergedUser.role);
       } else {
-        localStorage.removeItem("will-role");
+        wtLegacyRoleRemove();
       }
       syncWtRoleCookie(mergedUser.role);
     },
@@ -491,7 +502,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const setDevImpersonation = useCallback((role: DevImpersonation) => {
     setDevImpersonationState(role);
-    if (typeof window !== "undefined") sessionStorage.setItem("wt_dev_impersonation", role);
+    if (typeof window !== "undefined") wtSessionSet(WT_SESSION_DEV_IMPERSONATION_KEY, role);
   }, []);
 
   const isDevRoot = useMemo(() => isDevRootEmail(user?.email), [user?.email]);
@@ -640,7 +651,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         supabaseAuthUserRef.current = null;
         criticalBootstrapDoneRef.current = false;
         setUser(null);
-        localStorage.removeItem("will-role");
+        wtLegacyRoleRemove();
         clearWtRoleCookie();
       }
     });
@@ -740,7 +751,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     supabaseAuthUserRef.current = null;
     setUser(null);
-    localStorage.removeItem("will-role");
+    wtLegacyRoleRemove();
     clearWtRoleCookie();
   };
 
@@ -866,7 +877,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 }
               : prev,
           );
-          localStorage.setItem("will-role", "aluno");
+          wtLegacyRoleSet("aluno");
           syncWtRoleCookie("aluno");
         }
         /* Notificação «nova inscrição»: criada no Postgres (trigger wt_notify_staff_new_pending_student);
