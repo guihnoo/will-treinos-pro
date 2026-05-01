@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Mail, Lock, Phone } from "lucide-react";
+import { ArrowLeft, ChevronDown, Mail, Lock, Phone } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -90,7 +90,7 @@ function LoginPageContent() {
     }
     if (!canUseSocialOAuthFromLogin()) {
       toast(
-        "Abra antes o link de matrícula do Will neste navegador (página Cadastro) ou use «Sou equipe» abaixo para dono/professor/staff.",
+        "Abra antes o convite de matrícula (link com /cadastro neste navegador) ou expanda «Acesso da equipe» no rodapé do cartão para liberar Google/Facebook.",
         "error",
       );
       return;
@@ -128,10 +128,9 @@ function LoginPageContent() {
           <h1 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h1>
           <p className="text-sm text-zinc-500">Faça login para acessar sua conta</p>
           {supabaseReady ? (
-            <p className="mt-3 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-left text-[11px] leading-relaxed text-zinc-400">
-              <span className="font-bold text-[#EAB308]">Aluno:</span> use primeiro o{" "}
-              <strong className="text-zinc-200">link de matrícula</strong> enviado pelo Will Treinos (mesmo site),
-              preencha o cadastro e só depois entre com Google ou e-mail aqui. Assim o dono vê sua solicitação e aprova.
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-zinc-500 px-1">
+              Novos alunos: entre apenas após enviar o cadastro pelo{" "}
+              <span className="text-zinc-300 font-medium">convite</span> da equipe; depois use e-mail ou Google aqui.
             </p>
           ) : null}
         </div>
@@ -234,22 +233,27 @@ function LoginPageContent() {
         </div>
 
         {supabaseReady ? (
-          <div className="mb-8 rounded-xl border border-zinc-800/80 bg-zinc-950/50 px-3 py-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Equipe Will Treinos</p>
-            <p className="mt-1 text-[11px] leading-snug text-zinc-400">
-              Dono, professor ou staff na tabela de acesso: confirme aqui e em seguida use Google/Facebook (válido 45 min nesta aba).
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setStaffOAuthGateOk();
-                toast("Modo equipe ativado por 45 min nesta aba. Use Google ou Facebook agora.");
-              }}
-              className="mt-2 w-full rounded-lg border border-[#EAB308]/35 bg-[#EAB308]/10 py-2 text-[11px] font-bold text-[#EAB308] hover:bg-[#EAB308]/18"
-            >
-              Sou equipe (dono / professor / staff)
-            </button>
-          </div>
+          <details className="group mb-8 rounded-2xl border border-zinc-800/50 bg-zinc-950/30 backdrop-blur-sm [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors rounded-2xl">
+              <span>Acesso da equipe Will Treinos</span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-zinc-600 transition-transform duration-200 group-open:rotate-180" aria-hidden />
+            </summary>
+            <div className="border-t border-zinc-800/60 px-3 pb-3 pt-2">
+              <p className="text-[11px] leading-snug text-zinc-500 mb-2">
+                Libera Google/Facebook neste navegador por 45 minutos (dono, professor ou staff autorizado).
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setStaffOAuthGateOk();
+                  toast("Login social liberado por 45 min nesta aba.");
+                }}
+                className="w-full rounded-xl border border-zinc-700/80 bg-zinc-900/40 py-2.5 text-[11px] font-semibold text-zinc-200 hover:border-[#EAB308]/40 hover:text-[#EAB308] transition-colors"
+              >
+                Liberar login social — equipe
+              </button>
+            </div>
+          </details>
         ) : (
           <div className="mb-8" />
         )}
@@ -265,9 +269,17 @@ function LoginPageContent() {
           </div>
         ) : null}
 
-        <p className="text-center text-xs text-zinc-500 mt-8">
-          Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="text-[#EAB308] font-bold hover:underline">Faça sua matrícula</Link>
+        <p className="text-center text-xs text-zinc-600 mt-8 px-2 leading-relaxed">
+          {process.env.NEXT_PUBLIC_SHOW_PUBLIC_CADASTRO_LINK === "true" ? (
+            <>
+              Primeira vez?{" "}
+              <Link href="/cadastro" className="text-[#EAB308] font-semibold hover:underline">
+                Abrir matrícula
+              </Link>
+            </>
+          ) : (
+            <>Matrícula apenas pelo convite (link) enviado pela equipe Will Treinos.</>
+          )}
         </p>
       </motion.div>
     </div>

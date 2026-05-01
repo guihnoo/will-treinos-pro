@@ -13,7 +13,11 @@ import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { createPublicLeadRemote } from "@/lib/supabasePersistence";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
-import { setMatriculaChannelActive } from "@/lib/enrollmentSession";
+import {
+  cadastroInviteRequired,
+  persistInviteTokenFromSearch,
+  setMatriculaChannelActive,
+} from "@/lib/enrollmentSession";
 
 const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7","serve8","jump9","team10","coach11","pro12"];
 
@@ -24,7 +28,11 @@ export default function RegistrationPage() {
   const router = useRouter();
 
   useEffect(() => {
-    setMatriculaChannelActive();
+    if (typeof window === "undefined") return;
+    const token = persistInviteTokenFromSearch(window.location.search);
+    const blocked = cadastroInviteRequired() && !token;
+    if (!blocked) setMatriculaChannelActive();
+    setInviteGate({ ready: true, blocked });
   }, []);
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -38,6 +46,10 @@ export default function RegistrationPage() {
   const [customPhoto, setCustomPhoto] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [inviteGate, setInviteGate] = useState<{ ready: boolean; blocked: boolean }>({
+    ready: false,
+    blocked: false,
+  });
   useBodyScrollLock(showPhotoOptions);
   const premiumAvatarSrc = photoMode === "photo" && customPhoto ? customPhoto : `https://api.dicebear.com/7.x/avataaars/svg?seed=${form.avatarSeed}`;
   const supabaseReady = hasSupabaseEnv();
@@ -128,6 +140,42 @@ export default function RegistrationPage() {
 
   const regenerateAvatar = () =>
     setForm(p => ({ ...p, avatarSeed: AVATAR_SEEDS[Math.floor(Math.random()*AVATAR_SEEDS.length)] }));
+
+  if (!inviteGate.ready) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="h-9 w-9 rounded-full border-2 border-zinc-800 border-t-[#EAB308] animate-spin" aria-hidden />
+      </div>
+    );
+  }
+
+  if (inviteGate.blocked) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-[#EAB308] opacity-[0.04] blur-[90px] rounded-full pointer-events-none" />
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 w-full max-w-md rounded-3xl border border-zinc-800/70 bg-black/55 p-8 text-center backdrop-blur-md"
+        >
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#EAB308]/25 bg-[#EAB308]/10">
+            <Mail className="h-7 w-7 text-[#EAB308]" aria-hidden />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Convite obrigatório</h2>
+          <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+            Use o link de matrícula enviado pela equipe Will Treinos (inclui um convite seguro). Sem esse link, o cadastro
+            fica restrito para proteger a sua turma.
+          </p>
+          <Link
+            href="/login"
+            className={`inline-flex ${TOUCH_TARGET_MIN} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900/50 px-6 text-sm font-semibold text-zinc-200 hover:border-[#EAB308]/35 hover:text-[#EAB308] transition-colors ${FOCUS_RING_GOLD}`}
+          >
+            Voltar ao login
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (!authResolved && supabaseReady && user) {
     return (
