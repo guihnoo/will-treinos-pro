@@ -43,7 +43,7 @@ import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
-import { localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
+import { localDateISO } from "@/lib/dateUtils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 function currencyBRL(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -92,7 +92,7 @@ const INTERACTIVE_FOCUS_RING =
 export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
-  const { payments } = usePayments();
+  const { payments, pendingOrLatePaymentsCount, currentMonthReference, currentMonthBuckets } = usePayments();
   const { appConfig, cadastroPath, cadastroInviteUrl, generateEnrollmentInviteCode } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
   const { user } = useAuth();
@@ -160,18 +160,9 @@ export default function WillCockpit() {
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
-  const currentMonthReference = useMemo(() => paymentReferenceForDate(), []);
-  const financialBuckets = useMemo(() => {
-    const monthPayments = payments.filter((p) => p.reference === currentMonthReference);
-    const paid = monthPayments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0);
-    const pending = monthPayments.filter((p) => p.status === "pending").reduce((acc, p) => acc + p.amount, 0);
-    const late = monthPayments.filter((p) => p.status === "late").reduce((acc, p) => acc + p.amount, 0);
-    return { paid, pending, late };
-  }, [payments, currentMonthReference]);
-
   const awaitingApproval = approvalQueue.length;
   const athletesToday = todayEnrolledCount;
-  const pendingPaymentsCount = payments.filter((p) => p.status === "pending" || p.status === "late").length;
+  const pendingPaymentsCount = pendingOrLatePaymentsCount;
   const filteredApprovalQueue = useMemo(() => {
     const normalizedSearch = approvalSearch.trim().toLowerCase();
     const byFilter = approvalFilter === "all" ? approvalQueue : approvalQueue.filter((s) => s.status === approvalFilter);
@@ -594,15 +585,15 @@ export default function WillCockpit() {
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5">
               <p className="text-[10px] text-zinc-300">Recebido</p>
-              <p className="text-lg font-black text-emerald-300 tabular-nums">{currencyBRL(financialBuckets.paid)}</p>
+              <p className="text-lg font-black text-emerald-300 tabular-nums">{currencyBRL(currentMonthBuckets.paid)}</p>
             </div>
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
               <p className="text-[10px] text-zinc-300">A receber</p>
-              <p className="text-lg font-black text-amber-300 tabular-nums">{currencyBRL(financialBuckets.pending)}</p>
+              <p className="text-lg font-black text-amber-300 tabular-nums">{currencyBRL(currentMonthBuckets.pending)}</p>
             </div>
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-2.5">
               <p className="text-[10px] text-zinc-300">Inadimplentes</p>
-              <p className="text-lg font-black text-red-300 tabular-nums">{currencyBRL(financialBuckets.late)}</p>
+              <p className="text-lg font-black text-red-300 tabular-nums">{currencyBRL(currentMonthBuckets.late)}</p>
             </div>
           </div>
           <div className="mt-2 flex items-center justify-between gap-2">
@@ -1289,15 +1280,15 @@ export default function WillCockpit() {
                 <div className="grid gap-2 sm:grid-cols-3">
                   <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
                     <p className="text-[10px] text-zinc-300">Recebido (paid)</p>
-                    <p className="text-xl font-black text-emerald-300">{currencyBRL(financialBuckets.paid)}</p>
+                    <p className="text-xl font-black text-emerald-300">{currencyBRL(currentMonthBuckets.paid)}</p>
                   </div>
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
                     <p className="text-[10px] text-zinc-300">A receber (pending)</p>
-                    <p className="text-xl font-black text-amber-300">{currencyBRL(financialBuckets.pending)}</p>
+                    <p className="text-xl font-black text-amber-300">{currencyBRL(currentMonthBuckets.pending)}</p>
                   </div>
                   <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3">
                     <p className="text-[10px] text-zinc-300">Inadimplentes (late)</p>
-                    <p className="text-xl font-black text-red-300">{currencyBRL(financialBuckets.late)}</p>
+                    <p className="text-xl font-black text-red-300">{currencyBRL(currentMonthBuckets.late)}</p>
                   </div>
                 </div>
                 <div className="mt-3 rounded-xl border border-white/10 bg-black/45 p-3">

@@ -22,7 +22,6 @@ import { avatarSrc } from "@/lib/avatarSrc";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import StatCard from "@/components/ui/StatCard";
-import { paymentReferenceForDate } from "@/lib/dateUtils";
 import AppEmptyState from "@/components/ui/AppEmptyState";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
@@ -54,7 +53,7 @@ export default function AlunosPage() {
     suspendStudent,
     updateStudent,
   } = useStudents();
-  const { payments } = usePayments();
+  const { payments, currentMonthReference, getStudentCurrentPayment } = usePayments();
   const { cadastroInviteUrl } = useAppConfig();
   const { categories } = useCatalog();
   const { quickMessages } = useCoaching();
@@ -93,16 +92,13 @@ export default function AlunosPage() {
     { key: "trial", label: "Trial", count: statusCounts.trial },
   ];
 
-  const currentReference = useMemo(() => paymentReferenceForDate(), []);
-  const getStudentPayment = (id: string) => payments.find((p) => p.studentId === id && p.reference === currentReference);
-
   const applyTemplate = (template: string, student: Student) => {
-    const pay = getStudentPayment(student.id);
+    const pay = getStudentCurrentPayment(student.id);
     return template
       .replace("{nome}", student.name.split(" ")[0])
       .replace("{valor}", student.monthlyValue.toString())
       .replace("{categoria}", student.categories[0] || "aula")
-      .replace("{referencia}", pay?.reference || currentReference)
+      .replace("{referencia}", pay?.reference || currentMonthReference)
       .replace("{horario}", "18:00");
   };
 
@@ -266,7 +262,7 @@ export default function AlunosPage() {
         ) : null}
         {filtered.map((student, i) => {
           const status = statusConfig[student.status];
-          const pay = getStudentPayment(student.id);
+          const pay = getStudentCurrentPayment(student.id);
           return (
             <div key={student.id} className="relative overflow-hidden rounded-xl bg-zinc-900/50 border border-zinc-800/50">
               {/* Swipe Background Actions */}
