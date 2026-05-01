@@ -156,5 +156,7 @@ export interface AppConfig {
   pixKeyType: "email" | "cpf" | "telefone" | "aleatoria";
   pixOwnerName: string;     // recipient name shown in PIX
   whatsappNumber: string;   // contact WhatsApp
+  /** Slug em `/cadastro?invite=` — gerado automaticamente no cliente se vazio. */
+  enrollmentInviteCode?: string;
   studentProfilePolicy?: Partial<StudentProfileEditPolicy>;
 }

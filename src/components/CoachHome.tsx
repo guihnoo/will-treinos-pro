@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarRange, CalendarPlus, Check, Copy, X, ShieldAlert, UserCheck,
@@ -21,18 +21,26 @@ import { avatarSrc } from "@/lib/avatarSrc";
 
 export default function CoachHome() {
   const {
-    todayLessons, getStudent, getCategory, getVenue,
-    checkInStudent, user
+    todayLessons,
+    getStudent,
+    getCategory,
+    getVenue,
+    checkInStudent,
+    user,
+    appConfig,
   } = useApp();
   const { toast } = useToast();
   const [lessonModal, setLessonModal] = useState<string | null>(null);
   const [feedbackTarget, setFeedbackTarget] = useState<{ lessonId: string; studentId: string } | null>(null);
   const [evalTarget, setEvalTarget] = useState<{ lessonId: string; lessonTitle: string; studentId: string } | null>(null);
   const [showCreateLesson, setShowCreateLesson] = useState(false);
-  const [cadastroPublicUrl, setCadastroPublicUrl] = useState("");
-  useEffect(() => {
-    if (typeof window !== "undefined") setCadastroPublicUrl(`${window.location.origin}/cadastro`);
-  }, []);
+  const cadastroInviteUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const origin = window.location.origin;
+    const code = appConfig.enrollmentInviteCode?.trim();
+    if (!code) return `${origin}/cadastro`;
+    return `${origin}/cadastro?invite=${encodeURIComponent(code)}`;
+  }, [appConfig.enrollmentInviteCode]);
   const hasModalOpen = Boolean(lessonModal || feedbackTarget || evalTarget || showCreateLesson);
   useBodyScrollLock(hasModalOpen);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
@@ -71,20 +79,20 @@ export default function CoachHome() {
             <UserPlus className="h-5 w-5" />
             <p className="text-xs font-black uppercase tracking-wider">Novo aluno</p>
           </div>
-          <p className="mt-2 text-[11px] text-zinc-500">Convite público e aprovações na área Alunos.</p>
+          <p className="mt-2 text-[11px] text-zinc-500">Mesmo convite do cockpit (?invite). Aprovações em Alunos.</p>
           <div className="mt-3 flex flex-col gap-2">
-            {cadastroPublicUrl ? (
+            {cadastroInviteUrl ? (
               <button
                 type="button"
                 onClick={() => {
-                  void navigator.clipboard.writeText(cadastroPublicUrl);
+                  void navigator.clipboard.writeText(cadastroInviteUrl);
                   toast("Link de matrícula copiado.");
                 }}
                 className={`w-full rounded-xl border border-[#EAB308]/40 bg-black/30 py-2.5 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/10 ${ctaClass}`}
               >
                 <span className="inline-flex items-center justify-center gap-2">
                   <Copy className="h-3.5 w-3.5" />
-                  Copiar link /cadastro
+                  Copiar link de matrícula
                 </span>
               </button>
             ) : null}

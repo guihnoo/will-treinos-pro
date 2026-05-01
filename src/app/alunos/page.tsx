@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Search, CheckCircle2, XCircle, AlertTriangle,
@@ -45,6 +45,7 @@ export default function AlunosPage() {
   const {
     categories,
     quickMessages,
+    appConfig,
     usingSupabaseSession,
     criticalDataLoading,
     criticalDataError,
@@ -60,11 +61,14 @@ export default function AlunosPage() {
   const [evalStudent, setEvalStudent] = useState<Student | null>(null);
   const [profileTab, setProfileTab] = useState<"geral" | "desempenho" | "financeiro">("geral");
   const [busyStudentAction, setBusyStudentAction] = useState<{ id: string; kind: "approve" | "suspend" } | null>(null);
-  const [cadastroPublicUrl, setCadastroPublicUrl] = useState("");
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
-  useEffect(() => {
-    if (typeof window !== "undefined") setCadastroPublicUrl(`${window.location.origin}/cadastro`);
-  }, []);
+  const cadastroInviteUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const origin = window.location.origin;
+    const code = appConfig.enrollmentInviteCode?.trim();
+    if (!code) return `${origin}/cadastro`;
+    return `${origin}/cadastro?invite=${encodeURIComponent(code)}`;
+  }, [appConfig.enrollmentInviteCode]);
   useBodyScrollLock(Boolean(selectedStudent || trainingStudent || evalStudent));
 
   const filtered = useMemo(() => {
@@ -164,7 +168,7 @@ export default function AlunosPage() {
         icon={Users}
       />
 
-      {user?.role !== "aluno" && cadastroPublicUrl ? (
+      {user?.role !== "aluno" && cadastroInviteUrl ? (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -173,17 +177,17 @@ export default function AlunosPage() {
           <div className="flex min-w-0 items-start gap-2">
             <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EAB308]" aria-hidden />
             <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-wider text-[#EAB308]">Link público de matrícula</p>
-              <p className="mt-0.5 truncate font-mono text-[11px] text-zinc-300" title={cadastroPublicUrl}>
-                {cadastroPublicUrl}
+              <p className="text-[11px] font-black uppercase tracking-wider text-[#EAB308]">Link de matrícula (convite)</p>
+              <p className="mt-0.5 truncate font-mono text-[11px] text-zinc-300" title={cadastroInviteUrl}>
+                {cadastroInviteUrl}
               </p>
-              <p className="mt-1 text-[10px] text-zinc-500">Envie ao aluno para criar conta e entrar na fila de aprovação.</p>
+              <p className="mt-1 text-[10px] text-zinc-500">Mesmo link configurado no cockpit; inclui código ?invite= para controle de acesso.</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => {
-              void navigator.clipboard.writeText(cadastroPublicUrl);
+              void navigator.clipboard.writeText(cadastroInviteUrl);
               toast("Link copiado.");
             }}
             className={`inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-[#EAB308]/45 bg-black/30 px-4 py-2 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/15 sm:self-center ${ctaClass}`}

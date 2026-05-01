@@ -17,7 +17,9 @@ import {
   CreditCard,
   MapPin,
   PlusCircle,
+  RefreshCw,
   UserPlus,
+  UserCheck,
   ShieldAlert,
   Search,
   Newspaper,
@@ -87,8 +89,20 @@ export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
   const { payments } = usePayments();
-  const { students, lessons, todayLessons, user, getCategory, getStudent, approveStudent, appConfig, categories, venues } =
-    useApp();
+  const {
+    students,
+    lessons,
+    todayLessons,
+    user,
+    getCategory,
+    getStudent,
+    approveStudent,
+    updateStudent,
+    updateAppConfig,
+    appConfig,
+    categories,
+    venues,
+  } = useApp();
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [showCourtModal, setShowCourtModal] = useState(false);
@@ -105,10 +119,46 @@ export default function WillCockpit() {
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [selectedBillingTemplate, setSelectedBillingTemplate] = useState<string | null>(null);
   const [approvalSearch, setApprovalSearch] = useState("");
-  const [cadastroPublicUrl, setCadastroPublicUrl] = useState("");
+  const [onboardingStudentId, setOnboardingStudentId] = useState<string | null>(null);
+  const [onboardingDraft, setOnboardingDraft] = useState({
+    plan: "",
+    monthlyValue: 0,
+    paymentDay: 10,
+    frequency: 2,
+    notes: "",
+    categoryIds: [] as string[],
+  });
+
+  const cadastroInviteUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const origin = window.location.origin;
+    const code = appConfig.enrollmentInviteCode?.trim();
+    if (!code) return `${origin}/cadastro`;
+    return `${origin}/cadastro?invite=${encodeURIComponent(code)}`;
+  }, [appConfig.enrollmentInviteCode]);
+
+  const cadastroPath = useMemo(() => {
+    const code = appConfig.enrollmentInviteCode?.trim();
+    if (!code) return "/cadastro";
+    return `/cadastro?invite=${encodeURIComponent(code)}`;
+  }, [appConfig.enrollmentInviteCode]);
+
   useEffect(() => {
-    if (typeof window !== "undefined") setCadastroPublicUrl(`${window.location.origin}/cadastro`);
-  }, []);
+    if (!onboardingStudentId) return;
+    const s = students.find((st) => st.id === onboardingStudentId);
+    if (!s) {
+      setOnboardingStudentId(null);
+      return;
+    }
+    setOnboardingDraft({
+      plan: s.plan || "mensal",
+      monthlyValue: s.monthlyValue ?? 0,
+      paymentDay: Math.min(28, Math.max(1, s.paymentDay ?? 10)),
+      frequency: s.frequency ?? 2,
+      notes: s.notes || "",
+      categoryIds: [...(s.categories || [])],
+    });
+  }, [onboardingStudentId, students]);
 
   const isAnyModalOpen =
     showApprovalModal ||
@@ -117,7 +167,8 @@ export default function WillCockpit() {
     showLessonModal ||
     showStudentModal ||
     showQuickActionModal !== null ||
-    showCreateLesson;
+    showCreateLesson ||
+    onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
   const currentMonthReference = useMemo(() => paymentReferenceForDate(), []);
@@ -202,7 +253,7 @@ export default function WillCockpit() {
   const openOwnerStudentIntake = () => {
     haptic(18);
     setShowQuickActionModal(null);
-    router.push("/cadastro");
+    router.push(cadastroPath);
     setActionFeedback("Fluxo de cadastro de novo aluno aberto.");
   };
   const openCreateLessonFlow = () => {
@@ -358,27 +409,45 @@ export default function WillCockpit() {
                 <p className="text-xs font-black uppercase tracking-wider">Novo aluno</p>
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                Link público de matrícula + gestão de aprovações na área Alunos.
+                Link com convite único (`?invite=`) para novos alunos. Gere outro código se o link vazar.
               </p>
               <div className="mt-3 flex flex-col gap-2">
-                {cadastroPublicUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(cadastroPublicUrl);
-                      haptic(12);
-                      toast("Link de cadastro copiado.");
-                    }}
-                    className={`min-h-11 w-full rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/10 py-2.5 text-xs font-bold text-[#EAB308] transition hover:bg-[#EAB308]/18 ${INTERACTIVE_FOCUS_RING}`}
-                  >
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Copy className="h-3.5 w-3.5" />
-                      Copiar link de matrícula
-                    </span>
-                  </button>
+                {cadastroInviteUrl ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(cadastroInviteUrl);
+                        haptic(12);
+                        toast("Link de matrícula copiado.");
+                      }}
+                      className={`min-h-11 w-full rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/10 py-2.5 text-xs font-bold text-[#EAB308] transition hover:bg-[#EAB308]/18 ${INTERACTIVE_FOCUS_RING}`}
+                    >
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <Copy className="h-3.5 w-3.5" />
+                        Copiar link de matrícula
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const code =
+                          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+                            ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
+                            : `wt_${Date.now().toString(36)}`;
+                        updateAppConfig({ enrollmentInviteCode: code });
+                        haptic(12);
+                        toast("Novo convite gerado. Compartilhe o link atualizado.");
+                      }}
+                      className={`inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700/90 bg-zinc-950/50 py-2 text-[11px] font-semibold text-zinc-400 transition hover:border-[#EAB308]/30 hover:text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Gerar novo código de convite
+                    </button>
+                  </>
                 ) : null}
                 <Link
-                  href="/cadastro"
+                  href={cadastroPath}
                   onClick={() => haptic(10)}
                   className={`min-h-11 w-full rounded-xl border border-white/15 bg-white/5 py-2.5 text-center text-xs font-bold text-zinc-200 transition hover:border-[#EAB308]/35 hover:text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
                 >
@@ -612,7 +681,7 @@ export default function WillCockpit() {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(234,179,8,0.12),transparent_65%)]" />
           <div className="grid gap-3 sm:grid-cols-2">
           <Link
-            href="/cadastro"
+            href={cadastroPath}
             onClick={() => {
               haptic(20);
               setActionFeedback("Fluxo de cadastro de novo aluno aberto.");
@@ -699,24 +768,42 @@ export default function WillCockpit() {
                 </motion.button>
               </motion.div>
 
-              {cadastroPublicUrl ? (
+              {cadastroInviteUrl ? (
                 <div className="mb-3 shrink-0 rounded-xl border border-[#EAB308]/30 bg-[#EAB308]/10 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#EAB308]">Link para o aluno se cadastrar</p>
-                  <p className="mt-1 truncate font-mono text-[11px] text-zinc-300" title={cadastroPublicUrl}>
-                    {cadastroPublicUrl}
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#EAB308]">Convite de matrícula</p>
+                  <p className="mt-1 truncate font-mono text-[11px] text-zinc-300" title={cadastroInviteUrl}>
+                    {cadastroInviteUrl}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(cadastroPublicUrl);
-                      haptic(12);
-                      toast("Link copiado. Cole no WhatsApp ou e-mail do atleta.");
-                    }}
-                    className={`mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#EAB308]/40 bg-black/40 py-2 text-xs font-bold text-[#EAB308] transition hover:bg-[#EAB308]/15 ${INTERACTIVE_FOCUS_RING}`}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    Copiar link de matrícula
-                  </button>
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(cadastroInviteUrl);
+                        haptic(12);
+                        toast("Link copiado. Envie por WhatsApp ou e-mail.");
+                      }}
+                      className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[#EAB308]/40 bg-black/40 py-2 text-xs font-bold text-[#EAB308] transition hover:bg-[#EAB308]/15 ${INTERACTIVE_FOCUS_RING}`}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const code =
+                          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+                            ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
+                            : `wt_${Date.now().toString(36)}`;
+                        updateAppConfig({ enrollmentInviteCode: code });
+                        haptic(10);
+                        toast("Novo código. Use o link atualizado.");
+                      }}
+                      className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 py-2 text-[11px] font-semibold text-zinc-300 transition hover:border-[#EAB308]/35 hover:text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Novo código
+                    </button>
+                  </div>
                 </div>
               ) : null}
 
@@ -929,32 +1016,45 @@ export default function WillCockpit() {
                         </div>
                       ) : null}
 
-                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <div className="mt-2 grid gap-2">
                         <button
                           type="button"
                           disabled={!isReady}
                           onClick={() => {
-                            approveStudent(student.id);
-                            setSelectedApprovalIds((prev) => prev.filter((id) => id !== student.id));
-                            setActionFeedback(`Atleta ${student.name} aprovado com sucesso.`);
+                            setOnboardingStudentId(student.id);
                           }}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300 transition hover:border-emerald-400/55 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#EAB308]/45 bg-[#EAB308]/12 px-3 py-2 text-xs font-bold text-[#EAB308] transition hover:bg-[#EAB308]/20 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <CheckCircle2 className="h-4 w-4" />
-                          {isReady ? "Aprovar atleta" : "Checklist pendente"}
+                          <UserCheck className="h-4 w-4" />
+                          {isReady ? "Completar plano e aprovar" : "Complete o checklist primeiro"}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedStudentId(student.id);
-                            setSelectedStudentLayoutId(`student-card-approval-${student.id}`);
-                            setShowStudentModal(true);
-                          }}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold text-zinc-200 transition hover:border-[#EAB308]/45 hover:text-[#EAB308]"
-                        >
-                          <AlertTriangle className="h-4 w-4" />
-                          Ver ficha no cockpit
-                        </button>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <button
+                            type="button"
+                            disabled={!isReady}
+                            onClick={() => {
+                              approveStudent(student.id);
+                              setSelectedApprovalIds((prev) => prev.filter((id) => id !== student.id));
+                              setActionFeedback(`Atleta ${student.name} aprovado com os valores atuais do cadastro.`);
+                            }}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300 transition hover:border-emerald-400/55 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Aprovar rápido
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedStudentId(student.id);
+                              setSelectedStudentLayoutId(`student-card-approval-${student.id}`);
+                              setShowStudentModal(true);
+                            }}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold text-zinc-200 transition hover:border-[#EAB308]/45 hover:text-[#EAB308]"
+                          >
+                            <AlertTriangle className="h-4 w-4" />
+                            Ver ficha
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                     );
@@ -967,6 +1067,206 @@ export default function WillCockpit() {
                 </div>
               ) : null}
             </motion.section>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {onboardingStudentId ? (
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Completar plano e aprovar aluno"
+            className={`fixed inset-0 z-[230] ${MODAL_FIXED_OVERLAY_SCROLL} bg-black/75`}
+            {...MODAL_OVERLAY_FADE}
+            onClick={() => setOnboardingStudentId(null)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setOnboardingStudentId(null);
+            }}
+            tabIndex={-1}
+          >
+            <div className={MODAL_OVERLAY_CENTER_WRAP}>
+              <motion.section
+                initial={{ opacity: 0, y: 36, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 28, scale: 0.98 }}
+                transition={SPRING_PREMIUM}
+                onClick={(e) => e.stopPropagation()}
+                className={`my-auto w-full max-w-lg rounded-3xl border border-white/[0.1] bg-[#050505]/95 p-5 shadow-[0_35px_120px_rgba(0,0,0,0.8)] backdrop-blur-3xl ${MODAL_PANEL_COLUMN}`}
+              >
+                {(() => {
+                  const obStudent = students.find((s) => s.id === onboardingStudentId);
+                  if (!obStudent) return null;
+                  return (
+                    <>
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <UserAvatar name={obStudent.name} photo={obStudent.avatar} size="md" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#EAB308]">Ativar aluno</p>
+                            <h3 className="truncate text-lg font-black text-white">{obStudent.name}</h3>
+                            <p className="truncate text-[11px] text-zinc-500">{obStudent.email || maskPhone(obStudent.phone)}</p>
+                          </div>
+                        </div>
+                        <motion.button
+                          whileTap={PRESS_SCALE}
+                          type="button"
+                          onClick={() => setOnboardingStudentId(null)}
+                          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-zinc-200"
+                          aria-label="Fechar"
+                        >
+                          <X className="h-4 w-4" />
+                        </motion.button>
+                      </div>
+                      <div className={`${MODAL_BODY_SCROLL} space-y-3 text-left`}>
+                        <p className="text-[11px] leading-relaxed text-zinc-500">
+                          Defina plano, mensalidade e frequência antes de liberar o app para este atleta. Você poderá ajustar depois em Alunos / Financeiro.
+                        </p>
+                        <label className="block">
+                          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">Nome do plano</span>
+                          <input
+                            type="text"
+                            value={onboardingDraft.plan}
+                            onChange={(e) => setOnboardingDraft((d) => ({ ...d, plan: e.target.value }))}
+                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EAB308]/45"
+                            placeholder="Ex.: Grupo Mensal, VIP Performance…"
+                          />
+                        </label>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">Mensalidade (R$)</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={onboardingDraft.monthlyValue || ""}
+                              onChange={(e) =>
+                                setOnboardingDraft((d) => ({
+                                  ...d,
+                                  monthlyValue: Math.max(0, Number(e.target.value) || 0),
+                                }))
+                              }
+                              className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EAB308]/45"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">Dia do pagamento</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={28}
+                              value={onboardingDraft.paymentDay}
+                              onChange={(e) =>
+                                setOnboardingDraft((d) => ({
+                                  ...d,
+                                  paymentDay: Math.min(28, Math.max(1, Math.round(Number(e.target.value)) || 10)),
+                                }))
+                              }
+                              className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EAB308]/45"
+                            />
+                          </label>
+                        </div>
+                        <label className="block">
+                          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+                            Frequência (aulas por semana — referência operacional)
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={14}
+                            value={onboardingDraft.frequency}
+                            onChange={(e) =>
+                              setOnboardingDraft((d) => ({
+                                ...d,
+                                frequency: Math.max(0, Math.round(Number(e.target.value)) || 0),
+                              }))
+                            }
+                            className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EAB308]/45"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">Observações internas</span>
+                          <textarea
+                            value={onboardingDraft.notes}
+                            onChange={(e) => setOnboardingDraft((d) => ({ ...d, notes: e.target.value }))}
+                            rows={3}
+                            className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EAB308]/45"
+                            placeholder="Combinados com o atleta, vínculo com turma…"
+                          />
+                        </label>
+                        {categories.length > 0 ? (
+                          <div>
+                            <span className="mb-2 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+                              Modalidades / categorias
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {categories.map((c) => {
+                                const on = onboardingDraft.categoryIds.includes(c.id);
+                                return (
+                                  <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() =>
+                                      setOnboardingDraft((d) => ({
+                                        ...d,
+                                        categoryIds: on
+                                          ? d.categoryIds.filter((id) => id !== c.id)
+                                          : [...d.categoryIds, c.id],
+                                      }))
+                                    }
+                                    className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+                                      on
+                                        ? "border-[#EAB308]/50 bg-[#EAB308]/15 text-[#EAB308]"
+                                        : "border-zinc-700 bg-zinc-950/60 text-zinc-400 hover:border-zinc-600"
+                                    }`}
+                                  >
+                                    <span className="mr-1">{c.emoji}</span>
+                                    {c.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="mt-4 flex shrink-0 flex-col gap-2 border-t border-white/[0.06] pt-4 sm:flex-row sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setOnboardingStudentId(null)}
+                          className="min-h-11 rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-semibold text-zinc-300 hover:border-white/25"
+                        >
+                          Voltar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sid = onboardingStudentId;
+                            if (!sid) return;
+                            updateStudent(sid, {
+                              status: "active",
+                              plan: onboardingDraft.plan.trim() || "mensal",
+                              monthlyValue: Math.max(0, Number(onboardingDraft.monthlyValue) || 0),
+                              paymentDay: Math.min(28, Math.max(1, Math.round(Number(onboardingDraft.paymentDay)) || 10)),
+                              frequency: Math.max(0, Math.round(Number(onboardingDraft.frequency)) || 0),
+                              notes: onboardingDraft.notes.trim(),
+                              categories: onboardingDraft.categoryIds,
+                            });
+                            setOnboardingStudentId(null);
+                            setSelectedApprovalIds((prev) => prev.filter((id) => id !== sid));
+                            setActionFeedback(`${obStudent.name} ativo com plano e valores definidos.`);
+                            toast("Aluno aprovado com cadastro complementado.");
+                            haptic(20);
+                          }}
+                          className="min-h-11 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-4 text-sm font-bold text-emerald-200 hover:bg-emerald-500/25"
+                        >
+                          Confirmar e liberar acesso
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
+              </motion.section>
             </div>
           </motion.div>
         ) : null}
@@ -1099,14 +1399,14 @@ export default function WillCockpit() {
                   <p className="mt-2 text-[10px] leading-relaxed text-zinc-600">
                     Comprovante é só na área do aluno (Financeiro). Aqui você define a chave que aparece para ele pagar.
                   </p>
-                  {cadastroPublicUrl ? (
+                  {cadastroInviteUrl ? (
                     <div className="mt-3 rounded-xl border border-white/10 bg-black/50 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Convite — link público</p>
-                      <p className="mt-0.5 truncate font-mono text-[10px] text-zinc-400">{cadastroPublicUrl}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Convite — link com código</p>
+                      <p className="mt-0.5 truncate font-mono text-[10px] text-zinc-400">{cadastroInviteUrl}</p>
                       <button
                         type="button"
                         onClick={() => {
-                          void navigator.clipboard.writeText(cadastroPublicUrl);
+                          void navigator.clipboard.writeText(cadastroInviteUrl);
                           haptic(12);
                           toast("Link de cadastro copiado.");
                         }}

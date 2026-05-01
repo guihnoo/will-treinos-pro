@@ -267,6 +267,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     pixKeyType: "email",
     pixOwnerName: "Will Treinos",
     whatsappNumber: "5521999999999",
+    enrollmentInviteCode: "",
   });
 
   // Init from LocalStorage or defaults
@@ -303,7 +304,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTrainingPlans(ls.get("trainingPlans", tx.trainingPlans));
     setPosts(ls.get("posts", tx.posts));
     setLessonRatings(ls.get("lessonRatings", []));
-    setAppConfig(ls.get("appConfig", { pixKey: "", pixKeyType: "email", pixOwnerName: "Will Treinos", whatsappNumber: "5521999999999" }));
+    setAppConfig(
+      ls.get("appConfig", {
+        pixKey: "",
+        pixKeyType: "email",
+        pixOwnerName: "Will Treinos",
+        whatsappNumber: "5521999999999",
+        enrollmentInviteCode: "",
+      }),
+    );
     const savedRole = localStorage.getItem("will-role") as Role;
     if (savedRole && !hasSupabaseEnv()) loginUser(savedRole);
   }, []);
@@ -343,6 +352,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [posts, isMounted, usingSupabaseSession]);
   useEffect(() => { if (isMounted) ls.set("lessonRatings", lessonRatings); }, [lessonRatings, isMounted]);
   useEffect(() => { if (isMounted) ls.set("appConfig", appConfig); }, [appConfig, isMounted]);
+
+  /** Garante código de convite de matrícula (uma vez por browser / localStorage). */
+  useEffect(() => {
+    if (!isMounted) return;
+    setAppConfig((prev) => {
+      if (prev.enrollmentInviteCode?.trim()) return prev;
+      const code =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
+          : `wt_${Date.now().toString(36)}`;
+      return { ...prev, enrollmentInviteCode: code };
+    });
+  }, [isMounted]);
 
   const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
