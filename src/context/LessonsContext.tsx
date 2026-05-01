@@ -4,7 +4,7 @@ import React, { createContext, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import type { Lesson } from "@/context/types";
 import { localDateISO } from "@/lib/dateUtils";
-import { useCalendarTick } from "@/lib/useCalendarTick";
+import { useCalendarTick } from "@/context/CalendarTickContext";
 
 type LessonsContextValue = {
   lessons: Lesson[];

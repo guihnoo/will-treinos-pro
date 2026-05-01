@@ -2,6 +2,7 @@ import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { CriticalDataProvider } from "@/context/CriticalDataContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { CalendarTickProvider } from "@/context/CalendarTickContext";
 import { StudentsProvider } from "@/context/StudentsContext";
 import { LessonsProvider } from "@/context/LessonsContext";
 import { PaymentsProvider } from "@/context/PaymentsContext";
@@ -33,29 +34,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AppProvider>
           <CriticalDataProvider>
             <AuthProvider>
-              <StudentsProvider>
-                <LessonsProvider>
-                  <PaymentsProvider>
-                    <NotificationsProvider>
-                      <AppConfigProvider>
-                        <CatalogProvider>
-                          <CoachingProvider>
-                            <FeedProvider>
-                              <CheckInProvider>
-                                <LessonRatingsProvider>
-                                  <ToastProvider>
-                                    <AuthWrapper>{children}</AuthWrapper>
-                                  </ToastProvider>
-                                </LessonRatingsProvider>
-                              </CheckInProvider>
-                            </FeedProvider>
-                          </CoachingProvider>
-                        </CatalogProvider>
-                      </AppConfigProvider>
-                    </NotificationsProvider>
-                  </PaymentsProvider>
-                </LessonsProvider>
-              </StudentsProvider>
+              <CalendarTickProvider>
+                <StudentsProvider>
+                  <LessonsProvider>
+                    <PaymentsProvider>
+                      <NotificationsProvider>
+                        <AppConfigProvider>
+                          <CatalogProvider>
+                            <CoachingProvider>
+                              <FeedProvider>
+                                <CheckInProvider>
+                                  <LessonRatingsProvider>
+                                    <ToastProvider>
+                                      <AuthWrapper>{children}</AuthWrapper>
+                                    </ToastProvider>
+                                  </LessonRatingsProvider>
+                                </CheckInProvider>
+                              </FeedProvider>
+                            </CoachingProvider>
+                          </CatalogProvider>
+                        </AppConfigProvider>
+                      </NotificationsProvider>
+                    </PaymentsProvider>
+                  </LessonsProvider>
+                </StudentsProvider>
+              </CalendarTickProvider>
             </AuthProvider>
           </CriticalDataProvider>
         </AppProvider>

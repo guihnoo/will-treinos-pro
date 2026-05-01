@@ -4,7 +4,7 @@ import React, { createContext, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import type { Payment } from "@/context/types";
 import { paymentReferenceForDate } from "@/lib/dateUtils";
-import { useCalendarTick } from "@/lib/useCalendarTick";
+import { useCalendarTick } from "@/context/CalendarTickContext";
 
 export type StudentPaymentProofPayload = {
   note: string;

@@ -9,7 +9,6 @@ import {
   isDevRootEmail,
   type DevImpersonation,
 } from "@/lib/authPostLogin";
-import { studentSeesNotification } from "@/lib/notificationVisibility";
 
 export type { DevImpersonation } from "@/lib/authPostLogin";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
@@ -218,8 +217,6 @@ interface AppContextType {
   getCategory: (id: string) => LessonCategory | undefined;
   getVenue: (id: string) => Venue | undefined;
   updateUser: (id: string, updates: Partial<User>) => void;
-  // Computed
-  unreadNotifications: number;
   /** Dev root (NEXT_PUBLIC_DEV_ROOT_EMAILS): runtime role switch without re-login */
   isDevRoot: boolean;
   devImpersonation: DevImpersonation;
@@ -1420,15 +1417,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const getCategory = useCallback((id: string) => categories.find(c => c.id === id), [categories]);
   const getVenue = useCallback((id: string) => venues.find(v => v.id === id), [venues]);
 
-  // ─── COMPUTED ───
-  const unreadNotifications = useMemo(() => {
-    if (!user) return notifications.filter(n => !n.read).length;
-    if (user.role === null) return 0;
-    if (user.role === "aluno") {
-      return notifications.filter((n) => !n.read && studentSeesNotification(n, user.id)).length;
-    }
-    return notifications.filter(n => !n.read).length;
-  }, [notifications, user]);
   return (
     <AppContext.Provider value={{
       user, authResolved, authError, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync,
@@ -1447,7 +1435,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       appConfig, updateAppConfig,
       posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
       getVenueMapsUrl, getStudent, getCategory, getVenue, updateUser,
-      unreadNotifications,
     }}>
       {children}
     </AppContext.Provider>
