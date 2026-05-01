@@ -7,8 +7,9 @@ import {
   Phone, Mail, TrendingUp, ChevronRight, X, MessageSquare,
   Send, Dumbbell, UserCheck, UserX, PhoneCall, DollarSign, Activity, RotateCcw, Star, Copy, Link2,
 } from "lucide-react";
-import { useApp, Student } from "@/context/AppContext";
+import type { Student } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
+import { useCriticalData } from "@/context/CriticalDataContext";
 import { useStudents } from "@/context/StudentsContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
@@ -42,18 +43,13 @@ function Sparkline({ data, color }: { data: { status: string }[]; color: string 
 type FilterType = "all" | "active" | "pending" | "suspended" | "trial";
 
 export default function AlunosPage() {
-  const { user } = useAuth();
+  const { user, usingSupabaseSession } = useAuth();
   const { students, approveStudent, suspendStudent, updateStudent } = useStudents();
   const { payments } = usePayments();
   const { appConfig } = useAppConfig();
   const { categories } = useCatalog();
   const { quickMessages } = useCoaching();
-  const {
-    usingSupabaseSession,
-    criticalDataLoading,
-    criticalDataError,
-    retryCriticalDataSync,
-  } = useApp();
+  const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");

@@ -2,8 +2,8 @@
 import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wallet, CheckCircle2, Clock, AlertTriangle, TrendingUp, TrendingDown, DollarSign, QrCode, Copy, Check, X, PhoneCall, CalendarRange, ChevronRight, Send, Upload, FileText, Eye, RotateCcw } from "lucide-react";
-import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCriticalData } from "@/context/CriticalDataContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
 import { usePayments } from "@/context/PaymentsContext";
@@ -282,11 +282,11 @@ function PaymentModal({
 
 /* ─── ALUNO VIEW ─── */
 function AlunoFinanceiro() {
-  const { user } = useAuth();
+  const { user, usingSupabaseSession } = useAuth();
   const { lessons } = useLessons();
   const { payments, submitStudentPaymentProof } = usePayments();
   const { appConfig } = useAppConfig();
-  const { usingSupabaseSession, criticalDataLoading, criticalDataError } = useApp();
+  const { criticalDataLoading, criticalDataError } = useCriticalData();
   const { toast } = useToast();
   const [selectedPay, setSelectedPay] = useState<string|null>(null);
   const myPayments = useMemo(()=>payments.filter(p=>p.studentId===user?.id).sort((a,b)=>new Date(b.dueDate).getTime()-new Date(a.dueDate).getTime()),[payments,user]);
@@ -567,7 +567,8 @@ function AdminPaymentDetailModal({
 function AdminFinanceiro() {
   const { students } = useStudents();
   const { payments, markPayment } = usePayments();
-  const { usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync } = useApp();
+  const { usingSupabaseSession } = useAuth();
+  const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const [filter, setFilter] = useState<"all"|"paid"|"pending"|"late"|"proof_pending">("all");

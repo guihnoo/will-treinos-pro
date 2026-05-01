@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useApp } from "@/context/AppContext";
+import { useCriticalData } from "@/context/CriticalDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { Navigation } from "@/components/Navigation";
@@ -18,11 +18,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { user, authResolved, authError, usingSupabaseSession, logout } = useAuth();
   const { students } = useStudents();
-  const {
-    criticalDataLoading,
-    criticalDataError,
-    retryCriticalDataSync,
-  } = useApp();
+  const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
   const [showSlowSyncHint, setShowSlowSyncHint] = useState(false);
   const isPublic = pathname ? PUBLIC_ROUTES.has(pathname) : false;
 

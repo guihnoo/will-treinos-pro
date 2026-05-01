@@ -7,7 +7,8 @@ import {
   X, Play, RotateCcw, Trophy, Target, Info, PhoneCall,
   CheckCircle2, TrendingUp, Timer
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useCriticalData } from "@/context/CriticalDataContext";
 import { useCoaching } from "@/context/CoachingContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -204,7 +205,8 @@ function ExerciseModal({
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function TreinosPage() {
   const { trainingPlans } = useCoaching();
-  const { user, usingSupabaseSession, criticalDataError, retryCriticalDataSync } = useApp();
+  const { user, usingSupabaseSession } = useAuth();
+  const { criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
   const storageHydrated = useRef(false);
   /** Stable while CRM user.id switches from JWT id to students.id after Supabase link */

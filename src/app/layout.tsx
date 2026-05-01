@@ -1,5 +1,6 @@
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
+import { CriticalDataProvider } from "@/context/CriticalDataContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { StudentsProvider } from "@/context/StudentsContext";
 import { LessonsProvider } from "@/context/LessonsContext";
@@ -30,31 +31,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-black text-zinc-100 min-h-screen font-sans antialiased selection:bg-[#EAB308]/30 overflow-x-hidden overflow-y-auto flex">
         <AppProvider>
-          <AuthProvider>
-            <StudentsProvider>
-              <LessonsProvider>
-                <PaymentsProvider>
-                  <NotificationsProvider>
-                    <AppConfigProvider>
-                      <CatalogProvider>
-                        <CoachingProvider>
-                          <FeedProvider>
-                            <CheckInProvider>
-                              <LessonRatingsProvider>
-                                <ToastProvider>
-                                  <AuthWrapper>{children}</AuthWrapper>
-                                </ToastProvider>
-                              </LessonRatingsProvider>
-                            </CheckInProvider>
-                          </FeedProvider>
-                        </CoachingProvider>
-                      </CatalogProvider>
-                    </AppConfigProvider>
-                  </NotificationsProvider>
-                </PaymentsProvider>
-              </LessonsProvider>
-            </StudentsProvider>
-          </AuthProvider>
+          <CriticalDataProvider>
+            <AuthProvider>
+              <StudentsProvider>
+                <LessonsProvider>
+                  <PaymentsProvider>
+                    <NotificationsProvider>
+                      <AppConfigProvider>
+                        <CatalogProvider>
+                          <CoachingProvider>
+                            <FeedProvider>
+                              <CheckInProvider>
+                                <LessonRatingsProvider>
+                                  <ToastProvider>
+                                    <AuthWrapper>{children}</AuthWrapper>
+                                  </ToastProvider>
+                                </LessonRatingsProvider>
+                              </CheckInProvider>
+                            </FeedProvider>
+                          </CoachingProvider>
+                        </CatalogProvider>
+                      </AppConfigProvider>
+                    </NotificationsProvider>
+                  </PaymentsProvider>
+                </LessonsProvider>
+              </StudentsProvider>
+            </AuthProvider>
+          </CriticalDataProvider>
         </AppProvider>
       </body>
     </html>

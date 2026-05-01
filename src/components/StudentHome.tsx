@@ -3,13 +3,16 @@
 import React, { useState, useMemo, useEffect, useRef, useId } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { lessonLocalDateTime, localDateISO } from "@/lib/dateUtils";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useCriticalData } from "@/context/CriticalDataContext";
 import { useCheckIn } from "@/context/CheckInContext";
 import { useLessonRatings } from "@/context/LessonRatingsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCoaching } from "@/context/CoachingContext";
-import type { Lesson } from "@/context/AppContext";
+import type { Lesson } from "@/context/types";
 import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import WeatherWidget from "@/components/WeatherWidget";
@@ -435,14 +438,10 @@ export default function StudentHome() {
   const { feedbacks } = useCoaching();
   const { requestCheckIn } = useCheckIn();
   const { lessonRatings, addLessonRating, getLessonRating } = useLessonRatings();
-  const {
-    user,
-    lessons,
-    students,
-    usingSupabaseSession,
-    criticalDataError,
-    retryCriticalDataSync,
-  } = useApp();
+  const { user, usingSupabaseSession } = useAuth();
+  const { lessons } = useLessons();
+  const { students } = useStudents();
+  const { criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { notifications, markNotificationRead } = useNotifications();
   const evoChartIdHome = useId().replace(/:/g, "h");
   const evoChartIdModal = useId().replace(/:/g, "m");

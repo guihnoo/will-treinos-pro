@@ -6,7 +6,9 @@ import {
   Heart, MessageCircle, Share2, Camera, Image as ImageIcon,
   BadgeCheck, Send, X, Bookmark, SmilePlus, Plus, CheckCircle2, MoreVertical, Pin, Trash2, Trophy, AlertTriangle
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useCriticalData } from "@/context/CriticalDataContext";
 import { useFeed } from "@/context/FeedContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -230,13 +232,9 @@ export default function FeedPage() {
     moderatePost,
     softDeletePost,
   } = useFeed();
-  const {
-    user,
-    students,
-    usingSupabaseSession,
-    criticalDataError,
-    retryCriticalDataSync,
-  } = useApp();
+  const { user, usingSupabaseSession } = useAuth();
+  const { students } = useStudents();
+  const { criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
   const [expandedComments, setExpandedComments] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
