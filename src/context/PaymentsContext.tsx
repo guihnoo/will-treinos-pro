@@ -4,6 +4,7 @@ import React, { createContext, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import type { Payment } from "@/context/types";
 import { paymentReferenceForDate } from "@/lib/dateUtils";
+import { useCalendarTick } from "@/lib/useCalendarTick";
 
 export type StudentPaymentProofPayload = {
   note: string;
@@ -36,7 +37,19 @@ const PaymentsContext = createContext<PaymentsContextValue | undefined>(undefine
 
 export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   const app = useApp();
-  const currentMonthReference = paymentReferenceForDate();
+  const calendarTick = useCalendarTick();
+  const currentMonthReference = useMemo(() => paymentReferenceForDate(), [calendarTick]);
+  const latePayments = useMemo(
+    () => app.payments.filter((payment) => payment.status === "late").length,
+    [app.payments],
+  );
+  const monthlyRevenue = useMemo(
+    () =>
+      app.payments
+        .filter((payment) => payment.status === "paid" && payment.reference === currentMonthReference)
+        .reduce((sum, payment) => sum + payment.amount, 0),
+    [app.payments, currentMonthReference],
+  );
   const currentMonthBuckets = useMemo(() => {
     const monthPayments = app.payments.filter((payment) => payment.reference === currentMonthReference);
     return {
@@ -76,8 +89,8 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<PaymentsContextValue>(
     () => ({
       payments: app.payments,
-      latePayments: app.latePayments,
-      monthlyRevenue: app.monthlyRevenue,
+      latePayments,
+      monthlyRevenue,
       pendingOrLatePaymentsCount: app.payments.filter(
         (payment) => payment.status === "pending" || payment.status === "late",
       ).length,
@@ -94,8 +107,8 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       app.payments,
-      app.latePayments,
-      app.monthlyRevenue,
+      latePayments,
+      monthlyRevenue,
       app.markPayment,
       app.submitStudentPaymentProof,
       currentMonthReference,

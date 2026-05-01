@@ -56,14 +56,22 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
         activeWithFrequency.length,
     );
   }, [app.students]);
+  const pendingStudents = useMemo(
+    () => app.students.filter((student) => student.status === "pending").length,
+    [app.students],
+  );
+  const activeStudents = useMemo(
+    () => app.students.filter((student) => student.status === "active").length,
+    [app.students],
+  );
 
   const value = useMemo<StudentsContextValue>(
     () => ({
       students: app.students,
       statusCounts,
       approvalQueue,
-      pendingStudents: app.pendingStudents,
-      activeStudents: app.activeStudents,
+      pendingStudents,
+      activeStudents,
       activeStudentsRevenue,
       activeStudentsAvgFrequency,
       getStudent: app.getStudent,
@@ -77,8 +85,8 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
       app.students,
       statusCounts,
       approvalQueue,
-      app.pendingStudents,
-      app.activeStudents,
+      pendingStudents,
+      activeStudents,
       activeStudentsRevenue,
       activeStudentsAvgFrequency,
       app.getStudent,

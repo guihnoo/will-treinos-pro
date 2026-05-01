@@ -220,11 +220,6 @@ interface AppContextType {
   updateUser: (id: string, updates: Partial<User>) => void;
   // Computed
   unreadNotifications: number;
-  pendingStudents: number;
-  latePayments: number;
-  todayLessons: Lesson[];
-  monthlyRevenue: number;
-  activeStudents: number;
   /** Dev root (NEXT_PUBLIC_DEV_ROOT_EMAILS): runtime role switch without re-login */
   isDevRoot: boolean;
   devImpersonation: DevImpersonation;
@@ -252,9 +247,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const criticalLoadInflightRef = useRef<Promise<void> | null>(null);
   const [adminMode, setAdminMode] = useState<"dashboard" | "coach">("dashboard");
   const [isMounted, setIsMounted] = useState(false);
-  /** Bumps on local calendar day change so todayLessons / revenue stay correct overnight. */
-  const [calendarTick, setCalendarTick] = useState(0);
-
   // Persisted state
   const [venues, setVenues] = useState<Venue[]>([]);
   const [workHours, setWorkHoursState] = useState<WorkHours>(LEGACY_BRIDGE.DEFAULT_WORK_HOURS);
@@ -327,12 +319,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isMounted || !user) return;
     syncWtRoleCookie(user.role);
   }, [user, isMounted]);
-
-  useEffect(() => {
-    if (!isMounted) return;
-    const id = window.setInterval(() => setCalendarTick((x) => x + 1), 60_000);
-    return () => clearInterval(id);
-  }, [isMounted]);
 
   // Persist on change
   useEffect(() => { if (isMounted) ls.set("venues", venues); }, [venues, isMounted]);
@@ -1443,20 +1429,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     return notifications.filter(n => !n.read).length;
   }, [notifications, user]);
-  const pendingStudents = students.filter(s => s.status === "pending").length;
-  const latePayments = payments.filter(p => p.status === "late").length;
-  const todayStr = useMemo(() => localDateISO(), [lessons, payments, calendarTick]);
-  const todayLessons = useMemo(
-    () => lessons.filter(l => l.date === todayStr),
-    [lessons, todayStr]
-  );
-  const currentPaymentRef = useMemo(() => paymentReferenceForDate(), [calendarTick, payments]);
-  const monthlyRevenue = useMemo(
-    () => payments.filter(p => p.status === "paid" && p.reference === currentPaymentRef).reduce((s, p) => s + p.amount, 0),
-    [payments, currentPaymentRef]
-  );
-  const activeStudents = students.filter(s => s.status === "active").length;
-
   return (
     <AppContext.Provider value={{
       user, authResolved, authError, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync,
@@ -1475,7 +1447,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       appConfig, updateAppConfig,
       posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
       getVenueMapsUrl, getStudent, getCategory, getVenue, updateUser,
-      unreadNotifications, pendingStudents, latePayments, todayLessons, monthlyRevenue, activeStudents,
+      unreadNotifications,
     }}>
       {children}
     </AppContext.Provider>

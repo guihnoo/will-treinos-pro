@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import type { Lesson } from "@/context/types";
+import { localDateISO } from "@/lib/dateUtils";
+import { useCalendarTick } from "@/lib/useCalendarTick";
 
 type LessonsContextValue = {
   lessons: Lesson[];
@@ -21,13 +23,19 @@ const LessonsContext = createContext<LessonsContextValue | undefined>(undefined)
 
 export function LessonsProvider({ children }: { children: React.ReactNode }) {
   const app = useApp();
+  const calendarTick = useCalendarTick();
+  const todayStr = useMemo(() => localDateISO(), [calendarTick, app.lessons]);
+  const todayLessons = useMemo(
+    () => app.lessons.filter((lesson) => lesson.date === todayStr),
+    [app.lessons, todayStr],
+  );
   const value = useMemo<LessonsContextValue>(
     () => ({
       lessons: app.lessons,
-      todayLessons: app.todayLessons,
-      todayEnrolledCount: app.todayLessons.reduce((sum, lesson) => sum + lesson.enrolledStudents.length, 0),
-      todayPresentCount: app.todayLessons.reduce((sum, lesson) => sum + lesson.presentStudents.length, 0),
-      todayAbsentCount: app.todayLessons.reduce((sum, lesson) => sum + lesson.absentStudents.length, 0),
+      todayLessons,
+      todayEnrolledCount: todayLessons.reduce((sum, lesson) => sum + lesson.enrolledStudents.length, 0),
+      todayPresentCount: todayLessons.reduce((sum, lesson) => sum + lesson.presentStudents.length, 0),
+      todayAbsentCount: todayLessons.reduce((sum, lesson) => sum + lesson.absentStudents.length, 0),
       addLesson: app.addLesson,
       updateLesson: app.updateLesson,
       deleteLesson: app.deleteLesson,
@@ -36,7 +44,7 @@ export function LessonsProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       app.lessons,
-      app.todayLessons,
+      todayLessons,
       app.addLesson,
       app.updateLesson,
       app.deleteLesson,
