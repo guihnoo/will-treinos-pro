@@ -212,10 +212,6 @@ interface AppContextType {
   appConfig: AppConfig;
   updateAppConfig: (patch: Partial<AppConfig>) => void;
   // Helpers
-  getVenueMapsUrl: (venueId: string) => string;
-  getStudent: (id: string) => Student | undefined;
-  getCategory: (id: string) => LessonCategory | undefined;
-  getVenue: (id: string) => Venue | undefined;
   updateUser: (id: string, updates: Partial<User>) => void;
   /** Dev root (NEXT_PUBLIC_DEV_ROOT_EMAILS): runtime role switch without re-login */
   isDevRoot: boolean;
@@ -1407,16 +1403,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAppConfig(prev => ({ ...prev, ...patch }));
   }, []);
 
-  // ─── HELPERS ───
-  const getVenueMapsUrl = useCallback((venueId: string) => {
-    const v = venues.find(x => x.id === venueId);
-    return v ? `https://www.google.com/maps?q=${v.lat},${v.lng}` : "#";
-  }, [venues]);
-
-  const getStudent = useCallback((id: string) => students.find(s => s.id === id), [students]);
-  const getCategory = useCallback((id: string) => categories.find(c => c.id === id), [categories]);
-  const getVenue = useCallback((id: string) => venues.find(v => v.id === id), [venues]);
-
   return (
     <AppContext.Provider value={{
       user, authResolved, authError, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync,
@@ -1434,7 +1420,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lessonRatings, addLessonRating, getLessonRating,
       appConfig, updateAppConfig,
       posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
-      getVenueMapsUrl, getStudent, getCategory, getVenue, updateUser,
+      updateUser,
     }}>
       {children}
     </AppContext.Provider>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import type { Student, StudentStatus } from "@/context/types";
 
@@ -64,6 +64,10 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
     () => app.students.filter((student) => student.status === "active").length,
     [app.students],
   );
+  const getStudent = useCallback(
+    (id: string) => app.students.find((student) => student.id === id),
+    [app.students],
+  );
 
   const value = useMemo<StudentsContextValue>(
     () => ({
@@ -74,7 +78,7 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
       activeStudents,
       activeStudentsRevenue,
       activeStudentsAvgFrequency,
-      getStudent: app.getStudent,
+      getStudent,
       addStudent: app.addStudent,
       updateStudent: app.updateStudent,
       approveStudent: app.approveStudent,
@@ -89,7 +93,7 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
       activeStudents,
       activeStudentsRevenue,
       activeStudentsAvgFrequency,
-      app.getStudent,
+      getStudent,
       app.addStudent,
       app.updateStudent,
       app.approveStudent,

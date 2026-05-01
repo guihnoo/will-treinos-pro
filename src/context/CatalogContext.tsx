@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import type { LessonCategory, Venue, WorkHours } from "@/context/types";
 
@@ -24,6 +24,21 @@ const CatalogContext = createContext<CatalogContextValue | undefined>(undefined)
 
 export function CatalogProvider({ children }: { children: React.ReactNode }) {
   const app = useApp();
+  const getCategory = useCallback(
+    (id: string) => app.categories.find((category) => category.id === id),
+    [app.categories],
+  );
+  const getVenue = useCallback(
+    (id: string) => app.venues.find((venue) => venue.id === id),
+    [app.venues],
+  );
+  const getVenueMapsUrl = useCallback(
+    (venueId: string) => {
+      const venue = app.venues.find((item) => item.id === venueId);
+      return venue ? `https://www.google.com/maps?q=${venue.lat},${venue.lng}` : "#";
+    },
+    [app.venues],
+  );
   const value = useMemo<CatalogContextValue>(
     () => ({
       categories: app.categories,
@@ -36,9 +51,9 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       updateVenue: app.updateVenue,
       deleteVenue: app.deleteVenue,
       setWorkHours: app.setWorkHours,
-      getCategory: app.getCategory,
-      getVenue: app.getVenue,
-      getVenueMapsUrl: app.getVenueMapsUrl,
+      getCategory,
+      getVenue,
+      getVenueMapsUrl,
     }),
     [
       app.categories,
@@ -51,9 +66,9 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       app.updateVenue,
       app.deleteVenue,
       app.setWorkHours,
-      app.getCategory,
-      app.getVenue,
-      app.getVenueMapsUrl,
+      getCategory,
+      getVenue,
+      getVenueMapsUrl,
     ],
   );
 
