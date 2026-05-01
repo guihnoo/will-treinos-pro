@@ -207,7 +207,6 @@ interface AppContextType {
   // Lesson ratings (student rates their own session)
   lessonRatings: LessonRating[];
   addLessonRating: (r: Omit<LessonRating, "id" | "createdAt">) => void;
-  getLessonRating: (lessonId: string, studentId: string) => LessonRating | undefined;
   // App config (admin editable — PIX, WhatsApp, etc.)
   appConfig: AppConfig;
   updateAppConfig: (patch: Partial<AppConfig>) => void;
@@ -1394,10 +1393,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, ...prev]);
   }, []);
 
-  const getLessonRating = useCallback((lessonId: string, studentId: string) =>
-    lessonRatings.find(r => r.lessonId === lessonId && r.studentId === studentId)
-  , [lessonRatings]);
-
   // ─── APP CONFIG (PIX) ───
   const updateAppConfig = useCallback((patch: Partial<AppConfig>) => {
     setAppConfig(prev => ({ ...prev, ...patch }));
@@ -1417,7 +1412,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       markPayment, submitStudentPaymentProof, addNotification, markNotificationRead, markAllNotificationsRead,
       addFeedback, addTrainingPlan, checkInStudent,
       requestCheckIn, approveCheckIn, rejectCheckIn, endClassCheckIn,
-      lessonRatings, addLessonRating, getLessonRating,
+      lessonRatings, addLessonRating,
       appConfig, updateAppConfig,
       posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
       updateUser,

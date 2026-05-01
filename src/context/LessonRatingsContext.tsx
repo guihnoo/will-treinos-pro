@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import type { LessonRating } from "@/context/types";
 
@@ -14,13 +14,18 @@ const LessonRatingsContext = createContext<LessonRatingsContextValue | undefined
 
 export function LessonRatingsProvider({ children }: { children: React.ReactNode }) {
   const app = useApp();
+  const getLessonRating = useCallback(
+    (lessonId: string, studentId: string) =>
+      app.lessonRatings.find((row) => row.lessonId === lessonId && row.studentId === studentId),
+    [app.lessonRatings],
+  );
   const value = useMemo<LessonRatingsContextValue>(
     () => ({
       lessonRatings: app.lessonRatings,
       addLessonRating: app.addLessonRating,
-      getLessonRating: app.getLessonRating,
+      getLessonRating,
     }),
-    [app.lessonRatings, app.addLessonRating, app.getLessonRating],
+    [app.lessonRatings, app.addLessonRating, getLessonRating],
   );
 
   return <LessonRatingsContext.Provider value={value}>{children}</LessonRatingsContext.Provider>;
