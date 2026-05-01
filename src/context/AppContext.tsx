@@ -204,9 +204,6 @@ interface AppContextType {
   approveCheckIn: (lessonId: string, studentId: string, approvedBy: string) => void;
   rejectCheckIn: (lessonId: string, studentId: string) => void;
   endClassCheckIn: (lessonId: string, studentId: string) => void;
-  // Lesson ratings (student rates their own session)
-  lessonRatings: LessonRating[];
-  addLessonRating: (r: Omit<LessonRating, "id" | "createdAt">) => void;
   // App config (admin editable — PIX, WhatsApp, etc.)
   appConfig: AppConfig;
   updateAppConfig: (patch: Partial<AppConfig>) => void;
@@ -250,7 +247,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [feedbacks, setFeedbacks] = useState<PerformanceFeedback[]>([]);
   const [trainingPlans, setTrainingPlans] = useState<TrainingPlan[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [lessonRatings, setLessonRatings] = useState<LessonRating[]>([]);
   const [appConfig, setAppConfig] = useState<AppConfig>({
     pixKey: "",
     pixKeyType: "email",
@@ -292,7 +288,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setFeedbacks(ls.get("feedbacks", tx.feedbacks));
     setTrainingPlans(ls.get("trainingPlans", tx.trainingPlans));
     setPosts(ls.get("posts", tx.posts));
-    setLessonRatings(ls.get("lessonRatings", []));
     setAppConfig(
       ls.get("appConfig", {
         pixKey: "",
@@ -333,7 +328,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isMounted && !usingSupabaseSession) ls.set("posts", posts);
   }, [posts, isMounted, usingSupabaseSession]);
-  useEffect(() => { if (isMounted) ls.set("lessonRatings", lessonRatings); }, [lessonRatings, isMounted]);
   useEffect(() => { if (isMounted) ls.set("appConfig", appConfig); }, [appConfig, isMounted]);
 
   /** Modo offline / sem sessão Supabase: gera código de convite só em localStorage. */
@@ -1373,26 +1367,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  // ─── LESSON RATINGS ───
-  const addLessonRating = useCallback((r: Omit<LessonRating, "id" | "createdAt">) => {
-    const newRating: LessonRating = { ...r, id: `lr_${Date.now()}`, createdAt: new Date().toISOString() };
-    setLessonRatings(prev => {
-      // Replace existing rating for same lesson+student, or append
-      const filtered = prev.filter(x => !(x.lessonId === r.lessonId && x.studentId === r.studentId));
-      return [...filtered, newRating];
-    });
-    // Notify admin/prof of new feedback (no recipientId = visible only to admin/coach)
-    setNotifications(prev => [{
-      id: `n_${Date.now()}`,
-      type: "performance" as const,
-      title: "Feedback de Treino",
-      message: `Aluno avaliou o treino. Média: ${((r.intensidade + r.tecnica + r.didatica + r.evolucao) / 4).toFixed(1)}/5.`,
-      time: "agora",
-      read: false,
-      studentId: r.studentId,
-    }, ...prev]);
-  }, []);
-
   // ─── APP CONFIG (PIX) ───
   const updateAppConfig = useCallback((patch: Partial<AppConfig>) => {
     setAppConfig(prev => ({ ...prev, ...patch }));
@@ -1412,7 +1386,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       markPayment, submitStudentPaymentProof, addNotification, markNotificationRead, markAllNotificationsRead,
       addFeedback, addTrainingPlan, checkInStudent,
       requestCheckIn, approveCheckIn, rejectCheckIn, endClassCheckIn,
-      lessonRatings, addLessonRating,
       appConfig, updateAppConfig,
       posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
       updateUser,
