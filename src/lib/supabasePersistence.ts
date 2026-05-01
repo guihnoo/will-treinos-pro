@@ -235,6 +235,67 @@ function mapNotification(row: DbRow): Notification {
   };
 }
 
+const APP_SETTINGS_ROW_ID = "singleton";
+
+export async function fetchEnrollmentInviteRemote(supabase: SupabaseClient): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("enrollment_invite_code")
+    .eq("id", APP_SETTINGS_ROW_ID)
+    .maybeSingle();
+  if (error) {
+    return null;
+  }
+  const code = asString((data as DbRow | null)?.enrollment_invite_code ?? "").trim();
+  return code || null;
+}
+
+export async function upsertEnrollmentInviteRemote(supabase: SupabaseClient, code: string): Promise<void> {
+  const trimmed = code.trim();
+  if (!trimmed) return;
+  const { error } = await supabase.from("app_settings").upsert(
+    {
+      id: APP_SETTINGS_ROW_ID,
+      enrollment_invite_code: trimmed,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "id" },
+  );
+  if (error) {
+    throw new Error(`Falha ao salvar código de convite: ${error.message}`);
+  }
+}
+
+export async function insertPaymentRemote(
+  supabase: SupabaseClient,
+  payload: Omit<Payment, "id"> & { id?: string },
+): Promise<Payment> {
+  const id =
+    payload.id ||
+    (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `pay_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
+  const reference = payload.reference || paymentReferenceForDate();
+  const { data, error } = await supabase
+    .from("payments")
+    .insert({
+      id,
+      student_id: payload.studentId,
+      amount: payload.amount,
+      due_date: payload.dueDate,
+      paid_date: payload.paidDate,
+      status: payload.status,
+      method: payload.method,
+      reference,
+    })
+    .select("*")
+    .single();
+  if (error) {
+    throw new Error(`Falha ao criar pagamento: ${error.message}`);
+  }
+  return mapPayment((data || {}) as DbRow);
+}
+
 export type LiveAppData = {
   students: Student[];
   payments: Payment[];

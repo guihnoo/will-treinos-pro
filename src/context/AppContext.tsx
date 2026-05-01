@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, AppConfig, StudentProfileEditPolicy } from "./types";
 import { LEGACY_BRIDGE } from "@/domain/v1/mockOrm";
-import { localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
+import { dueDateForBillingMonth, localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
 import {
   computeEffectiveRole,
   isDevRootEmail,
@@ -25,8 +25,11 @@ import {
   deleteLessonRemote,
   fetchFeedPostsRemote,
   fetchStaffAccessRole,
+  fetchEnrollmentInviteRemote,
   fetchLiveAppData,
+  insertPaymentRemote,
   markPaymentPaidRemote,
+  upsertEnrollmentInviteRemote,
   softDeleteFeedPostRemote,
   submitStudentProofRemote,
   toggleFeedPostLikeRemote,
@@ -166,6 +169,8 @@ interface AppContextType {
   approveStudent: (id: string) => void;
   suspendStudent: (id: string) => void;
   updateStudent: (id: string, u: Partial<Student>) => void;
+  /** Após aprovar com mensalidade: cria cobrança `pending` do mês corrente se ainda não existir. */
+  seedPendingTuitionForStudent: (studentId: string, monthlyValue: number, paymentDay: number) => Promise<void>;
   // Payments
   markPayment: (id: string) => void;
   /** Aluno: registra comprovante (texto e/ou arquivo imagem/PDF; não altera status até o staff confirmar). */
@@ -353,9 +358,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (isMounted) ls.set("lessonRatings", lessonRatings); }, [lessonRatings, isMounted]);
   useEffect(() => { if (isMounted) ls.set("appConfig", appConfig); }, [appConfig, isMounted]);
 
-  /** Garante código de convite de matrícula (uma vez por browser / localStorage). */
+  /** Modo offline / sem sessão Supabase: gera código de convite só em localStorage. */
   useEffect(() => {
-    if (!isMounted) return;
+    if (!isMounted || usingSupabaseSession) return;
     setAppConfig((prev) => {
       if (prev.enrollmentInviteCode?.trim()) return prev;
       const code =
@@ -364,7 +369,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           : `wt_${Date.now().toString(36)}`;
       return { ...prev, enrollmentInviteCode: code };
     });
-  }, [isMounted]);
+  }, [isMounted, usingSupabaseSession]);
+
+  /** Propaga alterações do código de convite para o Supabase (ex.: «Gerar novo código»). */
+  useEffect(() => {
+    if (!isMounted || !usingSupabaseSession) return;
+    const code = appConfig.enrollmentInviteCode?.trim();
+    if (!code) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    const handle = window.setTimeout(() => {
+      void upsertEnrollmentInviteRemote(supabase, code).catch(() => {
+        /* migração opcional */
+      });
+    }, 800);
+    return () => window.clearTimeout(handle);
+  }, [appConfig.enrollmentInviteCode, isMounted, usingSupabaseSession]);
 
   const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -572,6 +592,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setPosts(livePosts);
           if (supabaseAuthUserRef.current) {
             applySupabaseSession(supabaseAuthUserRef.current, data.students);
+          }
+          try {
+            const inviteRemote = await fetchEnrollmentInviteRemote(supabase);
+            setAppConfig((prev) => {
+              let code = inviteRemote?.trim() || "";
+              if (!code) {
+                code = prev.enrollmentInviteCode?.trim() || "";
+                if (!code) {
+                  code =
+                    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+                      ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
+                      : `wt_${Date.now().toString(36)}`;
+                }
+                void upsertEnrollmentInviteRemote(supabase, code).catch(() => {
+                  /* migração app_settings pode não estar aplicada ainda */
+                });
+              }
+              if (code === prev.enrollmentInviteCode) return prev;
+              return { ...prev, enrollmentInviteCode: code };
+            });
+          } catch {
+            /* não bloqueia bootstrap */
           }
         } catch (error) {
           setCriticalDataError(
@@ -950,6 +992,57 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
     });
   }, [usingSupabaseSession]);
+
+  const seedPendingTuitionForStudent = useCallback(
+    async (studentId: string, monthlyValue: number, paymentDay: number) => {
+      if (!String(studentId || "").trim() || monthlyValue <= 0) return;
+      const ref = paymentReferenceForDate();
+      const dueDate = dueDateForBillingMonth(paymentDay);
+      if (!usingSupabaseSession) {
+        setPayments((prev) => {
+          if (prev.some((p) => p.studentId === studentId && p.reference === ref)) return prev;
+          return [
+            {
+              id: `pay_${uid()}`,
+              studentId,
+              amount: monthlyValue,
+              dueDate,
+              paidDate: null,
+              status: "pending" as PaymentStatus,
+              method: null,
+              reference: ref,
+            },
+            ...prev,
+          ];
+        });
+        return;
+      }
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+      try {
+        const { data: existing } = await supabase
+          .from("payments")
+          .select("id")
+          .eq("student_id", studentId)
+          .eq("reference", ref)
+          .maybeSingle();
+        if (existing) return;
+        const created = await insertPaymentRemote(supabase, {
+          studentId,
+          amount: monthlyValue,
+          dueDate,
+          paidDate: null,
+          status: "pending",
+          method: null,
+          reference: ref,
+        });
+        setPayments((prev) => (prev.some((p) => p.id === created.id) ? prev : [created, ...prev]));
+      } catch (error) {
+        setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar mensalidade pendente.");
+      }
+    },
+    [usingSupabaseSession, uid],
+  );
 
   const updateUser = useCallback((id: string, updates: Partial<User>) => {
     const persistedProfiles = ls.get<Record<string, Partial<User>>>("userProfiles", {});
@@ -1374,7 +1467,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addCategory, updateCategory, deleteCategory,
       addVenue, updateVenue, deleteVenue, setWorkHours,
       addLesson, updateLesson, deleteLesson, addToWaitlist, promoteFromWaitlist,
-      addStudent, approveStudent, suspendStudent, updateStudent,
+      addStudent, approveStudent, suspendStudent, updateStudent, seedPendingTuitionForStudent,
       markPayment, submitStudentPaymentProof, addNotification, markNotificationRead, markAllNotificationsRead,
       addFeedback, addTrainingPlan, checkInStudent,
       requestCheckIn, approveCheckIn, rejectCheckIn, endClassCheckIn,

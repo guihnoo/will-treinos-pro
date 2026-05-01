@@ -13,6 +13,16 @@ export function paymentReferenceForDate(d = new Date()): string {
   return `${MONTHS_PT[d.getMonth()]}/${String(d.getFullYear()).slice(-2)}`;
 }
 
+/** Vencimento no mês de `base` usando dia preferencial (1–28; ajusta ao último dia do mês). */
+export function dueDateForBillingMonth(paymentDay: number, base = new Date()): string {
+  const y = base.getFullYear();
+  const m = base.getMonth();
+  const wanted = Math.min(28, Math.max(1, Math.round(paymentDay) || 10));
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const d = Math.min(wanted, lastDay);
+  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 /** Parse "HH:mm" + lesson date into local Date for countdowns. */
 export function lessonLocalDateTime(dateStr: string, startTime: string): Date {
   const [y, mo, day] = dateStr.split("-").map(Number);

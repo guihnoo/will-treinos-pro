@@ -98,6 +98,7 @@ export default function WillCockpit() {
     getStudent,
     approveStudent,
     updateStudent,
+    seedPendingTuitionForStudent,
     updateAppConfig,
     appConfig,
     categories,
@@ -1121,7 +1122,8 @@ export default function WillCockpit() {
                       </div>
                       <div className={`${MODAL_BODY_SCROLL} space-y-3 text-left`}>
                         <p className="text-[11px] leading-relaxed text-zinc-500">
-                          Defina plano, mensalidade e frequência antes de liberar o app para este atleta. Você poderá ajustar depois em Alunos / Financeiro.
+                          Defina plano, mensalidade e frequência antes de liberar o app. Se a mensalidade for maior que zero, criamos automaticamente a cobrança{" "}
+                          <strong className="text-zinc-400">pendente do mês atual</strong> no Financeiro (sem duplicar se já existir).
                         </p>
                         <label className="block">
                           <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">Nome do plano</span>
@@ -1243,15 +1245,18 @@ export default function WillCockpit() {
                           onClick={() => {
                             const sid = onboardingStudentId;
                             if (!sid) return;
+                            const mv = Math.max(0, Number(onboardingDraft.monthlyValue) || 0);
+                            const pd = Math.min(28, Math.max(1, Math.round(Number(onboardingDraft.paymentDay)) || 10));
                             updateStudent(sid, {
                               status: "active",
                               plan: onboardingDraft.plan.trim() || "mensal",
-                              monthlyValue: Math.max(0, Number(onboardingDraft.monthlyValue) || 0),
-                              paymentDay: Math.min(28, Math.max(1, Math.round(Number(onboardingDraft.paymentDay)) || 10)),
+                              monthlyValue: mv,
+                              paymentDay: pd,
                               frequency: Math.max(0, Math.round(Number(onboardingDraft.frequency)) || 0),
                               notes: onboardingDraft.notes.trim(),
                               categories: onboardingDraft.categoryIds,
                             });
+                            void seedPendingTuitionForStudent(sid, mv, pd);
                             setOnboardingStudentId(null);
                             setSelectedApprovalIds((prev) => prev.filter((id) => id !== sid));
                             setActionFeedback(`${obStudent.name} ativo com plano e valores definidos.`);
