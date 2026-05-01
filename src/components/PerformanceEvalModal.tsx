@@ -6,6 +6,7 @@ import { X, Star, Zap, Brain, MessageSquare, TrendingUp, Save, ChevronDown } fro
 import { useApp, Student } from "@/context/AppContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { avatarSrc } from "@/lib/avatarSrc";
 
 interface Props {
   student: Student;
@@ -79,7 +80,7 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
         {/* Header */}
         <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={student.avatar?.startsWith("data:") ? student.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.avatar}`}
+            <img src={avatarSrc(student.avatar, student.name)}
               className="w-10 h-10 rounded-full border-2 border-zinc-700" />
             <div>
               <p className="font-bold text-white text-sm">{student.name}</p>

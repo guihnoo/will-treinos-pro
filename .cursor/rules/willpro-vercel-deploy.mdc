@@ -1,0 +1,19 @@
+---
+description: Deploy na Vercel ao final de cada etapa (até o app 100%)
+alwaysApply: true
+---
+
+# Will Treinos PRO — Deploy Vercel após cada etapa
+
+Enquanto o app **não estiver 100% finalizado**, ao **concluir uma etapa** de trabalho (lote de correções, feature, hardening, etc.) que envolva código ou configuração de produção:
+
+1. **Rodar** `pnpm run build` e corrigir erros até passar.
+2. **Atualizar** `WILLPRO_MASTER_MEMORY.md` (seção 3) conforme a regra do Master Memory.
+3. **Fazer deploy** via integração Git → Vercel:
+   - `git add` apenas o que pertence ao projeto (nunca incluir `.next/`, artefatos locais ou segredos).
+   - `git commit` com mensagem clara em português ou inglês.
+   - `git push origin main` (ou o branch que o projeto usa para produção na Vercel).
+
+Se o **push falhar** (auth, rede, branch protegido), informar o usuário com o erro e o que falta (ex.: login no Git, PR em branch de release).
+
+Não assumir que o deploy ocorreu sem confirmar **push bem-sucedido** ou orientar a checar o painel Vercel no commit correspondente.

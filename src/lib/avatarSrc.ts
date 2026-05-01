@@ -1,10 +1,24 @@
 /**
- * avatarSrc — returns the correct image source for a student/user avatar
- * - If the avatar value starts with "data:" it's a real uploaded photo → use directly
- * - Otherwise treat it as a seed for the dicebear generated avatar
+ * Avatar URLs: uploaded (data), Supabase/public URLs (http/https), or app-relative paths (/…).
+ * Anything else is treated as a Dicebear seed string.
  */
-export function avatarSrc(avatar: string | undefined | null): string {
-  if (!avatar) return `https://api.dicebear.com/7.x/avataaars/svg?seed=default`;
-  if (avatar.startsWith("data:")) return avatar;
+export function isDirectUserAvatar(avatar: string | null | undefined): boolean {
+  if (!avatar) return false;
+  return (
+    avatar.startsWith("data:") ||
+    avatar.startsWith("http://") ||
+    avatar.startsWith("https://") ||
+    avatar.startsWith("/")
+  );
+}
+
+export function avatarSrc(
+  avatar: string | undefined | null,
+  fallbackSeed: string = "default"
+): string {
+  if (!avatar) {
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fallbackSeed)}`;
+  }
+  if (isDirectUserAvatar(avatar)) return avatar;
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(avatar)}`;
 }

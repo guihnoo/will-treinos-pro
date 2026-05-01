@@ -12,13 +12,19 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppEmptyState from "@/components/ui/AppEmptyState";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import AppPageHeader from "@/components/ui/AppPageHeader";
-import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 
 function resolveStoryAvatarSrc(avatar: string): string {
   if (!avatar) return "https://api.dicebear.com/7.x/avataaars/svg?seed=user";
-  if (avatar.startsWith("data:") || avatar.startsWith("http://") || avatar.startsWith("https://")) return avatar;
+  if (
+    avatar.startsWith("data:") ||
+    avatar.startsWith("http://") ||
+    avatar.startsWith("https://") ||
+    avatar.startsWith("/")
+  ) {
+    return avatar;
+  }
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(avatar)}`;
 }
 
@@ -108,7 +114,8 @@ function PostComposer({
           <div className="sticky top-0 z-20 flex items-center justify-between px-5 py-3 border-b border-zinc-900 bg-[#0A0A0A]/95 backdrop-blur-sm flex-shrink-0">
             <div className="flex items-center gap-2.5">
               <img
-                src={user?.avatar?.startsWith("data:") ? user.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.avatar}`}
+                src={resolveStoryAvatarSrc(user?.avatar || "")}
+                alt=""
                 className="w-9 h-9 rounded-full border border-zinc-700 object-cover"
               />
               <div>
@@ -224,7 +231,6 @@ export default function FeedPage() {
     moderatePost,
     softDeletePost,
     usingSupabaseSession,
-    criticalDataLoading,
     criticalDataError,
     retryCriticalDataSync,
   } = useApp();
@@ -270,9 +276,7 @@ export default function FeedPage() {
 
   // Get student profile for avatar (may be custom photo)
   const profile = students.find(s => s.id === user?.id);
-  const myAvatarSrc = profile?.avatar?.startsWith("data:")
-    ? profile.avatar
-    : `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.avatar || user?.avatar}`;
+  const myAvatarSrc = resolveStoryAvatarSrc(profile?.avatar || user?.avatar || "");
 
   // Double-tap to like
   const handleTap = (postId: string) => {
@@ -320,19 +324,6 @@ export default function FeedPage() {
   };
 
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
-
-  if (usingSupabaseSession && criticalDataLoading) {
-    return (
-      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))]">
-        <AppPageHeader title="Rede Will Treinos" subtitle="Sincronizando comunidade ao vivo..." icon={SmilePlus} />
-        <div className="space-y-3">
-          <SkeletonLoader className="h-20" lines={2} />
-          <SkeletonLoader className="h-28" lines={4} />
-          <SkeletonLoader className="h-48" lines={5} />
-        </div>
-      </div>
-    );
-  }
 
   if (usingSupabaseSession && criticalDataError) {
     return (
@@ -446,7 +437,8 @@ export default function FeedPage() {
               <div className="flex items-center gap-2.5">
                 <div className={`w-10 h-10 rounded-full p-[1.5px] ${post.user.isPro ? "bg-gradient-to-br from-[#EAB308] to-[#F97316]" : "bg-zinc-800"}`}>
                   <img
-                    src={post.user.avatar?.startsWith("data:") ? post.user.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.user.avatar}`}
+                    src={resolveStoryAvatarSrc(post.user.avatar || "")}
+                    alt=""
                     className="w-full h-full rounded-full border border-black object-cover"
                   />
                 </div>
@@ -581,7 +573,8 @@ export default function FeedPage() {
                     {post.comments.map((c, ci) => (
                       <div key={ci} className="flex gap-2.5">
                         <img
-                          src={c.avatar?.startsWith("data:") ? c.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.avatar}`}
+                          src={resolveStoryAvatarSrc(c.avatar || "")}
+                          alt=""
                           className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 object-cover"
                         />
                         <div>

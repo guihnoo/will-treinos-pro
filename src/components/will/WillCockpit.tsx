@@ -35,7 +35,6 @@ import KpiActionCard from "@/components/ui/KpiActionCard";
 import CockpitHero from "./CockpitHero";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
-import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
 import { localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
@@ -282,19 +281,7 @@ export default function WillCockpit() {
   }, [getStudent, payments]);
 
   if (!user) return null;
-  const shouldShowSkeleton = payments.length === 0 && students.length === 0 && lessons.length === 0;
-  if (shouldShowSkeleton) {
-    return (
-      <div className="space-y-4">
-        <SkeletonLoader className="h-28" lines={4} />
-        <SkeletonLoader className="h-36" lines={5} />
-        <div className="grid gap-3 lg:grid-cols-2">
-          <SkeletonLoader className="h-40" lines={4} />
-          <SkeletonLoader className="h-40" lines={4} />
-        </div>
-      </div>
-    );
-  }
+  // Bootstrap já é bloqueado pelo AuthWrapper (criticalDataLoading). Listas vazias = operação real (base nova), não "loading".
 
   return (
     <LayoutGroup id="cockpit-shared-layout">

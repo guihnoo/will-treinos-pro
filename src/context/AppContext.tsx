@@ -449,11 +449,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const promise = (async () => {
         if (blockingSpinner) setCriticalDataLoading(true);
         setCriticalDataError(null);
-        setStudents([]);
-        setPayments([]);
-        setLessons([]);
-        setNotifications([]);
-        setPosts([]);
+        // Só zera listas no primeiro sync bloqueante; refresh em background (ex.: TOKEN_REFRESHED) não deve esvaziar o cockpit.
+        if (blockingSpinner) {
+          setStudents([]);
+          setPayments([]);
+          setLessons([]);
+          setNotifications([]);
+          setPosts([]);
+        }
         try {
           const currentUserId = supabaseAuthUserRef.current?.id || "";
           const data = await withNetworkTimeout(

@@ -48,7 +48,9 @@ export function middleware(request: NextRequest) {
     const isStudent = role === "student";
     const isProfessor = role === "professor";
 
-    if (pathname.startsWith("/configuracoes") && role !== "will_owner") {
+    // /configuracoes: dono, professor e aluno acessam a UI (abas sensíveis ficam só no cliente para não-owner).
+    // Apenas "lead" sem conta completa fica fora.
+    if (pathname.startsWith("/configuracoes") && role === "lead") {
       const deniedUrl = request.nextUrl.clone();
       deniedUrl.pathname = "/dashboard";
       deniedUrl.searchParams.set("denied", "/configuracoes");

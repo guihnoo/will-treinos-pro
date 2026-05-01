@@ -14,6 +14,7 @@ import { useToast } from "@/components/Toast";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { uploadAvatarToStorage } from "@/lib/supabasePersistence";
+import { isDirectUserAvatar } from "@/lib/avatarSrc";
 
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -52,9 +53,10 @@ export default function PerfilPage() {
     notes: profile?.notes || "",
   });
   const [avatar, setAvatar] = useState(profile?.avatar || user?.avatar || "Ricardo");
-  const [customPhoto, setCustomPhoto] = useState<string | null>(
-    (profile?.avatar || user?.avatar || "").startsWith("data:") ? (profile?.avatar || user?.avatar || "") : null
-  );
+  const [customPhoto, setCustomPhoto] = useState<string | null>(() => {
+    const raw = profile?.avatar || user?.avatar || "";
+    return isDirectUserAvatar(raw) ? raw : null;
+  });
 
   const myLessons = lessons.filter(l => l.enrolledStudents.includes(user?.id || ""));
   const completedCount = myLessons.filter(l => l.presentStudents.includes(user?.id || "")).length;

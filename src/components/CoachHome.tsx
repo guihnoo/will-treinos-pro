@@ -17,6 +17,7 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import { localDateISO } from "@/lib/dateUtils";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
+import { avatarSrc } from "@/lib/avatarSrc";
 
 export default function CoachHome() {
   const {
@@ -235,7 +236,7 @@ export default function CoachHome() {
                   return (
                     <div key={sid} className="flex items-center justify-between px-4 py-2.5">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <img src={st.avatar?.startsWith("data:") ? st.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${st.avatar}`}
+                        <img src={avatarSrc(st.avatar, st.name)}
                           className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
                         <span className="text-sm text-zinc-300 truncate">{st.name}</span>
                         {isPresent && <span className="text-[10px] font-bold text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded-full flex-shrink-0">✓</span>}

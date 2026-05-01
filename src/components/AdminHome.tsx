@@ -17,6 +17,7 @@ import LessonDetailModal from "@/components/LessonDetailModal";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import WeatherWidget from "@/components/WeatherWidget";
 import { CARD_HOVER_LIFT, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
+import { avatarSrc } from "@/lib/avatarSrc";
 
 const MotionLink = motion(Link);
 const toKpiLayoutId = (label: string) =>
@@ -300,7 +301,7 @@ export default function AdminDashboardHome() {
                           {lesson.enrolledStudents.slice(0, 4).map(sid => {
                             const st = getStudent(sid);
                             return st && (
-                              <img key={sid} src={st.avatar?.startsWith("data:") ? st.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${st.avatar}`}
+                              <img key={sid} src={avatarSrc(st.avatar, st.name)}
                                 className="w-8 h-8 rounded-full border-2 border-[#0A0A0A] object-cover" title={st.name} />
                             );
                           })}
@@ -331,7 +332,7 @@ export default function AdminDashboardHome() {
                               return st && (
                                 <div key={sid} className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/50">
                                   <div className="flex items-center gap-2">
-                                    <img src={st.avatar?.startsWith("data:") ? st.avatar : `https://api.dicebear.com/7.x/avataaars/svg?seed=${st.avatar}`} className="w-6 h-6 rounded-full object-cover" />
+                                    <img src={avatarSrc(st.avatar, st.name)} className="w-6 h-6 rounded-full object-cover" />
                                     <span className="text-sm text-zinc-300">{st.name}</span>
                                   </div>
                                   <div className="flex gap-1.5">

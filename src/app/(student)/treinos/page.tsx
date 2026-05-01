@@ -12,8 +12,8 @@ import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import AppSectionCard from "@/components/ui/AppSectionCard";
-import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
+import { avatarSrc } from "@/lib/avatarSrc";
 
 // ─── Rest Timer Component ────────────────────────────────────────────────────
 function parseSets(sets: string): number {
@@ -202,7 +202,7 @@ function ExerciseModal({
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function TreinosPage() {
-  const { user, trainingPlans, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync } = useApp();
+  const { user, trainingPlans, usingSupabaseSession, criticalDataError, retryCriticalDataSync } = useApp();
   const { toast } = useToast();
   const storageHydrated = useRef(false);
   /** Stable while CRM user.id switches from JWT id to students.id after Supabase link */
@@ -262,19 +262,6 @@ export default function TreinosPage() {
     if (!treinosStorageUserKey || typeof window === "undefined" || !storageHydrated.current) return;
     window.localStorage.setItem(`wt_treinos_done_${treinosStorageUserKey}`, JSON.stringify(done));
   }, [done, treinosStorageUserKey]);
-
-  if (usingSupabaseSession && criticalDataLoading) {
-    return (
-      <div className="p-4 md:p-6 max-w-4xl mx-auto pb-28">
-        <AppPageHeader title="Meus Treinos" subtitle="Sincronizando planos ao vivo..." icon={Dumbbell} />
-        <div className="space-y-3">
-          <SkeletonLoader className="h-24" lines={3} />
-          <SkeletonLoader className="h-40" lines={5} />
-          <SkeletonLoader className="h-40" lines={5} />
-        </div>
-      </div>
-    );
-  }
 
   if (usingSupabaseSession && criticalDataError) {
     return (
@@ -379,11 +366,7 @@ export default function TreinosPage() {
       >
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <img
-            src={
-              user?.avatar?.startsWith("data:")
-                ? user.avatar
-                : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.avatar || user?.name || "Aluno"}`
-            }
+            src={avatarSrc(user?.avatar, user?.name || "Aluno")}
             className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border border-zinc-700 flex-shrink-0"
           />
           <div className="flex-1 min-w-0">

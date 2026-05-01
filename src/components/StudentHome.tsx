@@ -439,7 +439,6 @@ export default function StudentHome() {
     getLessonRating,
     getCategory,
     usingSupabaseSession,
-    criticalDataLoading,
     criticalDataError,
     retryCriticalDataSync,
   } = useApp();
@@ -904,16 +903,6 @@ export default function StudentHome() {
   }, [completedCount, streak, avgRating, frequency]);
 
   if (!hydrated) return <StudentHomeSkeleton />;
-
-  if (usingSupabaseSession && criticalDataLoading) {
-    return (
-      <div className="w-full space-y-4 pt-2">
-        <SkeletonLoader className="h-20" lines={2} />
-        <SkeletonLoader className="h-28" lines={4} />
-        <SkeletonLoader className="h-40" lines={5} />
-      </div>
-    );
-  }
 
   if (usingSupabaseSession && criticalDataError) {
     return (
