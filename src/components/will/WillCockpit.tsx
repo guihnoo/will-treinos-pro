@@ -27,8 +27,12 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
 import { usePayments } from "@/context/PaymentsContext";
+import { useAppConfig } from "@/context/AppConfigContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import AppEmptyState from "@/components/ui/AppEmptyState";
@@ -89,21 +93,17 @@ export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
   const { payments } = usePayments();
+  const { appConfig, updateAppConfig } = useAppConfig();
+  const { categories, venues, getCategory } = useCatalog();
+  const { user } = useAuth();
+  const { lessons, todayLessons } = useLessons();
   const {
     students,
-    lessons,
-    todayLessons,
-    user,
-    getCategory,
     getStudent,
     approveStudent,
     updateStudent,
     seedPendingTuitionForStudent,
-    updateAppConfig,
-    appConfig,
-    categories,
-    venues,
-  } = useApp();
+  } = useStudents();
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [showCourtModal, setShowCourtModal] = useState(false);

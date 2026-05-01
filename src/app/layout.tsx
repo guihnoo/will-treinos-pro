@@ -4,6 +4,13 @@ import { AuthProvider } from "@/context/AuthContext";
 import { StudentsProvider } from "@/context/StudentsContext";
 import { LessonsProvider } from "@/context/LessonsContext";
 import { PaymentsProvider } from "@/context/PaymentsContext";
+import { NotificationsProvider } from "@/context/NotificationsContext";
+import { AppConfigProvider } from "@/context/AppConfigContext";
+import { CatalogProvider } from "@/context/CatalogContext";
+import { CoachingProvider } from "@/context/CoachingContext";
+import { FeedProvider } from "@/context/FeedContext";
+import { CheckInProvider } from "@/context/CheckInContext";
+import { LessonRatingsProvider } from "@/context/LessonRatingsContext";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ToastProvider } from "@/components/Toast";
 
@@ -27,9 +34,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <StudentsProvider>
               <LessonsProvider>
                 <PaymentsProvider>
-                  <ToastProvider>
-                    <AuthWrapper>{children}</AuthWrapper>
-                  </ToastProvider>
+                  <NotificationsProvider>
+                    <AppConfigProvider>
+                      <CatalogProvider>
+                        <CoachingProvider>
+                          <FeedProvider>
+                            <CheckInProvider>
+                              <LessonRatingsProvider>
+                                <ToastProvider>
+                                  <AuthWrapper>{children}</AuthWrapper>
+                                </ToastProvider>
+                              </LessonRatingsProvider>
+                            </CheckInProvider>
+                          </FeedProvider>
+                        </CoachingProvider>
+                      </CatalogProvider>
+                    </AppConfigProvider>
+                  </NotificationsProvider>
                 </PaymentsProvider>
               </LessonsProvider>
             </StudentsProvider>

@@ -5,7 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, ClipboardList, Users, X } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import type { EvaluationCriterionV1, EvaluationTemplateV1 } from "@/domain/v1/contracts";
 import { EVALUATION_CRITERIA_V1, EVALUATION_TEMPLATES_V1 } from "@/domain/v1/mockOrm";
@@ -26,7 +28,9 @@ type EvalDraft = {
 };
 
 export default function WillCourtPage() {
-  const { todayLessons, getStudent, getCategory, getVenue } = useApp();
+  const { todayLessons } = useLessons();
+  const { getStudent } = useStudents();
+  const { getCategory, getVenue } = useCatalog();
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(todayLessons[0]?.id ?? null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
     EVALUATION_TEMPLATES_V1.find((t) => t.isDefault)?.id ?? EVALUATION_TEMPLATES_V1[0]?.id ?? "",

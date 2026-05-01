@@ -3,7 +3,9 @@
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar as CalendarIcon, CalendarPlus, Clock, MapPin, Lock, CheckCircle2, Users, Zap } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useCheckIn } from "@/context/CheckInContext";
+import { useCatalog } from "@/context/CatalogContext";
+import { useCoaching } from "@/context/CoachingContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLessons } from "@/context/LessonsContext";
 import type { Lesson } from "@/context/types";
@@ -17,7 +19,9 @@ import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTo
 export default function AgendaPage() {
   const { user } = useAuth();
   const { lessons } = useLessons();
-  const { feedbacks, requestCheckIn, getCategory, getVenue } = useApp();
+  const { getCategory, getVenue } = useCatalog();
+  const { feedbacks } = useCoaching();
+  const { requestCheckIn } = useCheckIn();
   const [selectedDate, setSelectedDate] = useState(localDateISO());
   const [localNow, setLocalNow] = useState<Date>(new Date());
   const [showCreateLesson, setShowCreateLesson] = useState(false);

@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Zap, Brain, MessageSquare, TrendingUp, Save, ChevronDown } from "lucide-react";
-import { useApp, Student } from "@/context/AppContext";
+import type { Student } from "@/context/AppContext";
+import { useCoaching } from "@/context/CoachingContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { avatarSrc } from "@/lib/avatarSrc";
@@ -24,7 +25,7 @@ const PILLARS = [
 ];
 
 export default function PerformanceEvalModal({ student, lessonId, lessonTitle, onClose }: Props) {
-  const { addFeedback } = useApp();
+  const { addFeedback } = useCoaching();
   const { toast } = useToast();
   useBodyScrollLock(true);
 

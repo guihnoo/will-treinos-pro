@@ -11,6 +11,9 @@ import { useApp, Student } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { usePayments } from "@/context/PaymentsContext";
+import { useAppConfig } from "@/context/AppConfigContext";
+import { useCatalog } from "@/context/CatalogContext";
+import { useCoaching } from "@/context/CoachingContext";
 import { useToast } from "@/components/Toast";
 import TrainingPlanEditor from "@/components/TrainingPlanEditor";
 import PerformanceEvalModal from "@/components/PerformanceEvalModal";
@@ -42,10 +45,10 @@ export default function AlunosPage() {
   const { user } = useAuth();
   const { students, approveStudent, suspendStudent, updateStudent } = useStudents();
   const { payments } = usePayments();
+  const { appConfig } = useAppConfig();
+  const { categories } = useCatalog();
+  const { quickMessages } = useCoaching();
   const {
-    categories,
-    quickMessages,
-    appConfig,
     usingSupabaseSession,
     criticalDataLoading,
     criticalDataError,

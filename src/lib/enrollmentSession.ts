@@ -70,8 +70,14 @@ function isStaffOAuthGateValid(): boolean {
   return true;
 }
 
+/** Ambientes dev/staging: OAuth liberado sem gate «equipe» / canal matrícula (defina só em build não público). */
+export function isLoginOperatorMode(): boolean {
+  return process.env.NEXT_PUBLIC_LOGIN_OPERATOR_MODE === "true";
+}
+
 export function canUseSocialOAuthFromLogin(): boolean {
   if (typeof window === "undefined") return true;
+  if (isLoginOperatorMode()) return true;
   if (sessionStorage.getItem(WT_MATRICULA_CHANNEL) === "1") return true;
   return isStaffOAuthGateValid();
 }

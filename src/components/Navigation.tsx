@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { usePayments } from "@/context/PaymentsContext";
+import { useNotifications } from "@/context/NotificationsContext";
 import NotificationsDrawer from "@/components/NotificationsDrawer";
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -28,7 +29,8 @@ const ALLOWED_ROUTES: Record<string, string[]> = {
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, unreadNotifications, pendingStudents, adminMode, setAdminMode, usingSupabaseSession } = useApp();
+  const { user, logout, pendingStudents, adminMode, setAdminMode, usingSupabaseSession } = useApp();
+  const { unreadNotifications } = useNotifications();
   const { latePayments } = usePayments();
   const [showNotifs, setShowNotifs] = useState(false);
 

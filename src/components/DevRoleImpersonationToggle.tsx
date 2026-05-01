@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { hasSupabaseEnv } from "@/lib/supabaseClient";
 
 const ROLES = [
   { key: "admin" as const, label: "Dono" },
@@ -14,7 +15,8 @@ const ROLES = [
  * Dev-only runtime role switcher. Visible only when email ∈ NEXT_PUBLIC_DEV_ROOT_EMAILS.
  */
 export default function DevRoleImpersonationToggle() {
-  const { isDevRoot, devImpersonation, setDevImpersonation } = useApp();
+  const { isDevRoot, devImpersonation, setDevImpersonation, usingSupabaseSession } = useApp();
+  const showRlsHint = hasSupabaseEnv() && usingSupabaseSession;
 
   if (!isDevRoot) return null;
 
@@ -56,6 +58,14 @@ export default function DevRoleImpersonationToggle() {
           })}
         </div>
       </div>
+      {showRlsHint ? (
+        <p className="mt-1.5 max-w-[14rem] text-[9px] leading-snug text-zinc-500">
+          Lista vazia no Dono? No Supabase, inclua seu e-mail de login em{" "}
+          <span className="font-mono text-zinc-400">staff_access</span> como{" "}
+          <span className="font-mono text-zinc-400">admin</span> — o RLS não lê este toggle, só o JWT +
+          essa tabela.
+        </p>
+      ) : null}
     </motion.div>
   );
 }

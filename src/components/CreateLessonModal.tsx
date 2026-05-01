@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Search } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useToast } from "@/components/Toast";
@@ -33,7 +33,7 @@ const emptyLessonState = (categoryId: string, maxStudents: number, venueId: stri
 export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Props) {
   const { students } = useStudents();
   const { lessons, addLesson } = useLessons();
-  const { categories, venues } = useApp();
+  const { categories, venues } = useCatalog();
   const { toast } = useToast();
   useBodyScrollLock(isOpen);
   const prevIsOpen = useRef(false);

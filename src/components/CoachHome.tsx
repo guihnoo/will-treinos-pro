@@ -6,7 +6,12 @@ import {
   CalendarRange, CalendarPlus, Check, Copy, X, ShieldAlert, UserCheck,
   Clock, MapPin, Star, ChevronRight, UserPlus,
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useCheckIn } from "@/context/CheckInContext";
+import { useAppConfig } from "@/context/AppConfigContext";
+import { useCatalog } from "@/context/CatalogContext";
 import FeedbackModal from "@/components/FeedbackModal";
 import LessonDetailModal from "@/components/LessonDetailModal";
 import PerformanceEvalModal from "@/components/PerformanceEvalModal";
@@ -20,15 +25,12 @@ import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTo
 import { avatarSrc } from "@/lib/avatarSrc";
 
 export default function CoachHome() {
-  const {
-    todayLessons,
-    getStudent,
-    getCategory,
-    getVenue,
-    checkInStudent,
-    user,
-    appConfig,
-  } = useApp();
+  const { appConfig } = useAppConfig();
+  const { getCategory, getVenue } = useCatalog();
+  const { user } = useAuth();
+  const { todayLessons } = useLessons();
+  const { getStudent } = useStudents();
+  const { checkInStudent } = useCheckIn();
   const { toast } = useToast();
   const [lessonModal, setLessonModal] = useState<string | null>(null);
   const [feedbackTarget, setFeedbackTarget] = useState<{ lessonId: string; studentId: string } | null>(null);

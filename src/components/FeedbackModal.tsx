@@ -3,7 +3,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Send, Zap, Shield, Target, TrendingUp } from "lucide-react";
-import { useApp, Student } from "@/context/AppContext";
+import type { Student } from "@/context/AppContext";
+import { useNotifications } from "@/context/NotificationsContext";
+import { useCoaching } from "@/context/CoachingContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 interface Props {
@@ -26,7 +28,8 @@ const SKILLS = [
 const TRAINING_TYPES = ["Fundamentos", "Jogo", "Simulado", "Físico", "Técnico", "Misto"];
 
 export default function FeedbackModal({ lessonId, student, onClose }: Props) {
-  const { addFeedback, addNotification } = useApp();
+  const { addFeedback } = useCoaching();
+  const { addNotification } = useNotifications();
   useBodyScrollLock(true);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);

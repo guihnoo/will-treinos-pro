@@ -7,6 +7,8 @@ import {
   ExternalLink, Save, ChevronRight, Globe, QrCode, UserCircle, Lock, LockOpen, Eraser,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { useAppConfig } from "@/context/AppConfigContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import type { AppConfig, StudentProfileEditPolicy } from "@/context/types";
@@ -22,15 +24,21 @@ type Tab = "categorias" | "locais" | "jornada" | "recebimentos" | "perfilAluno";
 
 export default function ConfigPage() {
   const router = useRouter();
+  const { appConfig, updateAppConfig } = useAppConfig();
   const {
-    user,
-    categories, venues, workHours,
-    addCategory, updateCategory, deleteCategory,
-    addVenue, updateVenue, deleteVenue, setWorkHours,
+    categories,
+    venues,
+    workHours,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addVenue,
+    updateVenue,
+    deleteVenue,
+    setWorkHours,
     getVenueMapsUrl,
-    appConfig,
-    updateAppConfig,
-  } = useApp();
+  } = useCatalog();
+  const { user } = useApp();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<Tab>("categorias");

@@ -4,11 +4,11 @@ import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Trophy, Users, CalendarRange, Star, Play } from "lucide-react";
 import Link from "next/link";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
-  const { user } = useApp();
+  const { user } = useAuth();
   const router = useRouter();
 
   // If user is already logged in, redirect them to their respective dashboards.
@@ -77,6 +77,12 @@ export default function LandingPage() {
               </motion.button>
             </Link>
           </div>
+          <p className="mt-6 text-sm text-zinc-500">
+            Já tem conta?{" "}
+            <Link href="/login" className="font-semibold text-[#EAB308] hover:underline underline-offset-4">
+              Entrar
+            </Link>
+          </p>
         </motion.div>
 
         {/* Features Preview */}

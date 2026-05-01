@@ -4,6 +4,11 @@ import React, { useState, useMemo, useEffect, useRef, useId } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { lessonLocalDateTime, localDateISO } from "@/lib/dateUtils";
 import { useApp } from "@/context/AppContext";
+import { useCheckIn } from "@/context/CheckInContext";
+import { useLessonRatings } from "@/context/LessonRatingsContext";
+import { useNotifications } from "@/context/NotificationsContext";
+import { useCatalog } from "@/context/CatalogContext";
+import { useCoaching } from "@/context/CoachingContext";
 import type { Lesson } from "@/context/AppContext";
 import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio } from "lucide-react";
 import { useToast } from "@/components/Toast";
@@ -426,22 +431,19 @@ function StudentHomeSkeleton() {
 }
 
 export default function StudentHome() {
+  const { getCategory } = useCatalog();
+  const { feedbacks } = useCoaching();
+  const { requestCheckIn } = useCheckIn();
+  const { lessonRatings, addLessonRating, getLessonRating } = useLessonRatings();
   const {
     user,
     lessons,
     students,
-    feedbacks,
-    requestCheckIn,
-    notifications,
-    markNotificationRead,
-    lessonRatings,
-    addLessonRating,
-    getLessonRating,
-    getCategory,
     usingSupabaseSession,
     criticalDataError,
     retryCriticalDataSync,
   } = useApp();
+  const { notifications, markNotificationRead } = useNotifications();
   const evoChartIdHome = useId().replace(/:/g, "h");
   const evoChartIdModal = useId().replace(/:/g, "m");
   const { toast } = useToast();

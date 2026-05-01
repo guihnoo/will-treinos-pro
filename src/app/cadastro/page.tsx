@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, User, Phone, Mail, AtSign, Camera, CheckCircle2, Image as ImageIcon, RefreshCw, X } from "lucide-react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
+import { useNotifications } from "@/context/NotificationsContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -24,7 +25,8 @@ const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7
 type PhotoMode = "avatar" | "photo";
 
 export default function RegistrationPage() {
-  const { user, authResolved, usingSupabaseSession, addStudent, addNotification } = useApp();
+  const { user, authResolved, usingSupabaseSession, addStudent } = useApp();
+  const { addNotification } = useNotifications();
   const router = useRouter();
 
   useEffect(() => {
@@ -210,6 +212,12 @@ export default function RegistrationPage() {
 
       <Link href="/" className={`absolute top-[max(1.5rem,env(safe-area-inset-top))] left-[max(1.5rem,env(safe-area-inset-left))] text-zinc-500 hover:text-white flex items-center gap-2 transition-colors z-10 ${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD} rounded-lg`}>
         <ArrowLeft className="w-4 h-4" /> Voltar
+      </Link>
+      <Link
+        href="/login"
+        className={`absolute top-[max(1.5rem,env(safe-area-inset-top))] right-[max(1.5rem,env(safe-area-inset-right))] text-sm font-semibold text-[#EAB308] hover:underline z-10 ${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD} rounded-lg px-1`}
+      >
+        Entrar
       </Link>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}

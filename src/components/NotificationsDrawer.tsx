@@ -6,7 +6,8 @@ import {
   Bell, X, UserPlus, AlertTriangle, Clock, TrendingUp,
   MessageSquare, CheckCheck, Megaphone, Star
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationsContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 
@@ -22,7 +23,8 @@ const iconMap: Record<string, { icon: React.ElementType; color: string; bg: stri
 };
 
 export default function NotificationsDrawer({ open, onClose }: Props) {
-  const { user, notifications, markNotificationRead, markAllNotificationsRead } = useApp();
+  const { user } = useAuth();
+  const { notifications, markNotificationRead } = useNotifications();
   useBodyScrollLock(open);
 
   // ─── SECURITY: Role-based notification filtering ───────────────────────────

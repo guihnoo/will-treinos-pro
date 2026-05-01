@@ -5,7 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, MapPin, Clock, Users, Check, Dumbbell, Star, MessageSquare, Send, BellRing, UserPlus, ArrowUpCircle, Globe
 } from "lucide-react";
-import { useApp, Lesson } from "@/context/AppContext";
+import type { Lesson } from "@/context/types";
+import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useCheckIn } from "@/context/CheckInContext";
+import { useCatalog } from "@/context/CatalogContext";
+import { useNotifications } from "@/context/NotificationsContext";
 import { useToast } from "@/components/Toast";
 import FeedbackModal from "./FeedbackModal";
 import TrainingPlanEditor from "./TrainingPlanEditor";
@@ -16,7 +21,11 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 interface Props { lesson: Lesson; onClose: () => void; layoutId?: string; }
 
 export default function LessonDetailModal({ lesson, onClose, layoutId }: Props) {
-  const { getCategory, getVenue, getVenueMapsUrl, getStudent, checkInStudent, addNotification, promoteFromWaitlist, students, venues, lessons, updateLesson, addToWaitlist } = useApp();
+  const { getCategory, getVenue, getVenueMapsUrl, venues } = useCatalog();
+  const { getStudent, students } = useStudents();
+  const { lessons, updateLesson, addToWaitlist, promoteFromWaitlist } = useLessons();
+  const { checkInStudent } = useCheckIn();
+  const { addNotification } = useNotifications();
   const { toast } = useToast();
   const [feedbackTarget, setFeedbackTarget] = useState<string | null>(null);
   const [trainingTarget, setTrainingTarget] = useState<string | null>(null);

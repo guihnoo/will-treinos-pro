@@ -7,6 +7,7 @@ import {
   BadgeCheck, Send, X, Bookmark, SmilePlus, Plus, CheckCircle2, MoreVertical, Pin, Trash2, Trophy, AlertTriangle
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { useFeed } from "@/context/FeedContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppEmptyState from "@/components/ui/AppEmptyState";
@@ -222,14 +223,16 @@ function PostComposer({
 // ─── Main Feed Page ──────────────────────────────────────────────────────────
 export default function FeedPage() {
   const {
-    user,
-    students,
     posts,
     addPost,
     togglePostLike,
     addPostComment,
     moderatePost,
     softDeletePost,
+  } = useFeed();
+  const {
+    user,
+    students,
     usingSupabaseSession,
     criticalDataError,
     retryCriticalDataSync,

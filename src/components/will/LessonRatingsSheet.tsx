@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquarePlus, Users, User, Trophy, Save, Activity, Target, Shield, ArrowUpRight, Crosshair } from "lucide-react";
-import { useApp } from "@/context/AppContext";
+import { useStudents } from "@/context/StudentsContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 
 interface LessonRatingsSheetProps {
@@ -20,7 +20,7 @@ const FUNDAMENTALS = [
 ] as const;
 
 export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsSheetProps) {
-  const { students } = useApp();
+  const { students } = useStudents();
   const [tab, setTab] = useState<"squad" | "athlete">("squad");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(lesson.enrolledStudents[0] || null);
 

@@ -9,6 +9,8 @@ import {
   Image as ImageIcon, RefreshCw, X, Shield, ChevronRight, Settings,
 } from "lucide-react";
 import { useApp, type Student } from "@/context/AppContext";
+import { useAppConfig } from "@/context/AppConfigContext";
+import { useCoaching } from "@/context/CoachingContext";
 import { resolveStudentProfilePolicy } from "@/lib/studentProfilePolicy";
 import { useToast } from "@/components/Toast";
 import { useRouter } from "next/navigation";
@@ -31,7 +33,9 @@ const resolveAvatarSrc = (avatar: string | null | undefined, fallbackSeed: strin
 };
 
 export default function PerfilPage() {
-  const { user, students, feedbacks, lessons, updateStudent, updateUser, logout, appConfig, usingSupabaseSession } = useApp();
+  const { appConfig } = useAppConfig();
+  const { feedbacks } = useCoaching();
+  const { user, students, lessons, updateStudent, updateUser, logout, usingSupabaseSession } = useApp();
   const profilePolicy = useMemo(() => resolveStudentProfilePolicy(appConfig), [appConfig]);
   const isStudent = user?.role === "aluno";
   const canEditField = (key: keyof typeof profilePolicy) => !isStudent || profilePolicy[key];

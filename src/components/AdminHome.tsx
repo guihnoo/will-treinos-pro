@@ -9,7 +9,11 @@ import {
   Volleyball
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useCheckIn } from "@/context/CheckInContext";
 import { usePayments } from "@/context/PaymentsContext";
+import { useNotifications } from "@/context/NotificationsContext";
+import { useCatalog } from "@/context/CatalogContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import KPIDetailModal from "@/components/KPIDetailModal";
@@ -105,13 +109,16 @@ function AlertCard({ icon: Icon, text, color, link, delay }: {
 }
 
 export default function AdminDashboardHome() {
+  const { categories, getCategory } = useCatalog();
   const {
-    todayLessons, students, categories, notifications,
-    unreadNotifications, pendingStudents,
-    monthlyRevenue, activeStudents, checkInStudent,
-    getStudent, getCategory,
+    todayLessons, students,
+    pendingStudents,
+    monthlyRevenue, activeStudents,
   } = useApp();
+  const { getStudent } = useStudents();
+  const { checkInStudent } = useCheckIn();
   const { latePayments } = usePayments();
+  const { notifications, unreadNotifications } = useNotifications();
 
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
   const [kpiModal, setKpiModal] = useState<"revenue" | "students" | "lessons" | "late" | null>(null);

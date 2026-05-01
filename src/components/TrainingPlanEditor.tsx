@@ -3,7 +3,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Trash2, Save, Dumbbell, Timer, Zap, RotateCcw, ChevronDown } from "lucide-react";
-import { useApp, Student } from "@/context/AppContext";
+import type { Student } from "@/context/AppContext";
+import { useCoaching } from "@/context/CoachingContext";
+import { useNotifications } from "@/context/NotificationsContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
@@ -19,7 +21,8 @@ const EXERCISE_LIBRARY = [
 interface Exercise { name: string; sets: number; reps: string; rest: string; notes: string; }
 
 export default function TrainingPlanEditor({ student, onClose }: Props) {
-  const { addTrainingPlan, addNotification } = useApp();
+  const { addTrainingPlan } = useCoaching();
+  const { addNotification } = useNotifications();
   const { toast } = useToast();
   useBodyScrollLock(true);
   const [planName, setPlanName] = useState(`Treino — ${student.name.split(" ")[0]}`);
