@@ -10,6 +10,8 @@ type StudentsContextValue = {
   approvalQueue: Student[];
   pendingStudents: number;
   activeStudents: number;
+  activeStudentsRevenue: number;
+  activeStudentsAvgFrequency: number;
   getStudent: (id: string) => Student | undefined;
   addStudent: ReturnType<typeof useApp>["addStudent"];
   updateStudent: (id: string, patch: Partial<Student>) => void;
@@ -37,6 +39,23 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
     () => app.students.filter((student) => student.status === "pending" || student.status === "trial"),
     [app.students],
   );
+  const activeStudentsRevenue = useMemo(
+    () =>
+      app.students
+        .filter((student) => student.status === "active")
+        .reduce((sum, student) => sum + student.monthlyValue, 0),
+    [app.students],
+  );
+  const activeStudentsAvgFrequency = useMemo(() => {
+    const activeWithFrequency = app.students.filter(
+      (student) => student.status === "active" && student.frequency > 0,
+    );
+    if (activeWithFrequency.length === 0) return 0;
+    return Math.round(
+      activeWithFrequency.reduce((sum, student) => sum + student.frequency, 0) /
+        activeWithFrequency.length,
+    );
+  }, [app.students]);
 
   const value = useMemo<StudentsContextValue>(
     () => ({
@@ -45,6 +64,8 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
       approvalQueue,
       pendingStudents: app.pendingStudents,
       activeStudents: app.activeStudents,
+      activeStudentsRevenue,
+      activeStudentsAvgFrequency,
       getStudent: app.getStudent,
       addStudent: app.addStudent,
       updateStudent: app.updateStudent,
@@ -58,6 +79,8 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
       approvalQueue,
       app.pendingStudents,
       app.activeStudents,
+      activeStudentsRevenue,
+      activeStudentsAvgFrequency,
       app.getStudent,
       app.addStudent,
       app.updateStudent,

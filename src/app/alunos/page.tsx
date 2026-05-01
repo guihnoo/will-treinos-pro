@@ -44,7 +44,16 @@ type FilterType = "all" | "active" | "pending" | "suspended" | "trial";
 
 export default function AlunosPage() {
   const { user, usingSupabaseSession } = useAuth();
-  const { students, statusCounts, activeStudents, approveStudent, suspendStudent, updateStudent } = useStudents();
+  const {
+    students,
+    statusCounts,
+    activeStudents,
+    activeStudentsRevenue,
+    activeStudentsAvgFrequency,
+    approveStudent,
+    suspendStudent,
+    updateStudent,
+  } = useStudents();
   const { payments } = usePayments();
   const { cadastroInviteUrl } = useAppConfig();
   const { categories } = useCatalog();
@@ -96,10 +105,6 @@ export default function AlunosPage() {
       .replace("{referencia}", pay?.reference || currentReference)
       .replace("{horario}", "18:00");
   };
-
-  const totalRevenue = students.filter((s) => s.status === "active").reduce((a, s) => a + s.monthlyValue, 0);
-  const avgFreq = students.filter((s) => s.status === "active" && s.frequency > 0);
-  const avgFreqVal = avgFreq.length ? Math.round(avgFreq.reduce((a, s) => a + s.frequency, 0) / avgFreq.length) : 0;
 
   const openWhatsApp = (phone: string, name: string, msg = '') => {
     const clean = phone.replace(/\D/g, '');
@@ -202,8 +207,8 @@ export default function AlunosPage() {
             color: "#22C55E",
             sub: "matriculados",
           },
-          { icon: DollarSign, label: "Receita/mês", value: `R$ ${totalRevenue.toLocaleString("pt-BR")}`, color: "#06B6D4", sub: "alunos ativos" },
-          { icon: Activity, label: "Freq. Média", value: `${avgFreqVal}%`, color: "#8B5CF6", sub: "presença global" },
+          { icon: DollarSign, label: "Receita/mês", value: `R$ ${activeStudentsRevenue.toLocaleString("pt-BR")}`, color: "#06B6D4", sub: "alunos ativos" },
+          { icon: Activity, label: "Freq. Média", value: `${activeStudentsAvgFrequency}%`, color: "#8B5CF6", sub: "presença global" },
         ].map((stat, i) => (
           <StatCard
             key={stat.label}
