@@ -8,12 +8,12 @@ import {
   Zap, Target, ArrowUpRight, Eye, MessageSquare, Star,
   Volleyball
 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useCheckIn } from "@/context/CheckInContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useCatalog } from "@/context/CatalogContext";
+import { useLessons } from "@/context/LessonsContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import KPIDetailModal from "@/components/KPIDetailModal";
@@ -110,14 +110,10 @@ function AlertCard({ icon: Icon, text, color, link, delay }: {
 
 export default function AdminDashboardHome() {
   const { categories, getCategory } = useCatalog();
-  const {
-    todayLessons, students,
-    pendingStudents,
-    monthlyRevenue, activeStudents,
-  } = useApp();
-  const { getStudent } = useStudents();
+  const { pendingStudents, activeStudents, getStudent } = useStudents();
+  const { todayLessons, todayEnrolledCount } = useLessons();
   const { checkInStudent } = useCheckIn();
-  const { latePayments } = usePayments();
+  const { latePayments, monthlyRevenue } = usePayments();
   const { notifications, unreadNotifications } = useNotifications();
 
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
@@ -207,7 +203,7 @@ export default function AdminDashboardHome() {
           <KPICard icon={Users} label="Alunos Ativos" value={String(activeStudents)}
             sub={`${pendingStudents} aguardando aprovação`} color="#8B5CF6" delay={0.15} onClick={() => { setSelectedKpiLayoutId(toKpiLayoutId("Alunos Ativos")); setKpiModal("students"); }} isPulsing={pendingStudents > 0} />
           <KPICard icon={CalendarRange} label="Aulas Hoje" value={String(todayLessons.length)}
-            sub={`${todayLessons.reduce((a, l) => a + l.enrolledStudents.length, 0)} alunos no total`} color="#06B6D4" delay={0.2} onClick={() => { setSelectedKpiLayoutId(toKpiLayoutId("Aulas Hoje")); setKpiModal("lessons"); }} />
+            sub={`${todayEnrolledCount} alunos no total`} color="#06B6D4" delay={0.2} onClick={() => { setSelectedKpiLayoutId(toKpiLayoutId("Aulas Hoje")); setKpiModal("lessons"); }} />
           <KPICard icon={AlertTriangle} label="Inadimplentes" value={String(latePayments)}
             sub="Necessitam contato urgente" color="#EF4444" delay={0.25} onClick={() => { setSelectedKpiLayoutId(toKpiLayoutId("Inadimplentes")); setKpiModal("late"); }} isPulsing={latePayments > 0} />
         </div>

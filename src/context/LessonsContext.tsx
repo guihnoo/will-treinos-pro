@@ -7,6 +7,9 @@ import type { Lesson } from "@/context/types";
 type LessonsContextValue = {
   lessons: Lesson[];
   todayLessons: Lesson[];
+  todayEnrolledCount: number;
+  todayPresentCount: number;
+  todayAbsentCount: number;
   addLesson: ReturnType<typeof useApp>["addLesson"];
   updateLesson: (id: string, patch: Partial<Lesson>) => void;
   deleteLesson: (id: string) => void;
@@ -22,6 +25,9 @@ export function LessonsProvider({ children }: { children: React.ReactNode }) {
     () => ({
       lessons: app.lessons,
       todayLessons: app.todayLessons,
+      todayEnrolledCount: app.todayLessons.reduce((sum, lesson) => sum + lesson.enrolledStudents.length, 0),
+      todayPresentCount: app.todayLessons.reduce((sum, lesson) => sum + lesson.presentStudents.length, 0),
+      todayAbsentCount: app.todayLessons.reduce((sum, lesson) => sum + lesson.absentStudents.length, 0),
       addLesson: app.addLesson,
       updateLesson: app.updateLesson,
       deleteLesson: app.deleteLesson,

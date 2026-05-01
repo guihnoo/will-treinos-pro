@@ -28,7 +28,7 @@ export default function CoachHome() {
   const { appConfig } = useAppConfig();
   const { getCategory, getVenue } = useCatalog();
   const { user } = useAuth();
-  const { todayLessons } = useLessons();
+  const { todayLessons, todayEnrolledCount, todayPresentCount, todayAbsentCount } = useLessons();
   const { getStudent } = useStudents();
   const { checkInStudent } = useCheckIn();
   const { toast } = useToast();
@@ -54,10 +54,6 @@ export default function CoachHome() {
     return "Boa noite";
   };
 
-  const totalStudentsToday = todayLessons.reduce((a, l) => a + l.enrolledStudents.length, 0);
-  const totalPresent = todayLessons.reduce((a, l) => a + l.presentStudents.length, 0);
-  const totalAbsent = todayLessons.reduce((a, l) => a + l.absentStudents.length, 0);
-
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto pb-28">
       {/* Header */}
@@ -68,7 +64,7 @@ export default function CoachHome() {
             {greeting()}, <span className="text-[#EAB308]">Coach {user?.name.split(" ")[0]}</span> 🏐
           </h1>
           <p className="text-zinc-500 mt-1">
-            {todayLessons.length} aula{todayLessons.length !== 1 ? "s" : ""} hoje &bull; {totalStudentsToday} alunos esperados
+            {todayLessons.length} aula{todayLessons.length !== 1 ? "s" : ""} hoje &bull; {todayEnrolledCount} alunos esperados
           </p>
         </div>
         <WeatherWidget />
@@ -136,13 +132,13 @@ export default function CoachHome() {
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
           className="bg-[#0A0A0A] border border-zinc-800/60 rounded-xl p-4 text-center">
           <UserCheck className="w-5 h-5 text-[#22C55E] mx-auto mb-1" />
-          <p className="text-xl font-bold text-white">{totalPresent}</p>
+          <p className="text-xl font-bold text-white">{todayPresentCount}</p>
           <p className="text-[11px] text-zinc-500 font-medium">Presentes</p>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="bg-[#0A0A0A] border border-zinc-800/60 rounded-xl p-4 text-center">
           <ShieldAlert className="w-5 h-5 text-[#EF4444] mx-auto mb-1" />
-          <p className="text-xl font-bold text-white">{totalAbsent}</p>
+          <p className="text-xl font-bold text-white">{todayAbsentCount}</p>
           <p className="text-[11px] text-zinc-500 font-medium">Faltas</p>
         </motion.div>
       </div>

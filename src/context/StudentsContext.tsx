@@ -7,6 +7,7 @@ import type { Student } from "@/context/types";
 type StudentsContextValue = {
   students: Student[];
   pendingStudents: number;
+  activeStudents: number;
   getStudent: (id: string) => Student | undefined;
   addStudent: ReturnType<typeof useApp>["addStudent"];
   updateStudent: (id: string, patch: Partial<Student>) => void;
@@ -23,6 +24,7 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
     () => ({
       students: app.students,
       pendingStudents: app.pendingStudents,
+      activeStudents: app.activeStudents,
       getStudent: app.getStudent,
       addStudent: app.addStudent,
       updateStudent: app.updateStudent,
@@ -33,6 +35,7 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
     [
       app.students,
       app.pendingStudents,
+      app.activeStudents,
       app.getStudent,
       app.addStudent,
       app.updateStudent,

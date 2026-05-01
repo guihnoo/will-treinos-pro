@@ -96,7 +96,7 @@ export default function WillCockpit() {
   const { appConfig, updateAppConfig } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
   const { user } = useAuth();
-  const { lessons, todayLessons } = useLessons();
+  const { lessons, todayLessons, todayEnrolledCount } = useLessons();
   const {
     students,
     getStudent,
@@ -182,7 +182,7 @@ export default function WillCockpit() {
   }, [payments, currentMonthReference]);
 
   const awaitingApproval = students.filter((s) => s.status === "pending" || s.status === "trial").length;
-  const athletesToday = todayLessons.reduce((acc, l) => acc + l.enrolledStudents.length, 0);
+  const athletesToday = todayEnrolledCount;
   const pendingPaymentsCount = payments.filter((p) => p.status === "pending" || p.status === "late").length;
   const approvalQueue = useMemo(
     () => students.filter((s) => s.status === "pending" || s.status === "trial"),

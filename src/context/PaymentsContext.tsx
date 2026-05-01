@@ -12,6 +12,7 @@ export type StudentPaymentProofPayload = {
 type PaymentsContextValue = {
   payments: Payment[];
   latePayments: number;
+  monthlyRevenue: number;
   markPayment: (id: string) => void;
   submitStudentPaymentProof: (id: string, payload: StudentPaymentProofPayload) => void;
 };
@@ -23,11 +24,12 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<PaymentsContextValue>(
     () => ({
       payments: app.payments,
-      latePayments: app.payments.filter((p) => p.status === "late").length,
+      latePayments: app.latePayments,
+      monthlyRevenue: app.monthlyRevenue,
       markPayment: app.markPayment,
       submitStudentPaymentProof: app.submitStudentPaymentProof,
     }),
-    [app.payments, app.markPayment, app.submitStudentPaymentProof],
+    [app.payments, app.latePayments, app.monthlyRevenue, app.markPayment, app.submitStudentPaymentProof],
   );
 
   return <PaymentsContext.Provider value={value}>{children}</PaymentsContext.Provider>;
