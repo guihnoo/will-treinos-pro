@@ -173,6 +173,36 @@ function mapLesson(row: DbRow): Lesson {
   };
 }
 
+export async function insertNotificationRemote(
+  supabase: SupabaseClient,
+  payload: Omit<Notification, "id"> & { id?: string },
+): Promise<Notification> {
+  const id =
+    payload.id ||
+    (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `nf_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
+  const { data, error } = await supabase
+    .from("notifications")
+    .insert({
+      id,
+      type: payload.type,
+      title: payload.title,
+      message: payload.message,
+      time: payload.time || "agora",
+      is_read: payload.read,
+      student_id: payload.studentId ?? null,
+      recipient_id: payload.recipientId ?? null,
+      is_global: payload.isGlobal ?? false,
+    })
+    .select("*")
+    .single();
+  if (error) {
+    throw new Error(`Falha ao gravar notificação: ${error.message}`);
+  }
+  return mapNotification((data || {}) as DbRow);
+}
+
 function mapNotification(row: DbRow): Notification {
   const rawType = asString(row.type, "message");
   const type = (
@@ -266,6 +296,7 @@ export async function createStudentRemote(supabase: SupabaseClient, student: Stu
       notes: student.notes,
       professor_notes: student.professorNotes || "",
       attendance_history: student.attendanceHistory || [],
+      auth_user_id: student.authUserId ?? null,
     })
     .select("*")
     .single();
@@ -571,7 +602,7 @@ export async function addFeedCommentRemote(
 
 export async function createPublicLeadRemote(
   supabase: SupabaseClient,
-  payload: { name: string; phone: string; email: string; instagram: string; avatar: string },
+  payload: { name: string; phone: string; email: string; instagram: string; avatar: string; authUserId?: string | null },
 ): Promise<void> {
   const id = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
@@ -594,7 +625,7 @@ export async function createPublicLeadRemote(
     notes: "Cadastro público",
     professor_notes: "",
     attendance_history: [],
-    auth_user_id: null,
+    auth_user_id: payload.authUserId ?? null,
   });
   if (error) {
     throw new Error(`Falha ao registrar cadastro público: ${error.message}`);

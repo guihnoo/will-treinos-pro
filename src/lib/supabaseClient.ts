@@ -36,9 +36,15 @@ export function getSupabaseClient(): SupabaseClient | null {
   return supabaseSingleton;
 }
 
-export function appRoleFromSupabaseUser(rawRole: unknown): "admin" | "coach" | "aluno" {
-  const role = String(rawRole || "").toLowerCase();
+/**
+ * Papel vindo do JWT (user_metadata / app_metadata).
+ * Sem role explícito → `null` (não assumir aluno: evita OAuth “fantasma” sem matrícula).
+ */
+export function appRoleFromSupabaseUser(rawRole: unknown): "admin" | "coach" | "aluno" | null {
+  const role = String(rawRole || "").trim().toLowerCase();
+  if (!role) return null;
   if (["admin", "will_owner", "owner"].includes(role)) return "admin";
   if (["coach", "professor", "teacher"].includes(role)) return "coach";
-  return "aluno";
+  if (["aluno", "student", "athlete"].includes(role)) return "aluno";
+  return null;
 }

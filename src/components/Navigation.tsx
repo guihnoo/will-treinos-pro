@@ -21,24 +21,29 @@ const ALLOWED_ROUTES: Record<string, string[]> = {
   admin:  ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
   coach:  ["/dashboard", "/agenda", "/feed", "/alunos", "/perfil"],
   aluno:  ["/dashboard", "/agenda", "/feed", "/financeiro", "/treinos", "/perfil", "/configuracoes"],
+  /** Conta Google/e-mail sem linha de aluno: só cadastro público + login. */
+  pending_student: ["/cadastro", "/login", "/auth"],
 };
 
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, unreadNotifications, pendingStudents, adminMode, setAdminMode } = useApp();
+  const { user, logout, unreadNotifications, pendingStudents, adminMode, setAdminMode, usingSupabaseSession } = useApp();
   const { latePayments } = usePayments();
   const [showNotifs, setShowNotifs] = useState(false);
 
   // Route guard — redireciona roles restritos para /dashboard
   useEffect(() => {
     if (!user) return;
-    const allowed = ALLOWED_ROUTES[user.role as string] || ["/dashboard"];
-    const isAllowed = allowed.some(r => pathname.startsWith(r));
-    if (!isAllowed) router.replace("/dashboard");
-  }, [pathname, user]);
+    const routeKey =
+      user.role === null && usingSupabaseSession ? "pending_student" : String(user.role ?? "");
+    const allowed = ALLOWED_ROUTES[routeKey] || ["/cadastro"];
+    const isAllowed = allowed.some((r) => pathname.startsWith(r));
+    if (!isAllowed) router.replace(routeKey === "pending_student" ? "/cadastro?matricula=1" : "/dashboard");
+  }, [pathname, user, usingSupabaseSession, router]);
 
   if (!user) return null;
+  if (user.role === null && usingSupabaseSession) return null;
 
   const getNavItems = () => {
     switch (user.role) {

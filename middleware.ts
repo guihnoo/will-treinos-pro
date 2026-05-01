@@ -44,6 +44,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(deniedUrl);
   }
 
+  /** Conta autenticada no Supabase sem matrícula vinculada: só fluxo público de cadastro (não acessa app do aluno). */
+  if (role === "pending_student" && isPrivatePath(pathname)) {
+    const enrollUrl = request.nextUrl.clone();
+    enrollUrl.pathname = "/cadastro";
+    enrollUrl.searchParams.set("matricula", "1");
+    return NextResponse.redirect(enrollUrl);
+  }
+
   if (role && isPrivatePath(pathname)) {
     const isStudent = role === "student";
     const isProfessor = role === "professor";

@@ -30,7 +30,8 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
   // Aluno: ONLY own (recipientId) + global broadcasts (isGlobal)
   // NEVER leaks admin-only notifications (studentId without recipientId) to students
   const visibleNotifications = React.useMemo(() => {
-    if (!user || user.role === "admin" || user.role === "coach") {
+    if (!user || user.role === null) return [];
+    if (user.role === "admin" || user.role === "coach") {
       return notifications;
     }
     return notifications.filter((n) => studentSeesNotification(n, user.id));

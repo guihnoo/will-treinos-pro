@@ -70,10 +70,7 @@ function LoginPageContent() {
       router.push(nextPath);
       return;
     }
-    if (result.role === "aluno") {
-      router.push("/treinos");
-      return;
-    }
+    // Papel efetivo (incl. matrícula pendente) vem do cookie + middleware; destino padrão é a home do app.
     router.push("/dashboard");
   };
 
@@ -117,6 +114,13 @@ function LoginPageContent() {
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h1>
           <p className="text-sm text-zinc-500">Faça login para acessar sua conta</p>
+          {supabaseReady ? (
+            <p className="mt-3 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-left text-[11px] leading-relaxed text-zinc-400">
+              <span className="font-bold text-[#EAB308]">Aluno:</span> use primeiro o{" "}
+              <strong className="text-zinc-200">link de matrícula</strong> enviado pelo Will Treinos (mesmo site),
+              preencha o cadastro e só depois entre com Google ou e-mail aqui. Assim o dono vê sua solicitação e aprova.
+            </p>
+          ) : null}
         </div>
 
         {/* Auth Methods Toggle */}

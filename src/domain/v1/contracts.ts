@@ -1,5 +1,5 @@
 export type TenantStatus = "active" | "suspended";
-export type AppRole = "will_owner" | "professor" | "student" | "lead";
+export type AppRole = "will_owner" | "professor" | "student" | "lead" | "pending_student";
 export type UserStatus = "invited" | "pending_approval" | "active" | "blocked";
 export type AuthProvider = "email" | "google" | "apple" | "facebook";
 

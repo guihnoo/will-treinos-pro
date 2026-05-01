@@ -24,14 +24,14 @@ export function readDevImpersonationFromStorage(): DevImpersonation {
 export function computeEffectiveRole(
   authUser: SupabaseAuthUser,
   impersonation: DevImpersonation,
-): "admin" | "coach" | "aluno" {
-  const authentic = appRoleFromSupabaseUser(authUser.user_metadata?.role ?? authUser.app_metadata?.role);
+): "admin" | "coach" | "aluno" | null {
   if (isDevRootEmail(authUser.email)) return impersonation;
-  return authentic;
+  return appRoleFromSupabaseUser(authUser.user_metadata?.role ?? authUser.app_metadata?.role);
 }
 
 /** Used after OAuth/password redirect when we already have a Supabase session user. */
-export function postLoginRouteFromAuthUser(authUser: SupabaseAuthUser): "/treinos" | "/dashboard" {
+export function postLoginRouteFromAuthUser(authUser: SupabaseAuthUser): "/treinos" | "/dashboard" | "/cadastro" {
   const role = computeEffectiveRole(authUser, readDevImpersonationFromStorage());
+  if (role === null) return "/cadastro";
   return role === "aluno" ? "/treinos" : "/dashboard";
 }

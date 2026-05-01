@@ -21,6 +21,11 @@ type PhotoMode = "avatar" | "photo";
 export default function RegistrationPage() {
   const { user, authResolved, usingSupabaseSession, addStudent, addNotification } = useApp();
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem("wt_matricula_channel", "1");
+  }, []);
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -79,6 +84,7 @@ export default function RegistrationPage() {
           email: studentEmail,
           instagram: form.instagram,
           avatar,
+          authUserId: user?.authSubjectId ?? null,
         });
       } else {
         await addStudent({
@@ -104,14 +110,16 @@ export default function RegistrationPage() {
       return;
     }
 
-    // Notify Admin
-    addNotification({
-      type: "new_student",
-      title: "Novo Aluno na Fila",
-      message: `${form.name} acabou de fazer o cadastro e aguarda aprovação!`,
-      time: "agora",
-      read: false
-    });
+    const usedAnonymousLead = supabaseReady && !user;
+    if (!usingSupabaseSession || usedAnonymousLead) {
+      addNotification({
+        type: "new_student",
+        title: "Novo Aluno na Fila",
+        message: `${form.name} acabou de fazer o cadastro e aguarda aprovação!`,
+        time: "agora",
+        read: false,
+      });
+    }
 
     setSubmitted(true);
     toast("✅ Cadastro enviado com sucesso! Aguarde aprovação do administrador.");

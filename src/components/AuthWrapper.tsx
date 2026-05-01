@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { Navigation } from "@/components/Navigation";
 import PageTransition from "@/components/PageTransition";
+import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 
@@ -15,7 +16,7 @@ const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro"]);
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, authResolved, authError, usingSupabaseSession } = useAuth();
+  const { user, authResolved, authError, usingSupabaseSession, logout } = useAuth();
   const { students } = useStudents();
   const {
     criticalDataLoading,
@@ -105,6 +106,41 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
             className="mt-4 w-full rounded-xl border border-[#EAB308]/50 bg-[#EAB308]/15 py-2.5 text-sm font-bold text-[#EAB308] hover:bg-[#EAB308]/25"
           >
             Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const needsMatriculaGate =
+    !isPublic &&
+    usingSupabaseSession &&
+    user &&
+    user.role === null &&
+    pathname &&
+    !pathname.startsWith("/cadastro");
+
+  if (needsMatriculaGate) {
+    return (
+      <div className="flex min-h-[100dvh] flex-1 flex-col items-center justify-center bg-black px-4 py-10">
+        <div className="w-full max-w-md space-y-4 rounded-2xl border border-[#EAB308]/35 bg-[#0A0A0A] p-6 shadow-[0_0_40px_rgba(234,179,8,0.12)]">
+          <h2 className="text-lg font-black text-white">Matrícula obrigatória</h2>
+          <p className="text-sm text-zinc-400">
+            Você autenticou com Google ou e-mail, mas ainda <strong className="text-zinc-200">não está vinculado a uma turma</strong> do Will Treinos.
+            Peça ao dono o <strong className="text-[#EAB308]">link de matrícula</strong>, abra neste navegador, preencha o cadastro e depois entre de novo.
+          </p>
+          <Link
+            href="/cadastro?matricula=1"
+            className="block w-full rounded-xl border border-[#EAB308]/50 bg-[#EAB308]/15 py-3 text-center text-sm font-black text-[#EAB308] hover:bg-[#EAB308]/25"
+          >
+            Ir para o cadastro oficial
+          </Link>
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="w-full rounded-xl border border-zinc-700 py-2.5 text-xs font-bold text-zinc-400 hover:border-zinc-500 hover:text-white"
+          >
+            Sair desta conta
           </button>
         </div>
       </div>

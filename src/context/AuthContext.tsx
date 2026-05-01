@@ -6,7 +6,7 @@ import { useApp } from "@/context/AppContext";
 import type { Role } from "@/context/types";
 
 type LoginResult =
-  | { ok: true; role: "admin" | "coach" | "aluno" }
+  | { ok: true; role: "admin" | "coach" | "aluno" | null }
   | { ok: false; message: string };
 
 type OAuthResult = { ok: true } | { ok: false; message: string };

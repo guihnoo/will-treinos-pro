@@ -20,6 +20,7 @@ import {
   createLessonRemote,
   createFeedPostRemote,
   createStudentRemote,
+  insertNotificationRemote,
   deleteLessonRemote,
   fetchFeedPostsRemote,
   fetchStaffAccessRole,
@@ -35,21 +36,53 @@ import {
 } from "@/lib/supabasePersistence";
 import type { Provider, User as SupabaseAuthUser } from "@supabase/supabase-js";
 
-/** Keeps RBAC middleware (`wt_role`) aligned with the legacy `User.role` mock session. */
+const secureCookieAttr = () =>
+  typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+
+/** Remove cookie de papel (logout / sessão encerrada). */
+function clearWtRoleCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = `wt_role=; path=/; max-age=0; samesite=lax${secureCookieAttr()}`;
+}
+
+/**
+ * Mantém `wt_role` alinhado ao middleware.
+ * `user.role === null` = autenticado no Supabase sem linha de aluno → `pending_student` (só matrícula).
+ */
 function syncWtRoleCookie(role: User["role"] | null | undefined) {
   if (typeof document === "undefined") return;
+  if (role === null) {
+    document.cookie = `wt_role=pending_student; path=/; max-age=2592000; samesite=lax${secureCookieAttr()}`;
+    return;
+  }
   if (!role) {
-    document.cookie = "wt_role=; path=/; max-age=0; samesite=lax";
+    clearWtRoleCookie();
     return;
   }
   const cookieRole =
     role === "admin" ? "will_owner" : role === "coach" ? "professor" : role === "aluno" ? "student" : "";
   if (!cookieRole) {
-    document.cookie = "wt_role=; path=/; max-age=0; samesite=lax";
+    clearWtRoleCookie();
     return;
   }
-  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `wt_role=${cookieRole}; path=/; max-age=2592000; samesite=lax${secure}`;
+  document.cookie = `wt_role=${cookieRole}; path=/; max-age=2592000; samesite=lax${secureCookieAttr()}`;
+}
+
+function filterDemoNotifications(rows: Notification[]): Notification[] {
+  return rows.filter((n) => !String(n.id).startsWith("demo_"));
+}
+
+function findLinkedStudentForAuth(authUserId: string | undefined, email: string, catalog: Student[]): Student | null {
+  const authSid = authUserId?.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+  if (authSid) {
+    const byAuth = catalog.find((s) => s.authUserId === authSid);
+    if (byAuth) return byAuth;
+  }
+  if (normalizedEmail) {
+    return catalog.find((s) => s.email.trim().toLowerCase() === normalizedEmail) ?? null;
+  }
+  return null;
 }
 
 const CRITICAL_DATA_FETCH_TIMEOUT_MS = 28_000;
@@ -314,7 +347,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const buildSessionUser = useCallback(
     (
-      role: "admin" | "coach" | "aluno",
+      role: "admin" | "coach" | "aluno" | null,
       custom?: {
         id?: string;
         name?: string;
@@ -325,6 +358,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       catalogStudents?: Student[],
     ): User => {
+      if (role === null) {
+        return {
+          id: custom?.authSubjectId || custom?.id || "unknown",
+          name: custom?.name || "Visitante",
+          role: null,
+          avatar: custom?.avatar || "user",
+          email: custom?.email,
+          authSubjectId: custom?.authSubjectId,
+        };
+      }
+
       const users: Record<"admin" | "coach" | "aluno", User> = {
         admin: { id: "admin1", name: "Will Monteiro", role: "admin", avatar: "Will" },
         coach: { id: "coach1", name: "Rafael Coach", role: "coach", avatar: "Coach" },
@@ -347,6 +391,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         if (!linkedStudent && custom?.id) {
           linkedStudent = cat.find((s) => s.id === custom.id) ?? null;
+        }
+        // Conta Supabase sem matrícula: não herdar o mock s1 por acidente.
+        if (!linkedStudent && authSid) {
+          return {
+            id: authSid,
+            name: custom?.name || "Aluno",
+            role: null,
+            avatar: custom?.avatar || "user",
+            email: custom?.email,
+            authSubjectId: authSid,
+          };
         }
         if (!linkedStudent) {
           linkedStudent = cat.find((s) => s.id === baseUser.id) ?? null;
@@ -380,24 +435,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (authUser: SupabaseAuthUser, catalogStudents?: Student[]) => {
       supabaseAuthUserRef.current = authUser;
       let effectiveRole = computeEffectiveRole(authUser, devImpersonation);
-      // Production governance: if metadata is still aluno, allow staff role by controlled access table.
-      if (effectiveRole === "aluno" && !isDevRootEmail(authUser.email)) {
-        const supabase = getSupabaseClient();
-        if (supabase && authUser.email) {
+      const supabase = getSupabaseClient();
+
+      if (!isDevRootEmail(authUser.email) && supabase && authUser.email) {
+        if (effectiveRole === null || effectiveRole === "aluno") {
           try {
             const accessRole = await fetchStaffAccessRole(supabase, authUser.email);
             if (accessRole) {
               effectiveRole = accessRole;
             }
           } catch {
-            // Keep default aluno on lookup failure to avoid auth hard-fail.
+            // Mantém fluxo sem staff table (não bloqueia login).
           }
         }
       }
+
+      if (!isDevRootEmail(authUser.email) && effectiveRole === "aluno" && catalogStudents !== undefined) {
+        const linked = findLinkedStudentForAuth(authUser.id, authUser.email || "", catalogStudents);
+        if (!linked) {
+          effectiveRole = null;
+        }
+      }
+
       const safeName =
         String(authUser.user_metadata?.full_name || "").trim() ||
         authUser.email?.split("@")[0] ||
-        (effectiveRole === "admin" ? "Will Owner" : effectiveRole === "coach" ? "Coach" : "Aluno");
+        (effectiveRole === "admin" ? "Will Owner" : effectiveRole === "coach" ? "Coach" : "Visitante");
       const safeAvatar =
         String(authUser.user_metadata?.avatar_url || authUser.user_metadata?.avatar || "").trim() || safeName;
       const mergedUser = buildSessionUser(
@@ -416,8 +479,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         email: authUser.email || undefined,
         authSubjectId: authUser.id,
       });
-      localStorage.setItem("will-role", effectiveRole);
-      syncWtRoleCookie(effectiveRole);
+      if (mergedUser.role) {
+        localStorage.setItem("will-role", mergedUser.role);
+      } else {
+        localStorage.removeItem("will-role");
+      }
+      syncWtRoleCookie(mergedUser.role);
     },
     [buildSessionUser, devImpersonation],
   );
@@ -478,7 +545,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setStudents(data.students);
           setPayments(data.payments);
           setLessons(data.lessons);
-          setNotifications(data.notifications);
+          setNotifications(filterDemoNotifications(data.notifications));
           setPosts(livePosts);
           if (supabaseAuthUserRef.current) {
             applySupabaseSession(supabaseAuthUserRef.current, data.students);
@@ -552,7 +619,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         criticalBootstrapDoneRef.current = false;
         setUser(null);
         localStorage.removeItem("will-role");
-        syncWtRoleCookie(null);
+        clearWtRoleCookie();
       }
     });
 
@@ -588,7 +655,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return { ok: false as const, message: error?.message || "Não foi possível autenticar." };
       }
 
-      applySupabaseSession(data.user);
+      await applySupabaseSession(data.user);
       return { ok: true as const, role: computeEffectiveRole(data.user, devImpersonation) };
     },
     [applySupabaseSession, devImpersonation],
@@ -652,7 +719,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     supabaseAuthUserRef.current = null;
     setUser(null);
     localStorage.removeItem("will-role");
-    syncWtRoleCookie(null);
+    clearWtRoleCookie();
   };
 
   useEffect(() => {
@@ -763,6 +830,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         const created = await createStudentRemote(supabase, next);
         setStudents((p) => [created, ...p]);
+        if (sessionAuthId && created.authUserId === sessionAuthId) {
+          setUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  id: created.id,
+                  role: "aluno",
+                  name: created.name,
+                  avatar: created.avatar,
+                  email: created.email || prev.email,
+                  authSubjectId: sessionAuthId,
+                }
+              : prev,
+          );
+          localStorage.setItem("will-role", "aluno");
+          syncWtRoleCookie("aluno");
+        }
+        void insertNotificationRemote(supabase, {
+          type: "new_student",
+          title: "Nova inscrição",
+          message: `${created.name} enviou cadastro e aguarda aprovação.`,
+          time: "agora",
+          read: false,
+          studentId: created.id,
+        })
+          .then((row) => setNotifications((p) => [row, ...p]))
+          .catch(() => {
+            /* não bloqueia cadastro */
+          });
         return created;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Falha ao criar aluno no Supabase.";
@@ -953,7 +1049,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   // ─── NOTIFICATIONS ───
-  const addNotification = useCallback((n: Omit<Notification, "id">) => setNotifications(p => [{ ...n, id: `n_${uid()}` }, ...p]), []);
+  const addNotification = useCallback(
+    (n: Omit<Notification, "id">) => {
+      if (!usingSupabaseSession) {
+        setNotifications((p) => [{ ...n, id: `n_${uid()}` }, ...p]);
+        return;
+      }
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setNotifications((p) => [{ ...n, id: `n_${uid()}` }, ...p]);
+        return;
+      }
+      void insertNotificationRemote(supabase, n)
+        .then((created) => setNotifications((p) => [created, ...p]))
+        .catch((error) =>
+          setCriticalDataError(error instanceof Error ? error.message : "Falha ao gravar notificação no Supabase."),
+        );
+    },
+    [usingSupabaseSession],
+  );
   const markNotificationRead = useCallback((id: string) => setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n)), []);
   const markAllNotificationsRead = useCallback(() => setNotifications(p => p.map(n => ({ ...n, read: true }))), []);
 
@@ -1184,6 +1298,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ─── COMPUTED ───
   const unreadNotifications = useMemo(() => {
     if (!user) return notifications.filter(n => !n.read).length;
+    if (user.role === null) return 0;
     if (user.role === "aluno") {
       return notifications.filter((n) => !n.read && studentSeesNotification(n, user.id)).length;
     }

@@ -22,7 +22,9 @@ export function canAccessPrefix(role: AppRole | null | undefined, prefix: AppPre
 
 export function normalizeRole(raw: string | null | undefined): AppRole | null {
   if (!raw) return null;
-  if (raw === "will_owner" || raw === "professor" || raw === "student" || raw === "lead") return raw;
+  if (raw === "will_owner" || raw === "professor" || raw === "student" || raw === "lead" || raw === "pending_student") {
+    return raw;
+  }
   if (raw === "admin") return "will_owner";
   if (raw === "coach") return "professor";
   if (raw === "aluno") return "student";
