@@ -16,6 +16,7 @@ import AppPageHeader from "@/components/ui/AppPageHeader";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { avatarSrc } from "@/lib/avatarSrc";
+import { wtLsGet, wtLsSet } from "@/lib/willLocalStorage";
 
 // ─── Rest Timer Component ────────────────────────────────────────────────────
 function parseSets(sets: string): number {
@@ -248,23 +249,14 @@ export default function TreinosPage() {
 
   useEffect(() => {
     if (!treinosStorageUserKey || typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(`wt_treinos_done_${treinosStorageUserKey}`);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as Record<string, boolean>;
-        setDone(parsed);
-      } catch {
-        setDone({});
-      }
-    } else {
-      setDone({});
-    }
+    const parsed = wtLsGet<Record<string, boolean>>(`treinos_done_${treinosStorageUserKey}`, {});
+    setDone(parsed && typeof parsed === "object" ? parsed : {});
     storageHydrated.current = true;
   }, [treinosStorageUserKey]);
 
   useEffect(() => {
     if (!treinosStorageUserKey || typeof window === "undefined" || !storageHydrated.current) return;
-    window.localStorage.setItem(`wt_treinos_done_${treinosStorageUserKey}`, JSON.stringify(done));
+    wtLsSet(`treinos_done_${treinosStorageUserKey}`, done);
   }, [done, treinosStorageUserKey]);
 
   if (usingSupabaseSession && criticalDataError) {

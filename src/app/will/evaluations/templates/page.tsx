@@ -16,8 +16,9 @@ import {
 import type { CriterionDimension, EvaluationCriterionV1, EvaluationScope, EvaluationTemplateV1 } from "@/domain/v1/contracts";
 import { OFFICIAL_TENANT_V1, EVALUATION_TEMPLATES_V1, EVALUATION_CRITERIA_V1 } from "@/domain/v1/mockOrm";
 import { useAuth } from "@/context/AuthContext";
+import { wtLsSet, wtLsTryParse } from "@/lib/willLocalStorage";
 
-const LS_KEY = "wt_will_eval_engine_v1";
+const EVAL_ENGINE_LS_KEY = "will_eval_engine_v1";
 
 const DIMENSIONS: { value: CriterionDimension; label: string; accent: string }[] = [
   { value: "tecnica", label: "Técnica", accent: "#38BDF8" },
@@ -71,16 +72,21 @@ export default function WillEvaluationTemplatesPage() {
   useEffect(() => {
     const { templates: t, criteria: c } = cloneDefaults();
     try {
-      const raw = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-      if (raw) {
-        const parsed = JSON.parse(raw) as { templates: EvaluationTemplateV1[]; criteria: EvaluationCriterionV1[] };
-        if (Array.isArray(parsed.templates) && parsed.templates.length && Array.isArray(parsed.criteria)) {
-          setTemplates(parsed.templates);
-          setCriteria(parsed.criteria);
-          setSelectedId(parsed.templates[0]?.id ?? null);
-          setHydrated(true);
-          return;
-        }
+      const parsed =
+        typeof window !== "undefined"
+          ? wtLsTryParse<{ templates: EvaluationTemplateV1[]; criteria: EvaluationCriterionV1[] }>(EVAL_ENGINE_LS_KEY)
+          : null;
+      if (
+        parsed &&
+        Array.isArray(parsed.templates) &&
+        parsed.templates.length &&
+        Array.isArray(parsed.criteria)
+      ) {
+        setTemplates(parsed.templates);
+        setCriteria(parsed.criteria);
+        setSelectedId(parsed.templates[0]?.id ?? null);
+        setHydrated(true);
+        return;
       }
     } catch {
       /* fall through */
@@ -93,7 +99,7 @@ export default function WillEvaluationTemplatesPage() {
 
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
-    localStorage.setItem(LS_KEY, JSON.stringify({ templates, criteria }));
+    wtLsSet(EVAL_ENGINE_LS_KEY, { templates, criteria });
   }, [templates, criteria, hydrated]);
 
   useEffect(() => {

@@ -21,6 +21,7 @@ import LessonRatingSheet from "@/components/LessonRatingSheet";
 import Confetti from "@/components/Confetti";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
+import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
@@ -488,7 +489,7 @@ export default function StudentHome() {
   useEffect(() => {
     if (!hydrated) return;
     const today = new Date().toDateString();
-    const lastSeen = typeof window !== "undefined" ? localStorage.getItem("wt_daily_quote_date") : null;
+    const lastSeen = wtLsGetString("daily_quote_date", "");
     if (lastSeen !== today) setShowDailyQuote(true);
   }, [hydrated]);
   useEffect(() => {
@@ -2327,7 +2328,7 @@ export default function StudentHome() {
             aria-label="Frase motivacional do dia"
             className="fixed inset-0 z-[100] overflow-y-auto overscroll-y-contain bg-black/90 backdrop-blur-md flex min-h-[100dvh] items-center justify-center p-6 py-10"
             onClick={()=>{
-              localStorage.setItem("wt_daily_quote_date", new Date().toDateString());
+              wtLsSetString("daily_quote_date", new Date().toDateString());
               setShowDailyQuote(false);
             }}>
             <motion.div
@@ -2378,7 +2379,7 @@ export default function StudentHome() {
                 <motion.button
                   whileTap={{scale:0.96}}
                   onClick={()=>{
-                    localStorage.setItem("wt_daily_quote_date", new Date().toDateString());
+                    wtLsSetString("daily_quote_date", new Date().toDateString());
                     setShowDailyQuote(false);
                     haptic([18,12,22]);
                   }}

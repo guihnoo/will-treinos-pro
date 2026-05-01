@@ -18,6 +18,38 @@ export function wtLsSet(key: string, val: unknown): void {
   if (typeof window !== "undefined") localStorage.setItem(WT_LS_PREFIX + key, JSON.stringify(val));
 }
 
+/**
+ * Texto curto com compatibilidade a valores legados gravados sem JSON
+ * (ex.: `v14` ou `Date#toDateString()` em texto puro).
+ */
+export function wtLsGetString(key: string, fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  const raw = localStorage.getItem(WT_LS_PREFIX + key);
+  if (raw == null || raw === "") return fallback;
+  try {
+    const v = JSON.parse(raw);
+    return typeof v === "string" ? v : fallback;
+  } catch {
+    return raw;
+  }
+}
+
+export function wtLsSetString(key: string, val: string): void {
+  wtLsSet(key, val);
+}
+
+/** Lê um JSON armazenado em `wt_<key>` ou retorna `null` se ausente/inválido. */
+export function wtLsTryParse<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  const d = localStorage.getItem(WT_LS_PREFIX + key);
+  if (!d) return null;
+  try {
+    return JSON.parse(d) as T;
+  } catch {
+    return null;
+  }
+}
+
 /** Objeto compatível com o antigo `ls` inline do `AppContext`. */
 export const wtLs = {
   get: wtLsGet,

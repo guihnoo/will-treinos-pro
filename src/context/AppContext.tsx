@@ -13,7 +13,7 @@ import {
 export type { DevImpersonation } from "@/lib/authPostLogin";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { transactionalSeedDefaults } from "@/lib/willLocalDataPolicy";
-import { WT_LS_PREFIX, wtLs as ls } from "@/lib/willLocalStorage";
+import { WT_LS_PREFIX, wtLs as ls, wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import {
 
   addFeedCommentRemote,
@@ -244,7 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMounted(true);
     // Version check — clear stale cache on version bump
-    const storedVersion = localStorage.getItem("wt_version");
+    const storedVersion = wtLsGetString("version", "");
     if (storedVersion !== LS_VERSION) {
       const keys = [
         "venues",
@@ -260,7 +260,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         "lessonRatings",
       ];
       keys.forEach(k => localStorage.removeItem(WT_LS_PREFIX + k));
-      localStorage.setItem("wt_version", LS_VERSION);
+      wtLsSetString("version", LS_VERSION);
     }
     const tx = transactionalSeedDefaults();
     setVenues(ls.get("venues", LEGACY_BRIDGE.DEFAULT_VENUES));
