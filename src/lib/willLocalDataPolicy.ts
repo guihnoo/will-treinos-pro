@@ -1,4 +1,4 @@
-const WT_LS_PREFIX = "wt_";
+import { WT_LS_PREFIX } from "@/lib/willLocalStorage";
 
 /**
  * Política padrão do app: não semear dados fictícios.

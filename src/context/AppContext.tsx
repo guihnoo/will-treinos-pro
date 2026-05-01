@@ -13,6 +13,7 @@ import {
 export type { DevImpersonation } from "@/lib/authPostLogin";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { transactionalSeedDefaults } from "@/lib/willLocalDataPolicy";
+import { WT_LS_PREFIX, wtLs as ls } from "@/lib/willLocalStorage";
 import {
 
   addFeedCommentRemote,
@@ -105,22 +106,6 @@ function withNetworkTimeout<T>(promise: Promise<T>, ms: number, message: string)
 // Re-export types for convenience
 export type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, AppConfig, StudentProfileEditPolicy };
 const LS_VERSION = "v14"; // bump: force clean reset without mock transactional data
-const LS_PREFIX = "wt_";
-const ls = {
-  get: <T,>(key: string, fallback: T): T => {
-    if (typeof window === "undefined") return fallback;
-    try { 
-      const d = localStorage.getItem(LS_PREFIX + key); 
-      if (!d) return fallback;
-      const parsed = JSON.parse(d);
-      if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback;
-      return parsed as T; 
-    } catch { 
-      return fallback; 
-    }
-  },
-  set: (key: string, val: unknown) => { if (typeof window !== "undefined") localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); },
-};
 
 interface AppContextType {
   user: User | null;
@@ -274,7 +259,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         "posts",
         "lessonRatings",
       ];
-      keys.forEach(k => localStorage.removeItem(LS_PREFIX + k));
+      keys.forEach(k => localStorage.removeItem(WT_LS_PREFIX + k));
       localStorage.setItem("wt_version", LS_VERSION);
     }
     const tx = transactionalSeedDefaults();

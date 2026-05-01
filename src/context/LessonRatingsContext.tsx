@@ -3,26 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useNotifications } from "@/context/NotificationsContext";
 import type { LessonRating } from "@/context/types";
-
-const LS_PREFIX = "wt_";
-
-const ls = {
-  get: <T,>(key: string, fallback: T): T => {
-    if (typeof window === "undefined") return fallback;
-    try {
-      const d = localStorage.getItem(LS_PREFIX + key);
-      if (!d) return fallback;
-      const parsed = JSON.parse(d);
-      if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback;
-      return parsed as T;
-    } catch {
-      return fallback;
-    }
-  },
-  set: (key: string, val: unknown) => {
-    if (typeof window !== "undefined") localStorage.setItem(LS_PREFIX + key, JSON.stringify(val));
-  },
-};
+import { wtLs as ls } from "@/lib/willLocalStorage";
 
 type LessonRatingsContextValue = {
   lessonRatings: LessonRating[];
