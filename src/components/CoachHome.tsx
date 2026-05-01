@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarRange, CalendarPlus, Check, Copy, X, ShieldAlert, UserCheck,
@@ -25,7 +25,7 @@ import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTo
 import { avatarSrc } from "@/lib/avatarSrc";
 
 export default function CoachHome() {
-  const { appConfig } = useAppConfig();
+  const { cadastroInviteUrl } = useAppConfig();
   const { getCategory, getVenue } = useCatalog();
   const { user } = useAuth();
   const { todayLessons, todayEnrolledCount, todayPresentCount, todayAbsentCount } = useLessons();
@@ -36,13 +36,6 @@ export default function CoachHome() {
   const [feedbackTarget, setFeedbackTarget] = useState<{ lessonId: string; studentId: string } | null>(null);
   const [evalTarget, setEvalTarget] = useState<{ lessonId: string; lessonTitle: string; studentId: string } | null>(null);
   const [showCreateLesson, setShowCreateLesson] = useState(false);
-  const cadastroInviteUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    const origin = window.location.origin;
-    const code = appConfig.enrollmentInviteCode?.trim();
-    if (!code) return `${origin}/cadastro`;
-    return `${origin}/cadastro?invite=${encodeURIComponent(code)}`;
-  }, [appConfig.enrollmentInviteCode]);
   const hasModalOpen = Boolean(lessonModal || feedbackTarget || evalTarget || showCreateLesson);
   useBodyScrollLock(hasModalOpen);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;

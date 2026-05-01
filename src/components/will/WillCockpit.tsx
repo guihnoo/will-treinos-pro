@@ -93,7 +93,7 @@ export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
   const { payments } = usePayments();
-  const { appConfig, updateAppConfig } = useAppConfig();
+  const { appConfig, cadastroPath, cadastroInviteUrl, generateEnrollmentInviteCode } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
   const { user } = useAuth();
   const { lessons, todayLessons, todayEnrolledCount } = useLessons();
@@ -129,20 +129,6 @@ export default function WillCockpit() {
     notes: "",
     categoryIds: [] as string[],
   });
-
-  const cadastroInviteUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    const origin = window.location.origin;
-    const code = appConfig.enrollmentInviteCode?.trim();
-    if (!code) return `${origin}/cadastro`;
-    return `${origin}/cadastro?invite=${encodeURIComponent(code)}`;
-  }, [appConfig.enrollmentInviteCode]);
-
-  const cadastroPath = useMemo(() => {
-    const code = appConfig.enrollmentInviteCode?.trim();
-    if (!code) return "/cadastro";
-    return `/cadastro?invite=${encodeURIComponent(code)}`;
-  }, [appConfig.enrollmentInviteCode]);
 
   useEffect(() => {
     if (!onboardingStudentId) return;
@@ -432,11 +418,7 @@ export default function WillCockpit() {
                     <button
                       type="button"
                       onClick={() => {
-                        const code =
-                          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-                            ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
-                            : `wt_${Date.now().toString(36)}`;
-                        updateAppConfig({ enrollmentInviteCode: code });
+                        generateEnrollmentInviteCode();
                         haptic(12);
                         toast("Novo convite gerado. Compartilhe o link atualizado.");
                       }}
@@ -791,11 +773,7 @@ export default function WillCockpit() {
                     <button
                       type="button"
                       onClick={() => {
-                        const code =
-                          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-                            ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
-                            : `wt_${Date.now().toString(36)}`;
-                        updateAppConfig({ enrollmentInviteCode: code });
+                        generateEnrollmentInviteCode();
                         haptic(10);
                         toast("Novo código. Use o link atualizado.");
                       }}

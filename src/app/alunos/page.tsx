@@ -46,7 +46,7 @@ export default function AlunosPage() {
   const { user, usingSupabaseSession } = useAuth();
   const { students, approveStudent, suspendStudent, updateStudent } = useStudents();
   const { payments } = usePayments();
-  const { appConfig } = useAppConfig();
+  const { cadastroInviteUrl } = useAppConfig();
   const { categories } = useCatalog();
   const { quickMessages } = useCoaching();
   const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
@@ -61,13 +61,6 @@ export default function AlunosPage() {
   const [profileTab, setProfileTab] = useState<"geral" | "desempenho" | "financeiro">("geral");
   const [busyStudentAction, setBusyStudentAction] = useState<{ id: string; kind: "approve" | "suspend" } | null>(null);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
-  const cadastroInviteUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    const origin = window.location.origin;
-    const code = appConfig.enrollmentInviteCode?.trim();
-    if (!code) return `${origin}/cadastro`;
-    return `${origin}/cadastro?invite=${encodeURIComponent(code)}`;
-  }, [appConfig.enrollmentInviteCode]);
   useBodyScrollLock(Boolean(selectedStudent || trainingStudent || evalStudent));
 
   const filtered = useMemo(() => {
