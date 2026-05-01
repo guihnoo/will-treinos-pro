@@ -358,6 +358,12 @@ export default function FeedPage() {
             <span className="text-[#EAB308]">Rede</span> Will Treinos
           </h1>
           <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Compartilhe treinos, evolução e rotina</p>
+          {isAdmin ? (
+            <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-yellow-500/40 bg-yellow-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-yellow-200">
+              <BadgeCheck className="h-3.5 w-3.5 text-[#EAB308]" />
+              Moderação ativa (dono)
+            </p>
+          ) : null}
         </div>
         <motion.button
           whileTap={{ scale: 0.9 }}

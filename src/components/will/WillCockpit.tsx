@@ -322,6 +322,27 @@ export default function WillCockpit() {
       />
 
       <motion.div variants={itemV}>
+        <Link
+          href="/feed"
+          onClick={() => haptic(12)}
+          className={`flex items-center justify-between gap-3 rounded-2xl border border-yellow-500/40 bg-gradient-to-r from-yellow-500/12 via-black/40 to-black/60 px-4 py-3.5 shadow-[0_0_28px_rgba(234,179,8,0.08)] transition hover:border-yellow-400/55 hover:from-yellow-500/18 ${INTERACTIVE_FOCUS_RING}`}
+          aria-label="Abrir A Rede para moderação"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-yellow-500/35 bg-yellow-500/10">
+              <Newspaper className="h-5 w-5 text-[#EAB308]" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-200/95">A Rede</p>
+              <p className="truncate text-sm font-bold text-white">Moderar posts, comunicados e visibilidade</p>
+              <p className="text-[11px] text-zinc-500">Você é o moderador oficial da comunidade.</p>
+            </div>
+          </div>
+          <ArrowUpRight className="h-5 w-5 flex-shrink-0 text-yellow-400/90" />
+        </Link>
+      </motion.div>
+
+      <motion.div variants={itemV}>
         <AppSectionCard
           title="Cadastro e grade"
           subtitle="Convide novos atletas e monte aulas com categoria, horário e matrícula na turma."

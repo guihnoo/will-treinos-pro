@@ -45,7 +45,7 @@ export function Navigation() {
       case "admin":
         return [
           { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
-          { name: "Will", href: "/will", icon: Zap, badge: 0 },
+          { name: "Engine", href: "/will/court", icon: Zap, badge: 0 },
           { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
           { name: "Alunos", href: "/alunos", icon: Users, badge: pendingStudents },
           { name: "Financeiro", href: "/financeiro", icon: Wallet, badge: latePayments },
@@ -75,6 +75,13 @@ export function Navigation() {
   const navItems = getNavItems();
   /** Itens da barra inferior: evita duplicar «Perfil» (já existe atalho dedicado ao lado do sino). */
   const mobilePrimaryNavItems = navItems.filter((item) => item.href !== "/perfil");
+  /** Dono no mobile: só cabem 5 slots — priorizar Rede (moderação) e omitir Engine/Config da barra (continuam na sidebar desktop). */
+  const mobileBottomItems =
+    user.role === "admin"
+      ? (["/dashboard", "/feed", "/agenda", "/alunos", "/financeiro"] as const)
+          .map((href) => mobilePrimaryNavItems.find((item) => item.href === href))
+          .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      : mobilePrimaryNavItems.slice(0, 5);
   const showOfflineBanner = !pathname.startsWith("/will");
 
   return (
@@ -128,7 +135,9 @@ export function Navigation() {
 
         <nav className="flex flex-col gap-1.5 p-4 flex-grow overflow-hidden">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/will/court" && pathname.startsWith("/will/"));
             const Icon = item.icon;
 
             return (
@@ -188,8 +197,10 @@ export function Navigation() {
 
       {/* MOBILE BOTTOM BAR */}
       <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-[#0A0A0A]/95 backdrop-blur-xl border border-zinc-800 z-50 rounded-2xl flex justify-around items-center p-2.5 shadow-2xl">
-        {mobilePrimaryNavItems.slice(0, 5).map((item) => {
-          const isActive = pathname === item.href;
+        {mobileBottomItems.map((item) => {
+          const isActive =
+            pathname === item.href ||
+            (item.href === "/will/court" && pathname.startsWith("/will/"));
           const Icon = item.icon;
 
           return (
