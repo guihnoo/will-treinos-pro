@@ -848,18 +848,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem("will-role", "aluno");
           syncWtRoleCookie("aluno");
         }
-        void insertNotificationRemote(supabase, {
-          type: "new_student",
-          title: "Nova inscrição",
-          message: `${created.name} enviou cadastro e aguarda aprovação.`,
-          time: "agora",
-          read: false,
-          studentId: created.id,
-        })
-          .then((row) => setNotifications((p) => [row, ...p]))
-          .catch(() => {
-            /* não bloqueia cadastro */
-          });
+        /* Notificação «nova inscrição»: criada no Postgres (trigger wt_notify_staff_new_pending_student);
+           INSERT pelo cliente falha para não-staff por RLS. Recarregar lista em seguida puxa a linha. */
+        void loadSupabaseCriticalData().catch(() => {
+          /* sincroniza notificação criada por trigger no Postgres */
+        });
         return created;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Falha ao criar aluno no Supabase.";
@@ -867,7 +860,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         throw new Error(message);
       }
     },
-    [usingSupabaseSession],
+    [usingSupabaseSession, loadSupabaseCriticalData],
   );
   const approveStudent = useCallback((id: string) => {
     if (!usingSupabaseSession) {

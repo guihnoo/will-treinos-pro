@@ -110,8 +110,8 @@ export default function RegistrationPage() {
       return;
     }
 
-    const usedAnonymousLead = supabaseReady && !user;
-    if (!usingSupabaseSession || usedAnonymousLead) {
+    // Com Supabase: notificação ao dono é criada no Postgres (trigger em students INSERT pending).
+    if (!supabaseReady) {
       addNotification({
         type: "new_student",
         title: "Novo Aluno na Fila",
