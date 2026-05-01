@@ -284,7 +284,7 @@ function PaymentModal({
 function AlunoFinanceiro() {
   const { user, usingSupabaseSession } = useAuth();
   const { lessons } = useLessons();
-  const { payments, submitStudentPaymentProof } = usePayments();
+  const { payments, pendingOrLatePaymentsCount, submitStudentPaymentProof } = usePayments();
   const { appConfig } = useAppConfig();
   const { criticalDataLoading, criticalDataError } = useCriticalData();
   const { toast } = useToast();
@@ -292,6 +292,7 @@ function AlunoFinanceiro() {
   const myPayments = useMemo(()=>payments.filter(p=>p.studentId===user?.id).sort((a,b)=>new Date(b.dueDate).getTime()-new Date(a.dueDate).getTime()),[payments,user]);
   const myLessons  = lessons.filter(l=>l.enrolledStudents.includes(user?.id||"")&&l.status==="completed");
   const paid=myPayments.filter(p=>p.status==="paid"), pending=myPayments.filter(p=>p.status==="pending"), late=myPayments.filter(p=>p.status==="late");
+  const firstPendingOrLate = myPayments.find((payment) => payment.status === "late" || payment.status === "pending");
   const selObj = myPayments.find(p=>p.id===selectedPay)||null;
   if (usingSupabaseSession && criticalDataLoading) {
     return <div className="p-4 md:p-8 max-w-2xl mx-auto pb-28"><div className="rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-5 text-sm text-zinc-300">Sincronizando financeiro...</div></div>;
@@ -305,14 +306,14 @@ function AlunoFinanceiro() {
         <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Wallet className="w-8 h-8 text-[#EAB308]"/>Meu Financeiro</h1>
         <p className="text-zinc-500 mt-1">Toque em um pagamento para ver detalhes.</p>
       </motion.div>
-      {late.length>0&&(
+      {pendingOrLatePaymentsCount>0&&(
         <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="mb-5 p-4 rounded-2xl border border-[#EF4444]/40 bg-[#EF4444]/5 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0 mt-0.5"/>
           <div className="flex-1">
             <p className="font-bold text-[#EF4444] text-sm">Pagamento em atraso</p>
-            <p className="text-xs text-zinc-400 mt-0.5">Você tem {late.length} mensalidade{late.length>1?"s":""} em atraso.</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Você tem {pendingOrLatePaymentsCount} mensalidade{pendingOrLatePaymentsCount>1?"s":""} pendente(s) ou em atraso.</p>
           </div>
-          <motion.button whileTap={{scale:0.9}} onClick={()=>setSelectedPay(late[0].id)} className={`px-3 py-1.5 rounded-lg bg-[#EF4444] text-white text-xs font-bold ${FOCUS_RING_GOLD}`}>Ver</motion.button>
+          <motion.button whileTap={{scale:0.9}} onClick={()=> firstPendingOrLate ? setSelectedPay(firstPendingOrLate.id) : null} className={`px-3 py-1.5 rounded-lg bg-[#EF4444] text-white text-xs font-bold ${FOCUS_RING_GOLD}`}>Ver</motion.button>
         </motion.div>
       )}
       <div className="grid grid-cols-3 gap-3 mb-6">
@@ -566,7 +567,7 @@ function AdminPaymentDetailModal({
 /* ─── ADMIN VIEW ─── */
 function AdminFinanceiro() {
   const { students } = useStudents();
-  const { payments, markPayment } = usePayments();
+  const { payments, totalsByStatus, proofPendingCount, markPayment } = usePayments();
   const { usingSupabaseSession } = useAuth();
   const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
@@ -576,9 +577,7 @@ function AdminFinanceiro() {
   const [selectedPayId, setSelectedPayId] = useState<string | null>(null);
   const [busyPayId, setBusyPayId] = useState<string | null>(null);
   const getStudent = (id: string) => students.find(s=>s.id===id);
-  const totals = { paid:payments.filter(p=>p.status==="paid").reduce((s,p)=>s+p.amount,0), pending:payments.filter(p=>p.status==="pending").reduce((s,p)=>s+p.amount,0), late:payments.filter(p=>p.status==="late").reduce((s,p)=>s+p.amount,0) };
-  const proofPendingCount = payments.filter((p) => p.status !== "paid" && Boolean(p.studentProofSubmittedAt)).length;
-  const total = totals.paid+totals.pending+totals.late;
+  const total = totalsByStatus.paid+totalsByStatus.pending+totalsByStatus.late;
   const filtered = payments
     .filter((p) => {
       if (filter === "all") return true;
@@ -633,9 +632,9 @@ function AdminFinanceiro() {
       />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: "Recebido", value: totals.paid, color: "#22C55E", icon: TrendingUp },
-          { label: "Pendente", value: totals.pending, color: "#F97316", icon: Clock },
-          { label: "Em Atraso", value: totals.late, color: "#EF4444", icon: TrendingDown },
+          { label: "Recebido", value: totalsByStatus.paid, color: "#22C55E", icon: TrendingUp },
+          { label: "Pendente", value: totalsByStatus.pending, color: "#F97316", icon: Clock },
+          { label: "Em Atraso", value: totalsByStatus.late, color: "#EF4444", icon: TrendingDown },
         ].map((kpi, i) => (
           <StatCard
             key={kpi.label}
@@ -659,7 +658,7 @@ function AdminFinanceiro() {
         <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.3}} className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-5 mb-6">
           <div className="flex justify-between text-sm mb-3"><span className="text-zinc-500">Composição</span><span className="text-zinc-400 font-mono">R$ {total.toLocaleString("pt-BR")}</span></div>
           <div className="flex h-4 rounded-full overflow-hidden bg-zinc-900">
-            {[{v:totals.paid,c:"#22C55E"},{v:totals.pending,c:"#F97316"},{v:totals.late,c:"#EF4444"}].map((b,i)=>(
+            {[{v:totalsByStatus.paid,c:"#22C55E"},{v:totalsByStatus.pending,c:"#F97316"},{v:totalsByStatus.late,c:"#EF4444"}].map((b,i)=>(
               <motion.div key={i} initial={{width:0}} animate={{width:`${(b.v/total)*100}%`}} transition={{duration:1,delay:0.5+i*0.2}} style={{background:b.c}} className={i===0?"rounded-l-full":i===2?"rounded-r-full":""}/>
             ))}
           </div>

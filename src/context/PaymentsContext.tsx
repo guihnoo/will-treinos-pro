@@ -22,6 +22,12 @@ type PaymentsContextValue = {
     late: number;
   };
   getStudentCurrentPayment: (studentId: string) => Payment | undefined;
+  totalsByStatus: {
+    paid: number;
+    pending: number;
+    late: number;
+  };
+  proofPendingCount: number;
   markPayment: (id: string) => void;
   submitStudentPaymentProof: (id: string, payload: StudentPaymentProofPayload) => void;
 };
@@ -45,6 +51,27 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
         .reduce((sum, payment) => sum + payment.amount, 0),
     };
   }, [app.payments, currentMonthReference]);
+  const totalsByStatus = useMemo(
+    () => ({
+      paid: app.payments
+        .filter((payment) => payment.status === "paid")
+        .reduce((sum, payment) => sum + payment.amount, 0),
+      pending: app.payments
+        .filter((payment) => payment.status === "pending")
+        .reduce((sum, payment) => sum + payment.amount, 0),
+      late: app.payments
+        .filter((payment) => payment.status === "late")
+        .reduce((sum, payment) => sum + payment.amount, 0),
+    }),
+    [app.payments],
+  );
+  const proofPendingCount = useMemo(
+    () =>
+      app.payments.filter(
+        (payment) => payment.status !== "paid" && Boolean(payment.studentProofSubmittedAt),
+      ).length,
+    [app.payments],
+  );
 
   const value = useMemo<PaymentsContextValue>(
     () => ({
@@ -60,6 +87,8 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
         app.payments.find(
           (payment) => payment.studentId === studentId && payment.reference === currentMonthReference,
         ),
+      totalsByStatus,
+      proofPendingCount,
       markPayment: app.markPayment,
       submitStudentPaymentProof: app.submitStudentPaymentProof,
     }),
@@ -71,6 +100,8 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
       app.submitStudentPaymentProof,
       currentMonthReference,
       currentMonthBuckets,
+      totalsByStatus,
+      proofPendingCount,
     ],
   );
 
