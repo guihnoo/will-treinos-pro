@@ -8,7 +8,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
-import { canUseSocialOAuthFromLogin, setStaffOAuthGateOk } from "@/lib/enrollmentSession";
+import {
+  canUseSocialOAuthFromLogin,
+  clearStaffOAuthGate,
+  setStaffOAuthGateOk,
+} from "@/lib/enrollmentSession";
 
 const POST_LOGIN_NEXT_KEY = "wt_post_login_next";
 
@@ -67,6 +71,7 @@ function LoginPageContent() {
       return;
     }
     toast("✅ Sessão autenticada com sucesso.");
+    clearStaffOAuthGate();
     if (nextPath) {
       router.push(nextPath);
       return;
@@ -232,13 +237,13 @@ function LoginPageContent() {
           <div className="mb-8 rounded-xl border border-zinc-800/80 bg-zinc-950/50 px-3 py-2.5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Equipe Will Treinos</p>
             <p className="mt-1 text-[11px] leading-snug text-zinc-400">
-              Dono, professor ou staff na tabela de acesso: confirme aqui e depois use Google/Facebook.
+              Dono, professor ou staff na tabela de acesso: confirme aqui e em seguida use Google/Facebook (válido 45 min nesta aba).
             </p>
             <button
               type="button"
               onClick={() => {
                 setStaffOAuthGateOk();
-                toast("Modo equipe ativado neste navegador. Agora use Google ou Facebook.");
+                toast("Modo equipe ativado por 45 min nesta aba. Use Google ou Facebook agora.");
               }}
               className="mt-2 w-full rounded-lg border border-[#EAB308]/35 bg-[#EAB308]/10 py-2 text-[11px] font-bold text-[#EAB308] hover:bg-[#EAB308]/18"
             >

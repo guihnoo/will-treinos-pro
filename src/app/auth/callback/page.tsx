@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
+import { clearStaffOAuthGate } from "@/lib/enrollmentSession";
 
 const POST_LOGIN_NEXT_KEY = "wt_post_login_next";
 
@@ -56,6 +57,7 @@ export default function AuthCallbackPage() {
         if (cancelled) return;
         if (typeof window !== "undefined") {
           sessionStorage.removeItem(POST_LOGIN_NEXT_KEY);
+          clearStaffOAuthGate();
         }
         router.replace(preferredNext ?? postLoginRouteFromAuthUser(user));
       };
