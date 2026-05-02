@@ -1,15 +1,15 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { PerformanceFeedback, QuickMessage, TrainingPlan } from "@/context/types";
 
 type CoachingContextValue = {
   quickMessages: QuickMessage[];
   feedbacks: PerformanceFeedback[];
-  addFeedback: (fb: Omit<PerformanceFeedback, "id">) => void;
+  addFeedback: AppContextType["addFeedback"];
   trainingPlans: TrainingPlan[];
-  addTrainingPlan: (plan: Omit<TrainingPlan, "id">) => void;
+  addTrainingPlan: AppContextType["addTrainingPlan"];
 };
 
 const CoachingContext = createContext<CoachingContextValue | undefined>(undefined);

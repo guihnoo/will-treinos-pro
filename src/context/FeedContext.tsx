@@ -1,22 +1,19 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { Post } from "@/context/types";
 
-export type FeedModerationPatch = {
-  pinned?: boolean;
-  isOfficial?: boolean;
-  targetRole?: "all" | "student" | "coach";
-};
+/** Alinhado ao 2º argumento de `moderatePost` no `AppContext`. */
+export type FeedModerationPatch = Parameters<AppContextType["moderatePost"]>[1];
 
 type FeedContextValue = {
   posts: Post[];
-  addPost: (p: Omit<Post, "id">) => void;
-  togglePostLike: (id: string) => void;
-  addPostComment: (id: string, text: string, user: string, avatar: string) => void;
-  moderatePost: (id: string, patch: FeedModerationPatch) => void;
-  softDeletePost: (id: string) => void;
+  addPost: AppContextType["addPost"];
+  togglePostLike: AppContextType["togglePostLike"];
+  addPostComment: AppContextType["addPostComment"];
+  moderatePost: AppContextType["moderatePost"];
+  softDeletePost: AppContextType["softDeletePost"];
 };
 
 const FeedContext = createContext<FeedContextValue | undefined>(undefined);

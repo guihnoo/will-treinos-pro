@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useMemo } from "react";
 import type { Provider } from "@supabase/supabase-js";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { Role, User } from "@/context/types";
 import type { DevImpersonation } from "@/lib/authPostLogin";
 
@@ -13,7 +13,7 @@ type LoginResult =
 type OAuthResult = { ok: true } | { ok: false; message: string };
 
 type AuthContextValue = {
-  user: User | null;
+  user: AppContextType["user"];
   authResolved: boolean;
   usingSupabaseSession: boolean;
   authError: string | null;

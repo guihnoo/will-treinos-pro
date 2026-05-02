@@ -117,7 +117,8 @@ function withNetworkTimeout<T>(promise: Promise<T>, ms: number, message: string)
 export type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, AppConfig, StudentProfileEditPolicy };
 const LS_VERSION = "v14"; // bump: force clean reset without mock transactional data
 
-interface AppContextType {
+/** Contrato público do `AppProvider` — usar nos wrappers (`StudentsProvider`, etc.) para evitar drift de assinaturas. */
+export interface AppContextType {
   user: User | null;
   authResolved: boolean;
   authError: string | null;

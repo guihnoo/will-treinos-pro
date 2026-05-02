@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { Lesson } from "@/context/types";
 import { localDateISO } from "@/lib/dateUtils";
 import { useCalendarTick } from "@/context/CalendarTickContext";
@@ -12,11 +12,11 @@ type LessonsContextValue = {
   todayEnrolledCount: number;
   todayPresentCount: number;
   todayAbsentCount: number;
-  addLesson: (l: Omit<Lesson, "id">) => void;
-  updateLesson: (id: string, patch: Partial<Lesson>) => void;
-  deleteLesson: (id: string) => void;
-  addToWaitlist: (lessonId: string, studentId: string) => void;
-  promoteFromWaitlist: (lessonId: string, studentId: string) => void;
+  addLesson: AppContextType["addLesson"];
+  updateLesson: AppContextType["updateLesson"];
+  deleteLesson: AppContextType["deleteLesson"];
+  addToWaitlist: AppContextType["addToWaitlist"];
+  promoteFromWaitlist: AppContextType["promoteFromWaitlist"];
 };
 
 const LessonsContext = createContext<LessonsContextValue | undefined>(undefined);

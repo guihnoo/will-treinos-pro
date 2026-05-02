@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import type { Notification } from "@/context/types";
 import { unreadNotificationsCount } from "@/lib/notificationVisibility";
@@ -9,9 +9,9 @@ import { unreadNotificationsCount } from "@/lib/notificationVisibility";
 type NotificationsContextValue = {
   notifications: Notification[];
   unreadNotifications: number;
-  addNotification: (n: Omit<Notification, "id">) => void;
-  markNotificationRead: (id: string) => void;
-  markAllNotificationsRead: () => void;
+  addNotification: AppContextType["addNotification"];
+  markNotificationRead: AppContextType["markNotificationRead"];
+  markAllNotificationsRead: AppContextType["markAllNotificationsRead"];
 };
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);

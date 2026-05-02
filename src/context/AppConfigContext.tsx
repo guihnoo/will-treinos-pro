@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { AppConfig } from "@/context/types";
 
 type AppConfigContextValue = {
@@ -9,7 +9,7 @@ type AppConfigContextValue = {
   cadastroPath: string;
   cadastroInviteUrl: string;
   generateEnrollmentInviteCode: () => string;
-  updateAppConfig: (patch: Partial<AppConfig>) => void;
+  updateAppConfig: AppContextType["updateAppConfig"];
 };
 
 const AppConfigContext = createContext<AppConfigContextValue | undefined>(undefined);

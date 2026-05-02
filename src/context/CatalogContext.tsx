@@ -1,20 +1,20 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { LessonCategory, Venue, WorkHours } from "@/context/types";
 
 type CatalogContextValue = {
   categories: LessonCategory[];
   venues: Venue[];
   workHours: WorkHours;
-  addCategory: (cat: Omit<LessonCategory, "id">) => void;
-  updateCategory: (id: string, u: Partial<LessonCategory>) => void;
-  deleteCategory: (id: string) => void;
-  addVenue: (v: Omit<Venue, "id">) => void;
-  updateVenue: (id: string, u: Partial<Venue>) => void;
-  deleteVenue: (id: string) => void;
-  setWorkHours: (wh: WorkHours) => void;
+  addCategory: AppContextType["addCategory"];
+  updateCategory: AppContextType["updateCategory"];
+  deleteCategory: AppContextType["deleteCategory"];
+  addVenue: AppContextType["addVenue"];
+  updateVenue: AppContextType["updateVenue"];
+  deleteVenue: AppContextType["deleteVenue"];
+  setWorkHours: AppContextType["setWorkHours"];
   getCategory: (id: string) => LessonCategory | undefined;
   getVenue: (id: string) => Venue | undefined;
   getVenueMapsUrl: (venueId: string) => string;

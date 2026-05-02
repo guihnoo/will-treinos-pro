@@ -1,12 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 
 type CriticalDataContextValue = {
-  criticalDataLoading: boolean;
-  criticalDataError: string | null;
-  retryCriticalDataSync: () => Promise<void>;
+  criticalDataLoading: AppContextType["criticalDataLoading"];
+  criticalDataError: AppContextType["criticalDataError"];
+  retryCriticalDataSync: AppContextType["retryCriticalDataSync"];
 };
 
 const CriticalDataContext = createContext<CriticalDataContextValue | undefined>(undefined);

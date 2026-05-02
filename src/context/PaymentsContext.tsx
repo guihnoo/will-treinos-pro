@@ -1,15 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { Payment } from "@/context/types";
 import { paymentReferenceForDate } from "@/lib/dateUtils";
 import { useCalendarTick } from "@/context/CalendarTickContext";
 
-export type StudentPaymentProofPayload = {
-  note: string;
-  attachment?: { file?: File; previewUrl?: string; fileName: string; mime: string } | null;
-};
+/** Alinhado ao 2º argumento de `submitStudentPaymentProof` no `AppContext`. */
+export type StudentPaymentProofPayload = Parameters<AppContextType["submitStudentPaymentProof"]>[1];
 
 type PaymentsContextValue = {
   payments: Payment[];
@@ -29,8 +27,8 @@ type PaymentsContextValue = {
     late: number;
   };
   proofPendingCount: number;
-  markPayment: (id: string) => void;
-  submitStudentPaymentProof: (id: string, payload: StudentPaymentProofPayload) => void;
+  markPayment: AppContextType["markPayment"];
+  submitStudentPaymentProof: AppContextType["submitStudentPaymentProof"];
 };
 
 const PaymentsContext = createContext<PaymentsContextValue | undefined>(undefined);

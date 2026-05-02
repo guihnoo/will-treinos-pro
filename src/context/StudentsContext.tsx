@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 import type { Student, StudentStatus } from "@/context/types";
 
 type StudentsContextValue = {
@@ -13,11 +13,11 @@ type StudentsContextValue = {
   activeStudentsRevenue: number;
   activeStudentsAvgFrequency: number;
   getStudent: (id: string) => Student | undefined;
-  addStudent: (s: Omit<Student, "id">) => Promise<Student>;
-  updateStudent: (id: string, patch: Partial<Student>) => void;
-  approveStudent: (id: string) => void;
-  suspendStudent: (id: string) => void;
-  seedPendingTuitionForStudent: (studentId: string, monthlyValue: number, paymentDay: number) => Promise<void>;
+  addStudent: AppContextType["addStudent"];
+  updateStudent: AppContextType["updateStudent"];
+  approveStudent: AppContextType["approveStudent"];
+  suspendStudent: AppContextType["suspendStudent"];
+  seedPendingTuitionForStudent: AppContextType["seedPendingTuitionForStudent"];
 };
 
 const StudentsContext = createContext<StudentsContextValue | undefined>(undefined);

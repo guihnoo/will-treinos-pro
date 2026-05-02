@@ -1,14 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp, type AppContextType } from "@/context/AppContext";
 
 type CheckInContextValue = {
-  checkInStudent: (lessonId: string, studentId: string, present: boolean) => void;
-  requestCheckIn: (lessonId: string, studentId: string) => void;
-  approveCheckIn: (lessonId: string, studentId: string, approvedBy: string) => void;
-  rejectCheckIn: (lessonId: string, studentId: string) => void;
-  endClassCheckIn: (lessonId: string, studentId: string) => void;
+  checkInStudent: AppContextType["checkInStudent"];
+  requestCheckIn: AppContextType["requestCheckIn"];
+  approveCheckIn: AppContextType["approveCheckIn"];
+  rejectCheckIn: AppContextType["rejectCheckIn"];
+  endClassCheckIn: AppContextType["endClassCheckIn"];
 };
 
 const CheckInContext = createContext<CheckInContextValue | undefined>(undefined);
