@@ -10,6 +10,7 @@ import type {
   Post,
   Student,
   StudentStatus,
+  WithoutId,
 } from "@/context/types";
 import { paymentReferenceForDate } from "@/lib/dateUtils";
 
@@ -186,7 +187,7 @@ export async function updateNotificationReadRemote(
 
 export async function insertNotificationRemote(
   supabase: SupabaseClient,
-  payload: Omit<Notification, "id"> & { id?: string },
+  payload: WithoutId<Notification> & { id?: string },
 ): Promise<Notification> {
   const id =
     payload.id ||
@@ -268,7 +269,7 @@ export async function upsertEnrollmentInviteRemote(supabase: SupabaseClient, cod
 
 export async function insertPaymentRemote(
   supabase: SupabaseClient,
-  payload: Omit<Payment, "id"> & { id?: string },
+  payload: WithoutId<Payment> & { id?: string },
 ): Promise<Payment> {
   const id =
     payload.id ||
