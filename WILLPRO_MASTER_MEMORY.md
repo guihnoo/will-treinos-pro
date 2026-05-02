@@ -1,22 +1,24 @@
 # WILLPRO - MASTER MEMORY & STATE LOG (O Cérebro do Projeto)
 
-> **MANDATO PARA IAs (CURSOR / ANTIGRAVITY):** 
-> Leia este arquivo ANTES de iniciar qualquer alteração. Este é o documento vivo da arquitetura, design e estado atual do projeto. 
-> Sempre que uma funcionalidade for concluída, uma decisão de design for tomada, ou uma nova lógica for implementada, VOCÊ DEVE registrar aqui com Data, Autor (Cursor ou CTO) e a Mudança.
+> **MANDATO PARA IAs (CURSOR / CLAUDE CODE / ANTIGRAVITY):**
+> Leia este arquivo ANTES de iniciar qualquer alteração. Este é o documento vivo da arquitetura e estado do projeto.
+> Sempre que uma funcionalidade for concluída, uma decisão for tomada ou uma nova lógica implementada, registre aqui com Data, Autor e a Mudança.
+> **Leia também o CLAUDE.md** para entender a mentalidade de parceiro criativo que deve operar neste projeto.
 
 ## 1. O CONCEITO GLOBAL (A Visão do CEO)
 - **O Produto:** Um ecossistema de gestão esportiva focado em Vôlei de Alta Performance (WILLPRO).
-- **A Estética:** "Silicon Valley Control Center". Fundo escuro absoluto (Deep Black), Glassmorphism (vidro translúcido), e luzes neon/douradas. Zero componentes genéricos.
-- **A Arquitetura UX:** "Modal-Driven". O aplicativo NÃO faz redirecionamentos infinitos. O Cockpit é uma Single-Page Application (SPA) autônoma. Clicar em cards abre modais de vidro e gavetas por cima da tela atual. O aplicativo é fluido e não engessa o fluxo do usuário.
+- **A Estética:** Ponto de partida: dark background + Gold (#EAB308) como âncora de marca + sensação de app nativo. **O restante é território criativo livre** — a IA tem autonomia para propor evoluções visuais, novos conceitos e abordagens inovadoras. Design não é uma regra é uma conversa.
+- **A Arquitetura UX:** Modal-Driven. O aplicativo não faz redirecionamentos de página para fluxos de trabalho. Clicar em cards abre modais e gavetas sobre o Cockpit atual.
 
 ## 2. A LINHA DE MONTAGEM (O Fluxo de Trabalho)
-- **Cursor (O Engenheiro):** Focado na infraestrutura pesada, banco de dados (Supabase), lógica de modais, fluxo de aprovação e rotas. Responsável por levantar as paredes e fazer os botões funcionarem.
-- **CTO Antigravity (O Arquiteto de Elite):** Focado no refinamento Premium, matemática de física (Framer Motion), interatividade tátil (whileTap), ícones exclusivos em SVG e Layouts Globais.
-- **Integração:** Toda alteração de interface profunda do CTO não pode ser apagada pelo Cursor. 
+- **Claude Code / Cursor (O Parceiro de Produto):** Parceiro criativo full-stack. Propõe antes de executar. Questiona se o que foi pedido é realmente a melhor solução. Traz ideias não solicitadas quando identifica oportunidades. Opera com liberdade criativa em design, arquitetura, features, segurança e UX.
+- **CTO Antigravity (O Arquiteto de Elite):** Refinamento premium, física de animação (Framer Motion), interações táteis, layouts globais.
+- **Integração:** Alterações de interface profunda devem ser documentadas aqui para evitar regressão.
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
 
+- **[02/05/2026 ~20:00 BRT] (Claude):** **PWA — instalação nativa iOS/Android sem bugs** — Migração de `next-pwa@5.6.0` (abandonado) para `@ducanh2912/next-pwa@10.2.9` (suporte oficial Next.js 15 App Router). Geração de ícones PNG a partir dos SVGs existentes: `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` (purpose separado), `apple-touch-icon.png` (180px iOS). `public/manifest.json`: ícones SVG substituídos por PNG, adicionados `id`, `scope`, `orientation`, `description` e `purpose` separado por ícone. `src/app/layout.tsx`: `<link rel="apple-touch-icon">`, `<meta name="apple-mobile-web-app-title">` e `<meta name="mobile-web-app-capable">`. `next.config.mjs`: `fallbacks.document: "/offline.html"` conectado. Build OK (exit 0). **Git:** push `origin/main`.
 - **[02/05/2026 ~04:25 BRT] (Cursor):** **P1-B fase 45 — Alunos: abas e plano tipados** — `src/app/alunos/page.tsx`: `ProfileTabId` (`"geral" | "desempenho" | "financeiro"`), constante `PROFILE_TABS` tipada, estado `profileTab` sem casts; `<select>` do plano usa `string` de `e.target.value` alinhado a `Student.plan` (remove `as any` em `updateStudent` / `setSelectedStudent`). `pnpm exec tsc --noEmit` OK. `pnpm run build` OK no Windows (após `pnpm clean`, o primeiro `next build` local falhou em *collect page data* com `PageNotFoundError` em várias rotas; segundo build concluiu — quirk conhecido pós-limpeza de `.next`). **Git:** push `origin/main` — commit `9206883`.
 - **[02/05/2026 07:18 BRT] (Cursor):** **P1-B fase 44 — `WithoutId` no Supabase** — `src/lib/supabasePersistence.ts`: `insertNotificationRemote` e `insertPaymentRemote` usam `WithoutId<Notification> & { id?: string }` e `WithoutId<Payment> & { id?: string }` no lugar de `Omit<…, "id">` (mesma semântica, alinhado à fase 43). Build OK (exit 0). **Git:** push `origin/main`.
 - **[02/05/2026 05:02 BRT] (Cursor):** **P1-B fase 43 — helper genérico `WithoutId<T>`** — `types.ts`: `WithoutId<T extends { id: string }> = Omit<T, "id">`. `AppContext.tsx`: assinaturas e `useCallback` de `addCategory` / `addVenue` / `addLesson` / `addStudent` / `addNotification` / `addFeedback` / `addTrainingPlan` / `addPost` passam a usar `WithoutId<Entidade>` em vez de `Omit<Entidade, "id">` repetido; re-export do tipo no barrel do `AppContext`. Build OK (exit 0). **Git:** push `origin/main`.
