@@ -145,6 +145,9 @@ export interface LessonRating {
 /** Envio do aluno antes de persistir `id` / `createdAt` no cliente. */
 export type LessonRatingDraft = Omit<LessonRating, "id" | "createdAt">;
 
+/** Entidade antes de receber `id` estável (padrão CRUD `add*` no app). */
+export type WithoutId<T extends { id: string }> = Omit<T, "id">;
+
 // ─── App-wide Config (admin editable) ───────────────────────────────────────
 export interface StudentProfileEditPolicy {
   phone: boolean;

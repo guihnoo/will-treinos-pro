@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
-import type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, AppConfig, StudentProfileEditPolicy } from "./types";
+import type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy } from "./types";
 import { LEGACY_BRIDGE } from "@/domain/v1/mockOrm";
 import { dueDateForBillingMonth, localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
 import {
@@ -114,7 +114,7 @@ function withNetworkTimeout<T>(promise: Promise<T>, ms: number, message: string)
 }
 
 // Re-export types for convenience
-export type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, AppConfig, StudentProfileEditPolicy };
+export type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy };
 const LS_VERSION = "v14"; // bump: force clean reset without mock transactional data
 
 /** Contrato público do `AppProvider` — usar nos wrappers (`StudentsProvider`, etc.) para evitar drift de assinaturas. */
@@ -145,22 +145,22 @@ export interface AppContextType {
   feedbacks: PerformanceFeedback[];
   trainingPlans: TrainingPlan[];
   // CRUD — Categories
-  addCategory: (cat: Omit<LessonCategory, "id">) => void;
+  addCategory: (cat: WithoutId<LessonCategory>) => void;
   updateCategory: (id: string, u: Partial<LessonCategory>) => void;
   deleteCategory: (id: string) => void;
   // CRUD — Venues
-  addVenue: (v: Omit<Venue, "id">) => void;
+  addVenue: (v: WithoutId<Venue>) => void;
   updateVenue: (id: string, u: Partial<Venue>) => void;
   deleteVenue: (id: string) => void;
   setWorkHours: (wh: WorkHours) => void;
   // CRUD — Lessons
-  addLesson: (l: Omit<Lesson, "id">) => void;
+  addLesson: (l: WithoutId<Lesson>) => void;
   updateLesson: (id: string, u: Partial<Lesson>) => void;
   deleteLesson: (id: string) => void;
   addToWaitlist: (lessonId: string, studentId: string) => void;
   promoteFromWaitlist: (lessonId: string, studentId: string) => void;
   // CRUD — Students
-  addStudent: (s: Omit<Student, "id">) => Promise<Student>;
+  addStudent: (s: WithoutId<Student>) => Promise<Student>;
   approveStudent: (id: string) => void;
   suspendStudent: (id: string) => void;
   updateStudent: (id: string, u: Partial<Student>) => void;
@@ -177,15 +177,15 @@ export interface AppContextType {
     },
   ) => void;
   // Notifications
-  addNotification: (n: Omit<Notification, "id">) => void;
+  addNotification: (n: WithoutId<Notification>) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   // Feedback & Training
-  addFeedback: (fb: Omit<PerformanceFeedback, "id">) => void;
-  addTrainingPlan: (plan: Omit<TrainingPlan, "id">) => void;
+  addFeedback: (fb: WithoutId<PerformanceFeedback>) => void;
+  addTrainingPlan: (plan: WithoutId<TrainingPlan>) => void;
   // Feed
   posts: Post[];
-  addPost: (p: Omit<Post, "id">) => void;
+  addPost: (p: WithoutId<Post>) => void;
   togglePostLike: (id: string) => void;
   addPostComment: (id: string, text: string, user: string, avatar: string) => void;
   moderatePost: (
@@ -765,18 +765,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [devImpersonation, applySupabaseSession, students, usingSupabaseSession]);
 
   // ─── CATEGORIES CRUD ───
-  const addCategory = useCallback((c: Omit<LessonCategory, "id">) => setCategories(p => [...p, { ...c, id: `cat_${uid()}` }]), []);
+  const addCategory = useCallback((c: WithoutId<LessonCategory>) => setCategories(p => [...p, { ...c, id: `cat_${uid()}` }]), []);
   const updateCategory = useCallback((id: string, u: Partial<LessonCategory>) => setCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c)), []);
   const deleteCategory = useCallback((id: string) => setCategories(p => p.filter(c => c.id !== id)), []);
 
   // ─── VENUES CRUD ───
-  const addVenue = useCallback((v: Omit<Venue, "id">) => setVenues(p => [...p, { ...v, id: `v_${uid()}` }]), []);
+  const addVenue = useCallback((v: WithoutId<Venue>) => setVenues(p => [...p, { ...v, id: `v_${uid()}` }]), []);
   const updateVenue = useCallback((id: string, u: Partial<Venue>) => setVenues(p => p.map(v => v.id === id ? { ...v, ...u } : v)), []);
   const deleteVenue = useCallback((id: string) => setVenues(p => p.filter(v => v.id !== id)), []);
   const setWorkHours = useCallback((wh: WorkHours) => setWorkHoursState(wh), []);
 
   // ─── LESSONS CRUD ───
-  const addLesson = useCallback((l: Omit<Lesson, "id">) => {
+  const addLesson = useCallback((l: WithoutId<Lesson>) => {
     const next: Lesson = { ...l, id: `l_${uid()}` };
     if (!usingSupabaseSession) {
       setLessons((p) => [...p, next]);
@@ -843,7 +843,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ─── STUDENTS ───
   const addStudent = useCallback(
-    async (s: Omit<Student, "id">): Promise<Student> => {
+    async (s: WithoutId<Student>): Promise<Student> => {
       const sessionAuthId = supabaseAuthUserRef.current?.id ?? undefined;
       const next: Student = {
         ...s,
@@ -1127,7 +1127,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ─── NOTIFICATIONS ───
   const addNotification = useCallback(
-    (n: Omit<Notification, "id">) => {
+    (n: WithoutId<Notification>) => {
       if (!usingSupabaseSession) {
         setNotifications((p) => [{ ...n, id: `n_${uid()}` }, ...p]);
         return;
@@ -1179,11 +1179,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [usingSupabaseSession]);
 
   // ─── FEEDBACK & TRAINING ───
-  const addFeedback = useCallback((fb: Omit<PerformanceFeedback, "id">) => setFeedbacks(p => [...p, { ...fb, id: `fb_${uid()}` }]), []);
-  const addTrainingPlan = useCallback((plan: Omit<TrainingPlan, "id">) => setTrainingPlans(p => [...p, { ...plan, id: `tp_${uid()}` }]), []);
+  const addFeedback = useCallback((fb: WithoutId<PerformanceFeedback>) => setFeedbacks(p => [...p, { ...fb, id: `fb_${uid()}` }]), []);
+  const addTrainingPlan = useCallback((plan: WithoutId<TrainingPlan>) => setTrainingPlans(p => [...p, { ...plan, id: `tp_${uid()}` }]), []);
 
   // ─── FEED POSTS ───
-  const addPost = useCallback((p: Omit<Post, "id">) => {
+  const addPost = useCallback((p: WithoutId<Post>) => {
     if (!usingSupabaseSession) {
       setPosts((prev) => [{ ...p, id: `p_${uid()}` }, ...prev]);
       return;
