@@ -41,6 +41,14 @@ function Sparkline({ data, color }: { data: { status: string }[]; color: string 
 
 type FilterType = "all" | "active" | "pending" | "suspended" | "trial";
 
+type ProfileTabId = "geral" | "desempenho" | "financeiro";
+
+const PROFILE_TABS: { id: ProfileTabId; label: string }[] = [
+  { id: "geral", label: "Visão Geral" },
+  { id: "desempenho", label: "Desempenho" },
+  { id: "financeiro", label: "Financeiro" },
+];
+
 export default function AlunosPage() {
   const { user, usingSupabaseSession } = useAuth();
   const {
@@ -66,7 +74,7 @@ export default function AlunosPage() {
   const [messageText, setMessageText] = useState("");
   const [trainingStudent, setTrainingStudent] = useState<Student | null>(null);
   const [evalStudent, setEvalStudent] = useState<Student | null>(null);
-  const [profileTab, setProfileTab] = useState<"geral" | "desempenho" | "financeiro">("geral");
+  const [profileTab, setProfileTab] = useState<ProfileTabId>("geral");
   const [busyStudentAction, setBusyStudentAction] = useState<{ id: string; kind: "approve" | "suspend" } | null>(null);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   useBodyScrollLock(Boolean(selectedStudent || trainingStudent || evalStudent));
@@ -404,12 +412,8 @@ export default function AlunosPage() {
 
               {/* Tabs */}
               <div className="flex border-b border-zinc-800 mb-6">
-                {[
-                  { id: "geral", label: "Visão Geral" },
-                  { id: "desempenho", label: "Desempenho" },
-                  { id: "financeiro", label: "Financeiro" }
-                ].map(tab => (
-                  <button key={tab.id} onClick={() => setProfileTab(tab.id as any)}
+                {PROFILE_TABS.map((tab) => (
+                  <button key={tab.id} onClick={() => setProfileTab(tab.id)}
                     className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${FOCUS_RING_GOLD} ${
                       profileTab === tab.id ? "text-[#EAB308] border-[#EAB308]" : "text-zinc-500 border-transparent hover:text-zinc-300"
                     }`}>
@@ -517,9 +521,10 @@ export default function AlunosPage() {
                           <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Tipo de Plano</label>
                           <select 
                             value={selectedStudent.plan || ""}
-                            onChange={e => {
-                              updateStudent(selectedStudent.id, { plan: e.target.value as any });
-                              setSelectedStudent(prev => prev ? { ...prev, plan: e.target.value as any } : prev);
+                            onChange={(e) => {
+                              const plan = e.target.value;
+                              updateStudent(selectedStudent.id, { plan });
+                              setSelectedStudent((prev) => (prev ? { ...prev, plan } : prev));
                             }}
                             className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-[#EAB308]/50"
                           >
