@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCriticalData } from "@/context/CriticalDataContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
-import { usePayments } from "@/context/PaymentsContext";
+import { usePayments, type StudentPaymentProofPayload } from "@/context/PaymentsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -68,7 +68,8 @@ type Pay = {
   studentProofFileName?: string;
   studentProofMime?: string;
 };
-type ProofAttachment = { file?: File; previewUrl?: string; fileName: string; mime: string };
+/** Mesmo anexo que `submitStudentPaymentProof` aceita (via `AppContextType`). */
+type ProofAttachment = NonNullable<StudentPaymentProofPayload["attachment"]>;
 function waDigits(raw: string): string {
   const d = raw.replace(/\D/g, "");
   if (d.length < 10) return "";
