@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCriticalData } from "@/context/CriticalDataContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
-import { usePayments, type StudentPaymentProofPayload } from "@/context/PaymentsContext";
+import { usePayments, type StudentPaymentProofAttachment } from "@/context/PaymentsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -68,8 +68,6 @@ type Pay = {
   studentProofFileName?: string;
   studentProofMime?: string;
 };
-/** Mesmo anexo que `submitStudentPaymentProof` aceita (via `AppContextType`). */
-type ProofAttachment = NonNullable<StudentPaymentProofPayload["attachment"]>;
 function waDigits(raw: string): string {
   const d = raw.replace(/\D/g, "");
   if (d.length < 10) return "";
@@ -90,7 +88,7 @@ function PaymentModal({
   whatsapp: string;
   studentName: string;
   onClose: () => void;
-  onSubmitProof: (note: string, attachment: ProofAttachment | null | undefined) => void;
+  onSubmitProof: (note: string, attachment: StudentPaymentProofAttachment | null | undefined) => void;
 }) {
   const { toast } = useToast();
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
@@ -98,7 +96,7 @@ function PaymentModal({
   const fileRef = useRef<HTMLInputElement>(null);
   const [proofNote, setProofNote] = useState(pay.studentProofNote ?? "");
   /** undefined = não alterar anexo salvo; null = remover; objeto = novo/trocar */
-  const [localAttachment, setLocalAttachment] = useState<ProofAttachment | null | undefined>(undefined);
+  const [localAttachment, setLocalAttachment] = useState<StudentPaymentProofAttachment | null | undefined>(undefined);
   const [copied, setCopied] = useState(false);
   const cfg = statusCfg[pay.status]; const Icon = cfg.icon;
   const isPaid = pay.status === "paid";
@@ -106,7 +104,7 @@ function PaymentModal({
   const copy = () => { navigator.clipboard.writeText(pixKey||""); setCopied(true); setTimeout(()=>setCopied(false),2000); if(navigator.vibrate) navigator.vibrate(40); };
   const fmt = (d: string) => new Date(d+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"long"});
   const fmtProof = (iso: string) => new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
-  const displayAttachment: ProofAttachment | null =
+  const displayAttachment: StudentPaymentProofAttachment | null =
     localAttachment !== undefined
       ? localAttachment
       : pay.studentProofDataUrl
@@ -116,7 +114,7 @@ function PaymentModal({
             mime: pay.studentProofMime || "image/jpeg",
           }
         : null;
-  const isPdf = (a: ProofAttachment | null) =>
+  const isPdf = (a: StudentPaymentProofAttachment | null) =>
     Boolean(a && (a.mime === "application/pdf" || a.fileName.toLowerCase().endsWith(".pdf")));
   return (
     <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} data-modal-overlay aria-modal="true" role="dialog" className="fixed inset-0 z-[200] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-md flex flex-col justify-end sm:justify-center sm:py-6" onClick={onClose}>

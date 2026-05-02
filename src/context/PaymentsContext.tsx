@@ -9,6 +9,9 @@ import { useCalendarTick } from "@/context/CalendarTickContext";
 /** Alinhado ao 2º argumento de `submitStudentPaymentProof` no `AppContext`. */
 export type StudentPaymentProofPayload = Parameters<AppContextType["submitStudentPaymentProof"]>[1];
 
+/** Anexo do comprovante (objeto não nulo), para formulários e preview. */
+export type StudentPaymentProofAttachment = NonNullable<StudentPaymentProofPayload["attachment"]>;
+
 type PaymentsContextValue = {
   payments: Payment[];
   latePayments: number;
