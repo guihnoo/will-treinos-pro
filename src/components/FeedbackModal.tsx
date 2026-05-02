@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Send, Zap, Shield, Target, TrendingUp } from "lucide-react";
-import type { Student } from "@/context/AppContext";
+import type { Student } from "@/context/types";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useCoaching } from "@/context/CoachingContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";

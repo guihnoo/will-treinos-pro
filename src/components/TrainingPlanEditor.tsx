@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Trash2, Save, Dumbbell, Timer, Zap, RotateCcw, ChevronDown } from "lucide-react";
-import type { Student } from "@/context/AppContext";
+import type { Student } from "@/context/types";
 import { useCoaching } from "@/context/CoachingContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useToast } from "@/components/Toast";
