@@ -1,4 +1,4 @@
-import { wtLsRemoveMany } from "@/lib/willLocalStorage";
+import { wtLs } from "@/lib/willLocalStorage";
 
 /**
  * Política padrão do app: não semear dados fictícios.
@@ -35,5 +35,5 @@ export function clearTransactionalLocalStorage(): void {
     "posts",
     "lessonRatings",
   ];
-  wtLsRemoveMany(keys);
+  wtLs.removeMany(keys);
 }

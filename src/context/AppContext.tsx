@@ -20,7 +20,6 @@ import {
   wtLegacyRoleSet,
   wtLs as ls,
   wtLsGetString,
-  wtLsRemoveMany,
   wtLsSetString,
   wtSessionGet,
   wtSessionSet,
@@ -270,7 +269,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         "posts",
         "lessonRatings",
       ];
-      wtLsRemoveMany(keys);
+      ls.removeMany(keys);
       wtLsSetString("version", LS_VERSION);
     }
     const tx = transactionalSeedDefaults();

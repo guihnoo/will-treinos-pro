@@ -96,8 +96,10 @@ export function wtSessionRemove(key: string): void {
   if (typeof window !== "undefined") sessionStorage.removeItem(key);
 }
 
-/** Objeto compatível com o antigo `ls` inline do `AppContext`. */
+/** Objeto compatível com o antigo `ls` inline do `AppContext` (+ remoção explícita). */
 export const wtLs = {
   get: wtLsGet,
   set: wtLsSet,
+  remove: wtLsRemove,
+  removeMany: wtLsRemoveMany,
 };
