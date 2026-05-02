@@ -2,12 +2,12 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useNotifications } from "@/context/NotificationsContext";
-import type { LessonRating } from "@/context/types";
+import type { LessonRating, LessonRatingDraft } from "@/context/types";
 import { wtLs as ls } from "@/lib/willLocalStorage";
 
 type LessonRatingsContextValue = {
   lessonRatings: LessonRating[];
-  addLessonRating: (r: Omit<LessonRating, "id" | "createdAt">) => void;
+  addLessonRating: (r: LessonRatingDraft) => void;
   getLessonRating: (lessonId: string, studentId: string) => LessonRating | undefined;
 };
 
@@ -28,7 +28,7 @@ export function LessonRatingsProvider({ children }: { children: React.ReactNode 
   }, [lessonRatings, isMounted]);
 
   const addLessonRating = useCallback(
-    (r: Omit<LessonRating, "id" | "createdAt">) => {
+    (r: LessonRatingDraft) => {
       const newRating: LessonRating = {
         ...r,
         id: `lr_${Date.now()}`,

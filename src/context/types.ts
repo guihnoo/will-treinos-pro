@@ -142,6 +142,9 @@ export interface LessonRating {
   createdAt: string;       // ISO timestamp
 }
 
+/** Envio do aluno antes de persistir `id` / `createdAt` no cliente. */
+export type LessonRatingDraft = Omit<LessonRating, "id" | "createdAt">;
+
 // ─── App-wide Config (admin editable) ───────────────────────────────────────
 export interface StudentProfileEditPolicy {
   phone: boolean;

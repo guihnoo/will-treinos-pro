@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Star, Zap, Brain, TrendingUp, MessageSquare, CheckCircle2 } from "lucide-react";
-import type { LessonRating, TrainingMood } from "@/context/types";
+import type { LessonRating, LessonRatingDraft, TrainingMood } from "@/context/types";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 
 // ─── Mood options ─────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ interface Props {
   lessonDate: string;
   studentId: string;
   existingRating?: LessonRating;
-  onSubmit: (rating: Omit<LessonRating, "id" | "createdAt">) => void;
+  onSubmit: (rating: LessonRatingDraft) => void;
   onClose: () => void;
 }
 
