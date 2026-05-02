@@ -13,11 +13,11 @@ type StudentsContextValue = {
   activeStudentsRevenue: number;
   activeStudentsAvgFrequency: number;
   getStudent: (id: string) => Student | undefined;
-  addStudent: ReturnType<typeof useApp>["addStudent"];
+  addStudent: (s: Omit<Student, "id">) => Promise<Student>;
   updateStudent: (id: string, patch: Partial<Student>) => void;
   approveStudent: (id: string) => void;
   suspendStudent: (id: string) => void;
-  seedPendingTuitionForStudent: ReturnType<typeof useApp>["seedPendingTuitionForStudent"];
+  seedPendingTuitionForStudent: (studentId: string, monthlyValue: number, paymentDay: number) => Promise<void>;
 };
 
 const StudentsContext = createContext<StudentsContextValue | undefined>(undefined);

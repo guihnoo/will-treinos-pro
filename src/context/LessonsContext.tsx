@@ -12,7 +12,7 @@ type LessonsContextValue = {
   todayEnrolledCount: number;
   todayPresentCount: number;
   todayAbsentCount: number;
-  addLesson: ReturnType<typeof useApp>["addLesson"];
+  addLesson: (l: Omit<Lesson, "id">) => void;
   updateLesson: (id: string, patch: Partial<Lesson>) => void;
   deleteLesson: (id: string) => void;
   addToWaitlist: (lessonId: string, studentId: string) => void;

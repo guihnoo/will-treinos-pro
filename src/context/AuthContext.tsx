@@ -13,7 +13,7 @@ type LoginResult =
 type OAuthResult = { ok: true } | { ok: false; message: string };
 
 type AuthContextValue = {
-  user: ReturnType<typeof useApp>["user"];
+  user: User | null;
   authResolved: boolean;
   usingSupabaseSession: boolean;
   authError: string | null;
