@@ -7,6 +7,7 @@
     "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
     "dev:clean": "pnpm clean && pnpm dev",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
     "start": "next start"
   },
   "dependencies": {
