@@ -1,6 +1,7 @@
 {
   "name": "will-treinos-pro",
   "version": "1.0.0",
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
     "dev": "next dev",
     "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
