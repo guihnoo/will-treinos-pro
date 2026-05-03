@@ -38,6 +38,17 @@ export function hasStoredInviteToken(): boolean {
   return Boolean(wtSessionGet(WT_INVITE_TOKEN)?.trim());
 }
 
+/** Token `?invite=` persistido na sessão (após `persistInviteTokenFromSearch`). */
+export function getStoredInviteToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const s = wtSessionGet(WT_INVITE_TOKEN)?.trim();
+  return s || null;
+}
+
+export function clearStoredInviteToken(): void {
+  wtSessionRemove(WT_INVITE_TOKEN);
+}
+
 /** Produção: `NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE=true` — só cadastro com `?invite=` (ou token já guardado na sessão). */
 export function cadastroInviteRequired(): boolean {
   return process.env.NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE === "true";
