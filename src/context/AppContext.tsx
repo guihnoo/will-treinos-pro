@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy } from "./types";
-import { dueDateForBillingMonth, localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
 import {
   isDevRootEmail,
   type DevImpersonation,
@@ -24,15 +23,9 @@ import {
 } from "@/lib/willLocalStorage";
 import {
 
-  createStudentRemote,
   insertNotificationRemote,
   updateNotificationReadRemote,
-  insertPaymentRemote,
-  markPaymentPaidRemote,
-  submitStudentProofRemote,
-  uploadPaymentProofToStorage,
   updateLessonRemote,
-  updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
 import { willUid } from "@/lib/willUid";
@@ -44,6 +37,8 @@ import { useLoadSupabaseCriticalData } from "@/hooks/useLoadSupabaseCriticalData
 import { useSupabaseLoginActions } from "@/hooks/useSupabaseLoginActions";
 import { useLessonMutations } from "@/hooks/useLessonMutations";
 import { useFeedMutations } from "@/hooks/useFeedMutations";
+import { useStudentMutations } from "@/hooks/useStudentMutations";
+import { usePaymentMutations } from "@/hooks/usePaymentMutations";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import { syncWtRoleCookie } from "@/lib/appSessionHelpers";
 import { sendPushToRole } from "@/lib/pushRoleBroadcast";
@@ -353,317 +348,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCriticalDataError,
   });
 
-  // ─── STUDENTS ───
-  const addStudent = useCallback(
-    async (s: WithoutId<Student>): Promise<Student> => {
-      const sessionAuthId = supabaseAuthUserRef.current?.id ?? undefined;
-      const next: Student = {
-        ...s,
-        id: `st_${willUid()}`,
-        authUserId: s.authUserId ?? sessionAuthId,
-      };
-      if (!usingSupabaseSession) {
-        setStudents((p) => [...p, next]);
-        return next;
-      }
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        const message = "Cliente Supabase indisponível.";
-        setCriticalDataError(message);
-        throw new Error(message);
-      }
-      try {
-        const created = await createStudentRemote(supabase, next);
-        setStudents((p) => [created, ...p]);
-        if (sessionAuthId && created.authUserId === sessionAuthId) {
-          setUser((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  id: created.id,
-                  role: "aluno",
-                  name: created.name,
-                  avatar: created.avatar,
-                  email: created.email || prev.email,
-                  authSubjectId: sessionAuthId,
-                }
-              : prev,
-          );
-          wtLegacyRoleSet("aluno");
-          syncWtRoleCookie("aluno");
-        }
-        /* Notificação «nova inscrição»: criada no Postgres (trigger wt_notify_staff_new_pending_student);
-           INSERT pelo cliente falha para não-staff por RLS. Recarregar lista em seguida puxa a linha. */
-        void loadSupabaseCriticalData().catch(() => {
-          /* sincroniza notificação criada por trigger no Postgres */
-        });
+  const { addStudent, approveStudent, suspendStudent, updateStudent, updateUser } = useStudentMutations({
+    usingSupabaseSession,
+    supabaseAuthUserRef,
+    setStudents,
+    setCriticalDataError,
+    setUser,
+    loadSupabaseCriticalData,
+  });
 
-        // Push para admin sobre novo aluno pendente
-        void sendPushToRole("admin", {
-          title: "Novo aluno aguardando aprovação",
-          body: `${created.name} se cadastrou e aguarda aprovação.`,
-          url: "/alunos",
-        });
-
-        // Log evento para monitoramento
-        void logDevEvent("student_created", "student", created.id, {
-          name: created.name,
-          email: created.email,
-          status: created.status,
-        });
-
-        return created;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Falha ao criar aluno no Supabase.";
-        setCriticalDataError(message);
-        throw new Error(message);
-      }
-    },
-    [usingSupabaseSession, loadSupabaseCriticalData],
-  );
-  const approveStudent = useCallback((id: string) => {
-    if (!usingSupabaseSession) {
-      setStudents((p) => p.map((s) => (s.id === id ? { ...s, status: "active" as StudentStatus } : s)));
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCriticalDataError("Cliente Supabase indisponível.");
-      return;
-    }
-    void updateStudentRemote(supabase, id, { status: "active" })
-      .then((updated) => {
-        setStudents((p) => p.map((s) => (s.id === id ? updated : s)));
-        void logDevEvent("student_approved", "student", id, { name: updated.name });
-      })
-      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao aprovar aluno."));
-  }, [usingSupabaseSession]);
-  const suspendStudent = useCallback((id: string) => {
-    if (!usingSupabaseSession) {
-      setStudents((p) => p.map((s) => (s.id === id ? { ...s, status: "suspended" as StudentStatus } : s)));
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCriticalDataError("Cliente Supabase indisponível.");
-      return;
-    }
-    void updateStudentRemote(supabase, id, { status: "suspended" })
-      .then((updated) => {
-        setStudents((p) => p.map((s) => (s.id === id ? updated : s)));
-        void logDevEvent("student_suspended", "student", id, { name: updated.name });
-      })
-      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao suspender aluno."));
-  }, [usingSupabaseSession]);
-
-  // CRITICAL: updateStudent must also update the user state when the current user edits their own profile
-  // This fixes the avatar not syncing between /perfil and the dashboard header
-  const updateStudent = useCallback((id: string, u: Partial<Student>) => {
-    if (!usingSupabaseSession) {
-      setStudents(p => p.map(s => s.id === id ? { ...s, ...u } : s));
-    } else {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        setCriticalDataError("Cliente Supabase indisponível.");
-      } else {
-        void updateStudentRemote(supabase, id, u)
-          .then((updated) => setStudents((p) => p.map((s) => (s.id === id ? updated : s))))
-          .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao atualizar aluno."));
-      }
-    }
-    if (u.name !== undefined || u.avatar !== undefined) {
-      const persistedProfiles = ls.get<Record<string, Partial<User>>>("userProfiles", {});
-      ls.set("userProfiles", {
-        ...persistedProfiles,
-        [id]: {
-          ...persistedProfiles[id],
-          ...(u.name !== undefined ? { name: u.name } : {}),
-          ...(u.avatar !== undefined ? { avatar: u.avatar } : {}),
-        },
-      });
-    }
-    // If the updated student IS the currently logged-in user, sync user state too
-    setUser(prev => {
-      if (!prev || prev.id !== id) return prev;
-      return {
-        ...prev,
-        // Sync name and avatar — the two fields visible in the user header
-        ...(u.name !== undefined && { name: u.name }),
-        ...(u.avatar !== undefined && { avatar: u.avatar }),
-      };
-    });
-  }, [usingSupabaseSession]);
-
-  const seedPendingTuitionForStudent = useCallback(
-    async (studentId: string, monthlyValue: number, paymentDay: number) => {
-      if (!String(studentId || "").trim() || monthlyValue <= 0) return;
-      const ref = paymentReferenceForDate();
-      const dueDate = dueDateForBillingMonth(paymentDay);
-      if (!usingSupabaseSession) {
-        setPayments((prev) => {
-          if (prev.some((p) => p.studentId === studentId && p.reference === ref)) return prev;
-          return [
-            {
-              id: `pay_${willUid()}`,
-              studentId,
-              amount: monthlyValue,
-              dueDate,
-              paidDate: null,
-              status: "pending" as PaymentStatus,
-              method: null,
-              reference: ref,
-            },
-            ...prev,
-          ];
-        });
-        return;
-      }
-      const supabase = getSupabaseClient();
-      if (!supabase) return;
-      try {
-        const { data: existing } = await supabase
-          .from("payments")
-          .select("id")
-          .eq("student_id", studentId)
-          .eq("reference", ref)
-          .maybeSingle();
-        if (existing) return;
-        const created = await insertPaymentRemote(supabase, {
-          studentId,
-          amount: monthlyValue,
-          dueDate,
-          paidDate: null,
-          status: "pending",
-          method: null,
-          reference: ref,
-        });
-        setPayments((prev) => (prev.some((p) => p.id === created.id) ? prev : [created, ...prev]));
-      } catch (error) {
-        setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar mensalidade pendente.");
-      }
-    },
-    [usingSupabaseSession],
-  );
-
-  const updateUser = useCallback((id: string, updates: Partial<User>) => {
-    const persistedProfiles = ls.get<Record<string, Partial<User>>>("userProfiles", {});
-    ls.set("userProfiles", {
-      ...persistedProfiles,
-      [id]: {
-        ...persistedProfiles[id],
-        ...updates,
-      },
-    });
-    setUser(prev => {
-      if (!prev || prev.id !== id) return prev;
-      return { ...prev, ...updates };
-    });
-  }, []);
-
-  // ─── PAYMENTS ───
-  const markPayment = useCallback((id: string) => {
-    if (!usingSupabaseSession) {
-      setPayments((p) => p.map((py) => (py.id === id ? { ...py, status: "paid" as PaymentStatus, paidDate: localDateISO(), method: "pix" } : py)));
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCriticalDataError("Cliente Supabase indisponível.");
-      return;
-    }
-    void markPaymentPaidRemote(supabase, id)
-      .then((updated) => {
-        setPayments((p) => p.map((py) => (py.id === id ? updated : py)));
-        void logDevEvent("payment_marked", "payment", id, {
-          studentId: updated.studentId,
-          amount: updated.amount,
-          method: updated.method,
-        });
-      })
-      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao confirmar pagamento."));
-  }, [usingSupabaseSession]);
-  const submitStudentPaymentProof = useCallback(
-    (
-      id: string,
-      payload: {
-        note: string;
-        attachment?: { file?: File; previewUrl?: string; fileName: string; mime: string } | null;
-      },
-    ) => {
-      if (!usingSupabaseSession) {
-        const trimmed = payload.note.trim();
-        const at = new Date().toISOString();
-        setPayments((p) =>
-          p.map((py) => {
-            if (py.id !== id) return py;
-            let next: Payment = {
-              ...py,
-              studentProofNote: trimmed || py.studentProofNote,
-              studentProofSubmittedAt: at,
-            };
-            if (payload.attachment === null) {
-              next = {
-                ...next,
-                studentProofDataUrl: undefined,
-                studentProofFileName: undefined,
-                studentProofMime: undefined,
-              };
-            } else if (payload.attachment) {
-              next = {
-                ...next,
-                studentProofDataUrl: payload.attachment.previewUrl,
-                studentProofFileName: payload.attachment.fileName,
-                studentProofMime: payload.attachment.mime,
-              };
-            }
-            return next;
-          }),
-        );
-        return;
-      }
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        setCriticalDataError("Cliente Supabase indisponível.");
-        return;
-      }
-      const currentAuthId = supabaseAuthUserRef.current?.id;
-      if (!currentAuthId) {
-        setCriticalDataError("Sessão Supabase indisponível.");
-        return;
-      }
-      const submitRemote = async () => {
-        if (payload.attachment === null) {
-          return submitStudentProofRemote(supabase, id, { note: payload.note, attachment: null });
-        }
-        if (payload.attachment?.file) {
-          const storagePath = await uploadPaymentProofToStorage(supabase, currentAuthId, payload.attachment.file);
-          return submitStudentProofRemote(supabase, id, {
-            note: payload.note,
-            attachment: {
-              url: storagePath,
-              fileName: payload.attachment.fileName,
-              mime: payload.attachment.mime,
-            },
-          });
-        }
-        if (payload.attachment?.previewUrl) {
-          return submitStudentProofRemote(supabase, id, {
-            note: payload.note,
-            attachment: {
-              url: payload.attachment.previewUrl,
-              fileName: payload.attachment.fileName,
-              mime: payload.attachment.mime,
-            },
-          });
-        }
-        return submitStudentProofRemote(supabase, id, { note: payload.note, attachment: undefined });
-      };
-      void submitRemote()
-        .then((updated) => setPayments((p) => p.map((pay) => (pay.id === id ? updated : pay))))
-        .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar comprovante no Supabase."));
-    },
-    [usingSupabaseSession],
-  );
+  const { seedPendingTuitionForStudent, markPayment, submitStudentPaymentProof } = usePaymentMutations({
+    usingSupabaseSession,
+    supabaseAuthUserRef,
+    setPayments,
+    setCriticalDataError,
+  });
 
   // ─── NOTIFICATIONS ───
   const addNotification = useCallback(
