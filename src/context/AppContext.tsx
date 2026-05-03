@@ -25,12 +25,10 @@ import {
 import {
 
   addFeedCommentRemote,
-  createLessonRemote,
   createFeedPostRemote,
   createStudentRemote,
   insertNotificationRemote,
   updateNotificationReadRemote,
-  deleteLessonRemote,
   fetchFeedPostsRemote,
   insertPaymentRemote,
   markPaymentPaidRemote,
@@ -50,6 +48,7 @@ import { useLocalTransactionalPersistence } from "@/hooks/useLocalTransactionalP
 import { useEnrollmentInviteSideEffects } from "@/hooks/useEnrollmentInviteSideEffects";
 import { useLoadSupabaseCriticalData } from "@/hooks/useLoadSupabaseCriticalData";
 import { useSupabaseLoginActions } from "@/hooks/useSupabaseLoginActions";
+import { useLessonMutations } from "@/hooks/useLessonMutations";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import { syncWtRoleCookie } from "@/lib/appSessionHelpers";
 import { sendPushToRole } from "@/lib/pushRoleBroadcast";
@@ -345,78 +344,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     onLiveStatus: setIsLive,
   });
 
-  // ─── LESSONS CRUD ───
-  const addLesson = useCallback((l: WithoutId<Lesson>) => {
-    const next: Lesson = { ...l, id: `l_${willUid()}` };
-    if (!usingSupabaseSession) {
-      setLessons((p) => [...p, next]);
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCriticalDataError("Cliente Supabase indisponível para criar aula.");
-      return;
-    }
-    void createLessonRemote(supabase, next)
-      .then((created) => {
-        setLessons((p) => [...p, created]);
-        void logDevEvent("lesson_created", "lesson", created.id, {
-          venueId: created.venueId,
-          lessonType: created.lessonType,
-          maxStudents: created.maxStudents,
-        });
-      })
-      .catch((error) =>
-        setCriticalDataError(error instanceof Error ? error.message : "Falha ao criar aula no Supabase."),
-      );
-  }, [usingSupabaseSession]);
-  const updateLesson = useCallback((id: string, u: Partial<Lesson>) => {
-    if (!usingSupabaseSession) {
-      setLessons((p) => p.map((l) => (l.id === id ? { ...l, ...u } : l)));
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCriticalDataError("Cliente Supabase indisponível para atualizar aula.");
-      return;
-    }
-    void updateLessonRemote(supabase, id, u)
-      .then(() => setLessons((p) => p.map((l) => (l.id === id ? { ...l, ...u } : l))))
-      .catch((error) =>
-        setCriticalDataError(error instanceof Error ? error.message : "Falha ao atualizar aula no Supabase."),
-      );
-  }, [usingSupabaseSession]);
-  const deleteLesson = useCallback((id: string) => {
-    if (!usingSupabaseSession) {
-      setLessons((p) => p.filter((l) => l.id !== id));
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCriticalDataError("Cliente Supabase indisponível para remover aula.");
-      return;
-    }
-    void deleteLessonRemote(supabase, id)
-      .then(() => setLessons((p) => p.filter((l) => l.id !== id)))
-      .catch((error) =>
-        setCriticalDataError(error instanceof Error ? error.message : "Falha ao remover aula no Supabase."),
-      );
-  }, [usingSupabaseSession]);
-  
-  const addToWaitlist = useCallback((lessonId: string, studentId: string) => {
-    setLessons(p => p.map(l => l.id === lessonId ? { ...l, waitlist: [...new Set([...(l.waitlist || []), studentId])] } : l));
-  }, []);
-
-  const promoteFromWaitlist = useCallback((lessonId: string, studentId: string) => {
-    setLessons(p => p.map(l => {
-      if (l.id !== lessonId) return l;
-      return { 
-        ...l, 
-        waitlist: (l.waitlist || []).filter(id => id !== studentId),
-        enrolledStudents: [...new Set([...l.enrolledStudents, studentId])]
-      };
-    }));
-  }, []);
+  const { addLesson, updateLesson, deleteLesson, addToWaitlist, promoteFromWaitlist } = useLessonMutations({
+    usingSupabaseSession,
+    setLessons,
+    setCriticalDataError,
+  });
 
   // ─── STUDENTS ───
   const addStudent = useCallback(

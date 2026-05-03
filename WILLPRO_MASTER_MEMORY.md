@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/05/2026 ~05:45 BRT] (Cursor):** **P1 — `useLessonMutations`** — Novo `src/hooks/useLessonMutations.ts`: `addLesson` / `updateLesson` / `deleteLesson` (local + Supabase) + `addToWaitlist` / `promoteFromWaitlist`. `AppContext.tsx` deixa de importar `createLessonRemote` e `deleteLessonRemote` (check-in continua com `updateLessonRemote` no context). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
+
 - **[03/05/2026 ~05:30 BRT] (Cursor):** **P1 — `useSupabaseLoginActions`** — Novo `src/hooks/useSupabaseLoginActions.ts`: `loginWithPassword`, `loginWithOAuth`, `logout` (mesma semântica que antes no `AppContext`; `computeEffectiveRole` permanece em `@/lib/authPostLogin`). `AppContext.tsx`: removidos handlers inline e import de `computeEffectiveRole`; import de `clearWtRoleCookie` só necessário no hook. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0). **Git:** push `origin/main` — commit `804afd4`.
 
 - **[03/05/2026 ~05:15 BRT] (Cursor):** **P1 — `useLoadSupabaseCriticalData`** — Novo `src/hooks/useLoadSupabaseCriticalData.ts`: single-flight + listas vazias no sync bloqueante + `loadCriticalLiveBundle` + `applySupabaseSession` (fire-and-forget) + `runEnrollmentInviteSync` + `retryCriticalDataSync`. `AppContext` deixa de importar `loadCriticalLiveBundle`, `runEnrollmentInviteSync` e `filterDemoNotifications` para este fluxo. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
