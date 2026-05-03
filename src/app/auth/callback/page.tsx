@@ -3,8 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
-import { postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
+import { appRoleFromSupabaseUser, getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
+
+
+import { isDevRootEmail, postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
+import { fetchStaffAccessRole } from "@/lib/supabasePersistence";
 import { clearStaffOAuthGate, canUseSocialOAuthFromLogin } from "@/lib/enrollmentSession";
 import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionGet, wtSessionRemove } from "@/lib/willLocalStorage";
 
@@ -71,9 +74,9 @@ export default function AuthCallbackPage() {
           clearStaffOAuthGate();
         }
 
-        // Se é novo usuário (OAuth sem student record), redireciona para /signup
-        const isNewUser = await checkIfNewUser(supabase, user.id);
-        if (isNewUser) {
+        // Self-signup OAuth: só vai para /signup se não for staff/admin/dev e não tiver matrícula.
+        const needsStudentSignup = await oauthUserNeedsStudentSignupFlow(supabase, user);
+        if (needsStudentSignup) {
           router.replace("/signup");
           return;
         }
@@ -81,12 +84,32 @@ export default function AuthCallbackPage() {
         router.replace(preferredNext ?? postLoginRouteFromAuthUser(user));
       };
 
-      const checkIfNewUser = async (supabase: any, authUserId: string): Promise<boolean> => {
+      /** Contas Google sem papel staff nem linha em `students` completam cadastro em /signup. */
+      async function oauthUserNeedsStudentSignupFlow(
+        sb: NonNullable<ReturnType<typeof getSupabaseClient>>,
+        authUser: SupabaseAuthUser,
+      ): Promise<boolean> {
+        if (isDevRootEmail(authUser.email)) return false;
+
+        const jwtRole = appRoleFromSupabaseUser(
+          authUser.user_metadata?.role ?? authUser.app_metadata?.role,
+        );
+        if (jwtRole === "admin" || jwtRole === "coach") return false;
+
+        if (authUser.email) {
+          try {
+            const staffRole = await fetchStaffAccessRole(sb, authUser.email);
+            if (staffRole) return false;
+          } catch (e) {
+            console.warn("[auth/callback] staff_access:", e);
+          }
+        }
+
         try {
-          const { data, error } = await supabase
+          const { data, error } = await sb
             .from("students")
             .select("id")
-            .eq("auth_user_id", authUserId)
+            .eq("auth_user_id", authUser.id)
             .maybeSingle();
 
           if (error) {
@@ -98,7 +121,7 @@ export default function AuthCallbackPage() {
           console.error("Erro ao verificar novo usuário:", e);
           return false;
         }
-      };
+      }
 
       try {
         const first = await supabase.auth.getSession();

@@ -13,6 +13,14 @@ import SkeletonLoader from "@/components/ui/SkeletonLoader";
 
 const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro", "/preview", "/signup", "/aguardando"]);
 
+function isPublicRoute(pathname: string | null): boolean {
+  if (!pathname) return false;
+  if (PUBLIC_ROUTES.has(pathname)) return true;
+  // OAuth PKCE: evita gate de matrícula enquanto role ainda não foi resolvido
+  if (pathname.startsWith("/auth/")) return true;
+  return false;
+}
+
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -20,7 +28,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const { students } = useStudents();
   const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
   const [showSlowSyncHint, setShowSlowSyncHint] = useState(false);
-  const isPublic = pathname ? PUBLIC_ROUTES.has(pathname) : false;
+  const isPublic = isPublicRoute(pathname);
 
   useEffect(() => {
     if (!isPublic && authResolved && !user) {
