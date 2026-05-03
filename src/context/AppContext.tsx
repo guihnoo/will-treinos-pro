@@ -35,7 +35,6 @@ import {
   fetchFeedPostsRemote,
   insertPaymentRemote,
   markPaymentPaidRemote,
-  upsertEnrollmentInviteRemote,
   softDeleteFeedPostRemote,
   submitStudentProofRemote,
   toggleFeedPostLikeRemote,
@@ -45,13 +44,13 @@ import {
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
-import { generateNewEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
 import { runEnrollmentInviteSync } from "@/lib/enrollmentInviteSync";
 import { willUid } from "@/lib/willUid";
 import { loadCriticalLiveBundle } from "@/lib/loadCriticalLiveBundle";
 import { useSupabaseRealtimeRefresh } from "@/hooks/useSupabaseRealtimeRefresh";
 import { useSupabaseAuthBridge } from "@/hooks/useSupabaseAuthBridge";
 import { useLocalTransactionalPersistence } from "@/hooks/useLocalTransactionalPersistence";
+import { useEnrollmentInviteSideEffects } from "@/hooks/useEnrollmentInviteSideEffects";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
   clearWtRoleCookie,
@@ -237,29 +236,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     appConfig,
   });
 
-  /** Modo offline / sem sessão Supabase: gera código de convite só em localStorage. */
-  useEffect(() => {
-    if (!isMounted || usingSupabaseSession) return;
-    setAppConfig((prev) => {
-      if (prev.enrollmentInviteCode?.trim()) return prev;
-      return { ...prev, enrollmentInviteCode: generateNewEnrollmentInviteCode() };
-    });
-  }, [isMounted, usingSupabaseSession]);
-
-  /** Propaga alterações do código de convite para o Supabase (ex.: «Gerar novo código»). */
-  useEffect(() => {
-    if (!isMounted || !usingSupabaseSession) return;
-    const code = appConfig.enrollmentInviteCode?.trim();
-    if (!code) return;
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
-    const handle = window.setTimeout(() => {
-      void upsertEnrollmentInviteRemote(supabase, code).catch(() => {
-        /* migração opcional */
-      });
-    }, 800);
-    return () => window.clearTimeout(handle);
-  }, [appConfig.enrollmentInviteCode, isMounted, usingSupabaseSession]);
+  useEnrollmentInviteSideEffects({
+    isMounted,
+    usingSupabaseSession,
+    appConfig,
+    setAppConfig,
+  });
 
   const loginUser = useCallback((role: Role) => {
     const safeRole: "admin" | "coach" | "aluno" = role === "admin" || role === "coach" || role === "aluno" ? role : "aluno";
