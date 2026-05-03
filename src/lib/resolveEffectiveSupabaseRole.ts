@@ -1,0 +1,44 @@
+import type { SupabaseClient, User as SupabaseAuthUser } from "@supabase/supabase-js";
+import type { Student } from "@/context/types";
+import { findLinkedStudentForAuth } from "@/lib/appSessionHelpers";
+import {
+  computeEffectiveRole,
+  isDevRootEmail,
+  type DevImpersonation,
+} from "@/lib/authPostLogin";
+import { fetchStaffAccessRole } from "@/lib/supabasePersistence";
+
+/**
+ * Papel efetivo após JWT (`user_metadata`) + `staff_access` + vínculo opcional com catálogo `students`.
+ * Quando `catalogStudents` é `undefined`, não força matrícula (bootstrap antes do fetch).
+ */
+export async function resolveEffectiveSupabaseRole(
+  authUser: SupabaseAuthUser,
+  devImpersonation: DevImpersonation,
+  supabase: SupabaseClient | null,
+  catalogStudents: Student[] | undefined,
+): Promise<"admin" | "coach" | "aluno" | null> {
+  let effectiveRole = computeEffectiveRole(authUser, devImpersonation);
+
+  if (!isDevRootEmail(authUser.email) && supabase && authUser.email) {
+    if (effectiveRole === null || effectiveRole === "aluno") {
+      try {
+        const accessRole = await fetchStaffAccessRole(supabase, authUser.email);
+        if (accessRole) {
+          effectiveRole = accessRole;
+        }
+      } catch {
+        // Mantém fluxo sem staff table (não bloqueia login).
+      }
+    }
+  }
+
+  if (!isDevRootEmail(authUser.email) && effectiveRole === "aluno" && catalogStudents !== undefined) {
+    const linked = findLinkedStudentForAuth(authUser.id, authUser.email || "", catalogStudents);
+    if (!linked) {
+      effectiveRole = null;
+    }
+  }
+
+  return effectiveRole;
+}

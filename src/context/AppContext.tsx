@@ -33,7 +33,6 @@ import {
   updateNotificationReadRemote,
   deleteLessonRemote,
   fetchFeedPostsRemote,
-  fetchStaffAccessRole,
   fetchEnrollmentInviteRemote,
   fetchLiveAppData,
   insertPaymentRemote,
@@ -47,12 +46,14 @@ import {
   updateLessonRemote,
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
+import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
+  
+
   CRITICAL_DATA_FETCH_TIMEOUT_MS,
   clearWtRoleCookie,
   filterDemoNotifications,
-  findLinkedStudentForAuth,
   syncWtRoleCookie,
   withNetworkTimeout,
 } from "@/lib/appSessionHelpers";
@@ -283,28 +284,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const applySupabaseSession = useCallback(
     async (authUser: SupabaseAuthUser, catalogStudents?: Student[]) => {
       supabaseAuthUserRef.current = authUser;
-      let effectiveRole = computeEffectiveRole(authUser, devImpersonation);
       const supabase = getSupabaseClient();
-
-      if (!isDevRootEmail(authUser.email) && supabase && authUser.email) {
-        if (effectiveRole === null || effectiveRole === "aluno") {
-          try {
-            const accessRole = await fetchStaffAccessRole(supabase, authUser.email);
-            if (accessRole) {
-              effectiveRole = accessRole;
-            }
-          } catch {
-            // Mantém fluxo sem staff table (não bloqueia login).
-          }
-        }
-      }
-
-      if (!isDevRootEmail(authUser.email) && effectiveRole === "aluno" && catalogStudents !== undefined) {
-        const linked = findLinkedStudentForAuth(authUser.id, authUser.email || "", catalogStudents);
-        if (!linked) {
-          effectiveRole = null;
-        }
-      }
+      const effectiveRole = await resolveEffectiveSupabaseRole(
+        authUser,
+        devImpersonation,
+        supabase,
+        catalogStudents,
+      );
 
       const safeName =
         String(authUser.user_metadata?.full_name || "").trim() ||
