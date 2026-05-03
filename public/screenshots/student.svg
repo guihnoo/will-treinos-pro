@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#EAB308" />
+      <stop offset="100%" stop-color="#F97316" />
+    </linearGradient>
+    <linearGradient id="xpbar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#EAB308" />
+      <stop offset="100%" stop-color="#F97316" />
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a1a" />
+      <stop offset="100%" stop-color="#111111" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="390" height="844" fill="#000000" />
+
+  <!-- Status bar -->
+  <rect x="0" y="0" width="390" height="44" fill="#000000" />
+  <text x="20" y="28" font-family="Inter, Arial" font-size="12" font-weight="600" fill="#ffffff">9:41</text>
+  <rect x="340" y="18" width="28" height="12" rx="2" fill="none" stroke="#ffffff" stroke-width="1.5" />
+  <rect x="342" y="20" width="18" height="8" rx="1" fill="#ffffff" />
+
+  <!-- Hero: Avatar + Saudação -->
+  <rect x="0" y="44" width="390" height="180" fill="#050505" />
+  <!-- Avatar circle -->
+  <circle cx="195" cy="110" r="48" fill="#1a1a1a" stroke="#EAB308" stroke-width="2.5" />
+  <text x="195" y="120" text-anchor="middle" font-family="Inter, Arial" font-size="32" font-weight="800" fill="#EAB308">A</text>
+  <!-- Tier badge -->
+  <circle cx="230" cy="145" r="14" fill="#000000" stroke="#EAB308" stroke-width="2" />
+  <text x="230" y="150" text-anchor="middle" font-family="Arial" font-size="13" fill="#EAB308">⭐</text>
+  <!-- Nome -->
+  <text x="195" y="180" text-anchor="middle" font-family="Inter, Arial" font-size="16" font-weight="700" fill="#ffffff">Ana Souza</text>
+  <text x="195" y="200" text-anchor="middle" font-family="Inter, Arial" font-size="11" fill="#EAB308">Tier Ouro · 680 XP</text>
+  <text x="195" y="218" text-anchor="middle" font-family="Inter, Arial" font-size="10" fill="#52525b">🔥 12 dias de sequência</text>
+
+  <!-- XP Progress bar -->
+  <text x="20" y="254" font-family="Inter, Arial" font-size="11" fill="#71717a">XP para Platina</text>
+  <text x="370" y="254" text-anchor="end" font-family="Inter, Arial" font-size="11" fill="#71717a">680 / 900</text>
+  <rect x="20" y="260" width="350" height="8" rx="4" fill="#27272a" />
+  <rect x="20" y="260" width="265" height="8" rx="4" fill="url(#xpbar)" />
+
+  <!-- Mérito Score -->
+  <rect x="12" y="284" width="366" height="80" rx="14" fill="url(#card)" stroke="#EAB308" stroke-opacity="0.15" stroke-width="1" />
+  <text x="28" y="310" font-family="Inter, Arial" font-size="11" font-weight="500" fill="#71717a">Score de Mérito</text>
+  <!-- Score gauge simplified -->
+  <text x="100" y="348" text-anchor="middle" font-family="Inter, Arial" font-size="40" font-weight="900" fill="#EAB308">78</text>
+  <text x="100" y="360" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#71717a">/ 100</text>
+  <!-- Tier info -->
+  <text x="200" y="318" font-family="Inter, Arial" font-size="12" font-weight="700" fill="#ffffff">Nível Ouro</text>
+  <text x="200" y="335" font-family="Inter, Arial" font-size="10" fill="#71717a">Próximo: Platina (78pt)</text>
+  <rect x="200" y="344" width="130" height="6" rx="3" fill="#27272a" />
+  <rect x="200" y="344" width="100" height="6" rx="3" fill="url(#xpbar)" />
+  <text x="200" y="362" font-family="Inter, Arial" font-size="9" fill="#52525b">Faltam 0 pontos para subir!</text>
+
+  <!-- Stats Grid -->
+  <text x="20" y="396" font-family="Inter, Arial" font-size="14" font-weight="700" fill="#ffffff">Estatísticas</text>
+
+  <!-- Stat 1: Frequência -->
+  <rect x="12" y="408" width="112" height="72" rx="12" fill="#111111" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <text x="68" y="432" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#71717a">Frequência</text>
+  <text x="68" y="460" text-anchor="middle" font-family="Inter, Arial" font-size="26" font-weight="800" fill="#EAB308">92%</text>
+  <text x="68" y="474" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#22c55e">+5%</text>
+
+  <!-- Stat 2: Aulas -->
+  <rect x="139" y="408" width="112" height="72" rx="12" fill="#111111" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <text x="195" y="432" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#71717a">Aulas</text>
+  <text x="195" y="460" text-anchor="middle" font-family="Inter, Arial" font-size="26" font-weight="800" fill="#ffffff">47</text>
+  <text x="195" y="474" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#71717a">completadas</text>
+
+  <!-- Stat 3: Avaliação -->
+  <rect x="266" y="408" width="112" height="72" rx="12" fill="#111111" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <text x="322" y="432" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#71717a">Avaliação</text>
+  <text x="322" y="460" text-anchor="middle" font-family="Inter, Arial" font-size="26" font-weight="800" fill="#EAB308">4.9</text>
+  <text x="322" y="474" text-anchor="middle" font-family="Arial" font-size="12" fill="#EAB308">★★★★★</text>
+
+  <!-- Conquistas -->
+  <text x="20" y="514" font-family="Inter, Arial" font-size="14" font-weight="700" fill="#ffffff">Conquistas</text>
+  <text x="370" y="514" text-anchor="end" font-family="Inter, Arial" font-size="12" fill="#EAB308">Ver XP</text>
+
+  <!-- Conquest badges row -->
+  <rect x="12" y="524" width="366" height="90" rx="12" fill="#111111" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <!-- Badge 1 -->
+  <circle cx="50" cy="564" r="22" fill="#EAB308" opacity="0.15" />
+  <text x="50" y="570" text-anchor="middle" font-size="20">🏆</text>
+  <text x="50" y="600" text-anchor="middle" font-family="Inter, Arial" font-size="8" fill="#71717a">Dedicado</text>
+  <!-- Badge 2 -->
+  <circle cx="120" cy="564" r="22" fill="#EAB308" opacity="0.15" />
+  <text x="120" y="570" text-anchor="middle" font-size="20">🔥</text>
+  <text x="120" y="600" text-anchor="middle" font-family="Inter, Arial" font-size="8" fill="#71717a">Em Chamas</text>
+  <!-- Badge 3 -->
+  <circle cx="190" cy="564" r="22" fill="#EAB308" opacity="0.15" />
+  <text x="190" y="570" text-anchor="middle" font-size="20">⚡</text>
+  <text x="190" y="600" text-anchor="middle" font-family="Inter, Arial" font-size="8" fill="#71717a">Velocista</text>
+  <!-- Badge 4 (locked) -->
+  <circle cx="260" cy="564" r="22" fill="#27272a" />
+  <text x="260" y="570" text-anchor="middle" font-size="20">🔒</text>
+  <text x="260" y="600" text-anchor="middle" font-family="Inter, Arial" font-size="8" fill="#3f3f46">Lendário</text>
+
+  <!-- Próxima Aula -->
+  <rect x="12" y="630" width="366" height="72" rx="12" fill="#111111" stroke="#EAB308" stroke-opacity="0.2" stroke-width="1" />
+  <text x="28" y="654" font-family="Inter, Arial" font-size="11" fill="#71717a">Próxima Aula</text>
+  <text x="28" y="676" font-family="Inter, Arial" font-size="14" font-weight="700" fill="#ffffff">Turma Avançada</text>
+  <text x="28" y="693" font-family="Inter, Arial" font-size="11" fill="#71717a">Amanhã, 08:00 · Quadra A</text>
+  <rect x="300" y="654" width="66" height="28" rx="14" fill="url(#gold)" />
+  <text x="333" y="673" text-anchor="middle" font-family="Inter, Arial" font-size="11" font-weight="700" fill="#000000">Confirmar</text>
+
+  <!-- Bottom nav -->
+  <rect x="0" y="756" width="390" height="88" fill="#050505" />
+  <line x1="0" y1="756" x2="390" y2="756" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <!-- Home (active) -->
+  <rect x="27" y="766" width="52" height="52" rx="10" fill="#EAB308" opacity="0.1" />
+  <text x="53" y="800" text-anchor="middle" font-family="Arial" font-size="20">🏠</text>
+  <text x="53" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" font-weight="600" fill="#EAB308">Home</text>
+  <!-- Treinos -->
+  <text x="138" y="800" text-anchor="middle" font-family="Arial" font-size="20">💪</text>
+  <text x="138" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Treinos</text>
+  <!-- Feed -->
+  <text x="195" y="800" text-anchor="middle" font-family="Arial" font-size="20">📋</text>
+  <text x="195" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Feed</text>
+  <!-- Pagamentos -->
+  <text x="258" y="800" text-anchor="middle" font-family="Arial" font-size="20">💳</text>
+  <text x="258" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Pag.</text>
+  <!-- Perfil -->
+  <text x="337" y="800" text-anchor="middle" font-family="Arial" font-size="20">👤</text>
+  <text x="337" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Perfil</text>
+
+  <!-- Home indicator -->
+  <rect x="155" y="824" width="80" height="4" rx="2" fill="#ffffff" opacity="0.2" />
+</svg>

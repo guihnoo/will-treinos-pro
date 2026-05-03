@@ -45,6 +45,7 @@ import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE,
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
 import { localDateISO } from "@/lib/dateUtils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import PushPermissionBanner from "@/components/PushPermissionBanner";
 function currencyBRL(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -312,6 +313,7 @@ export default function WillCockpit() {
 
   return (
     <LayoutGroup id="cockpit-shared-layout">
+    <PushPermissionBanner role={(user?.role === "coach" ? "professor" : "admin")} />
     <div className="relative isolate max-w-full min-w-0 space-y-5 overflow-x-hidden px-3 pb-12 pt-1 sm:px-4 md:px-5">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-black" />
       <motion.div

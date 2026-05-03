@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#EAB308" />
+      <stop offset="100%" stop-color="#F97316" />
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a1a" />
+      <stop offset="100%" stop-color="#111111" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="390" height="844" fill="#000000" />
+
+  <!-- Status bar -->
+  <rect x="0" y="0" width="390" height="44" fill="#000000" />
+  <text x="20" y="28" font-family="Inter, Arial" font-size="12" font-weight="600" fill="#ffffff">9:41</text>
+  <!-- Battery/signal icons placeholder -->
+  <rect x="340" y="18" width="28" height="12" rx="2" fill="none" stroke="#ffffff" stroke-width="1.5" />
+  <rect x="342" y="20" width="18" height="8" rx="1" fill="#ffffff" />
+
+  <!-- Header -->
+  <rect x="0" y="44" width="390" height="72" fill="#050505" />
+  <text x="20" y="78" font-family="Inter, Arial" font-size="11" font-weight="500" fill="#71717a">Sexta, 2 de maio</text>
+  <text x="20" y="100" font-family="Inter, Arial" font-size="22" font-weight="800" fill="#ffffff">Cockpit </text>
+  <text x="120" y="100" font-family="Inter, Arial" font-size="22" font-weight="800" fill="#EAB308">do Treinador</text>
+  <!-- Avatar -->
+  <circle cx="358" cy="80" r="22" fill="#1a1a1a" stroke="#EAB308" stroke-width="2" />
+  <text x="358" y="86" text-anchor="middle" font-family="Arial" font-size="16" font-weight="700" fill="#EAB308">W</text>
+
+  <!-- KPI Grid: 2x2 -->
+  <!-- Card 1: Alunos Ativos -->
+  <rect x="12" y="132" width="176" height="96" rx="14" fill="url(#card)" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1" />
+  <text x="28" y="158" font-family="Inter, Arial" font-size="11" font-weight="500" fill="#71717a">Alunos Ativos</text>
+  <text x="28" y="192" font-family="Inter, Arial" font-size="36" font-weight="800" fill="#ffffff">24</text>
+  <rect x="28" y="202" width="60" height="3" rx="1.5" fill="#EAB308" opacity="0.4" />
+  <text x="120" y="220" text-anchor="end" font-family="Inter, Arial" font-size="10" fill="#22c55e">+2 este mês</text>
+
+  <!-- Card 2: Presença Hoje -->
+  <rect x="202" y="132" width="176" height="96" rx="14" fill="url(#card)" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1" />
+  <text x="218" y="158" font-family="Inter, Arial" font-size="11" font-weight="500" fill="#71717a">Presença Hoje</text>
+  <text x="218" y="192" font-family="Inter, Arial" font-size="36" font-weight="800" fill="#EAB308">87%</text>
+  <rect x="218" y="202" width="100" height="6" rx="3" fill="#27272a" />
+  <rect x="218" y="202" width="87" height="6" rx="3" fill="#EAB308" />
+
+  <!-- Card 3: Receita -->
+  <rect x="12" y="240" width="176" height="96" rx="14" fill="url(#card)" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1" />
+  <text x="28" y="266" font-family="Inter, Arial" font-size="11" font-weight="500" fill="#71717a">Receita Mensal</text>
+  <text x="28" y="298" font-family="Inter, Arial" font-size="24" font-weight="800" fill="#ffffff">R$ 4.800</text>
+  <text x="28" y="320" font-family="Inter, Arial" font-size="10" fill="#22c55e">↑ 12% vs mês ant.</text>
+
+  <!-- Card 4: Avaliação -->
+  <rect x="202" y="240" width="176" height="96" rx="14" fill="url(#card)" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1" />
+  <text x="218" y="266" font-family="Inter, Arial" font-size="11" font-weight="500" fill="#71717a">Avaliação Média</text>
+  <text x="218" y="298" font-family="Inter, Arial" font-size="36" font-weight="800" fill="#EAB308">4.8</text>
+  <!-- Stars -->
+  <text x="218" y="320" font-family="Arial" font-size="14" fill="#EAB308">★★★★★</text>
+
+  <!-- Aulas de hoje -->
+  <text x="20" y="366" font-family="Inter, Arial" font-size="14" font-weight="700" fill="#ffffff">Aulas de Hoje</text>
+  <text x="340" y="366" text-anchor="end" font-family="Inter, Arial" font-size="12" fill="#EAB308">Ver todas</text>
+
+  <!-- Lesson card 1 -->
+  <rect x="12" y="378" width="366" height="70" rx="12" fill="#111111" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <rect x="12" y="378" width="4" height="70" rx="2" fill="#EAB308" />
+  <text x="28" y="402" font-family="Inter, Arial" font-size="13" font-weight="700" fill="#ffffff">Turma Avançada</text>
+  <text x="28" y="422" font-family="Inter, Arial" font-size="11" fill="#71717a">08:00 — 09:30 · 8 alunos · Quadra A</text>
+  <rect x="300" y="390" width="66" height="24" rx="12" fill="#EAB308" opacity="0.15" />
+  <text x="333" y="407" text-anchor="middle" font-family="Inter, Arial" font-size="11" font-weight="600" fill="#EAB308">Check-in</text>
+
+  <!-- Lesson card 2 -->
+  <rect x="12" y="460" width="366" height="70" rx="12" fill="#111111" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <rect x="12" y="460" width="4" height="70" rx="2" fill="#3b82f6" />
+  <text x="28" y="484" font-family="Inter, Arial" font-size="13" font-weight="700" fill="#ffffff">Turma Iniciante</text>
+  <text x="28" y="504" font-family="Inter, Arial" font-size="11" fill="#71717a">10:00 — 11:00 · 12 alunos · Quadra B</text>
+  <rect x="300" y="472" width="66" height="24" rx="12" fill="#22c55e" opacity="0.15" />
+  <text x="333" y="489" text-anchor="middle" font-family="Inter, Arial" font-size="11" font-weight="600" fill="#22c55e">Concluída</text>
+
+  <!-- Pending approvals -->
+  <rect x="12" y="548" width="366" height="56" rx="12" fill="#18130a" stroke="#EAB308" stroke-opacity="0.2" stroke-width="1" />
+  <circle cx="36" cy="576" r="12" fill="#EAB308" opacity="0.15" />
+  <text x="36" y="581" text-anchor="middle" font-family="Arial" font-size="13" fill="#EAB308">2</text>
+  <text x="58" y="572" font-family="Inter, Arial" font-size="13" font-weight="600" fill="#ffffff">Aprovações Pendentes</text>
+  <text x="58" y="589" font-family="Inter, Arial" font-size="11" fill="#71717a">2 novos alunos aguardando aprovação</text>
+  <text x="362" y="581" text-anchor="end" font-family="Arial" font-size="16" fill="#EAB308">›</text>
+
+  <!-- Bottom nav -->
+  <rect x="0" y="756" width="390" height="88" fill="#050505" />
+  <line x1="0" y1="756" x2="390" y2="756" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1" />
+  <!-- Nav items: 5 icons -->
+  <!-- Cockpit (active) -->
+  <rect x="27" y="766" width="52" height="52" rx="10" fill="#EAB308" opacity="0.1" />
+  <rect x="44" y="778" width="18" height="14" rx="3" fill="none" stroke="#EAB308" stroke-width="2" />
+  <line x1="48" y1="784" x2="58" y2="784" stroke="#EAB308" stroke-width="1.5" />
+  <line x1="48" y1="789" x2="56" y2="789" stroke="#EAB308" stroke-width="1.5" />
+  <text x="53" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" font-weight="600" fill="#EAB308">Cockpit</text>
+  <!-- Quadra -->
+  <rect x="171" y="778" width="18" height="14" rx="2" fill="none" stroke="#52525b" stroke-width="1.5" />
+  <text x="180" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Quadra</text>
+  <!-- Alunos -->
+  <circle cx="258" cy="785" r="5" fill="none" stroke="#52525b" stroke-width="1.5" />
+  <text x="258" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Alunos</text>
+  <!-- Feed -->
+  <rect x="318" y="779" width="16" height="12" rx="2" fill="none" stroke="#52525b" stroke-width="1.5" />
+  <text x="326" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Feed</text>
+  <!-- Mais -->
+  <text x="375" y="790" text-anchor="middle" font-family="Arial" font-size="18" fill="#52525b">⋯</text>
+  <text x="375" y="830" text-anchor="middle" font-family="Inter, Arial" font-size="9" fill="#52525b">Mais</text>
+
+  <!-- Home indicator -->
+  <rect x="155" y="824" width="80" height="4" rx="2" fill="#ffffff" opacity="0.2" />
+</svg>

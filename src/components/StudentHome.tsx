@@ -20,6 +20,7 @@ import Link from "next/link";
 import LessonRatingSheet from "@/components/LessonRatingSheet";
 import Confetti from "@/components/Confetti";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import PushPermissionBanner from "@/components/PushPermissionBanner";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -462,6 +463,7 @@ export default function StudentHome() {
   const [localNow, setLocalNow] = useState<Date | null>(null);
   const [kpiCount, setKpiCount] = useState({ aulas: 0, streak: 0, nota: 0, freq: 0 });
   const [showDailyQuote, setShowDailyQuote] = useState(false);
+  const [showXpModal, setShowXpModal] = useState(false);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
     showNotif ||
@@ -471,7 +473,8 @@ export default function StudentHome() {
       statsModal ||
       showAgendaPanel ||
       ratingLesson ||
-      showDailyQuote,
+      showDailyQuote ||
+      showXpModal,
   );
   useBodyScrollLock(hasOverlayOpen);
   useEffect(() => {
@@ -926,6 +929,8 @@ export default function StudentHome() {
   }
 
   return (
+    <>
+    <PushPermissionBanner role="aluno" />
     <motion.div
       className="w-full space-y-5 pt-2 sm:pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] relative"
       variants={homeList}
@@ -958,14 +963,19 @@ export default function StudentHome() {
                   (avatarSeed?.startsWith("data:") || avatarSeed?.startsWith("http://") || avatarSeed?.startsWith("https://") || avatarSeed?.startsWith("/")) ? "border-2 border-[#EAB308]" : "border-2 border-zinc-700"
                 }`}
               />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-black/80 border backdrop-blur-md p-0.5"
-                style={{ borderColor: `${equippedTier.color}88` }}>
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={(e) => { e.preventDefault(); haptic([16, 12, 24]); setShowXpModal(true); }}
+                className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-black/80 border backdrop-blur-md p-0.5 ${ctaClass}`}
+                style={{ borderColor: `${equippedTier.color}88` }}
+                aria-label="Ver score de mérito"
+              >
                 <svg viewBox="0 0 24 24" className="w-full h-full" aria-hidden>
                   <path d="M12 2 L20 6 V11.5 C20 16.5 16.4 20.1 12 22 C7.6 20.1 4 16.5 4 11.5 V6 Z" fill={equippedTier.color} stroke="rgba(255,255,255,0.45)" strokeWidth="0.8" />
                   <path d="M7 9.5 C8.8 8.2, 11.4 8, 13.6 9.2 C15.6 10.3, 16.8 12.2, 17 14.5" fill="none" stroke="#0B0B0B" strokeWidth="1" strokeLinecap="round" />
                   <circle cx="11.2" cy="12.4" r="1.1" fill="#0B0B0B" />
                 </svg>
-              </div>
+              </motion.button>
             </motion.div>
           </Link>
           <div className="min-w-0">
@@ -1605,11 +1615,20 @@ export default function StudentHome() {
                 {unlockedTracksCount}/{achievementTracks.length} · nível {equippedTier.label}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] text-zinc-500">Meta competitiva</p>
-              <p className="text-[11px] font-bold text-zinc-300">
-                {nextTier ? `${nextTier.label} em ${Math.max(0, nextTier.min - meritScore)} pts` : "Tier máximo"}
-              </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { haptic([16, 12, 24]); setShowXpModal(true); }}
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${ctaClass}`}
+                style={{ color: equippedTier.color, borderColor: `${equippedTier.color}40`, background: `${equippedTier.color}12` }}
+              >
+                Ver XP
+              </button>
+              <div className="text-right">
+                <p className="text-[10px] text-zinc-500">Meta competitiva</p>
+                <p className="text-[11px] font-bold text-zinc-300">
+                  {nextTier ? `${nextTier.label} em ${Math.max(0, nextTier.min - meritScore)} pts` : "Tier máximo"}
+                </p>
+              </div>
             </div>
           </div>
           <div className="mt-2 h-2 rounded-full bg-zinc-900 overflow-hidden">
@@ -2392,6 +2411,186 @@ export default function StudentHome() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ===== MODAL: Score de Mérito / XP ===== */}
+      <AnimatePresence>
+        {showXpModal && (() => {
+          const TIER_ALL = [
+            { id: "tier-base",     min: 0,  label: "Base",     color: "#6B7280" },
+            { id: "tier-bronze",   min: 35, label: "Bronze",   color: "#CD7F32" },
+            { id: "tier-silver",   min: 50, label: "Prata",    color: "#C0C0C0" },
+            { id: "tier-gold",     min: 65, label: "Ouro",     color: "#EAB308" },
+            { id: "tier-platinum", min: 78, label: "Platina",  color: "#67E8F9" },
+            { id: "tier-diamond",  min: 88, label: "Diamante", color: "#60A5FA" },
+            { id: "tier-legend",   min: 96, label: "Lendário", color: "#A78BFA" },
+          ];
+          const tierProgressPct = nextTier
+            ? Math.round(Math.max(0, Math.min(100, ((meritScore - currentTier.min) / Math.max(1, nextTier.min - currentTier.min)) * 100)))
+            : 100;
+          const components = [
+            { label: "Qualidade técnica", weight: "35%", value: Math.round(Math.min(100, avgRating * 10)), color: "#EAB308", tip: "Melhorando a nota média das avaliações do professor." },
+            { label: "Frequência",        weight: "25%", value: frequency,                                  color: "#22C55E", tip: "Comparecendo a mais treinos por semana." },
+            { label: "Presença acumulada", weight: "20%", value: Math.round(Math.min(100, completedCount * 3)), color: "#60A5FA", tip: "Cada aula completada conta para esse score." },
+            { label: "Sequência ativa",   weight: "10%", value: Math.round(Math.min(100, streak * 8)),      color: "#F97316", tip: "Não quebre sua sequência de presença." },
+            { label: "Consistência semanal", weight: "10%", value: weeklyConsistency,                       color: "#A78BFA", tip: "Treinar nos dias previstos a cada semana." },
+          ];
+          return (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              role="dialog" aria-modal="true" data-modal-overlay aria-label="Score de Mérito XP"
+              className="fixed inset-0 z-[90] overflow-y-auto overscroll-y-contain bg-black/85 backdrop-blur-sm flex flex-col justify-end"
+              onClick={() => setShowXpModal(false)}
+            >
+              <motion.div
+                initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl mx-auto bg-[#0A0A0A] border-t border-zinc-800 rounded-t-3xl p-4 sm:p-6 max-h-[92dvh] flex flex-col shadow-[0_-24px_80px_rgba(0,0,0,0.55)]"
+              >
+                <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-5" />
+
+                {/* Header */}
+                <div className="sticky top-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-sm flex items-center justify-between mb-5 pb-2">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Medal className="w-5 h-5" style={{ color: currentTier.color }} />
+                    Score de Mérito
+                  </h2>
+                  <button onClick={() => setShowXpModal(false)} className={`p-2 hover:bg-zinc-900 rounded-xl text-zinc-500 ${FOCUS_RING_GOLD}`}>
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto space-y-4 no-scrollbar flex-1">
+                  {/* Score hero */}
+                  <div className="relative rounded-2xl overflow-hidden border p-5 flex items-center gap-5"
+                    style={{ borderColor: `${currentTier.color}30`, background: `linear-gradient(135deg,${currentTier.color}08,transparent)` }}>
+                    <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(ellipse at 0% 0%,${currentTier.color}12,transparent 55%)` }} />
+                    <div className="relative flex-shrink-0">
+                      <svg className="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#27272a" strokeWidth="2.5" />
+                        <motion.circle cx="18" cy="18" r="15.9" fill="none"
+                          stroke={currentTier.color} strokeWidth="2.5" strokeLinecap="round"
+                          strokeDasharray="100" strokeDashoffset={100 - meritScore}
+                          initial={{ strokeDashoffset: 100 }} animate={{ strokeDashoffset: 100 - meritScore }}
+                          transition={{ duration: 1.2, ease: "easeOut" }} />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <motion.p
+                          initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.3, type: "spring", stiffness: 300 }}
+                          className="text-2xl font-black tabular-nums" style={{ color: currentTier.color }}
+                        >
+                          {meritScore}
+                        </motion.p>
+                        <p className="text-[9px] text-zinc-500 font-bold">/ 100</p>
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="inline-block text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border mb-1.5"
+                        style={{ color: currentTier.color, borderColor: `${currentTier.color}40`, background: `${currentTier.color}12` }}>
+                        {currentTier.label}
+                      </span>
+                      <p className="text-sm font-bold text-white">{profile?.name?.split(" ")[0] || "Atleta"}</p>
+                      {nextTier ? (
+                        <>
+                          <p className="text-[11px] text-zinc-400 mt-1">
+                            Faltam <span className="font-bold" style={{ color: nextTier.color }}>{nextTier.min - meritScore} pts</span> para {nextTier.label}
+                          </p>
+                          <div className="mt-2 h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }} animate={{ width: `${tierProgressPct}%` }}
+                              transition={{ duration: 1, ease: "easeOut" }}
+                              className="h-full rounded-full"
+                              style={{ background: `linear-gradient(to right, ${currentTier.color}80, ${nextTier.color})` }}
+                            />
+                          </div>
+                          <p className="text-[9px] text-zinc-600 mt-1">{tierProgressPct}% do caminho para {nextTier.label}</p>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-[#A78BFA] font-bold mt-1">Tier máximo atingido!</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progressão de tiers */}
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3">Progressão de tiers</p>
+                    <div className="space-y-2">
+                      {TIER_ALL.map((tier, i) => {
+                        const isCurrentOrPast = meritScore >= tier.min;
+                        const isCurrent = tier.id === currentTier.id;
+                        const nextInList = TIER_ALL[i + 1];
+                        return (
+                          <div key={tier.id} className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
+                            isCurrent ? "border-zinc-600 bg-zinc-900/60" : "border-zinc-800/40"
+                          }`}>
+                            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: isCurrentOrPast ? tier.color : "#27272a" }} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-[11px] font-bold" style={{ color: isCurrentOrPast ? tier.color : "#52525b" }}>{tier.label}</p>
+                                {isCurrent && <span className="text-[9px] font-black text-black px-1.5 py-0.5 rounded-full" style={{ background: tier.color }}>atual</span>}
+                              </div>
+                              <p className="text-[9px] text-zinc-600">{nextInList ? `${tier.min}–${nextInList.min - 1} pts` : `${tier.min}+ pts`}</p>
+                            </div>
+                            {isCurrentOrPast && !isCurrent && <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: tier.color }} />}
+                            {isCurrent && (
+                              <span className="text-[10px] font-black tabular-nums" style={{ color: tier.color }}>{meritScore}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Breakdown dos componentes */}
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3">Como o score é calculado</p>
+                    <div className="space-y-3">
+                      {components.map((c) => (
+                        <div key={c.label}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-[11px] text-zinc-300">{c.label}</p>
+                              <span className="text-[9px] font-bold text-zinc-600">({c.weight})</span>
+                            </div>
+                            <p className="text-[11px] font-black tabular-nums" style={{ color: c.color }}>{c.value}</p>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-zinc-900 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }} animate={{ width: `${c.value}%` }}
+                              transition={{ duration: 0.9, ease: "easeOut" }}
+                              className="h-full rounded-full"
+                              style={{ background: `linear-gradient(to right, ${c.color}70, ${c.color})` }}
+                            />
+                          </div>
+                          <p className="text-[9px] text-zinc-700 mt-0.5">{c.tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Dica para subir */}
+                  {nextTier && (() => {
+                    const weakest = [...components].sort((a, b) => (a.value / 100) * parseFloat(a.weight) - (b.value / 100) * parseFloat(b.weight))[0]!;
+                    return (
+                      <div className="rounded-2xl border p-4" style={{ borderColor: `${nextTier.color}35`, background: `${nextTier.color}08` }}>
+                        <p className="text-[9px] font-bold uppercase tracking-wider mb-1.5" style={{ color: nextTier.color }}>
+                          Como chegar ao tier {nextTier.label}
+                        </p>
+                        <p className="text-[11px] text-zinc-200 leading-relaxed">
+                          Seu maior ganho vem de <span className="font-bold" style={{ color: weakest.color }}>{weakest.label.toLowerCase()}</span> — melhore esse componente para avançar mais rápido.
+                        </p>
+                        <p className="text-[9px] text-zinc-500 mt-1.5">{weakest.tip}</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </motion.div>
+    </>
   );
 }

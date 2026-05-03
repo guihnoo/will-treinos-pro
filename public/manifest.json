@@ -2,13 +2,15 @@
   "id": "/",
   "name": "Will Treinos PRO",
   "short_name": "WillPRO",
-  "description": "Plataforma de gestão de vôlei de alta performance",
+  "description": "Gestão e performance de vôlei de alto nível",
   "theme_color": "#000000",
   "background_color": "#000000",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/dashboard",
+  "categories": ["sports", "health", "fitness"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -27,6 +29,51 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-192-maskable.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/cockpit.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Cockpit do treinador com KPIs em tempo real"
+    },
+    {
+      "src": "/screenshots/student.svg",
+      "sizes": "390x844",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Dashboard do atleta com XP e conquistas"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Prancheta da Quadra",
+      "short_name": "Quadra",
+      "description": "Check-in e aulas de hoje",
+      "url": "/will/court",
+      "icons": [{ "src": "/icons/shortcut-court.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Gestão de Alunos",
+      "short_name": "Alunos",
+      "description": "Lista e aprovação de atletas",
+      "url": "/alunos",
+      "icons": [{ "src": "/icons/shortcut-students.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Feed da Equipe",
+      "short_name": "Feed",
+      "description": "Publicações e comunicados",
+      "url": "/feed",
+      "icons": [{ "src": "/icons/shortcut-feed.svg", "sizes": "96x96", "type": "image/svg+xml" }]
     }
   ]
 }

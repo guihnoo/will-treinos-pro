@@ -194,6 +194,29 @@ export interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+/** Envia push para todos os usuários de um role. Fire-and-forget — nunca lança exceção. */
+async function sendPushToRole(
+  role: "admin" | "professor" | "aluno",
+  payload: { title: string; body: string; url?: string }
+): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    await fetch("/api/push/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ payload, targetRole: role }),
+    });
+  } catch {
+    // push é best-effort — nunca interfere no fluxo principal
+  }
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authResolved, setAuthResolved] = useState(false);
@@ -840,6 +863,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         void loadSupabaseCriticalData().catch(() => {
           /* sincroniza notificação criada por trigger no Postgres */
         });
+
+        // Push para admin sobre novo aluno pendente
+        void sendPushToRole("admin", {
+          title: "Novo aluno aguardando aprovação",
+          body: `${created.name} se cadastrou e aguarda aprovação.`,
+          url: "/alunos",
+        });
+
         return created;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Falha ao criar aluno no Supabase.";
@@ -1301,6 +1332,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         time: "agora",
         read: false,
         studentId,
+      });
+
+      // Push notification para admin/professor (fire-and-forget, não bloqueia UX)
+      void sendPushToRole("admin", {
+        title: `✅ Check-in: ${studentName}`,
+        body: `Chegou às ${arrivedTime}. Confirme no app.`,
+        url: "/will/court",
       });
     },
     [usingSupabaseSession, students, addNotification],
