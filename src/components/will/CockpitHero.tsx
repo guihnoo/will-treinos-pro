@@ -72,7 +72,7 @@ export default function CockpitHero({
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]">WILL Cockpit</p>
             </div>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white sm:text-5xl drop-shadow-lg">Centro de Comando</h1>
+          <h1 className="break-words text-3xl font-black tracking-tight text-white sm:text-5xl drop-shadow-lg">Centro de Comando</h1>
           <p className="mt-2 text-sm text-zinc-400 font-medium">
             Resumo do que importa hoje — aprofunde nos modais ou na agenda completa.
           </p>

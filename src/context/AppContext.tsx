@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy } from "./types";
-import { LEGACY_BRIDGE } from "@/domain/v1/mockOrm";
 import { dueDateForBillingMonth, localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
 import {
   computeEffectiveRole,
@@ -134,25 +133,10 @@ export interface AppContextType {
   loginWithOAuth: (provider: Provider) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => void;
   // Data
-  venues: Venue[];
-  workHours: WorkHours;
   students: Student[];
   lessons: Lesson[];
   payments: Payment[];
   notifications: Notification[];
-  categories: LessonCategory[];
-  quickMessages: QuickMessage[];
-  feedbacks: PerformanceFeedback[];
-  trainingPlans: TrainingPlan[];
-  // CRUD — Categories
-  addCategory: (cat: WithoutId<LessonCategory>) => void;
-  updateCategory: (id: string, u: Partial<LessonCategory>) => void;
-  deleteCategory: (id: string) => void;
-  // CRUD — Venues
-  addVenue: (v: WithoutId<Venue>) => void;
-  updateVenue: (id: string, u: Partial<Venue>) => void;
-  deleteVenue: (id: string) => void;
-  setWorkHours: (wh: WorkHours) => void;
   // CRUD — Lessons
   addLesson: (l: WithoutId<Lesson>) => void;
   updateLesson: (id: string, u: Partial<Lesson>) => void;
@@ -180,9 +164,6 @@ export interface AppContextType {
   addNotification: (n: WithoutId<Notification>) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
-  // Feedback & Training
-  addFeedback: (fb: WithoutId<PerformanceFeedback>) => void;
-  addTrainingPlan: (plan: WithoutId<TrainingPlan>) => void;
   // Feed
   posts: Post[];
   addPost: (p: WithoutId<Post>) => void;
@@ -233,15 +214,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [adminMode, setAdminMode] = useState<"dashboard" | "coach">("dashboard");
   const [isMounted, setIsMounted] = useState(false);
   // Persisted state
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [workHours, setWorkHoursState] = useState<WorkHours>(LEGACY_BRIDGE.DEFAULT_WORK_HOURS);
   const [students, setStudents] = useState<Student[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [categories, setCategories] = useState<LessonCategory[]>([]);
-  const [feedbacks, setFeedbacks] = useState<PerformanceFeedback[]>([]);
-  const [trainingPlans, setTrainingPlans] = useState<TrainingPlan[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [appConfig, setAppConfig] = useState<AppConfig>({
     pixKey: "",
@@ -274,15 +250,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       wtLsSetString("version", LS_VERSION);
     }
     const tx = transactionalSeedDefaults();
-    setVenues(ls.get("venues", LEGACY_BRIDGE.DEFAULT_VENUES));
-    setWorkHoursState(ls.get("workHours", LEGACY_BRIDGE.DEFAULT_WORK_HOURS));
     setStudents(ls.get("students", tx.students));
     setLessons(ls.get("lessons", tx.lessons));
     setPayments(ls.get("payments", tx.payments));
     setNotifications(ls.get("notifications", tx.notifications));
-    setCategories(ls.get("categories", LEGACY_BRIDGE.DEFAULT_CATEGORIES));
-    setFeedbacks(ls.get("feedbacks", tx.feedbacks));
-    setTrainingPlans(ls.get("trainingPlans", tx.trainingPlans));
     setPosts(ls.get("posts", tx.posts));
     setAppConfig(
       ls.get("appConfig", {
@@ -304,8 +275,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [user, isMounted]);
 
   // Persist on change
-  useEffect(() => { if (isMounted) ls.set("venues", venues); }, [venues, isMounted]);
-  useEffect(() => { if (isMounted) ls.set("workHours", workHours); }, [workHours, isMounted]);
   useEffect(() => {
     if (isMounted && !usingSupabaseSession) ls.set("students", students);
   }, [students, isMounted, usingSupabaseSession]);
@@ -318,9 +287,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isMounted && !usingSupabaseSession) ls.set("notifications", notifications);
   }, [notifications, isMounted, usingSupabaseSession]);
-  useEffect(() => { if (isMounted) ls.set("categories", categories); }, [categories, isMounted]);
-  useEffect(() => { if (isMounted) ls.set("feedbacks", feedbacks); }, [feedbacks, isMounted]);
-  useEffect(() => { if (isMounted) ls.set("trainingPlans", trainingPlans); }, [trainingPlans, isMounted]);
   useEffect(() => {
     if (isMounted && !usingSupabaseSession) ls.set("posts", posts);
   }, [posts, isMounted, usingSupabaseSession]);
@@ -764,17 +730,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   }, [devImpersonation, applySupabaseSession, students, usingSupabaseSession]);
 
-  // ─── CATEGORIES CRUD ───
-  const addCategory = useCallback((c: WithoutId<LessonCategory>) => setCategories(p => [...p, { ...c, id: `cat_${uid()}` }]), []);
-  const updateCategory = useCallback((id: string, u: Partial<LessonCategory>) => setCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c)), []);
-  const deleteCategory = useCallback((id: string) => setCategories(p => p.filter(c => c.id !== id)), []);
-
-  // ─── VENUES CRUD ───
-  const addVenue = useCallback((v: WithoutId<Venue>) => setVenues(p => [...p, { ...v, id: `v_${uid()}` }]), []);
-  const updateVenue = useCallback((id: string, u: Partial<Venue>) => setVenues(p => p.map(v => v.id === id ? { ...v, ...u } : v)), []);
-  const deleteVenue = useCallback((id: string) => setVenues(p => p.filter(v => v.id !== id)), []);
-  const setWorkHours = useCallback((wh: WorkHours) => setWorkHoursState(wh), []);
-
   // ─── LESSONS CRUD ───
   const addLesson = useCallback((l: WithoutId<Lesson>) => {
     const next: Lesson = { ...l, id: `l_${uid()}` };
@@ -1096,11 +1051,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return submitStudentProofRemote(supabase, id, { note: payload.note, attachment: null });
         }
         if (payload.attachment?.file) {
-          const signedUrl = await uploadPaymentProofToStorage(supabase, currentAuthId, payload.attachment.file);
+          const storagePath = await uploadPaymentProofToStorage(supabase, currentAuthId, payload.attachment.file);
           return submitStudentProofRemote(supabase, id, {
             note: payload.note,
             attachment: {
-              url: signedUrl,
+              url: storagePath,
               fileName: payload.attachment.fileName,
               mime: payload.attachment.mime,
             },
@@ -1177,10 +1132,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return p.map((n) => ({ ...n, read: true }));
     });
   }, [usingSupabaseSession]);
-
-  // ─── FEEDBACK & TRAINING ───
-  const addFeedback = useCallback((fb: WithoutId<PerformanceFeedback>) => setFeedbacks(p => [...p, { ...fb, id: `fb_${uid()}` }]), []);
-  const addTrainingPlan = useCallback((plan: WithoutId<TrainingPlan>) => setTrainingPlans(p => [...p, { ...plan, id: `tp_${uid()}` }]), []);
 
   // ─── FEED POSTS ───
   const addPost = useCallback((p: WithoutId<Post>) => {
@@ -1289,79 +1240,147 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ─── CHECK-IN (legacy) ───
   const checkInStudent = useCallback((lessonId: string, studentId: string, present: boolean) => {
-    setLessons(p => p.map(l => {
-      if (l.id !== lessonId) return l;
-      const ps = present ? [...new Set([...l.presentStudents, studentId])] : l.presentStudents.filter(id => id !== studentId);
-      const as_ = !present ? [...new Set([...l.absentStudents, studentId])] : l.absentStudents.filter(id => id !== studentId);
-      return { ...l, presentStudents: ps, absentStudents: as_ };
-    }));
-  }, []);
+    let remotePatch: Partial<Lesson> | null = null;
+    setLessons((p) =>
+      p.map((l) => {
+        if (l.id !== lessonId) return l;
+        const ps = present ? [...new Set([...l.presentStudents, studentId])] : l.presentStudents.filter((id) => id !== studentId);
+        const as_ = !present ? [...new Set([...l.absentStudents, studentId])] : l.absentStudents.filter((id) => id !== studentId);
+        remotePatch = { presentStudents: ps, absentStudents: as_ };
+        return { ...l, presentStudents: ps, absentStudents: as_ };
+      }),
+    );
+    if (!usingSupabaseSession || !remotePatch) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setCriticalDataError("Cliente Supabase indisponível para registrar presença.");
+      return;
+    }
+    void updateLessonRemote(supabase, lessonId, remotePatch).catch((error) =>
+      setCriticalDataError(error instanceof Error ? error.message : "Falha ao sincronizar presença na aula."),
+    );
+  }, [usingSupabaseSession]);
 
   // ─── CHECK-IN PROFISSIONAL ───
-  const requestCheckIn = useCallback((lessonId: string, studentId: string) => {
-    const arrivedAt = new Date().toISOString();
-    const arrivedTime = new Date(arrivedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    setLessons(p => p.map(l => {
-      if (l.id !== lessonId) return l;
-      const existing = (l.checkInRequests || []).find(r => r.studentId === studentId);
-      if (existing) return l;
-      const req = { studentId, arrivedAt, status: "pending" as const };
-      return { ...l, checkInRequests: [...(l.checkInRequests || []), req] };
-    }));
-    // Grab student name from students array for the notification
-    setStudents(prev => {
-      const studentName = prev.find(s => s.id === studentId)?.name || "Aluno";
-      setNotifications(notifs => [{
-        id: `n_${Date.now()}`,
-        type: "message" as const,
+  const requestCheckIn = useCallback(
+    (lessonId: string, studentId: string) => {
+      const arrivedAt = new Date().toISOString();
+      const arrivedTime = new Date(arrivedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      const studentName = students.find((s) => s.id === studentId)?.name || "Aluno";
+
+      let added: { checkInRequests: NonNullable<Lesson["checkInRequests"]> } | null = null;
+      setLessons((p) =>
+        p.map((l) => {
+          if (l.id !== lessonId) return l;
+          const existing = (l.checkInRequests || []).find((r) => r.studentId === studentId);
+          if (existing) return l;
+          const req = { studentId, arrivedAt, status: "pending" as const };
+          const checkInRequests = [...(l.checkInRequests || []), req];
+          added = { checkInRequests };
+          return { ...l, checkInRequests };
+        }),
+      );
+
+      if (!added) return;
+
+      if (usingSupabaseSession) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          void updateLessonRemote(supabase, lessonId, { checkInRequests: added.checkInRequests }).catch((error) =>
+            setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar check-in no Supabase."),
+          );
+        } else {
+          setCriticalDataError("Cliente Supabase indisponível para registrar check-in.");
+        }
+      }
+
+      addNotification({
+        type: "message",
         title: `✅ Check-in: ${studentName}`,
         message: `${studentName} registrou chegada às ${arrivedTime}. Confirme a presença no app.`,
         time: "agora",
         read: false,
         studentId,
-        // No recipientId and no isGlobal = visible ONLY to admin/coach
-      }, ...notifs]);
-      return prev; // don't change students array
-    });
-  }, []);
+      });
+    },
+    [usingSupabaseSession, students, addNotification],
+  );
 
   const approveCheckIn = useCallback((lessonId: string, studentId: string, approvedBy: string) => {
     const approvedAt = new Date().toISOString();
-    setLessons(p => p.map(l => {
-      if (l.id !== lessonId) return l;
-      const reqs = (l.checkInRequests || []).map(r =>
-        r.studentId === studentId ? { ...r, status: "approved" as const, approvedAt, approvedBy } : r
-      );
-      // Also add to presentStudents when approved
-      const ps = [...new Set([...l.presentStudents, studentId])];
-      return { ...l, checkInRequests: reqs, presentStudents: ps };
-    }));
-  }, []);
+    let patch: Partial<Lesson> | null = null;
+    setLessons((p) =>
+      p.map((l) => {
+        if (l.id !== lessonId) return l;
+        const reqs = (l.checkInRequests || []).map((r) =>
+          r.studentId === studentId ? { ...r, status: "approved" as const, approvedAt, approvedBy } : r,
+        );
+        const ps = [...new Set([...l.presentStudents, studentId])];
+        patch = { checkInRequests: reqs, presentStudents: ps };
+        return { ...l, checkInRequests: reqs, presentStudents: ps };
+      }),
+    );
+    if (!patch || !usingSupabaseSession) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setCriticalDataError("Cliente Supabase indisponível para aprovar check-in.");
+      return;
+    }
+    void updateLessonRemote(supabase, lessonId, patch).catch((error) =>
+      setCriticalDataError(error instanceof Error ? error.message : "Falha ao sincronizar aprovação de check-in."),
+    );
+  }, [usingSupabaseSession]);
 
   const rejectCheckIn = useCallback((lessonId: string, studentId: string) => {
-    setLessons(p => p.map(l => {
-      if (l.id !== lessonId) return l;
-      const reqs = (l.checkInRequests || []).map(r =>
-        r.studentId === studentId ? { ...r, status: "rejected" as const } : r
-      );
-      return { ...l, checkInRequests: reqs };
-    }));
-  }, []);
+    let patch: Partial<Lesson> | null = null;
+    setLessons((p) =>
+      p.map((l) => {
+        if (l.id !== lessonId) return l;
+        const reqs = (l.checkInRequests || []).map((r) =>
+          r.studentId === studentId ? { ...r, status: "rejected" as const } : r,
+        );
+        patch = { checkInRequests: reqs };
+        return { ...l, checkInRequests: reqs };
+      }),
+    );
+    if (!patch || !usingSupabaseSession) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setCriticalDataError("Cliente Supabase indisponível para rejeitar check-in.");
+      return;
+    }
+    void updateLessonRemote(supabase, lessonId, patch).catch((error) =>
+      setCriticalDataError(error instanceof Error ? error.message : "Falha ao sincronizar rejeição de check-in."),
+    );
+  }, [usingSupabaseSession]);
 
   const endClassCheckIn = useCallback((lessonId: string, studentId: string) => {
     const finishedAt = new Date().toISOString();
-    setLessons(p => p.map(l => {
-      if (l.id !== lessonId) return l;
-      const reqs = (l.checkInRequests || []).map(r => {
-        if (r.studentId !== studentId || r.status !== "approved") return r;
-        const start = new Date(r.arrivedAt).getTime();
-        const end = new Date(finishedAt).getTime();
-        const duration = Math.round((end - start) / 60000); // minutes
-        return { ...r, finishedAt, duration };
-      });
-      return { ...l, checkInRequests: reqs };
-    }));
-  }, []);
+    let patch: Partial<Lesson> | null = null;
+    setLessons((p) =>
+      p.map((l) => {
+        if (l.id !== lessonId) return l;
+        const reqs = (l.checkInRequests || []).map((r) => {
+          if (r.studentId !== studentId || r.status !== "approved") return r;
+          const start = new Date(r.arrivedAt).getTime();
+          const end = new Date(finishedAt).getTime();
+          const duration = Math.round((end - start) / 60000); // minutes
+          return { ...r, finishedAt, duration };
+        });
+        patch = { checkInRequests: reqs };
+        return { ...l, checkInRequests: reqs };
+      }),
+    );
+    if (!patch || !usingSupabaseSession) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setCriticalDataError("Cliente Supabase indisponível para encerrar check-in.");
+      return;
+    }
+    void updateLessonRemote(supabase, lessonId, patch).catch((error) =>
+      setCriticalDataError(error instanceof Error ? error.message : "Falha ao sincronizar término de check-in."),
+    );
+  }, [usingSupabaseSession]);
 
   // ─── APP CONFIG (PIX) ───
   const updateAppConfig = useCallback((patch: Partial<AppConfig>) => {
@@ -1373,14 +1392,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       user, authResolved, authError, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync,
       isDevRoot, devImpersonation, setDevImpersonation,
       adminMode, setAdminMode, login: loginUser, loginWithPassword, loginWithOAuth, logout,
-      venues, workHours, students, lessons, payments, notifications, categories,
-      quickMessages: LEGACY_BRIDGE.MOCK_QUICK_MESSAGES, feedbacks, trainingPlans,
-      addCategory, updateCategory, deleteCategory,
-      addVenue, updateVenue, deleteVenue, setWorkHours,
+      students, lessons, payments, notifications,
       addLesson, updateLesson, deleteLesson, addToWaitlist, promoteFromWaitlist,
       addStudent, approveStudent, suspendStudent, updateStudent, seedPendingTuitionForStudent,
       markPayment, submitStudentPaymentProof, addNotification, markNotificationRead, markAllNotificationsRead,
-      addFeedback, addTrainingPlan, checkInStudent,
+      checkInStudent,
       requestCheckIn, approveCheckIn, rejectCheckIn, endClassCheckIn,
       appConfig, updateAppConfig,
       posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
