@@ -11,7 +11,11 @@ import {
   setStaffOAuthGateOk,
   clearStaffOAuthGate,
 } from "@/lib/enrollmentSession";
-import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionSet } from "@/lib/willLocalStorage";
+import {
+  WT_SESSION_DEV_IMPERSONATION_KEY,
+  WT_SESSION_POST_LOGIN_NEXT_KEY,
+  wtSessionSet,
+} from "@/lib/willLocalStorage";
 
 function sanitizeNextPath(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -52,11 +56,17 @@ function LoginPageContent() {
   const handleStaffCardClick = (role: StaffRole) => {
     setSelectedRole(role);
     setStaffOAuthGateOk(); // unlocks Google OAuth for staff
+    if (typeof window !== "undefined") {
+      wtSessionSet(WT_SESSION_DEV_IMPERSONATION_KEY, role);
+    }
     setStage("staff-auth");
   };
 
   // Athlete click → show invite gate message
   const handleAthleteClick = () => {
+    if (typeof window !== "undefined") {
+      wtSessionSet(WT_SESSION_DEV_IMPERSONATION_KEY, "aluno");
+    }
     setStage("athlete-gate");
   };
 
@@ -355,13 +365,27 @@ function LoginPageContent() {
                 <span className="text-5xl mb-4 block">🏆</span>
                 <h2 className="text-xl font-bold text-white mb-3">Atleta VIP</h2>
                 <p className="text-sm text-white/50 leading-relaxed mb-6">
-                  O acesso de atleta é <strong className="text-yellow-400">exclusivo por convite</strong>.<br />
-                  Solicite ao seu treinador o link de matrícula.
+                  Você pode <strong className="text-yellow-400">criar sua conta com Google</strong>, preencher seus dados e aguardar a aprovação do administrador — sem precisar de link de convite.
+                </p>
+                {supabaseReady && (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.01 }}
+                    onClick={() => void handleOAuthLogin("google")}
+                    disabled={isSubmitting}
+                    className="w-full flex items-center justify-center gap-3 py-3 rounded-lg font-semibold text-sm mb-4 transition-all disabled:opacity-40"
+                    style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
+                  >
+                    {isSubmitting ? "Conectando…" : "Criar conta com Google"}
+                  </motion.button>
+                )}
+                <p className="text-[11px] text-white/35 mb-4">
+                  Preferir o formulário completo de matrícula? Use o cadastro oficial abaixo quando disponível.
                 </p>
                 <div className="rounded-lg p-4 mb-4"
                   style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.15)" }}>
                   <p className="text-xs text-yellow-400/80">
-                    Já tem um link de convite? Acesse-o diretamente pelo navegador.
+                    Se o seu treinador enviou um link de convite, abra-o neste navegador antes de cadastrar.
                   </p>
                 </div>
                 {process.env.NEXT_PUBLIC_SHOW_PUBLIC_CADASTRO_LINK === "true" && (

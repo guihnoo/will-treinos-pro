@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import type { User, Role, Venue, WorkHours, LessonCategory, Student, StudentRole, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy } from "./types";
 import {
   isDevRootEmail,
+  readDevImpersonationFromStorage,
   type DevImpersonation,
 } from "@/lib/authPostLogin";
 
@@ -232,9 +233,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (authUser: SupabaseAuthUser, catalogStudents?: Student[]) => {
       supabaseAuthUserRef.current = authUser;
       const supabase = getSupabaseClient();
+      // OAuth retorna na mesma SPA sem remount — ler sempre o último cartão (login) em vez do estado inicial.
+      const impersonationNow = readDevImpersonationFromStorage();
+      setDevImpersonationState(impersonationNow);
       const effectiveRole = await resolveEffectiveSupabaseRole(
         authUser,
-        devImpersonation,
+        impersonationNow,
         supabase,
         catalogStudents,
       );
@@ -268,7 +272,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       syncWtRoleCookie(mergedUser.role);
     },
-    [devImpersonation],
+    [],
   );
 
   const setDevImpersonation = useCallback((role: DevImpersonation) => {
