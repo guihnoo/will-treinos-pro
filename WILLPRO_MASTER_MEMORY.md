@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/05/2026 ~05:15 BRT] (Cursor):** **P1 — `useLoadSupabaseCriticalData`** — Novo `src/hooks/useLoadSupabaseCriticalData.ts`: single-flight + listas vazias no sync bloqueante + `loadCriticalLiveBundle` + `applySupabaseSession` (fire-and-forget) + `runEnrollmentInviteSync` + `retryCriticalDataSync`. `AppContext` deixa de importar `loadCriticalLiveBundle`, `runEnrollmentInviteSync` e `filterDemoNotifications` para este fluxo. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
+
 - **[03/05/2026 ~05:00 BRT] (Cursor):** **P1 — `useEnrollmentInviteSideEffects`** — Novo `src/hooks/useEnrollmentInviteSideEffects.ts`: (1) offline gera `enrollmentInviteCode` com `generateNewEnrollmentInviteCode`; (2) com sessão Supabase, debounce 800ms e `upsertEnrollmentInviteRemote`. `AppContext`: removidos imports de `generateNewEnrollmentInviteCode` e `upsertEnrollmentInviteRemote`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
 
 - **[03/05/2026 ~04:45 BRT] (Cursor):** **P1 — `useLocalTransactionalPersistence`** — Novo `src/hooks/useLocalTransactionalPersistence.ts`: um único `useEffect` replica os 6 anteriores (`students`–`posts` só sem sessão Supabase; `appConfig` sempre com `isMounted`). Qualquer mudança num slice regrava os cinco arrays locais de uma vez (mais `JSON.stringify` que com efeitos separados; estado final em LS equivalente). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).

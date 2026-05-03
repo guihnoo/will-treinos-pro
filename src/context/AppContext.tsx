@@ -44,17 +44,15 @@ import {
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
-import { runEnrollmentInviteSync } from "@/lib/enrollmentInviteSync";
 import { willUid } from "@/lib/willUid";
-import { loadCriticalLiveBundle } from "@/lib/loadCriticalLiveBundle";
 import { useSupabaseRealtimeRefresh } from "@/hooks/useSupabaseRealtimeRefresh";
 import { useSupabaseAuthBridge } from "@/hooks/useSupabaseAuthBridge";
 import { useLocalTransactionalPersistence } from "@/hooks/useLocalTransactionalPersistence";
 import { useEnrollmentInviteSideEffects } from "@/hooks/useEnrollmentInviteSideEffects";
+import { useLoadSupabaseCriticalData } from "@/hooks/useLoadSupabaseCriticalData";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
   clearWtRoleCookie,
-  filterDemoNotifications,
   syncWtRoleCookie,
 } from "@/lib/appSessionHelpers";
 import { sendPushToRole } from "@/lib/pushRoleBroadcast";
@@ -301,69 +299,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const isDevRoot = useMemo(() => isDevRootEmail(user?.email), [user?.email]);
 
-  const loadSupabaseCriticalData = useCallback(
-    async (options?: { forceBlocking?: boolean }) => {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        setCriticalDataError("Cliente Supabase indisponível.");
-        criticalBootstrapDoneRef.current = true;
-        return;
-      }
-
-      if (criticalLoadInflightRef.current) {
-        await criticalLoadInflightRef.current;
-        return;
-      }
-
-      const forceBlocking = options?.forceBlocking === true;
-      const blockingSpinner = forceBlocking || !criticalBootstrapDoneRef.current;
-
-      const promise = (async () => {
-        if (blockingSpinner) setCriticalDataLoading(true);
-        setCriticalDataError(null);
-        // Só zera listas no primeiro sync bloqueante; refresh em background (ex.: TOKEN_REFRESHED) não deve esvaziar o cockpit.
-        if (blockingSpinner) {
-          setStudents([]);
-          setPayments([]);
-          setLessons([]);
-          setNotifications([]);
-          setPosts([]);
-        }
-        try {
-          const currentUserId = supabaseAuthUserRef.current?.id || "";
-          const { data, livePosts } = await loadCriticalLiveBundle(supabase, currentUserId);
-          setStudents(data.students);
-          setPayments(data.payments);
-          setLessons(data.lessons);
-          setNotifications(filterDemoNotifications(data.notifications));
-          setPosts(livePosts);
-          if (supabaseAuthUserRef.current) {
-            applySupabaseSession(supabaseAuthUserRef.current, data.students);
-          }
-          await runEnrollmentInviteSync(supabase, setAppConfig);
-        } catch (error) {
-          setCriticalDataError(
-            error instanceof Error ? error.message : "Falha ao sincronizar dados ao vivo com Supabase.",
-          );
-        } finally {
-          if (blockingSpinner) setCriticalDataLoading(false);
-          criticalBootstrapDoneRef.current = true;
-        }
-      })();
-
-      criticalLoadInflightRef.current = promise;
-      try {
-        await promise;
-      } finally {
-        criticalLoadInflightRef.current = null;
-      }
-    },
-    [applySupabaseSession],
-  );
-
-  const retryCriticalDataSync = useCallback(async () => {
-    await loadSupabaseCriticalData({ forceBlocking: true });
-  }, [loadSupabaseCriticalData]);
+  const { loadSupabaseCriticalData, retryCriticalDataSync } = useLoadSupabaseCriticalData({
+    applySupabaseSession,
+    supabaseAuthUserRef,
+    criticalBootstrapDoneRef,
+    criticalLoadInflightRef,
+    setCriticalDataLoading,
+    setCriticalDataError,
+    setStudents,
+    setPayments,
+    setLessons,
+    setNotifications,
+    setPosts,
+    setAppConfig,
+  });
 
   useSupabaseAuthBridge({
     isMounted,
