@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "supabase",
+        "mcp"
+      ],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+      },
+      "description": "Supabase database, auth, storage, realtime, edge functions"
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub repository management, PRs, issues, discussions"
+    },
+    "posthog": {
+      "command": "npx",
+      "args": [
+        "posthog-mcp"
+      ],
+      "env": {
+        "POSTHOG_API_KEY": "${POSTHOG_API_KEY}",
+        "POSTHOG_PROJECT_ID": "${POSTHOG_PROJECT_ID}"
+      },
+      "description": "PostHog analytics, feature flags, A/B testing, session replay"
+    }
+  },
+  "notes": {
+    "setup": "Cada MCP requer env vars configuradas em .env.local (nunca commit secrets)",
+    "activation": "MCPs ficam disponíveis quando Claude Code é iniciado com 'claude' no terminal",
+    "usage": "Pergunte: 'Query Supabase para...' ou 'Crie feature flag PostHog para...'",
+    "credentials": {
+      "SUPABASE_URL": "https://[project].supabase.co",
+      "SUPABASE_SERVICE_ROLE_KEY": "Obter em Supabase Dashboard > Settings > API Keys",
+      "GITHUB_TOKEN": "Criar em GitHub > Settings > Developer settings > Personal access tokens",
+      "POSTHOG_API_KEY": "Obter em PostHog project > Settings > API Keys"
+    }
+  }
+}

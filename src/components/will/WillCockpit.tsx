@@ -39,6 +39,7 @@ import AppEmptyState from "@/components/ui/AppEmptyState";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import KpiActionCard from "@/components/ui/KpiActionCard";
 import CockpitHero from "./CockpitHero";
+import OracleInsights from "./OracleInsights";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -96,7 +97,7 @@ export default function WillCockpit() {
   const { payments, pendingOrLatePaymentsCount, currentMonthReference, currentMonthBuckets } = usePayments();
   const { appConfig, cadastroPath, cadastroInviteUrl, generateEnrollmentInviteCode } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
-  const { user } = useAuth();
+  const { user, isLive } = useAuth();
   const { lessons, todayLessons, todayEnrolledCount } = useLessons();
   const {
     students,
@@ -164,6 +165,44 @@ export default function WillCockpit() {
   const awaitingApproval = approvalQueue.length;
   const athletesToday = todayEnrolledCount;
   const pendingPaymentsCount = pendingOrLatePaymentsCount;
+
+  const oracleCtx = useMemo(() => {
+    const activeStudents = students.filter((s) => s.status === "active");
+    const now2 = new Date();
+    const fourteenDaysAgo = new Date(now2.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const recentStudentIds = new Set(
+      lessons
+        .filter((l) => l.status !== "cancelled" && new Date(`${l.date}T00:00:00`) >= fourteenDaysAgo)
+        .flatMap((l) => l.enrolledStudents),
+    );
+    const inactiveStudents = activeStudents.filter((s) => !recentStudentIds.has(s.id)).length;
+    const lastMonthRef = (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    })();
+    const lastMonthRevenue = payments
+      .filter((p) => p.status === "paid" && p.reference === lastMonthRef)
+      .reduce((sum, p) => sum + p.amount, 0);
+    const weekStart = new Date(now2);
+    weekStart.setDate(now2.getDate() - now2.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekLessons = lessons.filter((l) => {
+      if (l.status === "cancelled") return false;
+      return new Date(`${l.date}T${l.startTime}:00`) >= weekStart;
+    }).length;
+    return {
+      totalStudents: activeStudents.length,
+      inactiveStudents,
+      pendingPayments: pendingPaymentsCount,
+      monthRevenue: currentMonthBuckets.paid,
+      lastMonthRevenue,
+      weekLessons,
+      awaitingApproval,
+      avgRating: null,
+    };
+  }, [students, payments, lessons, pendingPaymentsCount, currentMonthBuckets.paid, awaitingApproval]);
+
   const filteredApprovalQueue = useMemo(() => {
     const normalizedSearch = approvalSearch.trim().toLowerCase();
     const byFilter = approvalFilter === "all" ? approvalQueue : approvalQueue.filter((s) => s.status === approvalFilter);
@@ -336,6 +375,7 @@ export default function WillCockpit() {
         variants={itemV}
         user={user}
         timeGreeting={timeGreeting}
+        isLive={isLive}
         showPixWarning={Boolean(user.role && user.role !== "aluno" && !appConfig.pixKey?.trim())}
         onConfigurePix={() => {
           haptic(12);
@@ -349,6 +389,12 @@ export default function WillCockpit() {
         resolverHint={resolverHint}
         onResolver={handleCockpitResolver}
       />
+
+      <motion.div variants={itemV}>
+        <div className="rounded-2xl border border-white/[0.06] bg-[#050505]/70 px-4 py-4 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+          <OracleInsights ctx={oracleCtx} />
+        </div>
+      </motion.div>
 
       <motion.div variants={itemV}>
         <Link

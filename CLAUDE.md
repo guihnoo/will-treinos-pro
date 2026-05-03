@@ -50,6 +50,69 @@ Na primeira vez, o CLI pede login (conta Anthropic / plano). **Créditos** são 
 
 ---
 
+## ⚙️ SKILLS & EQUIPAMENTOS INSTALADOS
+
+**Status:** ✅ TOTALMENTE EQUIPADO (2026-05-03 01:45 BRT)
+
+Instaladas **200+ skills** em `~/.claude/skills/` agrupadas por prioridade e função:
+
+### **🔴 TIER 1 — CORE DO PROJETO**
+
+| Package | Skills | Propósito |
+|---------|--------|----------|
+| **`nextjs-skills/`** | 57+ rules | Performance React/Next.js, Server Components, App Router |
+| **`supabase-skills/`** | API ops | Queries RLS, Auth, Storage, Realtime, Edge Functions |
+| **`supabase-official/`** | Oficial SB | Fallback + referência das melhores práticas |
+| **`nextjs-evals/`** | Proof-of-concept | Next.js evaluation patterns (padrões de teste) |
+| **`will-gamification/`** | XP · Cards · Check-in | Motor assimétrico, anti-cheat, ranking (customizado) |
+
+### **🟠 TIER 2 — QUALIDADE & ENTREGA**
+
+| Package | Skills | Propósito |
+|---------|--------|----------|
+| **`anthropic-official-skills/`** | 18+ skills | Skills oficiais da Anthropic (webapp-testing, pdf, etc) |
+| **`levnik-complete-suite/`** | 50+ MCP servers | Full delivery lifecycle: audit, perf, test, ci-cd |
+| **`alireza-232-skills/`** | 232+ curated | Mega-pack: database design, testing, github actions, ci-cd |
+
+### **🟡 TIER 3 — EXTRAS & REFERÊNCIA**
+
+| Package | Skills | Propósito |
+|---------|--------|----------|
+| **`vercel-ai-sdk/`** | SDK + examples | Vercel AI SDK patterns (context para AI integrations) |
+
+### **⚡ ATIVAÇÃO RECOMENDADA**
+
+**Por contexto (máx. 3 skills)**
+
+```
+Fluxo típico:
+→ "/nextjs-skills" ou "/supabase-skills" (auto-ativadas por relevância)
+→ Pergunte sobre qualidade: "/webapp-testing", "/audit"
+→ Database: "/alireza-232-skills" (database-design skill)
+→ CI/CD: "/levnik-complete-suite" (github-actions, ci-cd)
+```
+
+**Ordem de prioridade para discovery automático:**
+1. `will-gamification` (custom Will)
+2. `nextjs-skills` (core)
+3. `supabase-skills` (core)
+4. `anthropic-official-skills` (quality)
+5. `levnik-complete-suite` (delivery)
+
+---
+
+## 🛠️ PRÓXIMAS CAMADAS ✅ COMPLETAS
+
+- ✅ **Cursor Rules** — Dark + Gold + TypeScript strict (em `.cursor/rules/will-treinos-style.md`)
+- ✅ **MCP Servers** — Supabase · PostHog · GitHub (em `.claude/mcp.json`)
+- ✅ **Gamification Skill** — Motor de XP, check-in, cards (em `.claude/skills/will-gamification/`)
+- ✅ **Performance Auditing** — Bundle size, Core Web Vitals (skills officiais + levnik suite)
+- ✅ **Database Design** — RLS, schemas, indexes (alireza 232-skills)
+- ✅ **Testing Framework** — Jest + Playwright (webapp-testing + levnik suite)
+- ✅ **CI/CD Pipeline** — GitHub Actions (levnik + alireza suites)
+
+---
+
 ## 🧭 MENTALIDADE CENTRAL (Leia isso antes de qualquer coisa)
 
 > Você é um **Parceiro de Produto**, não um executor de tarefas.

@@ -47,6 +47,7 @@ import {
   updateLessonRemote,
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
+import { logDevEvent } from "@/lib/devEventsLogger";
 import type { Provider, User as SupabaseAuthUser } from "@supabase/supabase-js";
 
 const secureCookieAttr = () =>
@@ -126,6 +127,7 @@ export interface AppContextType {
   criticalDataError: string | null;
   /** Reexecuta fetch ao vivo (Supabase) após falha ou timeout; não altera sessão. */
   retryCriticalDataSync: () => Promise<void>;
+  isLive: boolean;
   adminMode: "dashboard" | "coach";
   setAdminMode: (m: "dashboard" | "coach") => void;
   login: (role: Role) => void;
@@ -224,6 +226,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [usingSupabaseSession, setUsingSupabaseSession] = useState(false);
   const [criticalDataLoading, setCriticalDataLoading] = useState(false);
   const [criticalDataError, setCriticalDataError] = useState<string | null>(null);
+  const [isLive, setIsLive] = useState(false);
   const [devImpersonation, setDevImpersonationState] = useState<DevImpersonation>(() => {
     if (typeof window === "undefined") return "admin";
     const v = wtSessionGet(WT_SESSION_DEV_IMPERSONATION_KEY);
@@ -794,7 +797,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     void createLessonRemote(supabase, next)
-      .then((created) => setLessons((p) => [...p, created]))
+      .then((created) => {
+        setLessons((p) => [...p, created]);
+        void logDevEvent("lesson_created", "lesson", created.id, {
+          venueId: created.venueId,
+          lessonType: created.lessonType,
+          maxStudents: created.maxStudents,
+        });
+      })
       .catch((error) =>
         setCriticalDataError(error instanceof Error ? error.message : "Falha ao criar aula no Supabase."),
       );
@@ -899,6 +909,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           url: "/alunos",
         });
 
+        // Log evento para monitoramento
+        void logDevEvent("student_created", "student", created.id, {
+          name: created.name,
+          email: created.email,
+          status: created.status,
+        });
+
         return created;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Falha ao criar aluno no Supabase.";
@@ -919,7 +936,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     void updateStudentRemote(supabase, id, { status: "active" })
-      .then((updated) => setStudents((p) => p.map((s) => (s.id === id ? updated : s))))
+      .then((updated) => {
+        setStudents((p) => p.map((s) => (s.id === id ? updated : s)));
+        void logDevEvent("student_approved", "student", id, { name: updated.name });
+      })
       .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao aprovar aluno."));
   }, [usingSupabaseSession]);
   const suspendStudent = useCallback((id: string) => {
@@ -933,7 +953,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     void updateStudentRemote(supabase, id, { status: "suspended" })
-      .then((updated) => setStudents((p) => p.map((s) => (s.id === id ? updated : s))))
+      .then((updated) => {
+        setStudents((p) => p.map((s) => (s.id === id ? updated : s)));
+        void logDevEvent("student_suspended", "student", id, { name: updated.name });
+      })
       .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao suspender aluno."));
   }, [usingSupabaseSession]);
 
@@ -1053,7 +1076,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     void markPaymentPaidRemote(supabase, id)
-      .then((updated) => setPayments((p) => p.map((py) => (py.id === id ? updated : py))))
+      .then((updated) => {
+        setPayments((p) => p.map((py) => (py.id === id ? updated : py)));
+        void logDevEvent("payment_marked", "payment", id, {
+          studentId: updated.studentId,
+          amount: updated.amount,
+          method: updated.method,
+        });
+      })
       .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao confirmar pagamento."));
   }, [usingSupabaseSession]);
   const submitStudentPaymentProof = useCallback(
@@ -1345,9 +1375,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (usingSupabaseSession) {
         const supabase = getSupabaseClient();
         if (supabase) {
-          void updateLessonRemote(supabase, lessonId, { checkInRequests: added.checkInRequests }).catch((error) =>
-            setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar check-in no Supabase."),
-          );
+          void updateLessonRemote(supabase, lessonId, { checkInRequests: added.checkInRequests })
+            .then(() => {
+              void logDevEvent("check_in_requested", "check_in", studentId, {
+                lessonId,
+                studentName,
+              });
+            })
+            .catch((error) =>
+              setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar check-in no Supabase."),
+            );
         } else {
           setCriticalDataError("Cliente Supabase indisponível para registrar check-in.");
         }

@@ -22,6 +22,7 @@ type AuthContextValue = {
   loginWithOAuth: (provider: Provider) => Promise<OAuthResult>;
   logout: () => void;
   updateUser: (id: string, updates: Partial<User>) => void;
+  isLive: boolean;
   adminMode: "dashboard" | "coach";
   setAdminMode: (m: "dashboard" | "coach") => void;
   isDevRoot: boolean;
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loginWithOAuth: app.loginWithOAuth,
       logout: app.logout,
       updateUser: app.updateUser,
+      isLive: app.isLive,
       adminMode: app.adminMode,
       setAdminMode: app.setAdminMode,
       isDevRoot: app.isDevRoot,
@@ -60,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       app.loginWithOAuth,
       app.logout,
       app.updateUser,
+      app.isLive,
       app.adminMode,
       app.setAdminMode,
       app.isDevRoot,

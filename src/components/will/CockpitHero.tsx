@@ -17,6 +17,7 @@ export type CockpitHeroProps = {
   variants: Variants;
   user: Pick<User, "name" | "avatar" | "role">;
   timeGreeting: string;
+  isLive?: boolean;
   showPixWarning: boolean;
   onConfigurePix: () => void;
   awaitingApproval: number;
@@ -32,6 +33,7 @@ export default function CockpitHero({
   variants,
   user,
   timeGreeting,
+  isLive = false,
   showPixWarning,
   onConfigurePix,
   awaitingApproval,
@@ -71,6 +73,15 @@ export default function CockpitHero({
             <div className="inline-flex items-center gap-2 rounded-full border border-[#EAB308]/40 bg-[#EAB308]/10 px-3 py-1.5 shadow-[0_0_15px_rgba(234,179,8,0.15)]">
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]">WILL Cockpit</p>
             </div>
+            {isLive && (
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-green-400">Ao Vivo</p>
+              </div>
+            )}
           </div>
           <h1 className="break-words text-3xl font-black tracking-tight text-white sm:text-5xl drop-shadow-lg">Centro de Comando</h1>
           <p className="mt-2 text-sm text-zinc-400 font-medium">
