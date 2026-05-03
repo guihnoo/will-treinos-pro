@@ -344,6 +344,7 @@ git push origin main
 | `/xp` | Alinhar lógica de XP / gamificação |
 | `/modal` | Novo fluxo modal-first |
 | `/migration` | Orientar migração Supabase |
+| `/bootstrap-access` | Diagnóstico staff_access + RLS aluno OAuth + superprompt |
 | `/log` | Lembrar registro no Master Memory |
 
 ---
