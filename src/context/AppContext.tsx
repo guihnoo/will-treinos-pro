@@ -48,70 +48,16 @@ import {
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { logDevEvent } from "@/lib/devEventsLogger";
+import {
+  CRITICAL_DATA_FETCH_TIMEOUT_MS,
+  clearWtRoleCookie,
+  filterDemoNotifications,
+  findLinkedStudentForAuth,
+  syncWtRoleCookie,
+  withNetworkTimeout,
+} from "@/lib/appSessionHelpers";
+import { sendPushToRole } from "@/lib/pushRoleBroadcast";
 import type { Provider, User as SupabaseAuthUser } from "@supabase/supabase-js";
-
-const secureCookieAttr = () =>
-  typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
-
-/** Remove cookie de papel (logout / sessão encerrada). */
-function clearWtRoleCookie() {
-  if (typeof document === "undefined") return;
-  document.cookie = `wt_role=; path=/; max-age=0; samesite=lax${secureCookieAttr()}`;
-}
-
-/**
- * Mantém `wt_role` alinhado ao middleware.
- * `user.role === null` = autenticado no Supabase sem linha de aluno → `pending_student` (só matrícula).
- */
-function syncWtRoleCookie(role: User["role"] | null | undefined) {
-  if (typeof document === "undefined") return;
-  if (role === null) {
-    document.cookie = `wt_role=pending_student; path=/; max-age=2592000; samesite=lax${secureCookieAttr()}`;
-    return;
-  }
-  if (!role) {
-    clearWtRoleCookie();
-    return;
-  }
-  const cookieRole =
-    role === "admin" ? "will_owner" : role === "coach" ? "professor" : role === "aluno" ? "student" : "";
-  if (!cookieRole) {
-    clearWtRoleCookie();
-    return;
-  }
-  document.cookie = `wt_role=${cookieRole}; path=/; max-age=2592000; samesite=lax${secureCookieAttr()}`;
-}
-
-function filterDemoNotifications(rows: Notification[]): Notification[] {
-  return rows.filter((n) => !String(n.id).startsWith("demo_"));
-}
-
-function findLinkedStudentForAuth(authUserId: string | undefined, email: string, catalog: Student[]): Student | null {
-  const authSid = authUserId?.trim();
-  const normalizedEmail = email.trim().toLowerCase();
-  if (authSid) {
-    const byAuth = catalog.find((s) => s.authUserId === authSid);
-    if (byAuth) return byAuth;
-  }
-  if (normalizedEmail) {
-    return catalog.find((s) => s.email.trim().toLowerCase() === normalizedEmail) ?? null;
-  }
-  return null;
-}
-
-const CRITICAL_DATA_FETCH_TIMEOUT_MS = 28_000;
-
-function withNetworkTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      timeoutId = setTimeout(() => reject(new Error(message)), ms);
-    }),
-  ]).finally(() => {
-    if (timeoutId !== undefined) clearTimeout(timeoutId);
-  });
-}
 
 // Re-export types for convenience
 export type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy };
@@ -195,29 +141,6 @@ export interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-/** Envia push para todos os usuários de um role. Fire-and-forget — nunca lança exceção. */
-async function sendPushToRole(
-  role: "admin" | "professor" | "aluno",
-  payload: { title: string; body: string; url?: string }
-): Promise<void> {
-  try {
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return;
-    await fetch("/api/push/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ payload, targetRole: role }),
-    });
-  } catch {
-    // push é best-effort — nunca interfere no fluxo principal
-  }
-}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
