@@ -2,11 +2,16 @@ import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { NextRequest, NextResponse } from "next/server";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT ?? "mailto:admin@willtreinospro.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? ""
-);
+// VAPID setup is deferred to request time to avoid build-time crash
+// when environment variables are not available on Vercel
+function getWebPush() {
+  const subject = process.env.VAPID_SUBJECT ?? "mailto:admin@willtreinospro.com";
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+  const privateKey = process.env.VAPID_PRIVATE_KEY ?? "";
+  if (!publicKey || !privateKey) return null;
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+  return webpush;
+}
 
 export interface PushPayload {
   title: string;
@@ -25,6 +30,12 @@ export interface SendPushBody {
 }
 
 export async function POST(req: NextRequest) {
+  const wp = getWebPush();
+  if (!wp) {
+    // VAPID keys not configured — push not available but app keeps running
+    return NextResponse.json({ sent: 0, reason: "push_not_configured" });
+  }
+
   const body: SendPushBody = await req.json().catch(() => null);
   if (!body?.payload || (!body.targetRole && !body.targetUserId)) {
     return NextResponse.json({ error: "Payload ou alvo inválido" }, { status: 400 });
@@ -35,7 +46,6 @@ export async function POST(req: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!serviceRoleKey) {
-    // Sem service_role key: notificações push indisponíveis mas não quebra o app
     return NextResponse.json({ sent: 0, reason: "push_not_configured" });
   }
 
@@ -70,7 +80,7 @@ export async function POST(req: NextRequest) {
 
   const results = await Promise.allSettled(
     subs.map((sub) =>
-      webpush.sendNotification(
+      wp.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify(body.payload)
       )
