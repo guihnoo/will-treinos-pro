@@ -9,7 +9,7 @@ Sistema de monitoramento em tempo real para acompanhar tudo que acontece no app 
 **Tabela Supabase: `dev_events`**
 - Logs automáticos de eventos importantes
 - Columns: `id`, `event_type`, `entity_type`, `entity_id`, `details` (JSONB), `created_at`, `created_by`
-- RLS: Admin-only read access
+- RLS: leitura para staff (`wt_is_staff()` ou `students.role = 'admin'`) — ver migração `20260504110000_dev_events_realtime.sql`
 - Helper function: `log_dev_event()` (chamada via AppContext)
 
 **Event Types Tracked:**
@@ -45,21 +45,15 @@ Displays:
   - Últimos 50 eventos com timestamp
   - Entity type e ID
   - Details (JSON preview)
-  - Auto-refresh a cada 3s (configurable)
+  - **Realtime:** subscrição `INSERT` em `dev_events` via hook `useDevEventsRealtime` (debounce ~350ms)
+  - **Polling:** opcional 3s; sem Realtime conectado, fallback automático a cada **10s**
 
-### Phase 3: Real-Time Subscriptions (TODO)
+### Phase 3: Real-Time Subscriptions ✅
 
-Usar Supabase Realtime para push updates em millisegundos (sem polling).
+1. Migração `supabase/migrations/20260504110000_dev_events_realtime.sql`: política `SELECT` alinhada a `wt_is_staff()` + `ALTER PUBLICATION supabase_realtime ADD TABLE dev_events`.
+2. Hook `src/hooks/useDevEventsRealtime.ts` — canal `willpro-dev-events`, evento `INSERT`.
 
-```typescript
-// Exemplo (não implementado ainda):
-supabase
-  .channel('dev_events')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'dev_events' }, (payload) => {
-    setEvents(prev => [payload.new, ...prev].slice(0, 50));
-  })
-  .subscribe();
-```
+**Aplicar migração no projeto Supabase** para o badge «Tempo real» ficar verde na UI.
 
 ## Usage
 

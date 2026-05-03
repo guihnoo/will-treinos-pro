@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useApp } from "@/context/AppContext";
 import { getSupabaseClient } from "@/lib/supabaseClient";
-import type { DevEventType } from "@/lib/devEventsLogger";
+import { useDevEventsRealtime } from "@/hooks/useDevEventsRealtime";
 
 interface DevEvent {
   id: number;
@@ -19,20 +19,11 @@ export default function DevMonitorPage() {
   const { user, students } = useApp();
   const [events, setEvents] = useState<DevEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  /** Polling agressivo (3s); quando Realtime está ativo pode ficar off para poupar API. */
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [realtimeLive, setRealtimeLive] = useState(false);
 
-  useEffect(() => {
-    if (!user || user.role !== "admin") {
-      return;
-    }
-    loadEvents();
-    const interval = setInterval(() => {
-      if (autoRefresh) loadEvents();
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [user, autoRefresh]);
-
-  async function loadEvents() {
+  const loadEvents = useCallback(async () => {
     const supabase = getSupabaseClient();
     if (!supabase) return;
     try {
@@ -48,7 +39,28 @@ export default function DevMonitorPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  const isAdmin = Boolean(user && user.role === "admin");
+
+  useDevEventsRealtime({
+    enabled: isAdmin,
+    onInsert: loadEvents,
+    onLiveStatus: setRealtimeLive,
+  });
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    void loadEvents();
+  }, [isAdmin, loadEvents]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const pollMs = autoRefresh ? 3000 : realtimeLive ? null : 10000;
+    if (pollMs === null) return;
+    const interval = setInterval(() => void loadEvents(), pollMs);
+    return () => clearInterval(interval);
+  }, [isAdmin, autoRefresh, realtimeLive, loadEvents]);
 
   if (!user || user.role !== "admin") {
     return (
@@ -75,21 +87,34 @@ export default function DevMonitorPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold">📊 Dev Monitor</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                realtimeLive
+                  ? "bg-emerald-950 text-emerald-400 ring-1 ring-emerald-700"
+                  : "bg-zinc-900 text-zinc-500 ring-1 ring-zinc-700"
+              }`}
+              title="Supabase Realtime na tabela dev_events (após migração 20260504110000)"
+            >
+              {realtimeLive ? "● Tempo real" : "○ Sem Realtime"}
+            </span>
             <button
-              onClick={() => loadEvents()}
+              type="button"
+              onClick={() => void loadEvents()}
               className="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-400"
             >
               Recarregar
             </button>
-            <label className="flex items-center gap-2">
+            <label className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
                 className="h-4 w-4"
               />
-              <span className="text-sm">Auto-refresh 3s</span>
+              <span className="text-sm text-zinc-400">
+                Polling 3s {!realtimeLive && "(fallback 10s automático)"}
+              </span>
             </label>
           </div>
         </div>
