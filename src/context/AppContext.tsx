@@ -47,7 +47,7 @@ import {
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
-import { resolveEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
+import { generateNewEnrollmentInviteCode, resolveEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
   CRITICAL_DATA_FETCH_TIMEOUT_MS,
@@ -247,11 +247,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!isMounted || usingSupabaseSession) return;
     setAppConfig((prev) => {
       if (prev.enrollmentInviteCode?.trim()) return prev;
-      const code =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
-          : `wt_${Date.now().toString(36)}`;
-      return { ...prev, enrollmentInviteCode: code };
+      return { ...prev, enrollmentInviteCode: generateNewEnrollmentInviteCode() };
     });
   }, [isMounted, usingSupabaseSession]);
 

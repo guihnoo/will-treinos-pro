@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { useApp, type AppContextType } from "@/context/AppContext";
 import type { AppConfig } from "@/context/types";
+import { generateNewEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
 
 type AppConfigContextValue = {
   appConfig: AppConfig;
@@ -26,10 +27,7 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
     return `${window.location.origin}${cadastroPath}`;
   }, [cadastroPath, enrollmentInviteCode]);
   const generateEnrollmentInviteCode = useCallback(() => {
-    const code =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
-        : `wt_${Date.now().toString(36)}`;
+    const code = generateNewEnrollmentInviteCode();
     app.updateAppConfig({ enrollmentInviteCode: code });
     return code;
   }, [app.updateAppConfig]);
