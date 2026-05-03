@@ -644,7 +644,7 @@ export default function FeedPage() {
       <AnimatePresence>
         {showComposer && (
           <PostComposer
-            user={user ? { name: user.name, avatar: profile?.avatar || user.avatar, role: user.role } : null}
+            user={user ? { name: user.name, avatar: profile?.avatar || user.avatar, role: user.role ?? "visitor" } : null}
             onClose={() => setShowComposer(false)}
             onPublish={handlePublish}
             isAdminOfficialMode={isAdmin}

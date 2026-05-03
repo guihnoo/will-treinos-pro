@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will Treinos PRO — Login / Cadastro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #0a0a0a; font-family: 'Lexend', sans-serif; overflow: hidden; }
+    #root { height: 100%; }
+
+    @keyframes courtReveal {
+      from { stroke-dashoffset: 400; opacity: 0; }
+      to { stroke-dashoffset: 0; opacity: 1; }
+    }
+    @keyframes goldPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(234,179,8,0.15); }
+      50% { box-shadow: 0 0 60px rgba(234,179,8,0.35); }
+    }
+    @keyframes floatY {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(400%); }
+    }
+    @keyframes ripple {
+      0% { transform: scale(0); opacity: 0.6; }
+      100% { transform: scale(4); opacity: 0; }
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .court-line {
+      stroke-dasharray: 400;
+      stroke-dashoffset: 400;
+      animation: courtReveal 1.2s cubic-bezier(0.22,1,0.36,1) forwards;
+    }
+    .gold-float { animation: floatY 3s ease-in-out infinite; }
+    .shimmer-text {
+      background: linear-gradient(90deg, #EAB308 0%, #F97316 30%, #fff8e1 50%, #F97316 70%, #EAB308 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite;
+    }
+    .fade-slide-up { animation: fadeSlideUp 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+    .role-card-glass {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      transition: all 0.3s cubic-bezier(0.22,1,0.36,1);
+    }
+    .role-card-flat {
+      background: #111111;
+      border: 1px solid #222222;
+      border-radius: 16px;
+      transition: all 0.3s cubic-bezier(0.22,1,0.36,1);
+    }
+    .role-card-glass:active, .role-card-flat:active {
+      transform: scale(0.97);
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 14px 16px 14px 44px;
+      color: #fff;
+      font-size: 14px;
+      font-family: 'Lexend', sans-serif;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .input-field:focus {
+      border-color: rgba(234,179,8,0.5);
+      box-shadow: 0 0 0 3px rgba(234,179,8,0.08);
+    }
+    .input-field::placeholder { color: rgba(255,255,255,0.3); }
+    .input-field-flat {
+      background: #111;
+      border: 1px solid #333;
+    }
+    .input-field-flat:focus {
+      border-color: #EAB308;
+      box-shadow: none;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-family: 'Lexend', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.03em;
+    }
+    .btn-gold:active { transform: scale(0.97); }
+    .btn-outline {
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 14px;
+      font-family: 'Lexend', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-outline:active { transform: scale(0.97); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+    /* Canvas layout */
+    .canvas-bg {
+      width: 100vw; height: 100vh;
+      background: #0a0a0a;
+      display: flex; align-items: center; justify-content: center;
+      gap: 60px;
+      overflow: auto;
+      padding: 40px 60px;
+    }
+    .canvas-col {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .canvas-label {
+      color: rgba(255,255,255,0.3);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    /* Light mode overrides */
+    .light-mode-screen {
+      background: #f5f0e8 !important;
+    }
+    .light-mode-screen .shimmer-text {
+      background: linear-gradient(90deg, #92700a 0%, #b87c1a 30%, #D97B10 50%, #b87c1a 70%, #92700a 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ─── CONSTANTS ────────────────────────────────────────────────
+const GOLD = '#EAB308';
+const ORANGE = '#F97316';
+const DARK_BG = '#050505';
+
+// ─── COURT SVG BACKGROUND ─────────────────────────────────────
+function CourtLines({ opacity = 0.06 }) {
+  return (
+    <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+      viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+      {/* outer rect */}
+      <rect x="30" y="120" width="330" height="600" fill="none" stroke="white" strokeWidth="1.5"
+        strokeOpacity={opacity * 8}
+        className="court-line" style={{ animationDelay: '0.1s' }} />
+      {/* center line */}
+      <line x1="30" y1="420" x2="360" y2="420" stroke="white" strokeWidth="1.5"
+        strokeOpacity={opacity * 8} className="court-line" style={{ animationDelay: '0.3s' }} />
+      {/* attack lines */}
+      <line x1="30" y1="300" x2="360" y2="300" stroke="white" strokeWidth="1"
+        strokeDasharray="8 6" strokeOpacity={opacity * 6}
+        className="court-line" style={{ animationDelay: '0.5s' }} />
+      <line x1="30" y1="540" x2="360" y2="540" stroke="white" strokeWidth="1"
+        strokeDasharray="8 6" strokeOpacity={opacity * 6}
+        className="court-line" style={{ animationDelay: '0.5s' }} />
+      {/* net */}
+      <line x1="30" y1="420" x2="360" y2="420" stroke={GOLD} strokeWidth="2"
+        strokeOpacity={opacity * 10} className="court-line" style={{ animationDelay: '0.7s' }} />
+      {/* net posts */}
+      <line x1="30" y1="390" x2="30" y2="450" stroke={GOLD} strokeWidth="2"
+        strokeOpacity={opacity * 10} className="court-line" style={{ animationDelay: '0.8s' }} />
+      <line x1="360" y1="390" x2="360" y2="450" stroke={GOLD} strokeWidth="2"
+        strokeOpacity={opacity * 10} className="court-line" style={{ animationDelay: '0.8s' }} />
+    </svg>
+  );
+}
+
+// ─── GOLD GLOW BG ─────────────────────────────────────────────
+function GoldGlow({ isDark }) {
+  return (
+    <>
+      <div style={{
+        position: 'absolute', top: '-10%', left: '-10%',
+        width: 400, height: 400, borderRadius: '50%', pointerEvents: 'none',
+        background: `radial-gradient(circle, rgba(234,179,8,${isDark ? 0.18 : 0.12}) 0%, transparent 70%)`,
+        filter: 'blur(80px)',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-10%', right: '-10%',
+        width: 350, height: 350, borderRadius: '50%', pointerEvents: 'none',
+        background: `radial-gradient(circle, rgba(249,115,22,${isDark ? 0.14 : 0.08}) 0%, transparent 70%)`,
+        filter: 'blur(80px)',
+      }} />
+    </>
+  );
+}
+
+// ─── SCANLINE OVERLAY ─────────────────────────────────────────
+function ScanLine() {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', borderRadius: 'inherit',
+    }}>
+      <div style={{
+        position: 'absolute', left: 0, right: 0, height: '30%',
+        background: 'linear-gradient(to bottom, transparent, rgba(234,179,8,0.03), transparent)',
+        animation: 'scanline 4s linear infinite',
+      }} />
+    </div>
+  );
+}
+
+// ─── GOOGLE ICON ──────────────────────────────────────────────
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+    </svg>
+  );
+}
+
+// ─── CHEVRON ──────────────────────────────────────────────────
+function ChevronRight({ size = 16, color = 'rgba(255,255,255,0.4)' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+// ─── ARROW LEFT ───────────────────────────────────────────────
+function ArrowLeft({ size = 16, color = 'rgba(255,255,255,0.4)' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+    </svg>
+  );
+}
+
+// ─── CHECK ────────────────────────────────────────────────────
+function CheckIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 12 4 18" />
+    </svg>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VARIAÇÃO 1 — "ARENA"
+//  Seleção de role em cards, stage system, tipografia cinética
+// ═══════════════════════════════════════════════════════════════
+function V1Arena({ cardStyle, isDark }) {
+  const [stage, setStage] = useState('roles'); // 'roles' | 'staff' | 'athlete'
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [focusedField, setFocusedField] = useState(null);
+  const [ripple, setRipple] = useState(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  const bg = isDark ? '#050505' : '#f5f0e8';
+  const textPrimary = isDark ? '#ffffff' : '#1a1208';
+  const textSecondary = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(60,40,10,0.55)';
+  const borderSubtle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+  const cardBg = cardStyle === 'glass'
+    ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.6)')
+    : (isDark ? '#111111' : '#ffffff');
+  const cardBorder = cardStyle === 'glass'
+    ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.7)')
+    : (isDark ? '#222222' : '#e5e0d8');
+  const inputBg = isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.04)';
+  const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.12)';
+  const inputColor = isDark ? '#fff' : '#1a1208';
+
+  const roles = [
+    { id: 'admin', emoji: '🛡️', label: 'Dono / Gestor', desc: 'Gestão tática e comando de arena', color: GOLD, accentRgb: '234,179,8' },
+    { id: 'coach', emoji: '🎓', label: 'Professor', desc: 'Prescrição de treinos e acompanhamento', color: '#FB923C', accentRgb: '251,146,60' },
+    { id: 'aluno', emoji: '🏆', label: 'Atleta VIP', desc: 'Performance extrema e evolução gamificada', color: GOLD, accentRgb: '234,179,8' },
+  ];
+
+  const handleRoleClick = (role, e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipple({ x: e.clientX - rect.left, y: e.clientY - rect.top, id: Date.now() });
+    setTimeout(() => setRipple(null), 600);
+    setSelectedRole(role);
+    if (role.id === 'aluno') setStage('athlete');
+    else setStage('staff');
+  };
+
+  const transitionStyle = {
+    transition: 'opacity 0.35s cubic-bezier(0.22,1,0.36,1), transform 0.35s cubic-bezier(0.22,1,0.36,1)',
+  };
+
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: bg,
+      position: 'relative', overflow: 'hidden',
+      fontFamily: "'Lexend', sans-serif",
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Backgrounds */}
+      <GoldGlow isDark={isDark} />
+      <CourtLines opacity={isDark ? 0.05 : 0.03} />
+      <ScanLine />
+
+      {/* Scroll container */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', position: 'relative', zIndex: 10 }}>
+        <div style={{ padding: '48px 20px 40px', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+
+          {/* ── LOGO ── */}
+          <div className="gold-float" style={{ textAlign: 'center', marginBottom: 32 }}>
+            {/* Logo badge */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 72, height: 72, borderRadius: 24,
+              background: cardStyle === 'glass' ? 'rgba(255,255,255,0.07)' : (isDark ? '#111' : '#fff'),
+              border: `1px solid ${cardStyle === 'glass' ? 'rgba(255,255,255,0.12)' : cardBorder}`,
+              backdropFilter: cardStyle === 'glass' ? 'blur(20px)' : 'none',
+              marginBottom: 16, position: 'relative',
+              boxShadow: isDark ? '0 0 40px rgba(234,179,8,0.15)' : '0 4px 20px rgba(234,179,8,0.2)',
+            }}>
+              <span style={{
+                fontFamily: "'Lexend', sans-serif", fontWeight: 900, fontStyle: 'italic',
+                fontSize: 40, lineHeight: 1,
+                background: 'linear-gradient(135deg, #EAB308 0%, #F97316 100%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>W</span>
+              <span style={{
+                position: 'absolute', top: 6, right: 8,
+                fontSize: 14, lineHeight: 1,
+              }}>⚡</span>
+            </div>
+
+            {/* Title */}
+            <div style={{ marginBottom: 6 }}>
+              <span style={{
+                display: 'block',
+                fontFamily: "'Lexend', sans-serif", fontWeight: 900,
+                fontStyle: 'italic', fontSize: 32,
+                letterSpacing: '-0.04em', lineHeight: 1,
+              }} className="shimmer-text">
+                WILL TREINOS
+              </span>
+              <span style={{
+                display: 'block',
+                fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700,
+                fontSize: 28, letterSpacing: '0.12em',
+                color: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+                lineHeight: 1,
+              }}>PRO</span>
+            </div>
+
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '4px 12px', borderRadius: 20,
+              background: `rgba(234,179,8,${isDark ? 0.1 : 0.08})`,
+              border: `1px solid rgba(234,179,8,${isDark ? 0.25 : 0.2})`,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', color: textSecondary, textTransform: 'uppercase' }}>
+                Arena Digital de Elite
+              </span>
+            </div>
+          </div>
+
+          {/* ── STAGE: ROLES ── */}
+          {stage === 'roles' && (
+            <div>
+              <p style={{
+                textAlign: 'center', marginBottom: 20,
+                fontFamily: "'Space Grotesk', sans-serif", fontSize: 11,
+                fontWeight: 700, letterSpacing: '0.2em',
+                textTransform: 'uppercase', color: textSecondary,
+              }}>Selecione seu perfil</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {roles.map((role, i) => (
+                  <button key={role.id} onClick={(e) => handleRoleClick(role, e)}
+                    style={{
+                      position: 'relative', overflow: 'hidden',
+                      background: cardBg, border: `1px solid ${cardBorder}`,
+                      borderRadius: 16, padding: '16px 16px',
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      cursor: 'pointer', textAlign: 'left', width: '100%',
+                      backdropFilter: cardStyle === 'glass' ? 'blur(20px)' : 'none',
+                      opacity: visible ? 1 : 0,
+                      transform: visible ? 'translateY(0)' : 'translateY(16px)',
+                      transition: `opacity 0.45s cubic-bezier(0.22,1,0.36,1) ${0.05 + i * 0.07}s, transform 0.45s cubic-bezier(0.22,1,0.36,1) ${0.05 + i * 0.07}s, border-color 0.25s, box-shadow 0.25s`,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = `rgba(${role.accentRgb},0.4)`;
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.3), 0 0 20px rgba(${role.accentRgb},0.1)`;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = cardBorder;
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    {/* Ripple */}
+                    {ripple && selectedRole?.id === role.id && (
+                      <div style={{
+                        position: 'absolute', left: ripple.x - 10, top: ripple.y - 10,
+                        width: 20, height: 20, borderRadius: '50%',
+                        background: `rgba(${role.accentRgb},0.4)`,
+                        animation: 'ripple 0.6s ease-out forwards',
+                        pointerEvents: 'none',
+                      }} />
+                    )}
+                    {/* Hover glow */}
+                    <div style={{
+                      position: 'absolute', inset: 0, borderRadius: 16, pointerEvents: 'none',
+                      background: `radial-gradient(circle at 80% 20%, rgba(${role.accentRgb},0.1), transparent 60%)`,
+                      opacity: 0,
+                    }} />
+
+                    {/* Icon */}
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                      background: `rgba(${role.accentRgb},0.12)`,
+                      border: `1px solid rgba(${role.accentRgb},0.2)`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 22,
+                    }}>{role.emoji}</div>
+
+                    {/* Text */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontFamily: "'Lexend', sans-serif", fontWeight: 800,
+                        fontStyle: 'italic', fontSize: 15,
+                        textTransform: 'uppercase', letterSpacing: '-0.01em',
+                        color: textPrimary, marginBottom: 2,
+                      }}>{role.label}</div>
+                      <div style={{
+                        fontFamily: "'Space Grotesk', sans-serif", fontSize: 12,
+                        color: textSecondary, lineHeight: 1.3,
+                      }}>{role.desc}</div>
+                    </div>
+
+                    <ChevronRight size={18} color={`rgba(${role.accentRgb},0.6)`} />
+                  </button>
+                ))}
+              </div>
+
+              <p style={{
+                textAlign: 'center', marginTop: 28,
+                fontFamily: "'Space Grotesk', sans-serif", fontSize: 10,
+                color: 'rgba(255,255,255,0.15)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              }}>Est. 2024 · Will Treinos PRO · v2.0 Elite</p>
+            </div>
+          )}
+
+          {/* ── STAGE: STAFF AUTH ── */}
+          {stage === 'staff' && (
+            <div className="fade-slide-up">
+              {/* Back */}
+              <button onClick={() => setStage('roles')} style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              }}>
+                <ArrowLeft size={16} color={textSecondary} />
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, color: textSecondary }}>Voltar</span>
+              </button>
+
+              {/* Header */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '4px 10px', borderRadius: 20, marginBottom: 8,
+                  background: selectedRole?.id === 'admin' ? `rgba(234,179,8,0.1)` : `rgba(251,146,60,0.1)`,
+                  border: `1px solid ${selectedRole?.id === 'admin' ? 'rgba(234,179,8,0.25)' : 'rgba(251,146,60,0.25)'}`,
+                }}>
+                  <span style={{ fontSize: 12 }}>{selectedRole?.emoji}</span>
+                  <span style={{
+                    fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700,
+                    letterSpacing: '0.15em', textTransform: 'uppercase',
+                    color: selectedRole?.id === 'admin' ? GOLD : '#FB923C',
+                  }}>{selectedRole?.label}</span>
+                </div>
+                <h2 style={{
+                  fontFamily: "'Lexend', sans-serif", fontWeight: 900,
+                  fontStyle: 'italic', fontSize: 26, textTransform: 'uppercase',
+                  letterSpacing: '-0.03em', color: textPrimary,
+                }}>Acesso ao Painel</h2>
+              </div>
+
+              {/* Card */}
+              <div style={{
+                background: cardBg, border: `1px solid ${cardBorder}`,
+                borderRadius: 20, overflow: 'hidden',
+                backdropFilter: cardStyle === 'glass' ? 'blur(20px)' : 'none',
+                boxShadow: isDark ? '0 24px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)',
+              }}>
+                {/* Gold top line */}
+                <div style={{ height: 2, background: 'linear-gradient(to right, transparent, #EAB308 40%, #F97316 60%, transparent)' }} />
+
+                <div style={{ padding: 20 }}>
+                  {/* Google button */}
+                  <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
+                    <GoogleIcon />
+                    Entrar com Google
+                  </button>
+
+                  {/* Divider */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <div style={{ flex: 1, height: 1, background: borderSubtle }} />
+                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: textSecondary }}>ou senha</span>
+                    <div style={{ flex: 1, height: 1, background: borderSubtle }} />
+                  </div>
+
+                  {/* Inputs */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, pointerEvents: 'none' }}>📧</span>
+                      <input
+                        type="email" placeholder="E-mail"
+                        value={email} onChange={e => setEmail(e.target.value)}
+                        onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField(null)}
+                        style={{
+                          width: '100%', padding: '13px 14px 13px 40px',
+                          background: inputBg, color: inputColor,
+                          border: `1px solid ${focusedField === 'email' ? 'rgba(234,179,8,0.5)' : inputBorder}`,
+                          borderRadius: 12, outline: 'none',
+                          fontFamily: "'Lexend', sans-serif", fontSize: 13,
+                          boxShadow: focusedField === 'email' ? '0 0 0 3px rgba(234,179,8,0.08)' : 'none',
+                          transition: 'all 0.2s',
+                        }}
+                      />
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, pointerEvents: 'none' }}>🔒</span>
+                      <input
+                        type="password" placeholder="Senha"
+                        value={password} onChange={e => setPassword(e.target.value)}
+                        onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)}
+                        style={{
+                          width: '100%', padding: '13px 14px 13px 40px',
+                          background: inputBg, color: inputColor,
+                          border: `1px solid ${focusedField === 'password' ? 'rgba(234,179,8,0.5)' : inputBorder}`,
+                          borderRadius: 12, outline: 'none',
+                          fontFamily: "'Lexend', sans-serif", fontSize: 13,
+                          boxShadow: focusedField === 'password' ? '0 0 0 3px rgba(234,179,8,0.08)' : 'none',
+                          transition: 'all 0.2s',
+                        }}
+                      />
+                    </div>
+
+                    <button style={{
+                      width: '100%', padding: '13px', borderRadius: 12,
+                      background: isDark ? 'rgba(234,179,8,0.12)' : 'rgba(234,179,8,0.1)',
+                      border: `1px solid rgba(234,179,8,0.25)`,
+                      color: GOLD, fontFamily: "'Lexend', sans-serif",
+                      fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                    }}>Entrar com senha</button>
+                  </div>
+
+                  <p style={{
+                    textAlign: 'center', fontFamily: "'Space Grotesk', sans-serif",
+                    fontSize: 11, color: textSecondary,
+                  }}>
+                    Sem conta?{' '}
+                    <span style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Cadastre-se →</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── STAGE: ATHLETE GATE ── */}
+          {stage === 'athlete' && (
+            <div className="fade-slide-up">
+              <button onClick={() => setStage('roles')} style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 24,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              }}>
+                <ArrowLeft size={16} color={textSecondary} />
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, color: textSecondary }}>Voltar</span>
+              </button>
+
+              <div style={{
+                background: cardBg, border: `1px solid ${cardBorder}`,
+                borderRadius: 20, overflow: 'hidden',
+                backdropFilter: cardStyle === 'glass' ? 'blur(20px)' : 'none',
+                boxShadow: isDark ? '0 24px 60px rgba(0,0,0,0.5)' : '0 8px 30px rgba(0,0,0,0.08)',
+                padding: 24, textAlign: 'center',
+              }}>
+                <div style={{ height: 2, background: 'linear-gradient(to right, transparent, #EAB308, transparent)', margin: '-24px -24px 24px' }} />
+
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🏆</div>
+
+                <h2 style={{
+                  fontFamily: "'Lexend', sans-serif", fontWeight: 900,
+                  fontStyle: 'italic', fontSize: 22, textTransform: 'uppercase',
+                  letterSpacing: '-0.03em', color: textPrimary, marginBottom: 10,
+                }}>Atleta VIP</h2>
+
+                <p style={{
+                  fontFamily: "'Space Grotesk', sans-serif", fontSize: 13,
+                  color: textSecondary, lineHeight: 1.6, marginBottom: 20,
+                }}>
+                  Crie sua conta com Google e aguarde aprovação da equipe Will Treinos.
+                </p>
+
+                <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
+                  <GoogleIcon />
+                  Criar conta com Google
+                </button>
+
+                <div style={{
+                  padding: '12px 14px', borderRadius: 12,
+                  background: `rgba(234,179,8,${isDark ? 0.06 : 0.04})`,
+                  border: `1px solid rgba(234,179,8,${isDark ? 0.15 : 0.12})`,
+                  marginBottom: 16,
+                }}>
+                  <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: isDark ? 'rgba(234,179,8,0.8)' : '#92700a', lineHeight: 1.5 }}>
+                    Se o seu treinador enviou um link de convite, abra-o antes de cadastrar.
+                  </p>
+                </div>
+
+                <button onClick={() => setStage('roles')} className="btn-outline" style={{ color: textSecondary, borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)' }}>
+                  Já tenho conta
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VARIAÇÃO 2 — "BLUR GATE" (Cadastro de Atleta)
+//  Tela de cadastro imersiva com reveal progressivo por steps
+// ═══════════════════════════════════════════════════════════════
+function V2BlurGate({ cardStyle, isDark }) {
+  const [step, setStep] = useState(1); // 1=identity, 2=contact, 3=success
+  const [form, setForm] = useState({ name: '', phone: '', instagram: '' });
+  const [focusedField, setFocusedField] = useState(null);
+  const [activeAvatar, setActiveAvatar] = useState(2);
+  const [contentVisible, setContentVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setContentVisible(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    setContentVisible(false);
+    const t = setTimeout(() => setContentVisible(true), 30);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  const bg = isDark ? '#050505' : '#f5f0e8';
+  const textPrimary = isDark ? '#ffffff' : '#1a1208';
+  const textSecondary = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(60,40,10,0.55)';
+  const cardBg = cardStyle === 'glass'
+    ? (isDark ? 'rgba(12,12,12,0.7)' : 'rgba(255,255,255,0.75)')
+    : (isDark ? '#0f0f0f' : '#ffffff');
+  const cardBorder = cardStyle === 'glass'
+    ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)')
+    : (isDark ? '#1e1e1e' : '#e5e0d8');
+  const inputBg = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.04)';
+  const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
+  const inputColor = isDark ? '#fff' : '#1a1208';
+
+  const AVATARS = ['🏐', '⚡', '🏅', '🎯', '🔥', '💪'];
+  const PERKS = [
+    { icon: '⚡', label: 'XP & Conquistas' },
+    { icon: '🏆', label: 'Ranking' },
+    { icon: '🛡️', label: 'Acesso Exclusivo' },
+  ];
+
+  const progressWidth = step === 1 ? '33%' : step === 2 ? '66%' : step >= 3 ? '100%' : '0%';
+
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: bg,
+      position: 'relative', overflow: 'hidden',
+      fontFamily: "'Lexend', sans-serif",
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <GoldGlow isDark={isDark} />
+      <CourtLines opacity={isDark ? 0.04 : 0.025} />
+
+      {/* Main content */}
+      <div style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 10 }}>
+        <div style={{ padding: '44px 20px 48px' }}>
+
+          {/* Step progress bar */}
+          {step >= 1 && step <= 2 && (
+            <div style={{ marginBottom: 28, opacity: contentVisible ? 1 : 0, transform: contentVisible ? 'translateY(0)' : 'translateY(12px)', transition: 'opacity 0.4s cubic-bezier(0.22,1,0.36,1), transform 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
+              {/* Back + step */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                {step > 1 ? (
+                  <button onClick={() => setStep(s => s - 1)} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  }}>
+                    <ArrowLeft size={16} color={textSecondary} />
+                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, color: textSecondary }}>Voltar</span>
+                  </button>
+                ) : <div />}
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em' }}>
+                  {step}/2
+                </span>
+              </div>
+              {/* Bar */}
+              <div style={{ height: 3, background: isDark ? '#1a1a1a' : '#e8e2d8', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 4,
+                  background: `linear-gradient(to right, ${GOLD}, ${ORANGE})`,
+                  width: progressWidth,
+                  transition: 'width 0.5s cubic-bezier(0.22,1,0.36,1)',
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 1: IDENTITY ── */}
+          {step === 1 && (
+            <div key="step1" style={{ opacity: contentVisible ? 1 : 0, transform: contentVisible ? 'translateY(0)' : 'translateY(14px)', transition: 'opacity 0.4s cubic-bezier(0.22,1,0.36,1), transform 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
+              {/* Header */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 12,
+                  padding: '4px 12px', borderRadius: 20,
+                  background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)',
+                }}>
+                  <span style={{ fontSize: 12 }}>🏆</span>
+                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: GOLD }}>Alta Performance</span>
+                </div>
+                <h1 style={{
+                  fontFamily: "'Lexend', sans-serif", fontWeight: 900,
+                  fontStyle: 'italic', fontSize: 30, textTransform: 'uppercase',
+                  letterSpacing: '-0.04em', color: textPrimary, lineHeight: 1.1,
+                  marginBottom: 8,
+                }}>
+                  Sua jornada<br />
+                  <span className="shimmer-text">começa aqui</span>
+                </h1>
+                <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, color: textSecondary, lineHeight: 1.5 }}>
+                  Crie seu perfil de atleta e comece a evoluir.
+                </p>
+              </div>
+
+              {/* Perks */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+                {PERKS.map(p => (
+                  <div key={p.label} style={{
+                    flex: 1, borderRadius: 14, padding: '12px 8px',
+                    textAlign: 'center',
+                    background: cardStyle === 'glass' ? 'rgba(255,255,255,0.04)' : (isDark ? '#111' : '#fff'),
+                    border: `1px solid ${cardBorder}`,
+                    backdropFilter: cardStyle === 'glass' ? 'blur(12px)' : 'none',
+                  }}>
+                    <div style={{ fontSize: 18, marginBottom: 4 }}>{p.icon}</div>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 700, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1.2 }}>{p.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Card */}
+              <div style={{
+                background: cardBg, border: `1px solid ${cardBorder}`,
+                borderRadius: 20, overflow: 'hidden',
+                backdropFilter: cardStyle === 'glass' ? 'blur(24px)' : 'none',
+                boxShadow: isDark ? '0 20px 50px rgba(0,0,0,0.6)' : '0 8px 30px rgba(0,0,0,0.06)',
+              }}>
+                <div style={{ height: 2, background: 'linear-gradient(to right, transparent, #EAB308 40%, #F97316 60%, transparent)' }} />
+                <div style={{ padding: 20 }}>
+
+                  {/* Avatar selector */}
+                  <div style={{ marginBottom: 20, textAlign: 'center' }}>
+                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: 8 }}>
+                      <div style={{
+                        width: 80, height: 80, borderRadius: '50%',
+                        background: `linear-gradient(135deg, rgba(234,179,8,0.15), rgba(249,115,22,0.15))`,
+                        border: `2px solid rgba(234,179,8,0.4)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 36,
+                        boxShadow: isDark ? '0 0 20px rgba(234,179,8,0.15)' : '0 4px 20px rgba(234,179,8,0.1)',
+                      }}>
+                        {AVATARS[activeAvatar]}
+                      </div>
+                      <div style={{
+                        position: 'absolute', bottom: 0, right: 0,
+                        width: 26, height: 26, borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${GOLD}, ${ORANGE})`,
+                        border: `2px solid ${bg}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, cursor: 'pointer',
+                      }}>📷</div>
+                    </div>
+                    {/* Avatar picks */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+                      {AVATARS.map((av, idx) => (
+                        <button key={idx} onClick={() => setActiveAvatar(idx)} style={{
+                          width: 32, height: 32, borderRadius: '50%', fontSize: 14,
+                          border: `2px solid ${activeAvatar === idx ? GOLD : (isDark ? '#333' : '#ddd')}`,
+                          background: activeAvatar === idx ? 'rgba(234,179,8,0.1)' : 'transparent',
+                          cursor: 'pointer',
+                          boxShadow: activeAvatar === idx ? '0 0 10px rgba(234,179,8,0.25)' : 'none',
+                          transition: 'all 0.2s',
+                        }}>{av}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Google auth */}
+                  <button style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    gap: 10, padding: '13px', borderRadius: 12,
+                    background: '#fff', border: '1px solid rgba(255,255,255,0.8)',
+                    color: '#222', fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 13,
+                    cursor: 'pointer', marginBottom: 16,
+                  }}>
+                    <GoogleIcon />
+                    Registrar com Google
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <div style={{ flex: 1, height: 1, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }} />
+                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: textSecondary }}>ou continue</span>
+                    <div style={{ flex: 1, height: 1, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }} />
+                  </div>
+
+                  {/* Name input */}
+                  <div style={{ position: 'relative', marginBottom: 12 }}>
+                    <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, pointerEvents: 'none' }}>👤</span>
+                    <input
+                      type="text" placeholder="Nome Completo *"
+                      value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                      onFocus={() => setFocusedField('name')} onBlur={() => setFocusedField(null)}
+                      style={{
+                        width: '100%', padding: '13px 14px 13px 40px',
+                        background: inputBg, color: inputColor,
+                        border: `1px solid ${focusedField === 'name' ? 'rgba(234,179,8,0.5)' : inputBorder}`,
+                        borderRadius: 12, outline: 'none',
+                        fontFamily: "'Lexend', sans-serif", fontSize: 13,
+                        boxShadow: focusedField === 'name' ? '0 0 0 3px rgba(234,179,8,0.08)' : 'none',
+                        transition: 'all 0.2s',
+                      }}
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => form.name.trim() && setStep(2)}
+                    style={{
+                      width: '100%', padding: '14px', borderRadius: 12,
+                      background: form.name.trim() ? `linear-gradient(135deg, ${GOLD}, ${ORANGE})` : (isDark ? '#1a1a1a' : '#e8e2d8'),
+                      color: form.name.trim() ? '#000' : textSecondary,
+                      fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 14,
+                      border: 'none', cursor: form.name.trim() ? 'pointer' : 'default',
+                      transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
+                      letterSpacing: '0.01em',
+                    }}
+                  >
+                    Próximo →
+                  </button>
+                </div>
+              </div>
+
+              <p style={{
+                textAlign: 'center', marginTop: 20,
+                fontFamily: "'Space Grotesk', sans-serif", fontSize: 11,
+                color: textSecondary,
+              }}>
+                Já tem conta?{' '}
+                <span style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Entrar →</span>
+              </p>
+            </div>
+          )}
+
+          {/* ── STEP 2: CONTACT ── */}
+          {step === 2 && (
+            <div key="step2" style={{ opacity: contentVisible ? 1 : 0, transform: contentVisible ? 'translateY(0)' : 'translateY(14px)', transition: 'opacity 0.4s cubic-bezier(0.22,1,0.36,1), transform 0.4s cubic-bezier(0.22,1,0.36,1)' }}>
+              <div style={{ marginBottom: 24 }}>
+                <h2 style={{
+                  fontFamily: "'Lexend', sans-serif", fontWeight: 900,
+                  fontStyle: 'italic', fontSize: 26, textTransform: 'uppercase',
+                  letterSpacing: '-0.03em', color: textPrimary, marginBottom: 6,
+                }}>Contato &amp;<br />Redes</h2>
+                <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, color: textSecondary }}>
+                  Como a equipe vai entrar em contato?
+                </p>
+              </div>
+
+              <div style={{
+                background: cardBg, border: `1px solid ${cardBorder}`,
+                borderRadius: 20, overflow: 'hidden',
+                backdropFilter: cardStyle === 'glass' ? 'blur(24px)' : 'none',
+                boxShadow: isDark ? '0 20px 50px rgba(0,0,0,0.6)' : '0 8px 30px rgba(0,0,0,0.06)',
+              }}>
+                <div style={{ height: 2, background: 'linear-gradient(to right, transparent, #EAB308 40%, #F97316 60%, transparent)' }} />
+                <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+                  {/* Profile summary */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+                    borderRadius: 12, background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                  }}>
+                    <div style={{ fontSize: 28 }}>{AVATARS[activeAvatar]}</div>
+                    <div>
+                      <p style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 700, fontSize: 14, color: textPrimary }}>{form.name || 'Atleta'}</p>
+                      <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: GOLD, fontWeight: 600 }}>Atleta VIP · Cadastro pendente</p>
+                    </div>
+                    <CheckIcon size={18} />
+                  </div>
+
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, pointerEvents: 'none' }}>📱</span>
+                    <input
+                      type="tel" placeholder="WhatsApp *"
+                      value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                      onFocus={() => setFocusedField('phone')} onBlur={() => setFocusedField(null)}
+                      style={{
+                        width: '100%', padding: '13px 14px 13px 40px',
+                        background: inputBg, color: inputColor,
+                        border: `1px solid ${focusedField === 'phone' ? 'rgba(234,179,8,0.5)' : inputBorder}`,
+                        borderRadius: 12, outline: 'none',
+                        fontFamily: "'Lexend', sans-serif", fontSize: 13,
+                        boxShadow: focusedField === 'phone' ? '0 0 0 3px rgba(234,179,8,0.08)' : 'none',
+                        transition: 'all 0.2s',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, pointerEvents: 'none' }}>📸</span>
+                    <input
+                      type="text" placeholder="@instagram (opcional)"
+                      value={form.instagram} onChange={e => setForm(p => ({ ...p, instagram: e.target.value }))}
+                      onFocus={() => setFocusedField('instagram')} onBlur={() => setFocusedField(null)}
+                      style={{
+                        width: '100%', padding: '13px 14px 13px 40px',
+                        background: inputBg, color: inputColor,
+                        border: `1px solid ${focusedField === 'instagram' ? 'rgba(234,179,8,0.5)' : inputBorder}`,
+                        borderRadius: 12, outline: 'none',
+                        fontFamily: "'Lexend', sans-serif", fontSize: 13,
+                        boxShadow: focusedField === 'instagram' ? '0 0 0 3px rgba(234,179,8,0.08)' : 'none',
+                        transition: 'all 0.2s',
+                      }}
+                    />
+                  </div>
+
+                  {/* Gold tip */}
+                  <div style={{
+                    padding: '10px 14px', borderRadius: 12,
+                    background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.15)',
+                  }}>
+                    <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: isDark ? 'rgba(234,179,8,0.8)' : '#92700a', lineHeight: 1.5 }}>
+                      Seu cadastro aguarda aprovação da equipe. Você será notificado pelo WhatsApp.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => form.phone.trim() && setStep(3)}
+                    style={{
+                      width: '100%', padding: '14px', borderRadius: 12,
+                      background: form.phone.trim() ? `linear-gradient(135deg, ${GOLD}, ${ORANGE})` : (isDark ? '#1a1a1a' : '#e8e2d8'),
+                      color: form.phone.trim() ? '#000' : textSecondary,
+                      fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 14,
+                      border: 'none', cursor: form.phone.trim() ? 'pointer' : 'default',
+                      transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
+                      boxShadow: form.phone.trim() ? '0 0 20px rgba(234,179,8,0.2)' : 'none',
+                    }}
+                  >
+                    Finalizar Inscrição 🏆
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: SUCCESS ── */}
+          {step === 3 && (
+            <div key="step3" style={{ opacity: contentVisible ? 1 : 0, transform: contentVisible ? 'translateY(0)' : 'translateY(14px)', transition: 'opacity 0.4s cubic-bezier(0.22,1,0.36,1), transform 0.4s cubic-bezier(0.22,1,0.36,1)', textAlign: 'center', paddingTop: 40 }} style={{ textAlign: 'center', paddingTop: 40 }}>
+              {/* Big success emoji */}
+              <div style={{ fontSize: 72, marginBottom: 20, animation: 'floatY 2.5s ease-in-out infinite' }}>🏆</div>
+
+              <h2 style={{
+                fontFamily: "'Lexend', sans-serif", fontWeight: 900,
+                fontStyle: 'italic', fontSize: 28, textTransform: 'uppercase',
+                letterSpacing: '-0.03em', color: textPrimary, marginBottom: 10,
+              }}>Vaga reservada!</h2>
+
+              <p style={{
+                fontFamily: "'Space Grotesk', sans-serif", fontSize: 14,
+                color: textSecondary, lineHeight: 1.6, marginBottom: 28,
+                maxWidth: 260, margin: '0 auto 28px',
+              }}>
+                Seu cadastro foi enviado. Assim que confirmado, você terá acesso total à arena.
+              </p>
+
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '8px 16px', borderRadius: 20,
+                background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)',
+                marginBottom: 32,
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', display: 'inline-block', animation: 'goldPulse 2s ease-in-out infinite' }} />
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                  Aguardando liberação
+                </span>
+              </div>
+
+              {/* Stats preview */}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 32 }}>
+                {[
+                  { label: 'XP', value: '0', icon: '⚡' },
+                  { label: 'Rank', value: '—', icon: '🏆' },
+                  { label: 'Tier', value: 'Bronze', icon: '🥉' },
+                ].map(s => (
+                  <div key={s.label} style={{
+                    flex: 1, padding: '12px 8px', borderRadius: 14, textAlign: 'center',
+                    background: cardStyle === 'glass' ? 'rgba(255,255,255,0.04)' : (isDark ? '#111' : '#fff'),
+                    border: `1px solid ${isDark ? '#1e1e1e' : '#e8e2d8'}`,
+                  }}>
+                    <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
+                    <div style={{ fontFamily: "'Lexend', sans-serif", fontWeight: 800, fontSize: 15, color: textPrimary }}>{s.value}</div>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: textSecondary, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, color: textSecondary }}>
+                Dúvidas?{' '}
+                <span style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Fale conosco →</span>
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  APP ROOT — Canvas com 2 frames + Tweaks
+// ═══════════════════════════════════════════════════════════════
+function App() {
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+    "cardStyle": "flat",
+    "darkMode": true
+  }/*EDITMODE-END*/);
+
+  const cardStyle = tweaks.cardStyle;
+  const isDark = tweaks.darkMode;
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 48, padding: '32px 48px', overflow: 'auto' }}>
+
+      {/* ── FRAME 1: Arena (Login / Role Select) ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>
+          V1 — Arena · Login
+        </span>
+        <IOSDevice dark={isDark} width={390} height={844}>
+          <V1Arena cardStyle={cardStyle} isDark={isDark} />
+        </IOSDevice>
+      </div>
+
+      {/* ── FRAME 2: Blur Gate (Cadastro) ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' }}>
+          V2 — Blur Gate · Cadastro
+        </span>
+        <IOSDevice dark={isDark} width={390} height={844}>
+          <V2BlurGate cardStyle={cardStyle} isDark={isDark} />
+        </IOSDevice>
+      </div>
+
+      {/* Tweaks Panel */}
+      <TweaksPanel>
+        <TweakSection label="Visual dos Cards" />
+        <TweakRadio
+          label="Cards"
+          value={tweaks.cardStyle}
+          options={['glass', 'flat']}
+          onChange={(v) => setTweak('cardStyle', v)}
+        />
+        <TweakSection label="Modo de Cor" />
+        <TweakToggle
+          label="Dark Mode"
+          value={tweaks.darkMode}
+          onChange={(v) => setTweak('darkMode', v)}
+        />
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="80" fill="#050505"/>
+    <rect x="20" y="8" width="36" height="64" rx="6" fill="#111" stroke="#EAB308" stroke-width="1"/>
+    <rect x="64" y="8" width="36" height="64" rx="6" fill="#111" stroke="#EAB308" stroke-width="1"/>
+    <text x="38" y="45" font-size="18" text-anchor="middle" fill="#EAB308" font-weight="bold">W</text>
+    <text x="82" y="45" font-size="18" text-anchor="middle" fill="#EAB308" font-weight="bold">W</text>
+  </svg>
+</template>
+</body>
+</html>

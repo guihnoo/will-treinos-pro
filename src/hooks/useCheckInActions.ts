@@ -66,10 +66,13 @@ export function useCheckInActions(options: {
 
       if (!added) return;
 
+      // TypeScript narrows `added` to never inside async callbacks; snapshot the value
+      const addedCheckInRequests = (added as { checkInRequests: NonNullable<Lesson["checkInRequests"]> }).checkInRequests;
+
       if (usingSupabaseSession) {
         const supabase = getSupabaseClient();
         if (supabase) {
-          void updateLessonRemote(supabase, lessonId, { checkInRequests: added.checkInRequests })
+          void updateLessonRemote(supabase, lessonId, { checkInRequests: addedCheckInRequests })
             .then(() => {
               void logDevEvent("check_in_requested", "check_in", studentId, {
                 lessonId,

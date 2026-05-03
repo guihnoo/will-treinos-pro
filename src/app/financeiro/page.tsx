@@ -10,6 +10,8 @@ import { usePayments, type StudentPaymentProofAttachment } from "@/context/Payme
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import { getPaymentProofSignedUrl } from "@/lib/supabasePersistence";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import StatCard from "@/components/ui/StatCard";
 import { avatarSrc } from "@/lib/avatarSrc";
@@ -104,14 +106,21 @@ function PaymentModal({
   const copy = () => { navigator.clipboard.writeText(pixKey||""); setCopied(true); setTimeout(()=>setCopied(false),2000); if(navigator.vibrate) navigator.vibrate(40); };
   const fmt = (d: string) => new Date(d+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"long"});
   const fmtProof = (iso: string) => new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+  // Storage paths (not data: or http URLs) cannot be used as img src directly — they need a signed URL.
+  // For display purposes, treat them as PDF-like (show filename only) until opened via openProofViewer.
+  const proofIsStoragePath = Boolean(
+    pay.studentProofDataUrl &&
+    !pay.studentProofDataUrl.startsWith("data:") &&
+    !pay.studentProofDataUrl.startsWith("http"),
+  );
   const displayAttachment: StudentPaymentProofAttachment | null =
     localAttachment !== undefined
       ? localAttachment
       : pay.studentProofDataUrl
         ? {
-            previewUrl: pay.studentProofDataUrl,
+            previewUrl: proofIsStoragePath ? "" : pay.studentProofDataUrl,
             fileName: pay.studentProofFileName || "comprovante",
-            mime: pay.studentProofMime || "image/jpeg",
+            mime: proofIsStoragePath ? "application/pdf" : (pay.studentProofMime || "image/jpeg"),
           }
         : null;
   const isPdf = (a: StudentPaymentProofAttachment | null) =>
@@ -575,6 +584,30 @@ function AdminFinanceiro() {
   const [proofViewer, setProofViewer] = useState<{ dataUrl: string; fileName: string } | null>(null);
   const [selectedPayId, setSelectedPayId] = useState<string | null>(null);
   const [busyPayId, setBusyPayId] = useState<string | null>(null);
+  const [loadingProofId, setLoadingProofId] = useState<string | null>(null);
+
+  const openProofViewer = async (pay: { id: string; studentProofDataUrl?: string; studentProofFileName?: string }) => {
+    const raw = pay.studentProofDataUrl;
+    if (!raw) return;
+    const fileName = pay.studentProofFileName || "comprovante";
+    // data: URLs and http(s) URLs can be used directly; storage paths need a signed URL
+    if (raw.startsWith("data:") || raw.startsWith("http")) {
+      setProofViewer({ dataUrl: raw, fileName });
+      return;
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    setLoadingProofId(pay.id);
+    try {
+      const signedUrl = await getPaymentProofSignedUrl(supabase, raw);
+      setProofViewer({ dataUrl: signedUrl, fileName });
+    } catch {
+      // fallback: let the lightbox try to render it anyway
+      setProofViewer({ dataUrl: raw, fileName });
+    } finally {
+      setLoadingProofId(null);
+    }
+  };
   const getStudent = (id: string) => students.find(s=>s.id===id);
   const total = totalsByStatus.paid+totalsByStatus.pending+totalsByStatus.late;
   const filtered = payments
@@ -701,15 +734,11 @@ function AdminFinanceiro() {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   type="button"
-                  onClick={() =>
-                    setProofViewer({
-                      dataUrl: pay.studentProofDataUrl!,
-                      fileName: pay.studentProofFileName || "comprovante",
-                    })
-                  }
-                  className={`inline-flex items-center gap-1 rounded-lg border border-sky-500/35 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-500/15 ${ctaClass}`}
+                  disabled={loadingProofId === pay.id}
+                  onClick={() => void openProofViewer(pay)}
+                  className={`inline-flex items-center gap-1 rounded-lg border border-sky-500/35 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-500/15 disabled:opacity-50 ${ctaClass}`}
                 >
-                  <Eye className="h-3.5 w-3.5" /> Ver anexo
+                  <Eye className="h-3.5 w-3.5" /> {loadingProofId === pay.id ? "Abrindo…" : "Ver anexo"}
                 </motion.button>
               ) : null}
               {pay.studentProofSubmittedAt ? (

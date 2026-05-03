@@ -90,6 +90,7 @@ export default function OracleInsights({ ctx }: { ctx: OracleContext }) {
 
       try {
         const supabase = getSupabaseClient();
+        if (!supabase) { setError(true); setLoading(false); return; }
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token ?? "";
 

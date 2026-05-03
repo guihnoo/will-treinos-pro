@@ -112,7 +112,8 @@ function ExerciseModal({
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const sets = parseSets(ex.sets);
   const restSec = ex.rest ? parseInt(ex.rest) * (ex.rest.includes("min") ? 60 : 1) : 60;
-  const completedSets = Array.from({ length: sets }, (_, i) => done[`${planId}_${exIdx}_${i}`] ? 1 : 0).reduce((a,b) => a+b, 0);
+  let completedSets = 0;
+  for (let i = 0; i < sets; i++) { if (done[`${planId}_${exIdx}_${i}`]) completedSets++; }
   useBodyScrollLock(true);
 
   return (
@@ -472,7 +473,8 @@ export default function TreinosPage() {
                   >
                     {plan.exercises.map((ex, ei) => {
                       const sets = parseSets(ex.sets);
-                      const completedSets = Array.from({ length: sets }, (_, i) => done[`${plan.id}_${ei}_${i}`] ? 1 : 0).reduce((a,b) => a+b, 0);
+                      let completedSets = 0;
+                      for (let i = 0; i < sets; i++) { if (done[`${plan.id}_${ei}_${i}`]) completedSets++; }
                       const exDone = completedSets === sets && sets > 0;
 
                       return (

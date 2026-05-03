@@ -1,0 +1,350 @@
+{
+  "nodes": [
+    {
+      "id": "g0",
+      "type": "group",
+      "label": "Core Architecture",
+      "x": 0,
+      "y": 0,
+      "width": 660,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_auth_flow",
+      "type": "file",
+      "file": "Auth Flow (OAuth + Consolidation).md",
+      "x": 20,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_coach_home",
+      "type": "file",
+      "file": "CoachHome Component.md",
+      "x": 220,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_lessons_context",
+      "type": "file",
+      "file": "Lessons Context Provider.md",
+      "x": 420,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_modal_first_arch",
+      "type": "file",
+      "file": "Modal-First Architecture.md",
+      "x": 20,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_student_home",
+      "type": "file",
+      "file": "StudentHome Component.md",
+      "x": 220,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_students_context",
+      "type": "file",
+      "file": "Students Context Provider.md",
+      "x": 420,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g1",
+      "type": "group",
+      "label": "Context Providers",
+      "x": 740,
+      "y": 0,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_db_persistence",
+      "type": "file",
+      "file": "Database Persistence Layer.md",
+      "x": 760,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_rls_policies",
+      "type": "file",
+      "file": "RLS Security Policies.md",
+      "x": 960,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_sync_queue",
+      "type": "file",
+      "file": "Sync Queue (Offline-First).md",
+      "x": 1160,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_use_lesson_mutations",
+      "type": "file",
+      "file": "useLessonMutations Hook.md",
+      "x": 760,
+      "y": 160,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g2",
+      "type": "group",
+      "label": "UI Components",
+      "x": 1420,
+      "y": 0,
+      "width": 600,
+      "height": 400,
+      "color": "3"
+    },
+    {
+      "id": "n_lesson_ratings",
+      "type": "file",
+      "file": "Lesson Ratings Context.md",
+      "x": 1440,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_xp_motor",
+      "type": "file",
+      "file": "XP Gamification Motor.md",
+      "x": 1640,
+      "y": 80,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g3",
+      "type": "group",
+      "label": "Hooks & Mutations",
+      "x": 0,
+      "y": 480,
+      "width": 600,
+      "height": 400,
+      "color": "4"
+    },
+    {
+      "id": "n_payments_context",
+      "type": "file",
+      "file": "Payments Context Provider.md",
+      "x": 20,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_will_cockpit",
+      "type": "file",
+      "file": "WillCockpit Admin.md",
+      "x": 220,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g4",
+      "type": "group",
+      "label": "Persistence Layer",
+      "x": 740,
+      "y": 480,
+      "width": 600,
+      "height": 400,
+      "color": "5"
+    },
+    {
+      "id": "n_supabase_client",
+      "type": "file",
+      "file": "Supabase Client Singleton.md",
+      "x": 760,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_use_checkin_actions",
+      "type": "file",
+      "file": "useCheckInActions Hook.md",
+      "x": 960,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g5",
+      "type": "group",
+      "label": "Gamification System",
+      "x": 1420,
+      "y": 480,
+      "width": 600,
+      "height": 400,
+      "color": "6"
+    },
+    {
+      "id": "n_date_utils",
+      "type": "file",
+      "file": "Date Utilities Library.md",
+      "x": 1440,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "n_use_payment_mutations",
+      "type": "file",
+      "file": "usePaymentMutations Hook.md",
+      "x": 1640,
+      "y": 560,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g6",
+      "type": "group",
+      "label": "Security & Auth",
+      "x": 0,
+      "y": 960,
+      "width": 600,
+      "height": 400,
+      "color": "1"
+    },
+    {
+      "id": "n_will_treinos_app",
+      "type": "file",
+      "file": "Will Treinos PRO Platform.md",
+      "x": 20,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    },
+    {
+      "id": "g7",
+      "type": "group",
+      "label": "Utilities",
+      "x": 740,
+      "y": 960,
+      "width": 600,
+      "height": 400,
+      "color": "2"
+    },
+    {
+      "id": "n_checkin_context",
+      "type": "file",
+      "file": "Check-in Context Provider.md",
+      "x": 760,
+      "y": 1040,
+      "width": 180,
+      "height": 60
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_xp_motor_lesson_ratings",
+      "fromNode": "n_xp_motor",
+      "toNode": "n_lesson_ratings",
+      "label": "conceptually_related_to [INFERRED]"
+    },
+    {
+      "id": "e_modal_first_arch_coach_home",
+      "fromNode": "n_modal_first_arch",
+      "toNode": "n_coach_home",
+      "label": "implements [EXTRACTED]"
+    },
+    {
+      "id": "e_rls_policies_db_persistence",
+      "fromNode": "n_rls_policies",
+      "toNode": "n_db_persistence",
+      "label": "implements [EXTRACTED]"
+    },
+    {
+      "id": "e_auth_flow_students_context",
+      "fromNode": "n_auth_flow",
+      "toNode": "n_students_context",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_sync_queue_db_persistence",
+      "fromNode": "n_sync_queue",
+      "toNode": "n_db_persistence",
+      "label": "shares_data_with [INFERRED]"
+    },
+    {
+      "id": "e_students_context_student_home",
+      "fromNode": "n_students_context",
+      "toNode": "n_student_home",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_students_context_coach_home",
+      "fromNode": "n_students_context",
+      "toNode": "n_coach_home",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_students_context_will_cockpit",
+      "fromNode": "n_students_context",
+      "toNode": "n_will_cockpit",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_lessons_context_student_home",
+      "fromNode": "n_lessons_context",
+      "toNode": "n_student_home",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_lessons_context_coach_home",
+      "fromNode": "n_lessons_context",
+      "toNode": "n_coach_home",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_payments_context_will_cockpit",
+      "fromNode": "n_payments_context",
+      "toNode": "n_will_cockpit",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_use_checkin_actions_supabase_client",
+      "fromNode": "n_use_checkin_actions",
+      "toNode": "n_supabase_client",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_use_lesson_mutations_db_persistence",
+      "fromNode": "n_use_lesson_mutations",
+      "toNode": "n_db_persistence",
+      "label": "calls [EXTRACTED]"
+    },
+    {
+      "id": "e_use_payment_mutations_date_utils",
+      "fromNode": "n_use_payment_mutations",
+      "toNode": "n_date_utils",
+      "label": "calls [EXTRACTED]"
+    }
+  ]
+}

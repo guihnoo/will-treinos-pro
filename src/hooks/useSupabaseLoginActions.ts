@@ -57,7 +57,7 @@ export function useSupabaseLoginActions(options: {
       }
 
       await applySupabaseSession(data.user);
-      return { ok: true as const, role: computeEffectiveRole(data.user, devImpersonation) };
+      return { ok: true as const, role: computeEffectiveRole(data.user, devImpersonation) ?? "visitor" as const };
     },
     [applySupabaseSession, devImpersonation],
   );

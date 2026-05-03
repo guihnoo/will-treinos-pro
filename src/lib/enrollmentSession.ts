@@ -49,9 +49,21 @@ export function clearStoredInviteToken(): void {
   wtSessionRemove(WT_INVITE_TOKEN);
 }
 
-/** Produção: `NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE=true` — `/cadastro` e `/signup` exigem `?invite=` válido (RPC) quando Supabase ativo. */
+/**
+ * Produção: gate de matrícula para `/cadastro` e `/signup`.
+ * Qualquer um dos envs em `true` ativa o modo estrito (RPC `verify_enrollment_invite` quando há Supabase).
+ * Preferido: `NEXT_PUBLIC_REQUIRE_ENROLLMENT_INVITE` — legado: `NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE`.
+ */
 export function cadastroInviteRequired(): boolean {
-  return process.env.NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE === "true";
+  return (
+    process.env.NEXT_PUBLIC_REQUIRE_ENROLLMENT_INVITE === "true" ||
+    process.env.NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE === "true"
+  );
+}
+
+/** Alias semântico — mesmo comportamento que `cadastroInviteRequired`. */
+export function enrollmentInviteRequired(): boolean {
+  return cadastroInviteRequired();
 }
 
 function staffOAuthGateExpiresAt(raw: string | null): number | null {

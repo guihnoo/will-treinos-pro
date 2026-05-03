@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
 import {
+  cadastroInviteRequired,
   setStaffOAuthGateOk,
   clearStaffOAuthGate,
 } from "@/lib/enrollmentSession";
@@ -42,6 +43,7 @@ function LoginPageContent() {
 
   const supabaseReady = hasSupabaseEnv();
   const nextPath = sanitizeNextPath(searchParams.get("next"));
+  const inviteStrict = cadastroInviteRequired();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
