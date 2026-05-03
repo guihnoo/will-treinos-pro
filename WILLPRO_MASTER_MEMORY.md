@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/05/2026 ~02:55 BRT] (Cursor):** **P1 — convite de matrícula após fetch** — Novo `src/lib/enrollmentInviteCode.ts`: `resolveEnrollmentInviteCode(inviteRemote, prevLocal)` retorna `code` + `shouldPersistToSupabase` (só `true` quando o remoto veio vazio e usamos local/gerado). `AppContext.loadSupabaseCriticalData` usa a função e mantém `upsertEnrollmentInviteRemote` condicional; corrigido import quebrado de `appSessionHelpers` (linhas em branco). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
+
 - **[03/05/2026 ~02:40 BRT] (Cursor):** **P1 — `resolveEffectiveSupabaseRole` (staff + matrícula)** — Novo `src/lib/resolveEffectiveSupabaseRole.ts`: `computeEffectiveRole` + `fetchStaffAccessRole` quando JWT é `null`/`aluno` + obrigatoriedade de linha em `students` quando há catálogo. `AppContext.applySupabaseSession` só orquestra estado/cookies e chama essa função; removidos imports diretos de `fetchStaffAccessRole` e `findLinkedStudentForAuth` no context. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
 
 - **[03/05/2026 ~02:25 BRT] (Cursor):** **P1 — extrair `buildSessionUser` do `AppContext`** — Novo `src/lib/buildSessionUser.ts`: função pura `buildSessionUser` + tipo `BuildSessionUserCustom` (montagem de `User` com demo profiles, `userProfiles` LS e vínculo `students`). `AppContext.tsx`: remove `useCallback` duplicado; `loginUser` / `applySupabaseSession` importam a lib; deps de `applySupabaseSession` só `[devImpersonation]`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).

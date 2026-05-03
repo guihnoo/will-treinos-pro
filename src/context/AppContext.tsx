@@ -47,10 +47,9 @@ import {
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
+import { resolveEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
-  
-
   CRITICAL_DATA_FETCH_TIMEOUT_MS,
   clearWtRoleCookie,
   filterDemoNotifications,
@@ -388,15 +387,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           try {
             const inviteRemote = await fetchEnrollmentInviteRemote(supabase);
             setAppConfig((prev) => {
-              let code = inviteRemote?.trim() || "";
-              if (!code) {
-                code = prev.enrollmentInviteCode?.trim() || "";
-                if (!code) {
-                  code =
-                    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-                      ? crypto.randomUUID().replace(/-/g, "").slice(0, 14)
-                      : `wt_${Date.now().toString(36)}`;
-                }
+              const { code, shouldPersistToSupabase } = resolveEnrollmentInviteCode(
+                inviteRemote,
+                prev.enrollmentInviteCode,
+              );
+              if (shouldPersistToSupabase) {
                 void upsertEnrollmentInviteRemote(supabase, code).catch(() => {
                   /* migração app_settings pode não estar aplicada ainda */
                 });
