@@ -50,6 +50,7 @@ import { runEnrollmentInviteSync } from "@/lib/enrollmentInviteSync";
 import { willUid } from "@/lib/willUid";
 import { loadCriticalLiveBundle } from "@/lib/loadCriticalLiveBundle";
 import { useSupabaseRealtimeRefresh } from "@/hooks/useSupabaseRealtimeRefresh";
+import { useSupabaseAuthBridge } from "@/hooks/useSupabaseAuthBridge";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
   clearWtRoleCookie,
@@ -388,57 +389,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await loadSupabaseCriticalData({ forceBlocking: true });
   }, [loadSupabaseCriticalData]);
 
-  // Bridge local-first state with real Supabase auth session.
-  useEffect(() => {
-    if (!isMounted) return;
-    if (!hasSupabaseEnv()) {
-      setAuthResolved(true);
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setAuthError("Cliente Supabase indisponível.");
-      setAuthResolved(true);
-      return;
-    }
-
-    void supabase.auth.getSession().then(async ({ data, error }) => {
-      if (error) {
-        setAuthError(error.message);
-        setAuthResolved(true);
-        return;
-      }
-      if (data.session?.user) {
-        setUsingSupabaseSession(true);
-        applySupabaseSession(data.session.user);
-        await loadSupabaseCriticalData();
-      }
-      setAuthResolved(true);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-        if (session?.user) {
-          setUsingSupabaseSession(true);
-          setAuthError(null);
-          applySupabaseSession(session.user);
-          void loadSupabaseCriticalData();
-        }
-      }
-      if (event === "SIGNED_OUT") {
-        setUsingSupabaseSession(false);
-        supabaseAuthUserRef.current = null;
-        criticalBootstrapDoneRef.current = false;
-        setUser(null);
-        wtLegacyRoleRemove();
-        clearWtRoleCookie();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [isMounted, loadSupabaseCriticalData, applySupabaseSession]);
+  useSupabaseAuthBridge({
+    isMounted,
+    applySupabaseSession,
+    loadSupabaseCriticalData,
+    supabaseAuthUserRef,
+    criticalBootstrapDoneRef,
+    setAuthResolved,
+    setAuthError,
+    setUsingSupabaseSession,
+    setUser,
+  });
 
   const loginWithPassword = useCallback(
     async (email: string, password: string) => {
