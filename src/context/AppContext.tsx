@@ -33,7 +33,6 @@ import {
   updateNotificationReadRemote,
   deleteLessonRemote,
   fetchFeedPostsRemote,
-  fetchEnrollmentInviteRemote,
   insertPaymentRemote,
   markPaymentPaidRemote,
   upsertEnrollmentInviteRemote,
@@ -46,10 +45,8 @@ import {
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
-import {
-  generateNewEnrollmentInviteCode,
-  reduceAppConfigAfterInviteRemote,
-} from "@/lib/enrollmentInviteCode";
+import { generateNewEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
+import { runEnrollmentInviteSync } from "@/lib/enrollmentInviteSync";
 import { willUid } from "@/lib/willUid";
 import { loadCriticalLiveBundle } from "@/lib/loadCriticalLiveBundle";
 import { useSupabaseRealtimeRefresh } from "@/hooks/useSupabaseRealtimeRefresh";
@@ -366,20 +363,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (supabaseAuthUserRef.current) {
             applySupabaseSession(supabaseAuthUserRef.current, data.students);
           }
-          try {
-            const inviteRemote = await fetchEnrollmentInviteRemote(supabase);
-            setAppConfig((prev) => {
-              const { next, upsertCode } = reduceAppConfigAfterInviteRemote(inviteRemote, prev);
-              if (upsertCode !== null) {
-                void upsertEnrollmentInviteRemote(supabase, upsertCode).catch(() => {
-                  /* migração app_settings pode não estar aplicada ainda */
-                });
-              }
-              return next;
-            });
-          } catch {
-            /* não bloqueia bootstrap */
-          }
+          await runEnrollmentInviteSync(supabase, setAppConfig);
         } catch (error) {
           setCriticalDataError(
             error instanceof Error ? error.message : "Falha ao sincronizar dados ao vivo com Supabase.",
