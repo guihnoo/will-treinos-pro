@@ -34,7 +34,6 @@ import {
   deleteLessonRemote,
   fetchFeedPostsRemote,
   fetchEnrollmentInviteRemote,
-  fetchLiveAppData,
   insertPaymentRemote,
   markPaymentPaidRemote,
   upsertEnrollmentInviteRemote,
@@ -49,13 +48,13 @@ import {
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
 import { generateNewEnrollmentInviteCode, resolveEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
 import { willUid } from "@/lib/willUid";
+import { loadCriticalLiveBundle } from "@/lib/loadCriticalLiveBundle";
+import { useSupabaseRealtimeRefresh } from "@/hooks/useSupabaseRealtimeRefresh";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
-  CRITICAL_DATA_FETCH_TIMEOUT_MS,
   clearWtRoleCookie,
   filterDemoNotifications,
   syncWtRoleCookie,
-  withNetworkTimeout,
 } from "@/lib/appSessionHelpers";
 import { sendPushToRole } from "@/lib/pushRoleBroadcast";
 import { buildSessionUser } from "@/lib/buildSessionUser";
@@ -355,22 +354,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
         try {
           const currentUserId = supabaseAuthUserRef.current?.id || "";
-          const data = await withNetworkTimeout(
-            fetchLiveAppData(supabase),
-            CRITICAL_DATA_FETCH_TIMEOUT_MS,
-            "A sincronização demorou demais. Verifique sua conexão e use Tentar novamente.",
-          );
-          let livePosts: Post[] = [];
-          try {
-            livePosts = await withNetworkTimeout(
-              fetchFeedPostsRemote(supabase, currentUserId),
-              CRITICAL_DATA_FETCH_TIMEOUT_MS,
-              "Feed indisponível no momento.",
-            );
-          } catch {
-            // Feed is non-critical for session bootstrap; keep login unlocked and show empty feed.
-            livePosts = [];
-          }
+          const { data, livePosts } = await loadCriticalLiveBundle(supabase, currentUserId);
           setStudents(data.students);
           setPayments(data.payments);
           setLessons(data.lessons);
@@ -578,33 +562,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   }, [devImpersonation, applySupabaseSession, students, usingSupabaseSession]);
 
-  // ─── SUPABASE REALTIME ───
-  useEffect(() => {
-    if (!usingSupabaseSession) { setIsLive(false); return; }
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
-
-    let debounce: ReturnType<typeof setTimeout>;
-    const refresh = () => {
-      clearTimeout(debounce);
-      debounce = setTimeout(() => void loadSupabaseCriticalData(), 400);
-    };
-
-    const channel = supabase
-      .channel("willpro-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "lessons" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, refresh)
-      .subscribe((status) => {
-        setIsLive(status === "SUBSCRIBED");
-      });
-
-    return () => {
-      clearTimeout(debounce);
-      void supabase.removeChannel(channel);
-    };
-  }, [usingSupabaseSession, loadSupabaseCriticalData]);
+  useSupabaseRealtimeRefresh({
+    enabled: usingSupabaseSession,
+    onRefresh: loadSupabaseCriticalData,
+    onLiveStatus: setIsLive,
+  });
 
   // ─── LESSONS CRUD ───
   const addLesson = useCallback((l: WithoutId<Lesson>) => {

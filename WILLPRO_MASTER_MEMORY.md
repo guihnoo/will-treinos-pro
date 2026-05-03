@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/05/2026 ~03:45 BRT] (Cursor):** **P1 — bundle crítico + Realtime hook** — Novo `src/lib/loadCriticalLiveBundle.ts`: `fetchLiveAppData` + `fetchFeedPostsRemote` com timeouts e fallback do feed vazio. Novo `src/hooks/useSupabaseRealtimeRefresh.ts`: canal `willpro-realtime`, debounce 400ms, tabelas `students|lessons|payments|notifications`, `onLiveStatus` para `setIsLive`. `AppContext`: `loadSupabaseCriticalData` usa o bundle; removidos imports diretos de `withNetworkTimeout`/`CRITICAL_DATA_FETCH_TIMEOUT_MS`/`fetchLiveAppData`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
+
 - **[03/05/2026 ~03:30 BRT] (Cursor):** **P1 — `willUid` + AppConfig URL** — Novo `src/lib/willUid.ts`: `willUid()` substitui o closure `uid` dentro de `AppContext` (ids otimistas `l_`, `st_`, `pay_`, `n_`, `p_`); `seedPendingTuitionForStudent` deixa de listar `uid` nas deps. `AppConfigContext`: `cadastroInviteUrl` com um único `${origin}${cadastroPath}` (SSR ainda `""`), deps só `cadastroPath`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
 
 - **[03/05/2026 ~03:15 BRT] (Cursor):** **Convite — gerador único + AppConfig** — `src/lib/enrollmentInviteCode.ts`: novo `generateNewEnrollmentInviteCode()` (uuid truncado / fallback `wt_`), usado por `resolveEnrollmentInviteCode`, pelo efeito offline em `AppContext.tsx` e por `AppConfigContext.generateEnrollmentInviteCode`. **Hotfix login:** `src/app/login/page.tsx` importava `setStaffOAuthGate` (inexistente); corrigido para `setStaffOAuthGateOk` (`enrollmentSession.ts`). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
