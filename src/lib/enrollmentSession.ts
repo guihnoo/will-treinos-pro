@@ -1,6 +1,6 @@
 import { wtSessionGet, wtSessionRemove, wtSessionSet } from "@/lib/willLocalStorage";
 
-/** Canal de matrícula: setado ao abrir `/cadastro` com convite válido (link do dono). */
+/** Canal de matrícula: setado ao abrir `/cadastro` ou `/signup` com convite válido (link do dono). */
 export const WT_MATRICULA_CHANNEL = "wt_matricula_channel";
 
 /** Token do query `?invite=` — mesma aba; usado para UX e futura validação server-side. */
@@ -49,7 +49,7 @@ export function clearStoredInviteToken(): void {
   wtSessionRemove(WT_INVITE_TOKEN);
 }
 
-/** Produção: `NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE=true` — só cadastro com `?invite=` (ou token já guardado na sessão). */
+/** Produção: `NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE=true` — `/cadastro` e `/signup` exigem `?invite=` válido (RPC) quando Supabase ativo. */
 export function cadastroInviteRequired(): boolean {
   return process.env.NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE === "true";
 }

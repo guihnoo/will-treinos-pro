@@ -15,14 +15,10 @@ import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { insertNotificationRemote } from "@/lib/supabasePersistence";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
-import {
-  cadastroInviteRequired,
-  clearStoredInviteToken,
-  getStoredInviteToken,
-  persistInviteTokenFromSearch,
-  setMatriculaChannelActive,
-} from "@/lib/enrollmentSession";
+import { cadastroInviteRequired, getStoredInviteToken } from "@/lib/enrollmentSession";
 import { verifyEnrollmentInviteWithServer } from "@/lib/verifyEnrollmentInvite";
+import { useEnrollmentInviteGate } from "@/hooks/useEnrollmentInviteGate";
+import { EnrollmentInviteBlocked } from "@/components/enrollment/EnrollmentInviteBlocked";
 
 const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7","serve8","jump9","team10","coach11","pro12"];
 
@@ -63,49 +59,6 @@ function CadastroPageContent() {
   const router = useRouter();
   void router;
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let cancelled = false;
-
-    (async () => {
-      const token = persistInviteTokenFromSearch(window.location.search);
-      const required = cadastroInviteRequired();
-
-      if (!required) {
-        setMatriculaChannelActive();
-        if (!cancelled) setInviteGate({ ready: true, blocked: false });
-        return;
-      }
-
-      if (!token) {
-        if (!cancelled) setInviteGate({ ready: true, blocked: true, reason: "missing" });
-        return;
-      }
-
-      if (!hasSupabaseEnv()) {
-        setMatriculaChannelActive();
-        if (!cancelled) setInviteGate({ ready: true, blocked: false });
-        return;
-      }
-
-      const valid = await verifyEnrollmentInviteWithServer(token);
-      if (cancelled) return;
-
-      if (!valid) {
-        clearStoredInviteToken();
-        if (!cancelled) setInviteGate({ ready: true, blocked: true, reason: "invalid" });
-        return;
-      }
-
-      setMatriculaChannelActive();
-      if (!cancelled) setInviteGate({ ready: true, blocked: false });
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -124,11 +77,7 @@ function CadastroPageContent() {
   const [loading, setLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
-  const [inviteGate, setInviteGate] = useState<{
-    ready: boolean;
-    blocked: boolean;
-    reason?: "missing" | "invalid";
-  }>({ ready: false, blocked: false });
+  const inviteGate = useEnrollmentInviteGate();
 
   // Update form if user auth resolves later
   useEffect(() => {
@@ -203,8 +152,7 @@ function CadastroPageContent() {
       const tok = getStoredInviteToken();
       if (!tok || !(await verifyEnrollmentInviteWithServer(tok))) {
         toast("⚠️ Convite inválido ou desatualizado. Peça um novo link à equipe.", "error");
-        clearStoredInviteToken();
-        setInviteGate({ ready: true, blocked: true, reason: "invalid" });
+        inviteGate.markInviteInvalid();
         return;
       }
     }
@@ -291,33 +239,7 @@ function CadastroPageContent() {
 
   // ── Blocked (sem convite ou convite inválido no servidor) ──
   if (inviteGate.blocked) {
-    const invalid = inviteGate.reason === "invalid";
-    return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 relative overflow-hidden" style={{ fontFamily: "'Lexend', sans-serif" }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#EAB308] opacity-[0.05] blur-[120px] rounded-full" />
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-black/40 p-10 text-center backdrop-blur-xl"
-        >
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EAB308]/10 border border-[#EAB308]/20">
-            <Mail className="h-8 w-8 text-[#EAB308]" />
-          </div>
-          <h2 className="text-xl font-black text-white mb-2 italic uppercase">
-            {invalid ? "Convite inválido" : "Convite obrigatório"}
-          </h2>
-          <p className="text-sm text-white/50 leading-relaxed mb-8">
-            {invalid
-              ? "Este link não corresponde ao código ativo da academia ou expirou após um novo código ser gerado. Peça ao Will Treinos um link atualizado."
-              : "Use o link de matrícula enviado pela equipe Will Treinos. Sem esse link, o cadastro fica restrito para proteger a arena."}
-          </p>
-          <Link href="/login" className={`inline-flex ${TOUCH_TARGET_MIN} items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 text-sm font-semibold text-white/70 hover:border-[#EAB308]/40 hover:text-[#EAB308] hover:bg-[#EAB308]/5 transition-all ${FOCUS_RING_GOLD}`}>
-            Voltar ao login
-          </Link>
-        </motion.div>
-      </div>
-    );
+    return <EnrollmentInviteBlocked reason={inviteGate.reason} />;
   }
 
   // ── Success ──

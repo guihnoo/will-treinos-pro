@@ -8,7 +8,8 @@ import { appRoleFromSupabaseUser, getSupabaseClient, hasSupabaseEnv } from "@/li
 
 import { isDevRootEmail, postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
 import { fetchStaffAccessRole } from "@/lib/supabasePersistence";
-import { clearStaffOAuthGate, canUseSocialOAuthFromLogin } from "@/lib/enrollmentSession";
+import { clearStaffOAuthGate, getStoredInviteToken } from "@/lib/enrollmentSession";
+
 import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionGet, wtSessionRemove } from "@/lib/willLocalStorage";
 
 function isAllowedOAuthEmail(email: string | undefined): boolean {
@@ -77,7 +78,10 @@ export default function AuthCallbackPage() {
         // Self-signup OAuth: só vai para /signup se não for staff/admin/dev e não tiver matrícula.
         const needsStudentSignup = await oauthUserNeedsStudentSignupFlow(supabase, user);
         if (needsStudentSignup) {
-          router.replace("/signup");
+          const tok = typeof window !== "undefined" ? getStoredInviteToken() : null;
+          router.replace(
+            tok ? `/signup?invite=${encodeURIComponent(tok)}` : "/signup",
+          );
           return;
         }
 

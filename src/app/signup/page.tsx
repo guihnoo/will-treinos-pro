@@ -8,11 +8,16 @@ import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { cadastroInviteRequired, getStoredInviteToken } from "@/lib/enrollmentSession";
+import { verifyEnrollmentInviteWithServer } from "@/lib/verifyEnrollmentInvite";
+import { useEnrollmentInviteGate } from "@/hooks/useEnrollmentInviteGate";
+import { EnrollmentInviteBlocked } from "@/components/enrollment/EnrollmentInviteBlocked";
 
 export default function SignupPage() {
   const router = useRouter();
   const { user, authResolved } = useAuth();
   const { addStudent } = useApp();
+  const inviteGate = useEnrollmentInviteGate();
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -25,15 +30,27 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authResolved && !user) {
+    if (inviteGate.ready && !inviteGate.blocked && authResolved && !user) {
       router.replace("/login");
     }
-  }, [authResolved, user, router]);
+  }, [inviteGate.ready, inviteGate.blocked, authResolved, user, router]);
+
+  if (!inviteGate.ready) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-black">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-800 border-t-[#EAB308]" />
+      </div>
+    );
+  }
+
+  if (inviteGate.blocked) {
+    return <EnrollmentInviteBlocked reason={inviteGate.reason} />;
+  }
 
   if (!authResolved || !user) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-black">
-        <div className="h-10 w-10 rounded-full border-2 border-zinc-800 border-t-[#EAB308] animate-spin" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-800 border-t-[#EAB308]" />
       </div>
     );
   }
@@ -49,6 +66,14 @@ export default function SignupPage() {
       }
       if (!formData.phone.trim()) {
         throw new Error("Telefone é obrigatório");
+      }
+
+      if (cadastroInviteRequired() && hasSupabaseEnv()) {
+        const tok = getStoredInviteToken();
+        if (!tok || !(await verifyEnrollmentInviteWithServer(tok))) {
+          inviteGate.markInviteInvalid();
+          throw new Error("Convite inválido ou desatualizado. Use o link atualizado da equipe ou abra a matrícula com o convite.");
+        }
       }
 
       let authUid = user.authSubjectId ?? user.id;
@@ -92,15 +117,16 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-black text-white p-4 flex flex-col">
+    <div className="flex min-h-[100dvh] flex-col bg-black p-4 text-white">
       {/* Header */}
-      <div className="flex items-center gap-3 pt-4 pb-6">
+      <div className="flex items-center gap-3 pb-6 pt-4">
         <button
           onClick={() => router.back()}
-          className="flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-800 hover:bg-zinc-900 transition-colors"
+          className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 transition-colors hover:bg-zinc-900"
           aria-label="Voltar"
+          type="button"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
         </button>
         <h1 className="text-lg font-bold">Completar perfil</h1>
       </div>
@@ -109,32 +135,32 @@ export default function SignupPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-1 flex flex-col max-w-md mx-auto w-full py-6"
+        className="mx-auto flex w-full max-w-md flex-1 flex-col py-6"
       >
         <div className="mb-6">
-          <h2 className="text-2xl font-black mb-2">Bem-vindo ao Will!</h2>
+          <h2 className="mb-2 text-2xl font-black">Bem-vindo ao Will!</h2>
           <p className="text-zinc-400">
             Preencha seus dados para completar o cadastro. Um administrador analisará seu pedido.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4">
           {/* Nome */}
           <div>
-            <label className="block text-xs font-bold text-zinc-300 mb-2">Nome completo</label>
+            <label className="mb-2 block text-xs font-bold text-zinc-300">Nome completo</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Seu nome"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:border-[#EAB308] focus:outline-none transition-colors"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-white placeholder-zinc-600 transition-colors focus:border-[#EAB308] focus:outline-none"
               disabled={loading}
             />
           </div>
 
           {/* Telefone */}
           <div>
-            <label className="block text-xs font-bold text-zinc-300 mb-2">
+            <label className="mb-2 block text-xs font-bold text-zinc-300">
               Telefone <span className="text-red-400">*</span>
             </label>
             <input
@@ -142,69 +168,66 @@ export default function SignupPage() {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="(21) 99999-9999"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:border-[#EAB308] focus:outline-none transition-colors"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-white placeholder-zinc-600 transition-colors focus:border-[#EAB308] focus:outline-none"
               disabled={loading}
             />
           </div>
 
           {/* Birthdate */}
           <div>
-            <label className="block text-xs font-bold text-zinc-300 mb-2">Data de nascimento</label>
+            <label className="mb-2 block text-xs font-bold text-zinc-300">Data de nascimento</label>
             <input
               type="date"
               value={formData.birthdate}
               onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white focus:border-[#EAB308] focus:outline-none transition-colors"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-white transition-colors focus:border-[#EAB308] focus:outline-none"
               disabled={loading}
             />
           </div>
 
           {/* Instagram */}
           <div>
-            <label className="block text-xs font-bold text-zinc-300 mb-2">Instagram</label>
+            <label className="mb-2 block text-xs font-bold text-zinc-300">Instagram</label>
             <input
               type="text"
               value={formData.instagram}
               onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
               placeholder="@seu_usuario"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:border-[#EAB308] focus:outline-none transition-colors"
+              className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-white placeholder-zinc-600 transition-colors focus:border-[#EAB308] focus:outline-none"
               disabled={loading}
             />
           </div>
 
           {/* Motivation */}
           <div>
-            <label className="block text-xs font-bold text-zinc-300 mb-2">Por que quer entrar?</label>
+            <label className="mb-2 block text-xs font-bold text-zinc-300">Por que quer entrar?</label>
             <textarea
               value={formData.motivation}
               onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
               placeholder="Ex: Quero melhorar meu jogo de voleibol..."
               rows={3}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-600 focus:border-[#EAB308] focus:outline-none transition-colors resize-none"
+              className="w-full resize-none rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-white placeholder-zinc-600 transition-colors focus:border-[#EAB308] focus:outline-none"
               disabled={loading}
             />
           </div>
 
           {/* Error */}
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-xs">
-              {error}
-            </div>
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">{error}</div>
           )}
 
-          {/* Submit */}
           <div className="flex-1" />
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-[#EAB308] text-black font-bold text-sm hover:bg-[#EAB308]/90 disabled:opacity-50 transition-colors mt-4"
+            className="mt-4 w-full rounded-lg bg-[#EAB308] py-3 text-sm font-bold text-black transition-colors hover:bg-[#EAB308]/90 disabled:opacity-50"
           >
             {loading ? "Enviando..." : "Enviar cadastro"}
           </button>
 
           <Link
             href="/login"
-            className="w-full py-2 rounded-lg border border-zinc-800 text-center text-xs font-bold text-zinc-400 hover:bg-zinc-950 transition-colors"
+            className="w-full rounded-lg border border-zinc-800 py-2 text-center text-xs font-bold text-zinc-400 transition-colors hover:bg-zinc-950"
           >
             Cancelar
           </Link>
