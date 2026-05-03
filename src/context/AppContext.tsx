@@ -46,7 +46,10 @@ import {
   updateStudentRemote,
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
-import { generateNewEnrollmentInviteCode, resolveEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
+import {
+  generateNewEnrollmentInviteCode,
+  reduceAppConfigAfterInviteRemote,
+} from "@/lib/enrollmentInviteCode";
 import { willUid } from "@/lib/willUid";
 import { loadCriticalLiveBundle } from "@/lib/loadCriticalLiveBundle";
 import { useSupabaseRealtimeRefresh } from "@/hooks/useSupabaseRealtimeRefresh";
@@ -366,17 +369,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           try {
             const inviteRemote = await fetchEnrollmentInviteRemote(supabase);
             setAppConfig((prev) => {
-              const { code, shouldPersistToSupabase } = resolveEnrollmentInviteCode(
-                inviteRemote,
-                prev.enrollmentInviteCode,
-              );
-              if (shouldPersistToSupabase) {
-                void upsertEnrollmentInviteRemote(supabase, code).catch(() => {
+              const { next, upsertCode } = reduceAppConfigAfterInviteRemote(inviteRemote, prev);
+              if (upsertCode !== null) {
+                void upsertEnrollmentInviteRemote(supabase, upsertCode).catch(() => {
                   /* migração app_settings pode não estar aplicada ainda */
                 });
               }
-              if (code === prev.enrollmentInviteCode) return prev;
-              return { ...prev, enrollmentInviteCode: code };
+              return next;
             });
           } catch {
             /* não bloqueia bootstrap */

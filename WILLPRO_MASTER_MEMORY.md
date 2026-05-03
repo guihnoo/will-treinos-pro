@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/05/2026 ~04:00 BRT] (Cursor):** **P1 — reducer puro de convite** — `src/lib/enrollmentInviteCode.ts`: `reduceAppConfigAfterInviteRemote(inviteRemote, prev)` devolve `next` + `upsertCode` (ou `null`), centralizando a regra com `resolveEnrollmentInviteCode`. `AppContext.loadSupabaseCriticalData`: `setAppConfig` só aplica `next` e dispara `upsertEnrollmentInviteRemote` quando `upsertCode !== null`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
+
 - **[03/05/2026 ~03:45 BRT] (Cursor):** **P1 — bundle crítico + Realtime hook** — Novo `src/lib/loadCriticalLiveBundle.ts`: `fetchLiveAppData` + `fetchFeedPostsRemote` com timeouts e fallback do feed vazio. Novo `src/hooks/useSupabaseRealtimeRefresh.ts`: canal `willpro-realtime`, debounce 400ms, tabelas `students|lessons|payments|notifications`, `onLiveStatus` para `setIsLive`. `AppContext`: `loadSupabaseCriticalData` usa o bundle; removidos imports diretos de `withNetworkTimeout`/`CRITICAL_DATA_FETCH_TIMEOUT_MS`/`fetchLiveAppData`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
 
 - **[03/05/2026 ~03:30 BRT] (Cursor):** **P1 — `willUid` + AppConfig URL** — Novo `src/lib/willUid.ts`: `willUid()` substitui o closure `uid` dentro de `AppContext` (ids otimistas `l_`, `st_`, `pay_`, `n_`, `p_`); `seedPendingTuitionForStudent` deixa de listar `uid` nas deps. `AppConfigContext`: `cadastroInviteUrl` com um único `${origin}${cadastroPath}` (SSR ainda `""`), deps só `cadastroPath`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).

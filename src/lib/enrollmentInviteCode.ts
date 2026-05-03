@@ -1,3 +1,5 @@
+import type { AppConfig } from "@/context/types";
+
 /**
  * Slug novo para `/cadastro?invite=` — offline, primeiro bootstrap ou «Gerar novo código».
  * Fonte única de aleatoriedade (evita drift com outros call sites).
@@ -26,4 +28,22 @@ export function resolveEnrollmentInviteCode(
     code = generateNewEnrollmentInviteCode();
   }
   return { code, shouldPersistToSupabase: true };
+}
+
+/**
+ * Aplica o resultado de `fetchEnrollmentInviteRemote` ao `AppConfig` (puro + `upsertCode` para Supabase).
+ */
+export function reduceAppConfigAfterInviteRemote(
+  inviteRemote: string | null | undefined,
+  prev: AppConfig,
+): { next: AppConfig; upsertCode: string | null } {
+  const { code, shouldPersistToSupabase } = resolveEnrollmentInviteCode(
+    inviteRemote,
+    prev.enrollmentInviteCode,
+  );
+  const upsertCode = shouldPersistToSupabase ? code : null;
+  if (code === prev.enrollmentInviteCode) {
+    return { next: prev, upsertCode };
+  }
+  return { next: { ...prev, enrollmentInviteCode: code }, upsertCode };
 }
