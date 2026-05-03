@@ -51,6 +51,7 @@ import { willUid } from "@/lib/willUid";
 import { loadCriticalLiveBundle } from "@/lib/loadCriticalLiveBundle";
 import { useSupabaseRealtimeRefresh } from "@/hooks/useSupabaseRealtimeRefresh";
 import { useSupabaseAuthBridge } from "@/hooks/useSupabaseAuthBridge";
+import { useLocalTransactionalPersistence } from "@/hooks/useLocalTransactionalPersistence";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
   clearWtRoleCookie,
@@ -225,23 +226,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     syncWtRoleCookie(user.role);
   }, [user, isMounted]);
 
-  // Persist on change
-  useEffect(() => {
-    if (isMounted && !usingSupabaseSession) ls.set("students", students);
-  }, [students, isMounted, usingSupabaseSession]);
-  useEffect(() => {
-    if (isMounted && !usingSupabaseSession) ls.set("lessons", lessons);
-  }, [lessons, isMounted, usingSupabaseSession]);
-  useEffect(() => {
-    if (isMounted && !usingSupabaseSession) ls.set("payments", payments);
-  }, [payments, isMounted, usingSupabaseSession]);
-  useEffect(() => {
-    if (isMounted && !usingSupabaseSession) ls.set("notifications", notifications);
-  }, [notifications, isMounted, usingSupabaseSession]);
-  useEffect(() => {
-    if (isMounted && !usingSupabaseSession) ls.set("posts", posts);
-  }, [posts, isMounted, usingSupabaseSession]);
-  useEffect(() => { if (isMounted) ls.set("appConfig", appConfig); }, [appConfig, isMounted]);
+  useLocalTransactionalPersistence({
+    isMounted,
+    usingSupabaseSession,
+    students,
+    lessons,
+    payments,
+    notifications,
+    posts,
+    appConfig,
+  });
 
   /** Modo offline / sem sessão Supabase: gera código de convite só em localStorage. */
   useEffect(() => {

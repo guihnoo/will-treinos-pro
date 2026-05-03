@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/05/2026 ~04:45 BRT] (Cursor):** **P1 — `useLocalTransactionalPersistence`** — Novo `src/hooks/useLocalTransactionalPersistence.ts`: um único `useEffect` replica os 6 anteriores (`students`–`posts` só sem sessão Supabase; `appConfig` sempre com `isMounted`). Qualquer mudança num slice regrava os cinco arrays locais de uma vez (mais `JSON.stringify` que com efeitos separados; estado final em LS equivalente). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
+
 - **[03/05/2026 ~04:30 BRT] (Cursor):** **P1 — hook `useSupabaseAuthBridge`** — Novo `src/hooks/useSupabaseAuthBridge.ts`: `getSession` inicial + `onAuthStateChange` (SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED / SIGNED_OUT), mesmo fluxo que antes no `AppContext`. `AppContext.tsx`: removido `useEffect` longo da ponte auth; chamada `useSupabaseAuthBridge({ … })`. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
 
 - **[03/05/2026 ~04:15 BRT] (Cursor):** **P1 — `runEnrollmentInviteSync`** — Novo `src/lib/enrollmentInviteSync.ts`: `runEnrollmentInviteSync(supabase, setAppConfig)` agrega `fetchEnrollmentInviteRemote` + `reduceAppConfigAfterInviteRemote` + `upsertEnrollmentInviteRemote` (mesma semântica, erros engolidos). `AppContext.loadSupabaseCriticalData` chama `await runEnrollmentInviteSync(...)`; removidos imports de `fetchEnrollmentInviteRemote` e `reduceAppConfigAfterInviteRemote` do context. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
