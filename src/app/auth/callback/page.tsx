@@ -5,8 +5,16 @@ import { useRouter } from "next/navigation";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
-import { clearStaffOAuthGate } from "@/lib/enrollmentSession";
+import { clearStaffOAuthGate, canUseSocialOAuthFromLogin } from "@/lib/enrollmentSession";
 import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionGet, wtSessionRemove } from "@/lib/willLocalStorage";
+
+function isAllowedOAuthEmail(email: string | undefined): boolean {
+  if (!email) return false;
+  const normalizedEmail = email.trim().toLowerCase();
+  const allowedDomains = process.env.NEXT_PUBLIC_OAUTH_EMAIL_DOMAINS?.split(",").map(d => d.trim().toLowerCase()) ?? [];
+  if (allowedDomains.length === 0) return true;
+  return allowedDomains.some(domain => normalizedEmail.endsWith(`@${domain}`));
+}
 
 function sanitizeNextPath(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -54,6 +62,10 @@ export default function AuthCallbackPage() {
 
       const finish = (user: SupabaseAuthUser) => {
         if (cancelled) return;
+        if (user.user_metadata?.provider && !isAllowedOAuthEmail(user.email)) {
+          router.replace(`/login?error=${encodeURIComponent("E-mail não autorizado para esta rede.")}`);
+          return;
+        }
         if (typeof window !== "undefined") {
           wtSessionRemove(WT_SESSION_POST_LOGIN_NEXT_KEY);
           clearStaffOAuthGate();

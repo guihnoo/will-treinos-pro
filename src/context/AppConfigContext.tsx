@@ -16,14 +16,15 @@ const AppConfigContext = createContext<AppConfigContextValue | undefined>(undefi
 
 export function AppConfigProvider({ children }: { children: React.ReactNode }) {
   const app = useApp();
-  const enrollmentInviteCode = app.appConfig.enrollmentInviteCode?.trim() ?? "";
+  const enrollmentInviteCode = (app.appConfig.enrollmentInviteCode ?? "").trim();
   const cadastroPath = enrollmentInviteCode
     ? `/cadastro?invite=${encodeURIComponent(enrollmentInviteCode)}`
     : "/cadastro";
   const cadastroInviteUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
+    if (!enrollmentInviteCode) return `${window.location.origin}${cadastroPath}`;
     return `${window.location.origin}${cadastroPath}`;
-  }, [cadastroPath]);
+  }, [cadastroPath, enrollmentInviteCode]);
   const generateEnrollmentInviteCode = useCallback(() => {
     const code =
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"

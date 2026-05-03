@@ -753,6 +753,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   }, [devImpersonation, applySupabaseSession, students, usingSupabaseSession]);
 
+  // ─── SUPABASE REALTIME ───
+  useEffect(() => {
+    if (!usingSupabaseSession) { setIsLive(false); return; }
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    let debounce: ReturnType<typeof setTimeout>;
+    const refresh = () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => void loadSupabaseCriticalData(), 400);
+    };
+
+    const channel = supabase
+      .channel("willpro-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "lessons" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, refresh)
+      .subscribe((status) => {
+        setIsLive(status === "SUBSCRIBED");
+      });
+
+    return () => {
+      clearTimeout(debounce);
+      void supabase.removeChannel(channel);
+    };
+  }, [usingSupabaseSession, loadSupabaseCriticalData]);
+
   // ─── LESSONS CRUD ───
   const addLesson = useCallback((l: WithoutId<Lesson>) => {
     const next: Lesson = { ...l, id: `l_${uid()}` };
@@ -1427,7 +1455,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      user, authResolved, authError, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync,
+      user, authResolved, authError, usingSupabaseSession, criticalDataLoading, criticalDataError, retryCriticalDataSync, isLive,
       isDevRoot, devImpersonation, setDevImpersonation,
       adminMode, setAdminMode, login: loginUser, loginWithPassword, loginWithOAuth, logout,
       students, lessons, payments, notifications,

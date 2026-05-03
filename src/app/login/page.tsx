@@ -10,8 +10,6 @@ import { hasSupabaseEnv } from "@/lib/supabaseClient";
 import {
   canUseSocialOAuthFromLogin,
   clearStaffOAuthGate,
-  isLoginOperatorMode,
-  setStaffOAuthGateOk,
 } from "@/lib/enrollmentSession";
 import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionSet } from "@/lib/willLocalStorage";
 
@@ -28,7 +26,6 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const operatorMode = isLoginOperatorMode();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,9 +98,7 @@ function LoginPageContent() {
     }
   };
 
-  const cardClass = operatorMode
-    ? "w-full max-w-sm rounded-xl border border-zinc-800 bg-zinc-950 px-5 py-6"
-    : "w-full max-w-md rounded-2xl border border-zinc-800/80 bg-zinc-950/90 px-6 py-8";
+  const cardClass = "w-full max-w-md rounded-2xl border border-zinc-800/80 bg-zinc-950/90 px-6 py-8";
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-black p-4">
@@ -116,11 +111,9 @@ function LoginPageContent() {
       </Link>
 
       <div className={cardClass}>
-        <div className={operatorMode ? "mb-5" : "mb-6 text-center"}>
-          <h1 className={`font-bold text-white ${operatorMode ? "text-lg" : "text-xl"}`}>Entrar</h1>
-          {!operatorMode ? (
-            <p className="mt-1 text-xs text-zinc-500">Will Treinos PRO — conta já criada no Supabase</p>
-          ) : null}
+        <div className="mb-6 text-center">
+          <h1 className="text-xl font-bold text-white">Entrar</h1>
+          <p className="mt-1 text-xs text-zinc-500">Will Treinos PRO — conta já criada no Supabase</p>
         </div>
 
         <div className="space-y-3">
@@ -169,7 +162,7 @@ function LoginPageContent() {
               <div className="h-px flex-1 bg-zinc-800" />
             </div>
 
-            <div className={operatorMode ? "flex flex-col gap-2" : "grid grid-cols-2 gap-2"}>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => void handleOAuthLogin("google")}
@@ -211,35 +204,6 @@ function LoginPageContent() {
           </>
         ) : null}
 
-        {!operatorMode && supabaseReady ? (
-          <details className="group mt-5 rounded-lg border border-zinc-800 bg-black/40 [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs text-zinc-500 hover:text-zinc-300">
-              <span>Acesso da equipe (OAuth)</span>
-              <ChevronDown className="h-4 w-4 shrink-0 text-zinc-600 transition-transform group-open:rotate-180" aria-hidden />
-            </summary>
-            <div className="border-t border-zinc-800 px-3 py-2">
-              <p className="mb-2 text-[10px] leading-snug text-zinc-600">
-                Libera Google/Facebook nesta aba por 45 min (staff).
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setStaffOAuthGateOk();
-                  toast("Login social liberado por 45 min nesta aba.");
-                }}
-                className="w-full rounded-lg border border-zinc-700 py-2 text-[11px] font-medium text-zinc-200 hover:border-[#EAB308]/50"
-              >
-                Sou equipe — liberar OAuth
-              </button>
-            </div>
-          </details>
-        ) : null}
-
-        {operatorMode && supabaseReady ? (
-          <p className="mt-3 text-[10px] text-zinc-600">
-            Modo operador: OAuth sem passo extra neste ambiente.
-          </p>
-        ) : null}
 
         {!supabaseReady ? (
           <div className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
