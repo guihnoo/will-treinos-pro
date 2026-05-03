@@ -160,7 +160,16 @@ function CadastroPageContent() {
     setLoading(true);
     const studentEmail = form.email.trim().toLowerCase() || user?.email?.trim().toLowerCase() || "";
     const avatar = photoMode === "photo" && customPhoto ? customPhoto : form.avatarSeed;
-    
+
+    let authUid: string | null | undefined = user?.authSubjectId || user?.id || null;
+    if (supabaseReady) {
+      const sb = getSupabaseClient();
+      if (sb) {
+        const { data: authData, error: authErr } = await sb.auth.getUser();
+        if (!authErr && authData.user?.id) authUid = authData.user.id;
+      }
+    }
+
     try {
       if (supabaseReady) {
         // Fluxo logado: usa o método do contexto que já cria o aluno e despacha eventos localmente
@@ -170,7 +179,7 @@ function CadastroPageContent() {
           plan: "mensal", monthlyValue: 0, paymentDay: 10,
           categories: [], joinedAt: new Date().toISOString().split("T")[0],
           frequency: 0, totalClasses: 0, notes: "",
-          authUserId: user?.authSubjectId || user?.id || null,
+          authUserId: authUid ?? null,
         });
 
         const supabase = getSupabaseClient();
@@ -195,7 +204,7 @@ function CadastroPageContent() {
           plan: "mensal", monthlyValue: 0, paymentDay: 10,
           categories: [], joinedAt: new Date().toISOString().split("T")[0],
           frequency: 0, totalClasses: 0, notes: "",
-          authUserId: user?.authSubjectId || user?.id || null,
+          authUserId: authUid ?? null,
         });
       }
     } catch (error) {

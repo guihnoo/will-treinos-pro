@@ -13,6 +13,7 @@ import type {
   WithoutId,
 } from "@/context/types";
 import { paymentReferenceForDate } from "@/lib/dateUtils";
+import { describeStudentInsertFailure } from "@/lib/studentSignupErrors";
 
 type DbRow = Record<string, unknown>;
 
@@ -375,7 +376,7 @@ export async function createStudentRemote(supabase: SupabaseClient, student: Stu
     .single();
 
   if (error) {
-    throw new Error(`Falha ao criar aluno: ${error.message}`);
+    throw new Error(describeStudentInsertFailure(error.message));
   }
   return mapStudent((data || {}) as DbRow);
 }

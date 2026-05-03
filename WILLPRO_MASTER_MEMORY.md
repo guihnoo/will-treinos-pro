@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/05/2026 ~21:40 BRT] (Cursor):** **Signup aluno OAuth — mensagens RLS/duplicidade + `auth.uid()` confiável** — Problema relatado: cadastro como aluno com email não-dev falhando. Hardening: `signup/page.tsx` e `cadastro/page.tsx` chamam `supabase.auth.getUser()` antes do `addStudent` para garantir `auth_user_id` alinhado ao JWT; validação se Supabase ativo e sem uid. Novo `src/lib/studentSignupErrors.ts` (`describeStudentInsertFailure`) mapeia erro RLS/permissão e constraint única `students_auth_user_id` para texto acionável (inclui lembrar migração `students_insert_pending_self`). `createStudentRemote` usa o mapper ao falhar INSERT. `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0). **Git:** push `origin/main`.
+
 - **[03/05/2026 ~21:15 BRT] (Cursor):** **Vercel — `ERR_PNPM_OUTDATED_LOCKFILE` (frozen-lockfile)** — CI falhava em `pnpm install`: `pnpm-lock.yaml` no Git não batia com `package.json` (ex.: `posthog-js`, `@playwright/test`/`playwright`, peers `next` com Playwright). Lockfile regenerado com `pnpm install` (pnpm 10.33.2), commit só de `pnpm-lock.yaml`. `pnpm run build` OK (exit 0). **Git:** push `origin/main`.
 
 - **[03/05/2026 ~20:45 BRT] (Cursor):** **Deploy Vercel — `packageManager` vs lockfile pnpm 10** — Log da Vercel: lockfile `pnpm-lock.yaml` v9 gerado por pnpm@10.x enquanto `package.json` declarava `pnpm@9.15.4`, inconsistência que pode falhar o build. Correção: `package.json` → `"packageManager": "pnpm@10.33.2"` (alinhado ao registry atual). `pnpm run build` OK local (exit 0). **Git:** push `origin/main`.

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
+import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
@@ -50,10 +51,25 @@ export default function SignupPage() {
         throw new Error("Telefone é obrigatório");
       }
 
-      const newStudent = await addStudent({
+      let authUid = user.authSubjectId ?? user.id;
+      if (hasSupabaseEnv()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const { data: authData, error: authErr } = await supabase.auth.getUser();
+          if (authErr || !authData.user?.id) {
+            throw new Error("Sessão expirada. Volte ao login e entre com Google novamente.");
+          }
+          authUid = authData.user.id;
+        }
+      }
+      if (hasSupabaseEnv() && !authUid) {
+        throw new Error("Não foi possível identificar sua conta. Volte ao login e entre com Google novamente.");
+      }
+
+      await addStudent({
         name: formData.name.trim(),
         phone: formData.phone.trim(),
-        email: user.email || "",
+        email: (user.email || "").trim().toLowerCase(),
         avatar: user.avatar || "",
         instagram: formData.instagram.trim(),
         status: "pending",
@@ -65,7 +81,7 @@ export default function SignupPage() {
         frequency: 0,
         totalClasses: 0,
         notes: formData.motivation.trim() || "",
-        authUserId: user.authSubjectId,
+        authUserId: authUid,
       });
 
       router.replace("/aguardando");
