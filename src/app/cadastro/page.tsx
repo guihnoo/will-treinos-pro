@@ -12,7 +12,7 @@ import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
-import { createPublicLeadRemote, insertNotificationRemote } from "@/lib/supabasePersistence";
+import { insertNotificationRemote } from "@/lib/supabasePersistence";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import {
@@ -47,7 +47,7 @@ function InputField({
         {...props}
         onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
         onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
-        className="w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none placeholder:text-white/30 transition-all duration-200 focus:border-[#EAB308]/50"
+        className="w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none placeholder:text-white/30 transition-all duration-200 focus:border-[#EAB308]/50 disabled:opacity-50 disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -150,7 +150,11 @@ function CadastroPageContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.phone) {
-      toast("⚠️ Preencha nome e telefone obrigatórios.");
+      toast("⚠️ Preencha nome e telefone obrigatórios.", "error");
+      return;
+    }
+    if (!user) {
+      toast("⚠️ Registre-se com o Google primeiro para continuar.", "error");
       return;
     }
     setLoading(true);
@@ -158,30 +162,33 @@ function CadastroPageContent() {
     const avatar = photoMode === "photo" && customPhoto ? customPhoto : form.avatarSeed;
     
     try {
-      if (supabaseReady && !user) {
-        const supabase = getSupabaseClient();
-        if (!supabase) throw new Error("Cliente Supabase indisponível.");
-        
-        // 1. Cria a lead no banco de dados
-        await createPublicLeadRemote(supabase, {
+      if (supabaseReady) {
+        // Fluxo logado: usa o método do contexto que já cria o aluno e despacha eventos localmente
+        await addStudent({
           name: form.name, phone: form.phone, email: studentEmail,
-          instagram: form.instagram, avatar,
-          authUserId: null,
+          instagram: form.instagram, avatar, status: "pending",
+          plan: "mensal", monthlyValue: 0, paymentDay: 10,
+          categories: [], joinedAt: new Date().toISOString().split("T")[0],
+          frequency: 0, totalClasses: 0, notes: "",
+          authUserId: user?.authSubjectId || user?.id || null,
         });
 
-        // 2. Tenta inserir a notificação remota para os admins verem
-        try {
-          await insertNotificationRemote(supabase, {
-            type: "new_student",
-            title: "Novo Aluno na Fila",
-            message: `${form.name} fez o cadastro público e aguarda aprovação!`,
-            time: "agora", read: false, isGlobal: true,
-          });
-        } catch (notifErr) {
-          console.warn("Nao foi possivel notificar os admins remotamente", notifErr);
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          // Garante que uma notificação global seja criada remotamente também
+          try {
+            await insertNotificationRemote(supabase, {
+              type: "new_student",
+              title: "Novo Aluno na Fila",
+              message: `${form.name} fez o cadastro público e aguarda aprovação!`,
+              time: "agora", read: false, isGlobal: true,
+            });
+          } catch (notifErr) {
+            console.warn("Nao foi possivel notificar os admins remotamente", notifErr);
+          }
         }
       } else {
-        // Fluxo logado: usa o método que já inclui push e eventos
+        // Fallback local se supabase falhar
         await addStudent({
           name: form.name, phone: form.phone, email: studentEmail,
           instagram: form.instagram, avatar, status: "pending",
@@ -386,20 +393,20 @@ function CadastroPageContent() {
               </button>
               <div className="flex items-center gap-3 mt-6 mb-2">
                 <div className="h-px flex-1 bg-white/10" />
-                <span className="text-[10px] uppercase tracking-widest text-white/30" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ou complete o formulário</span>
+                <span className="text-[10px] uppercase tracking-widest text-white/30" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Após autorizar, complete os dados</span>
                 <div className="h-px flex-1 bg-white/10" />
               </div>
             </div>
           )}
 
           {/* Avatar selector */}
-          <div className="flex flex-col items-center mb-7">
+          <div className={`flex flex-col items-center mb-7 transition-opacity duration-300 ${!user ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoFile} />
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoFile} />
 
             <motion.div
               whileTap={{ scale: 0.95 }}
-              onClick={() => setShowPhotoOptions(true)}
+              onClick={() => user && setShowPhotoOptions(true)}
               className="relative cursor-pointer group mb-2"
             >
               <div className="absolute -inset-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-md" 
@@ -470,26 +477,25 @@ function CadastroPageContent() {
           </div>
 
           {/* Fields */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <InputField icon={User} type="text" placeholder="Nome Completo *" required
+          <form onSubmit={handleSubmit} className={`space-y-4 transition-opacity duration-300 ${!user ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+            <InputField icon={User} type="text" placeholder="Nome Completo *" required disabled={!user}
               value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField icon={Phone} type="tel" placeholder="WhatsApp *" required
+              <InputField icon={Phone} type="tel" placeholder="WhatsApp *" required disabled={!user}
                 value={form.phone} onChange={handlePhoneChange} />
-              <InputField icon={AtSign} type="text" placeholder="@instagram"
+              <InputField icon={AtSign} type="text" placeholder="@instagram" disabled={!user}
                 value={form.instagram} onChange={e => setForm(p => ({ ...p, instagram: e.target.value }))} />
             </div>
 
             <InputField icon={Mail} type="email" placeholder="E-mail"
-              disabled={!!user?.email} // Não edita se logado pelo Google
+              disabled={true} // Ocultado se não logado, e desabilitado se logado pelo Google.
               value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
-              className={`w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white text-sm outline-none transition-all duration-200 focus:border-[#EAB308]/50 ${user?.email ? "opacity-50 cursor-not-allowed" : "placeholder:text-white/30"}`}
             />
 
             <motion.button
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-              type="submit" disabled={loading}
+              type="submit" disabled={loading || !user}
               className="relative w-full mt-6 overflow-hidden rounded-xl py-4 font-bold text-sm text-black disabled:opacity-60 disabled:cursor-not-allowed tracking-wide shadow-[0_0_20px_rgba(234,179,8,0.2)]"
               style={{ background: "linear-gradient(135deg, #EAB308, #F97316)" }}
             >
