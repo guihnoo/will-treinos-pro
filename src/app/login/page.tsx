@@ -150,6 +150,14 @@ function LoginPageContent() {
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
             Arena Digital de Elite
           </p>
+          {inviteStrict && (
+            <p
+              className="mx-auto mt-5 max-w-md rounded-lg border border-[#EAB308]/25 bg-[#EAB308]/5 px-4 py-2.5 text-center text-[11px] leading-relaxed text-[#EAB308]/90"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              <strong className="font-bold uppercase tracking-wide text-[#EAB308]">Matrícula fechada:</strong> novos atletas só entram com o link oficial da equipe (<span className="whitespace-nowrap">?invite=…</span>), validado no servidor.
+            </p>
+          )}
         </motion.div>
 
         {/* ── STAGE: Role Selection ─────────────────── */}
@@ -361,41 +369,74 @@ function LoginPageContent() {
             >
               <div className="rounded-xl p-7"
                 style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <button onClick={() => setStage("roles")} className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 mb-5 transition-colors mx-auto">
+                <button type="button" onClick={() => setStage("roles")} className="mx-auto mb-5 flex items-center gap-2 text-xs text-white/40 transition-colors hover:text-white/70">
                   ← Voltar
                 </button>
-                <span className="text-5xl mb-4 block">🏆</span>
-                <h2 className="text-xl font-bold text-white mb-3">Atleta VIP</h2>
-                <p className="text-sm text-white/50 leading-relaxed mb-6">
-                  Você pode <strong className="text-yellow-400">criar sua conta com Google</strong>, preencher seus dados e aguardar a aprovação do administrador — sem precisar de link de convite.
-                </p>
-                {supabaseReady && (
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    whileHover={{ scale: 1.01 }}
-                    onClick={() => void handleOAuthLogin("google")}
-                    disabled={isSubmitting}
-                    className="w-full flex items-center justify-center gap-3 py-3 rounded-lg font-semibold text-sm mb-4 transition-all disabled:opacity-40"
-                    style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
-                  >
-                    {isSubmitting ? "Conectando…" : "Criar conta com Google"}
-                  </motion.button>
-                )}
-                <p className="text-[11px] text-white/35 mb-4">
-                  Preferir o formulário completo de matrícula? Use o cadastro oficial abaixo quando disponível.
-                </p>
-                <div className="rounded-lg p-4 mb-4"
-                  style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.15)" }}>
-                  <p className="text-xs text-yellow-400/80">
-                    Se o seu treinador enviou um link de convite, abra-o neste navegador antes de cadastrar.
-                  </p>
-                </div>
-                {process.env.NEXT_PUBLIC_SHOW_PUBLIC_CADASTRO_LINK === "true" && (
-                  <Link href="/cadastro"
-                    className="inline-block px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all"
-                    style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)", color: "#000", fontFamily: "'Space Grotesk', sans-serif" }}>
-                    Acessar Matrícula
-                  </Link>
+                <span className="mb-4 block text-5xl">🏆</span>
+                <h2 className="mb-3 text-xl font-bold text-white">Atleta VIP</h2>
+                {inviteStrict ? (
+                  <>
+                    <p className="mb-5 text-sm leading-relaxed text-white/50">
+                      Novas contas só são aceitas com o <strong className="text-yellow-400">link oficial</strong> enviado pela equipe Will Treinos (código validado no servidor). Abra esse link primeiro — ou a página de matrícula abaixo — e siga com Google a partir dali.
+                    </p>
+                    <Link
+                      href="/cadastro"
+                      className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-bold text-black transition-opacity hover:opacity-95"
+                      style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", fontFamily: "'Space Grotesk', sans-serif" }}
+                    >
+                      Abrir matrícula oficial
+                    </Link>
+                    <p className="mb-3 text-[10px] uppercase tracking-widest text-white/35">
+                      Já abriu o convite neste navegador nesta sessão?
+                    </p>
+                    {supabaseReady && (
+                      <motion.button
+                        type="button"
+                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => void handleOAuthLogin("google")}
+                        disabled={isSubmitting}
+                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white/5 py-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
+                      >
+                        {isSubmitting ? "Conectando…" : "Continuar com Google"}
+                      </motion.button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="mb-6 text-sm leading-relaxed text-white/50">
+                      Você pode <strong className="text-yellow-400">criar sua conta com Google</strong>, preencher seus dados e aguardar a aprovação do administrador — sem precisar de link de convite.
+                    </p>
+                    {supabaseReady && (
+                      <motion.button
+                        type="button"
+                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => void handleOAuthLogin("google")}
+                        disabled={isSubmitting}
+                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg py-3 text-sm font-semibold transition-all disabled:opacity-40"
+                        style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
+                      >
+                        {isSubmitting ? "Conectando…" : "Criar conta com Google"}
+                      </motion.button>
+                    )}
+                    <p className="mb-4 text-[11px] text-white/35">
+                      Preferir o formulário completo de matrícula? Use o cadastro oficial abaixo quando disponível.
+                    </p>
+                    <div className="mb-4 rounded-lg p-4"
+                      style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.15)" }}>
+                      <p className="text-xs text-yellow-400/80">
+                        Se o seu treinador enviou um link de convite, abra-o neste navegador antes de cadastrar.
+                      </p>
+                    </div>
+                    {process.env.NEXT_PUBLIC_SHOW_PUBLIC_CADASTRO_LINK === "true" && (
+                      <Link href="/cadastro"
+                        className="inline-block rounded-full px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all"
+                        style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)", color: "#000", fontFamily: "'Space Grotesk', sans-serif" }}>
+                        Acessar Matrícula
+                      </Link>
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>
