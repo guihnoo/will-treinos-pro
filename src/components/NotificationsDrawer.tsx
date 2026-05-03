@@ -1,15 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, X, UserPlus, AlertTriangle, Clock, TrendingUp,
-  MessageSquare, CheckCheck, Megaphone, Star
+  MessageSquare, CheckCheck, Megaphone, Star, ChevronRight
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
+import NotificationDetailModal from "@/components/NotificationDetailModal";
+import type { Notification } from "@/context/types";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -25,6 +27,8 @@ const iconMap: Record<string, { icon: React.ElementType; color: string; bg: stri
 export default function NotificationsDrawer({ open, onClose }: Props) {
   const { user } = useAuth();
   const { notifications, markNotificationRead } = useNotifications();
+  const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   useBodyScrollLock(open);
 
   // ─── SECURITY: Role-based notification filtering ───────────────────────────
@@ -43,6 +47,11 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
 
   const handleMarkAll = () => {
     visibleNotifications.filter(n => !n.read).forEach(n => markNotificationRead(n.id));
+  };
+
+  const handleOpenDetail = (notif: Notification) => {
+    setSelectedNotif(notif);
+    setDetailOpen(true);
   };
 
   return (
@@ -99,12 +108,14 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
                 const cfg = iconMap[notif.type] || iconMap.message;
                 const Icon = cfg.icon;
                 return (
-                  <motion.div key={notif.id}
+                  <motion.button
+                    key={notif.id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    onClick={() => markNotificationRead(notif.id)}
-                    className={`flex gap-3 p-3.5 rounded-xl cursor-pointer transition-all mb-1 ${
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleOpenDetail(notif)}
+                    className={`w-full flex gap-3 p-3.5 rounded-xl cursor-pointer transition-all mb-1 ${
                       notif.read
                         ? "hover:bg-zinc-900/30"
                         : "bg-zinc-900/40 hover:bg-zinc-900/60 border-l-2"
@@ -115,12 +126,15 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
                       style={{ background: cfg.bg }}>
                       <Icon className="w-5 h-5" style={{ color: cfg.color }} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center justify-between gap-2">
                         <span className={`text-sm font-bold truncate ${notif.read ? "text-zinc-400" : "text-white"}`}>
                           {notif.title}
                         </span>
-                        <span className="text-[10px] text-zinc-600 flex-shrink-0">{notif.time}</span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-[10px] text-zinc-600">{notif.time}</span>
+                          <ChevronRight className="w-4 h-4 text-zinc-600" />
+                        </div>
                       </div>
                       <p className={`text-xs mt-0.5 line-clamp-2 ${notif.read ? "text-zinc-600" : "text-zinc-400"}`}>
                         {notif.message}
@@ -134,7 +148,7 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
                     {!notif.read && (
                       <div className="w-2 h-2 rounded-full flex-shrink-0 mt-2" style={{ background: cfg.color }} />
                     )}
-                  </motion.div>
+                  </motion.button>
                 );
               })}
             </div>
@@ -143,13 +157,20 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
             {user?.role === "aluno" && (
               <div className="p-4 border-t border-zinc-900 flex-shrink-0">
                 <p className="text-[10px] text-zinc-700 text-center">
-                  🔒 Você vê apenas suas notificações e avisos gerais
+                  🔒 Você vé apenas suas notificações e avisos gerais
                 </p>
               </div>
             )}
           </motion.div>
         </motion.div>
       )}
+
+      {/* Notification Detail Modal */}
+      <NotificationDetailModal
+        notification={selectedNotif}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
     </AnimatePresence>
   );
 }
