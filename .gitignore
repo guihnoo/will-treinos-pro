@@ -47,3 +47,9 @@ supabase/.temp/
 # next-pwa (gerados em `next build` — a Vercel recria no deploy)
 public/sw.js
 public/workbox-*.js
+
+# Design reference (material local de referência — não vai para o GitHub)
+/DESIGN_REFERENCE
+
+# Claude Code — permissões/caminhos locais da máquina
+.claude/settings.local.json

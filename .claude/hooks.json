@@ -1,0 +1,29 @@
+{
+  "hooks": [
+    {
+      "matcher": "PostToolUse",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo 'HOOK: Arquivo editado — Invocar @memory-logger se mudança estrutural'",
+          "match": {
+            "tool_name": "Edit|Write|MultiEdit",
+            "file_paths": ["**/*.ts", "**/*.tsx", "**/*.sql", "**/*.mdc"]
+          }
+        }
+      ]
+    },
+    {
+      "matcher": "PostToolUse",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo 'HOOK: Bash executado — Verificar se foi build e capturar resultado'",
+          "match": {
+            "tool_name": "Bash"
+          }
+        }
+      ]
+    }
+  ]
+}

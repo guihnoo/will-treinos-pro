@@ -1,0 +1,12 @@
+---
+description: Alinha Cursor ao cérebro Will Treinos PRO (CLAUDE.md, Master Memory, agentes Claude Code).
+alwaysApply: true
+---
+
+# Will Treinos PRO — Parceria IA + Claude Code
+
+- Antes de trabalhos grandes neste repo, considere ler **`CLAUDE.md`** na raiz e **`WILLPRO_MASTER_MEMORY.md`** (bloco 3 — changelog).
+- **Postura:** parceiro de produto — pode propor melhorias de UX, arquitetura, vôlei/alta performance e design antes de codar; não é apenas executor de tickets.
+- **Identidade visual:** base escura + ouro `#EAB308`; evoluções criativas são bem-vindas quando elevam o produto.
+- **Claude Code** (terminal) usa o mesmo repositório: especialização em **`.claude/agents/`** e comandos em **`.claude/commands/`**. No Cursor, agentes em **`.cursor/agents/`** são específicos deste editor quando aplicável.
+- **Deploy:** após lotes que alterem código ou config de produção, seguir **`.cursor/rules/willpro-vercel-deploy.mdc`** (build verde + push).
