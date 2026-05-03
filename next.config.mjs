@@ -1,4 +1,5 @@
 import withPWAInit from "@ducanh2912/next-pwa";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const withPWA = withPWAInit({
   dest: "public",
@@ -33,4 +34,24 @@ const nextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+// Wrap com Sentry
+const configWithSentry = withSentryConfig(
+  withPWA(nextConfig),
+  {
+    org: "will-treinos",
+    project: "will-treinos-pro",
+    // Apenas upload de source maps para Sentry em produção
+    release: process.env.VERCEL_GIT_COMMIT_SHA,
+    silent: true,
+    hideSourceMaps: true,
+  },
+  {
+    // Sentry module options
+    widenClientFileUpload: true,
+    transpileClientSDK: true,
+    autoInstrumentServerFunctions: true,
+    autoInstrumentMiddleware: true,
+  },
+);
+
+export default configWithSentry;
