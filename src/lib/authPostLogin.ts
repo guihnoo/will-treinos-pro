@@ -25,14 +25,19 @@ export function readDevImpersonationFromStorage(): DevImpersonation {
 export function computeEffectiveRole(
   authUser: SupabaseAuthUser,
   impersonation: DevImpersonation,
-): "admin" | "coach" | "aluno" | null {
+): "admin" | "coach" | "aluno" | "visitor" | null {
   if (isDevRootEmail(authUser.email)) return impersonation;
   return appRoleFromSupabaseUser(authUser.user_metadata?.role ?? authUser.app_metadata?.role);
 }
 
 /** Used after OAuth/password redirect when we already have a Supabase session user. */
-export function postLoginRouteFromAuthUser(authUser: SupabaseAuthUser): "/treinos" | "/dashboard" | "/cadastro" {
+export function postLoginRouteFromAuthUser(authUser: SupabaseAuthUser): "/treinos" | "/dashboard" | "/feed" | "/cadastro" {
+  if (isDevRootEmail(authUser.email)) {
+    return "/dashboard";
+  }
+
   const role = computeEffectiveRole(authUser, readDevImpersonationFromStorage());
   if (role === null) return "/cadastro";
+  if (role === "visitor") return "/feed";
   return role === "aluno" ? "/treinos" : "/dashboard";
 }

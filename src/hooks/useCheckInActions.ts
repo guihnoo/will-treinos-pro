@@ -106,6 +106,8 @@ export function useCheckInActions(options: {
     (lessonId: string, studentId: string, approvedBy: string) => {
       const approvedAt = new Date().toISOString();
       let patch: Partial<Lesson> | null = null;
+      const studentName = students.find((s) => s.id === studentId)?.name || "Aluno";
+
       setLessons((p) =>
         p.map((l) => {
           if (l.id !== lessonId) return l;
@@ -126,8 +128,24 @@ export function useCheckInActions(options: {
       void updateLessonRemote(supabase, lessonId, patch).catch((error) =>
         setCriticalDataError(error instanceof Error ? error.message : "Falha ao sincronizar aprovação de check-in."),
       );
+
+      // Notificar aluno que seu check-in foi aprovado
+      addNotification({
+        type: "message",
+        title: "✅ Check-in Aprovado",
+        message: "Sua presença foi confirmada.",
+        time: "agora",
+        read: false,
+        recipientId: studentId,
+      });
+
+      void sendPushToRole("aluno", {
+        title: "✅ Check-in Aprovado",
+        body: "Sua presença foi confirmada na aula.",
+        url: "/dashboard",
+      });
     },
-    [usingSupabaseSession, setLessons, setCriticalDataError],
+    [usingSupabaseSession, students, setLessons, setCriticalDataError, addNotification],
   );
 
   const rejectCheckIn = useCallback(

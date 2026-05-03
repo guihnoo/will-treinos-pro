@@ -15,7 +15,7 @@ export type BuildSessionUserCustom = {
  * Monta o objeto `User` para sessão local ou Supabase (demo profiles + vínculo com `students`).
  */
 export function buildSessionUser(
-  role: "admin" | "coach" | "aluno" | null,
+  role: "admin" | "coach" | "aluno" | "visitor" | null,
   custom?: BuildSessionUserCustom,
   catalogStudents?: Student[],
 ): User {
@@ -30,12 +30,13 @@ export function buildSessionUser(
     };
   }
 
-  const users: Record<"admin" | "coach" | "aluno", User> = {
+  const users: Record<"admin" | "coach" | "aluno" | "visitor", User> = {
     admin: { id: "admin1", name: "Will Monteiro", role: "admin", avatar: "Will" },
     coach: { id: "coach1", name: "Rafael Coach", role: "coach", avatar: "Coach" },
     aluno: { id: "s1", name: "Ricardo Alves", role: "aluno", avatar: "Ricardo" },
+    visitor: { id: "visitor1", name: "Visitante", role: "visitor", avatar: "user" },
   };
-  const baseUser = users[role];
+  const baseUser = users[role] || { id: "unknown", name: "Visitante", role: null, avatar: "user" };
   const persistedProfiles = ls.get<Record<string, Partial<User>>>("userProfiles", {});
   const persistedStudents = catalogStudents ?? ls.get("students", transactionalSeedDefaults().students);
   const normalizedEmail = (custom?.email || "").trim().toLowerCase();

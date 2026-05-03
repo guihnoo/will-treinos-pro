@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
-import type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy } from "./types";
+import type { User, Role, Venue, WorkHours, LessonCategory, Student, StudentRole, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy } from "./types";
 import {
   isDevRootEmail,
   type DevImpersonation,
@@ -56,7 +56,7 @@ export interface AppContextType {
   adminMode: "dashboard" | "coach";
   setAdminMode: (m: "dashboard" | "coach") => void;
   login: (role: Role) => void;
-  loginWithPassword: (email: string, password: string) => Promise<{ ok: true; role: "admin" | "coach" | "aluno" } | { ok: false; message: string }>;
+  loginWithPassword: (email: string, password: string) => Promise<{ ok: true; role: "admin" | "coach" | "aluno" | "visitor" } | { ok: false; message: string }>;
   loginWithOAuth: (provider: Provider) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => void;
   // Data
@@ -72,7 +72,7 @@ export interface AppContextType {
   promoteFromWaitlist: (lessonId: string, studentId: string) => void;
   // CRUD — Students
   addStudent: (s: WithoutId<Student>) => Promise<Student>;
-  approveStudent: (id: string) => void;
+  approveStudent: (id: string, role?: StudentRole) => void;
   suspendStudent: (id: string) => void;
   updateStudent: (id: string, u: Partial<Student>) => void;
   /** Após aprovar com mensalidade: cria cobrança `pending` do mês corrente se ainda não existir. */

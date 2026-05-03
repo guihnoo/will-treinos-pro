@@ -11,7 +11,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 
-const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro", "/preview"]);
+const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro", "/preview", "/signup", "/aguardando"]);
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -162,6 +162,11 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         </div>
       </div>
     );
+  }
+
+  if (user?.role === "visitor" && pathname && !pathname.startsWith("/feed")) {
+    router.replace("/feed");
+    return null;
   }
 
   if (!user) {

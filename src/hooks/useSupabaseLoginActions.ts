@@ -24,7 +24,7 @@ export function useSupabaseLoginActions(options: {
     email: string,
     password: string,
   ) => Promise<
-    { ok: true; role: "admin" | "coach" | "aluno" } | { ok: false; message: string }
+    { ok: true; role: "admin" | "coach" | "aluno" | "visitor" } | { ok: false; message: string }
   >;
   loginWithOAuth: (provider: Provider) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => void;

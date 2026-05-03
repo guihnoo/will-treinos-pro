@@ -26,7 +26,9 @@ import {
   Users,
   WalletCards,
   X,
+  Circle,
 } from "lucide-react";
+import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -124,6 +126,7 @@ export default function WillCockpit() {
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [selectedBillingTemplate, setSelectedBillingTemplate] = useState<string | null>(null);
   const [approvalSearch, setApprovalSearch] = useState("");
+  const [selectedApprovalRole, setSelectedApprovalRole] = useState<Map<string, StudentRole>>(new Map());
   const [onboardingStudentId, setOnboardingStudentId] = useState<string | null>(null);
   const [onboardingDraft, setOnboardingDraft] = useState({
     plan: "",
@@ -1032,6 +1035,36 @@ export default function WillCockpit() {
                         </div>
                       ) : null}
 
+                      {isReady && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">Escolher papel</p>
+                          <div className="flex gap-2">
+                            {(['aluno', 'professor', 'visitor'] as const).map((role) => (
+                              <button
+                                key={role}
+                                type="button"
+                                onClick={() => {
+                                  const newMap = new Map(selectedApprovalRole);
+                                  newMap.set(student.id, role);
+                                  setSelectedApprovalRole(newMap);
+                                }}
+                                className={`flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition ${
+                                  (selectedApprovalRole.get(student.id) || 'aluno') === role
+                                    ? role === 'aluno'
+                                      ? 'border-[#EAB308]/50 bg-[#EAB308]/20 text-[#EAB308]'
+                                      : role === 'professor'
+                                      ? 'border-blue-500/50 bg-blue-500/20 text-blue-300'
+                                      : 'border-zinc-500/50 bg-zinc-500/20 text-zinc-200'
+                                    : 'border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-zinc-700'
+                                } border`}
+                              >
+                                {role === 'aluno' ? '🎯 Aluno' : role === 'professor' ? '🎓 Professor' : '👁️ Visitante'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="mt-2 grid gap-2">
                         <button
                           type="button"
@@ -1049,9 +1082,15 @@ export default function WillCockpit() {
                             type="button"
                             disabled={!isReady}
                             onClick={() => {
-                              approveStudent(student.id);
+                              const role = selectedApprovalRole.get(student.id) || 'aluno';
+                              approveStudent(student.id, role);
                               setSelectedApprovalIds((prev) => prev.filter((id) => id !== student.id));
-                              setActionFeedback(`Atleta ${student.name} aprovado com os valores atuais do cadastro.`);
+                              setSelectedApprovalRole((prev) => {
+                                const newMap = new Map(prev);
+                                newMap.delete(student.id);
+                                return newMap;
+                              });
+                              setActionFeedback(`Atleta ${student.name} aprovado como ${role}.`);
                             }}
                             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300 transition hover:border-emerald-400/55 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                           >

@@ -7,7 +7,7 @@ import type { Role, User } from "@/context/types";
 import type { DevImpersonation } from "@/lib/authPostLogin";
 
 type LoginResult =
-  | { ok: true; role: "admin" | "coach" | "aluno" | null }
+  | { ok: true; role: "admin" | "coach" | "aluno" | "visitor" | null }
   | { ok: false; message: string };
 
 type OAuthResult = { ok: true } | { ok: false; message: string };

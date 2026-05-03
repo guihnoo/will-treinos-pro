@@ -2,7 +2,7 @@
 
 import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import type { Student, StudentStatus, User, WithoutId } from "@/context/types";
+import type { Student, StudentRole, StudentStatus, User, WithoutId } from "@/context/types";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { createStudentRemote, updateStudentRemote } from "@/lib/supabasePersistence";
 import { logDevEvent } from "@/lib/devEventsLogger";
@@ -95,9 +95,12 @@ export function useStudentMutations(options: {
   );
 
   const approveStudent = useCallback(
-    (id: string) => {
+    (id: string, role?: StudentRole) => {
+      const updates: { status: StudentStatus; role?: StudentRole } = { status: "active" };
+      if (role) updates.role = role;
+
       if (!usingSupabaseSession) {
-        setStudents((p) => p.map((st) => (st.id === id ? { ...st, status: "active" as StudentStatus } : st)));
+        setStudents((p) => p.map((st) => (st.id === id ? { ...st, ...updates } : st)));
         return;
       }
       const supabase = getSupabaseClient();
@@ -105,10 +108,18 @@ export function useStudentMutations(options: {
         setCriticalDataError("Cliente Supabase indisponível.");
         return;
       }
-      void updateStudentRemote(supabase, id, { status: "active" })
+      void updateStudentRemote(supabase, id, updates)
         .then((updated) => {
           setStudents((p) => p.map((st) => (st.id === id ? updated : st)));
-          void logDevEvent("student_approved", "student", id, { name: updated.name });
+
+          // Notificar aluno que foi aprovado
+          void sendPushToRole("aluno", {
+            title: "🎉 Bem-vindo!",
+            body: `Sua inscrição foi aprovada. Acesse o app para começar.`,
+            url: "/dashboard",
+          });
+
+          void logDevEvent("student_approved", "student", id, { name: updated.name, role: updated.role });
         })
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao aprovar aluno."));
     },

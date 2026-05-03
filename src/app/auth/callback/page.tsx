@@ -60,7 +60,7 @@ export default function AuthCallbackPage() {
       );
       const preferredNext = nextFromQuery ?? nextFromStorage;
 
-      const finish = (user: SupabaseAuthUser) => {
+      const finish = async (user: SupabaseAuthUser) => {
         if (cancelled) return;
         if (user.user_metadata?.provider && !isAllowedOAuthEmail(user.email)) {
           router.replace(`/login?error=${encodeURIComponent("E-mail não autorizado para esta rede.")}`);
@@ -70,14 +70,41 @@ export default function AuthCallbackPage() {
           wtSessionRemove(WT_SESSION_POST_LOGIN_NEXT_KEY);
           clearStaffOAuthGate();
         }
+
+        // Se é novo usuário (OAuth sem student record), redireciona para /signup
+        const isNewUser = await checkIfNewUser(supabase, user.id);
+        if (isNewUser) {
+          router.replace("/signup");
+          return;
+        }
+
         router.replace(preferredNext ?? postLoginRouteFromAuthUser(user));
+      };
+
+      const checkIfNewUser = async (supabase: any, authUserId: string): Promise<boolean> => {
+        try {
+          const { data, error } = await supabase
+            .from("students")
+            .select("id")
+            .eq("auth_user_id", authUserId)
+            .maybeSingle();
+
+          if (error) {
+            console.error("Erro ao verificar student:", error);
+            return false;
+          }
+          return !data;
+        } catch (e) {
+          console.error("Erro ao verificar novo usuário:", e);
+          return false;
+        }
       };
 
       try {
         const first = await supabase.auth.getSession();
         if (cancelled) return;
         if (first.data.session?.user) {
-          finish(first.data.session.user);
+          await finish(first.data.session.user);
           return;
         }
 
@@ -87,7 +114,7 @@ export default function AuthCallbackPage() {
           if (exErr) {
             const second = await supabase.auth.getSession();
             if (second.data.session?.user) {
-              finish(second.data.session.user);
+              await finish(second.data.session.user);
               return;
             }
             router.replace(`/login?error=${encodeURIComponent(exErr.message)}`);
@@ -102,7 +129,7 @@ export default function AuthCallbackPage() {
           return;
         }
         if (session?.user) {
-          finish(session.user);
+          await finish(session.user);
           return;
         }
 

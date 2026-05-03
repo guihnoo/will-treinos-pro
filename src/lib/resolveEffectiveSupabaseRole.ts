@@ -17,7 +17,7 @@ export async function resolveEffectiveSupabaseRole(
   devImpersonation: DevImpersonation,
   supabase: SupabaseClient | null,
   catalogStudents: Student[] | undefined,
-): Promise<"admin" | "coach" | "aluno" | null> {
+): Promise<"admin" | "coach" | "aluno" | "visitor" | null> {
   let effectiveRole = computeEffectiveRole(authUser, devImpersonation);
 
   if (!isDevRootEmail(authUser.email) && supabase && authUser.email) {
@@ -37,6 +37,8 @@ export async function resolveEffectiveSupabaseRole(
     const linked = findLinkedStudentForAuth(authUser.id, authUser.email || "", catalogStudents);
     if (!linked) {
       effectiveRole = null;
+    } else if (linked.role === "visitor") {
+      effectiveRole = "visitor";
     }
   }
 
