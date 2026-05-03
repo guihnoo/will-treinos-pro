@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import type { User, Role, Venue, WorkHours, LessonCategory, Student, Lesson, Payment, Notification, PerformanceFeedback, TrainingPlan, QuickMessage, StudentStatus, PaymentStatus, Post, LessonRating, LessonRatingDraft, WithoutId, AppConfig, StudentProfileEditPolicy } from "./types";
 import { dueDateForBillingMonth, localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
 import {
-  computeEffectiveRole,
   isDevRootEmail,
   type DevImpersonation,
 } from "@/lib/authPostLogin";
@@ -50,11 +49,9 @@ import { useSupabaseAuthBridge } from "@/hooks/useSupabaseAuthBridge";
 import { useLocalTransactionalPersistence } from "@/hooks/useLocalTransactionalPersistence";
 import { useEnrollmentInviteSideEffects } from "@/hooks/useEnrollmentInviteSideEffects";
 import { useLoadSupabaseCriticalData } from "@/hooks/useLoadSupabaseCriticalData";
+import { useSupabaseLoginActions } from "@/hooks/useSupabaseLoginActions";
 import { logDevEvent } from "@/lib/devEventsLogger";
-import {
-  clearWtRoleCookie,
-  syncWtRoleCookie,
-} from "@/lib/appSessionHelpers";
+import { syncWtRoleCookie } from "@/lib/appSessionHelpers";
 import { sendPushToRole } from "@/lib/pushRoleBroadcast";
 import { buildSessionUser } from "@/lib/buildSessionUser";
 import type { Provider, User as SupabaseAuthUser } from "@supabase/supabase-js";
@@ -326,101 +323,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUser,
   });
 
-  const loginWithPassword = useCallback(
-    async (email: string, password: string) => {
-      const normalizedEmail = email.trim().toLowerCase();
-      if (!normalizedEmail || !password.trim()) {
-        return { ok: false as const, message: "Informe e-mail e senha." };
-      }
-
-      if (!hasSupabaseEnv()) {
-        return {
-          ok: false as const,
-          message:
-            "Supabase não configurado no ambiente. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY (ou NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).",
-        };
-      }
-
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        return { ok: false as const, message: "Cliente Supabase indisponível." };
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
-
-      if (error || !data.user) {
-        return { ok: false as const, message: error?.message || "Não foi possível autenticar." };
-      }
-
-      await applySupabaseSession(data.user);
-      return { ok: true as const, role: computeEffectiveRole(data.user, devImpersonation) };
-    },
-    [applySupabaseSession, devImpersonation],
-  );
-
-  const loginWithOAuth = useCallback(
-    async (provider: Provider) => {
-      if (!hasSupabaseEnv()) {
-        return {
-          ok: false as const,
-          message:
-            "Supabase não configurado no ambiente. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY (ou NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).",
-        };
-      }
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        return { ok: false as const, message: "Cliente Supabase indisponível." };
-      }
-      const redirectTo =
-        typeof window !== "undefined"
-          ? new URL("/auth/callback", window.location.origin).href
-          : undefined;
-      try {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider,
-          options: {
-            redirectTo,
-            skipBrowserRedirect: true,
-            queryParams:
-              provider === "google"
-                ? { access_type: "offline", prompt: "select_account" }
-                : undefined,
-          },
-        });
-        if (error) {
-          return { ok: false as const, message: error.message };
-        }
-        const url = data?.url;
-        if (typeof window !== "undefined" && url) {
-          window.location.replace(url);
-          return { ok: true as const };
-        }
-        return {
-          ok: false as const,
-          message:
-            "OAuth não devolveu URL. No Supabase: Providers (Google) e Redirect URLs com este domínio + /auth/callback.",
-        };
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return { ok: false as const, message: `Falha de rede ao iniciar OAuth: ${msg}` };
-      }
-    },
-    [],
-  );
-
-  const logout = () => {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      void supabase.auth.signOut();
-    }
-    supabaseAuthUserRef.current = null;
-    setUser(null);
-    wtLegacyRoleRemove();
-    clearWtRoleCookie();
-  };
+  const { loginWithPassword, loginWithOAuth, logout } = useSupabaseLoginActions({
+    applySupabaseSession,
+    devImpersonation,
+    supabaseAuthUserRef,
+    setUser,
+  });
 
   useEffect(() => {
     if (!supabaseAuthUserRef.current) return;
