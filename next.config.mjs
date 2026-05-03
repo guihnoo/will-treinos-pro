@@ -34,24 +34,24 @@ const nextConfig = {
   },
 };
 
-// Wrap com Sentry
-const configWithSentry = withSentryConfig(
-  withPWA(nextConfig),
-  {
-    org: "will-treinos",
-    project: "will-treinos-pro",
-    // Apenas upload de source maps para Sentry em produção
-    release: process.env.VERCEL_GIT_COMMIT_SHA,
-    silent: true,
-    hideSourceMaps: true,
-  },
-  {
-    // Sentry module options
-    widenClientFileUpload: true,
-    transpileClientSDK: true,
-    autoInstrumentServerFunctions: true,
-    autoInstrumentMiddleware: true,
-  },
-);
+// Wrap com Sentry (apenas em produção — evita InvariantError clientReferenceManifest em dev Next.js 15)
+const configWithSentry = process.env.NODE_ENV === "production"
+  ? withSentryConfig(
+      withPWA(nextConfig),
+      {
+        org: "will-treinos",
+        project: "will-treinos-pro",
+        release: process.env.VERCEL_GIT_COMMIT_SHA,
+        silent: true,
+        hideSourceMaps: true,
+      },
+      {
+        widenClientFileUpload: true,
+        transpileClientSDK: true,
+        autoInstrumentServerFunctions: true,
+        autoInstrumentMiddleware: true,
+      },
+    )
+  : withPWA(nextConfig);
 
 export default configWithSentry;
