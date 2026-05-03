@@ -17,7 +17,7 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
-- **[03/05/2026 ~06:00 BRT] (Cursor):** **P1 — `useFeedMutations`** — Novo `src/hooks/useFeedMutations.ts`: `addPost`, `togglePostLike`, `addPostComment`, `moderatePost`, `softDeletePost` (local + Supabase + refresh via `fetchFeedPostsRemote`). Props: `sessionRole` (= `user?.role`) para `authorRole` em posts “pro”. `AppContext.tsx` remove imports de feed (`createFeedPostRemote`, `fetchFeedPostsRemote`, likes/comments/moderation/delete). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0).
+- **[03/05/2026 ~06:00 BRT] (Cursor):** **P1 — `useFeedMutations`** — Novo `src/hooks/useFeedMutations.ts`: `addPost`, `togglePostLike`, `addPostComment`, `moderatePost`, `softDeletePost` (local + Supabase + refresh via `fetchFeedPostsRemote`). Props: `sessionRole` (= `user?.role`) para `authorRole` em posts “pro”. `AppContext.tsx` remove imports de feed (`createFeedPostRemote`, `fetchFeedPostsRemote`, likes/comments/moderation/delete). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0). **Git:** push `origin/main` — commit `8d04e2d`.
 
 - **[03/05/2026 ~05:45 BRT] (Cursor):** **P1 — `useLessonMutations`** — Novo `src/hooks/useLessonMutations.ts`: `addLesson` / `updateLesson` / `deleteLesson` (local + Supabase) + `addToWaitlist` / `promoteFromWaitlist`. `AppContext.tsx` deixa de importar `createLessonRemote` e `deleteLessonRemote` (check-in continua com `updateLessonRemote` no context). `pnpm exec tsc --noEmit` OK, `pnpm run build` OK (exit 0). **Git:** push `origin/main` — commit `3a4f492`.
 
