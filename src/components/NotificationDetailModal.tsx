@@ -30,6 +30,13 @@ export default function NotificationDetailModal({ notification, open, onClose }:
   const { markNotificationRead, markAllNotificationsRead } = useNotifications();
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Mark as read when opened
+  React.useEffect(() => {
+    if (notification && open && !notification.read) {
+      markNotificationRead(notification.id);
+    }
+  }, [open, notification?.id, notification?.read, markNotificationRead]);
+
   if (!notification) return null;
 
   const cfg = iconMap[notification.type] || iconMap.message;
@@ -45,13 +52,6 @@ export default function NotificationDetailModal({ notification, open, onClose }:
 
   // Find related student if any
   const student = notification.studentId ? students.find(s => s.id === notification.studentId) : null;
-
-  // Mark as read when opened
-  React.useEffect(() => {
-    if (open && !notification.read) {
-      markNotificationRead(notification.id);
-    }
-  }, [open, notification.id, notification.read, markNotificationRead]);
 
   // Handle action buttons (approve, reject, view profile, etc)
   const handleApproveStudent = async () => {

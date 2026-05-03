@@ -74,15 +74,27 @@ export function useLoadSupabaseCriticalData(options: {
           setPosts([]);
         }
         try {
-          const currentUserId = supabaseAuthUserRef.current?.id || "";
+          const authUser = supabaseAuthUserRef.current;
+          if (!authUser?.id) {
+            setCriticalDataError("Nenhum usuário autenticado.");
+            return;
+          }
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (!sessionData?.session?.access_token) {
+            setCriticalDataError("Sessão Supabase não estabelecida. Tente fazer login novamente.");
+            return;
+          }
+
+          const currentUserId = authUser.id;
           const { data, livePosts } = await loadCriticalLiveBundle(supabase, currentUserId);
           setStudents(data.students);
           setPayments(data.payments);
           setLessons(data.lessons);
           setNotifications(filterDemoNotifications(data.notifications));
           setPosts(livePosts);
-          if (supabaseAuthUserRef.current) {
-            void applySupabaseSession(supabaseAuthUserRef.current, data.students);
+          if (authUser) {
+            void applySupabaseSession(authUser, data.students);
           }
           await runEnrollmentInviteSync(supabase, setAppConfig);
         } catch (error) {

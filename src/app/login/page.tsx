@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
@@ -17,6 +17,19 @@ import {
   WT_SESSION_POST_LOGIN_NEXT_KEY,
   wtSessionSet,
 } from "@/lib/willLocalStorage";
+
+// Spring physics presets
+const springPhysics = {
+  bounce: { type: "spring" as const, stiffness: 100, damping: 10, mass: 0.8 },
+  smooth: { type: "spring" as const, stiffness: 200, damping: 25, mass: 0.5 },
+  snappy: { type: "spring" as const, stiffness: 350, damping: 35, mass: 0.3 },
+};
+
+// Check for reduced motion preference
+const prefersReducedMotion = () => {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+};
 
 function sanitizeNextPath(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -109,6 +122,21 @@ function LoginPageContent() {
       style={{ fontFamily: "'Lexend', sans-serif" }}>
 
       {/* ── Background ─────────────────────────────── */}
+      {/* Shimmer animation for premium feel */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .shimmer-text {
+          animation: shimmer 3s linear infinite;
+          background-size: 200% center;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .shimmer-text { animation: none; }
+        }
+      `}</style>
+
       {/* Court grid pattern */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.04]"
         style={{
@@ -131,19 +159,33 @@ function LoginPageContent() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={prefersReducedMotion() ? { duration: 0 } : springPhysics.smooth}
           className="flex flex-col items-center mb-10"
         >
-          {/* Glass logo badge */}
-          <div className="relative mb-6 p-5 rounded-full group cursor-default"
+          {/* Glass logo badge with glow */}
+          <motion.div
+            className="relative mb-6 p-5 rounded-full group cursor-default overflow-hidden"
+            whileHover={prefersReducedMotion() ? {} : { scale: 1.08 }}
+            transition={springPhysics.snappy}
             style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            {/* Glow pulse */}
+            <motion.div
+              className="absolute inset-0 rounded-full opacity-0"
+              animate={prefersReducedMotion() ? {} : { opacity: [0.2, 0.4, 0.2] }}
+              transition={{ duration: 3, repeat: Infinity }}
+              style={{ background: "radial-gradient(circle, rgba(234,179,8,0.4) 0%, transparent 70%)", filter: "blur(24px)" }}
+            />
             <div className="absolute inset-0 rounded-full opacity-50"
               style={{ background: "rgba(234,179,8,0.2)", filter: "blur(24px)" }} />
-            <span className="relative text-7xl leading-none select-none" style={{ color: "#ffd165" }}>⚡</span>
-          </div>
+            <motion.span
+              className="relative text-7xl leading-none select-none"
+              animate={prefersReducedMotion() ? {} : { y: [0, -4, 0], rotate: [0, 5, 0] }}
+              transition={{ duration: 3, repeat: Infinity }}
+              style={{ color: "#ffd165" }}>⚡</motion.span>
+          </motion.div>
 
-          <h1 className="text-4xl sm:text-5xl font-black italic uppercase tracking-tighter text-center mb-1"
-            style={{ background: "linear-gradient(to right, #EAB308, #F97316)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          <h1 className="text-4xl sm:text-5xl font-black italic uppercase tracking-tighter text-center mb-1 shimmer-text"
+            style={{ background: "linear-gradient(90deg, #EAB308 0%, #F97316 50%, #EAB308 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundSize: "200% center" }}>
             WILL TREINOS PRO
           </h1>
           <p className="text-[11px] font-bold tracking-[0.3em] uppercase text-white/40"
@@ -168,70 +210,113 @@ function LoginPageContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.4 }}
+              transition={prefersReducedMotion() ? { duration: 0 } : { ...springPhysics.smooth, duration: 0.5 }}
               className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-4"
             >
               {/* Dono/Gestor */}
               <motion.button
-                whileHover={{ y: -8 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={prefersReducedMotion() ? {} : { y: -12, boxShadow: "0 20px 40px rgba(234,179,8,0.3)" }}
+                whileTap={prefersReducedMotion() ? {} : { scale: 0.95 }}
                 onClick={() => handleStaffCardClick("admin")}
-                className="relative p-8 flex flex-col items-center text-center overflow-hidden group transition-all duration-300"
+                transition={springPhysics.snappy}
+                className="relative p-8 flex flex-col items-center text-center overflow-hidden group"
                 style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem" }}
               >
+                {/* Glow pulse on hover */}
+                <motion.div
+                  className="absolute inset-0 opacity-0 pointer-events-none"
+                  whileHover={prefersReducedMotion() ? {} : { opacity: 0.15 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ background: "radial-gradient(circle at center, rgba(234,179,8,0.3) 0%, transparent 70%)", filter: "blur(20px)" }}
+                />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{ background: "radial-gradient(circle at center, rgba(234,179,8,0.15) 0%, transparent 70%)" }} />
-                <span className="text-5xl mb-5 transition-transform duration-500 group-hover:scale-125" style={{ color: "#ffd165" }}>🛡️</span>
+                <motion.span
+                  className="text-5xl mb-5"
+                  whileHover={prefersReducedMotion() ? {} : { scale: 1.2, rotate: 10 }}
+                  transition={springPhysics.snappy}
+                  style={{ color: "#ffd165" }}>🛡️</motion.span>
                 <h3 className="text-xl font-bold italic uppercase text-white mb-2">Dono / Gestor</h3>
                 <p className="text-sm text-white/50 leading-snug mb-6">Gestão tática e comando de arena profissional.</p>
-                <div className="px-5 py-1.5 border rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 group-hover:text-black"
+                <motion.div
+                  className="px-5 py-1.5 border rounded-full text-[11px] font-bold uppercase tracking-widest cursor-pointer"
+                  whileHover={prefersReducedMotion() ? {} : { scale: 1.05 }}
+                  transition={springPhysics.snappy}
                   style={{ borderColor: "rgba(234,179,8,0.4)", fontFamily: "'Space Grotesk', sans-serif" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAB308"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAB308"; (e.currentTarget as HTMLElement).style.color = "#000"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "inherit"; }}>
                   Acessar Painel
-                </div>
+                </motion.div>
               </motion.button>
 
               {/* Professor */}
               <motion.button
-                whileHover={{ y: -8 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={prefersReducedMotion() ? {} : { y: -12, boxShadow: "0 20px 40px rgba(255,182,144,0.3)" }}
+                whileTap={prefersReducedMotion() ? {} : { scale: 0.95 }}
                 onClick={() => handleStaffCardClick("coach")}
-                className="relative p-8 flex flex-col items-center text-center overflow-hidden group transition-all duration-300"
+                transition={springPhysics.snappy}
+                className="relative p-8 flex flex-col items-center text-center overflow-hidden group"
                 style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem" }}
               >
+                <motion.div
+                  className="absolute inset-0 opacity-0 pointer-events-none"
+                  whileHover={prefersReducedMotion() ? {} : { opacity: 0.15 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ background: "radial-gradient(circle at center, rgba(255,182,144,0.3) 0%, transparent 70%)", filter: "blur(20px)" }}
+                />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{ background: "radial-gradient(circle at center, rgba(255,182,144,0.15) 0%, transparent 70%)" }} />
-                <span className="text-5xl mb-5 transition-transform duration-500 group-hover:scale-125" style={{ color: "#ffb690" }}>🎓</span>
+                <motion.span
+                  className="text-5xl mb-5"
+                  whileHover={prefersReducedMotion() ? {} : { scale: 1.2, rotate: -10 }}
+                  transition={springPhysics.snappy}
+                  style={{ color: "#ffb690" }}>🎓</motion.span>
                 <h3 className="text-xl font-bold italic uppercase text-white mb-2">Professor</h3>
                 <p className="text-sm text-white/50 leading-snug mb-6">Prescrição de treinos e acompanhamento técnico.</p>
-                <div className="px-5 py-1.5 border rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 group-hover:text-black"
+                <motion.div
+                  className="px-5 py-1.5 border rounded-full text-[11px] font-bold uppercase tracking-widest cursor-pointer"
+                  whileHover={prefersReducedMotion() ? {} : { scale: 1.05 }}
+                  transition={springPhysics.snappy}
                   style={{ borderColor: "rgba(255,182,144,0.4)", fontFamily: "'Space Grotesk', sans-serif" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#ffb690"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#ffb690"; (e.currentTarget as HTMLElement).style.color = "#000"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "inherit"; }}>
                   Iniciar Aula
-                </div>
+                </motion.div>
               </motion.button>
 
               {/* Atleta VIP */}
               <motion.button
-                whileHover={{ y: -8 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={prefersReducedMotion() ? {} : { y: -12, boxShadow: "0 20px 40px rgba(234,179,8,0.3)" }}
+                whileTap={prefersReducedMotion() ? {} : { scale: 0.95 }}
                 onClick={handleAthleteClick}
-                className="relative p-8 flex flex-col items-center text-center overflow-hidden group transition-all duration-300"
+                transition={springPhysics.snappy}
+                className="relative p-8 flex flex-col items-center text-center overflow-hidden group"
                 style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0.5rem" }}
               >
+                <motion.div
+                  className="absolute inset-0 opacity-0 pointer-events-none"
+                  whileHover={prefersReducedMotion() ? {} : { opacity: 0.15 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ background: "radial-gradient(circle at center, rgba(234,179,8,0.3) 0%, transparent 70%)", filter: "blur(20px)" }}
+                />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{ background: "radial-gradient(circle at center, rgba(234,179,8,0.15) 0%, transparent 70%)" }} />
-                <span className="text-5xl mb-5 transition-transform duration-500 group-hover:scale-125" style={{ color: "#eab308" }}>🏆</span>
+                <motion.span
+                  className="text-5xl mb-5"
+                  whileHover={prefersReducedMotion() ? {} : { scale: 1.2, rotate: -5 }}
+                  transition={springPhysics.snappy}
+                  style={{ color: "#eab308" }}>🏆</motion.span>
                 <h3 className="text-xl font-bold italic uppercase text-white mb-2">Atleta VIP</h3>
                 <p className="text-sm text-white/50 leading-snug mb-6">Performance extrema e evolução gamificada.</p>
-                <div className="px-5 py-1.5 border rounded-full text-[11px] font-bold uppercase tracking-widest transition-all duration-300 group-hover:text-black"
+                <motion.div
+                  className="px-5 py-1.5 border rounded-full text-[11px] font-bold uppercase tracking-widest cursor-pointer"
+                  whileHover={prefersReducedMotion() ? {} : { scale: 1.05 }}
+                  transition={springPhysics.snappy}
                   style={{ borderColor: "rgba(234,179,8,0.4)", fontFamily: "'Space Grotesk', sans-serif" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAB308"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#EAB308"; (e.currentTarget as HTMLElement).style.color = "#000"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "inherit"; }}>
                   Entrar na Arena
-                </div>
+                </motion.div>
               </motion.button>
             </motion.div>
           )}
@@ -243,7 +328,7 @@ function LoginPageContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.4 }}
+              transition={prefersReducedMotion() ? { duration: 0 } : { ...springPhysics.smooth, duration: 0.5 }}
               className="w-full max-w-sm"
             >
               <div className="relative rounded-xl overflow-hidden"
@@ -266,11 +351,12 @@ function LoginPageContent() {
                   {/* Google OAuth — principal para staff */}
                   {supabaseReady && (
                     <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      whileHover={{ scale: 1.01 }}
+                      whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
+                      whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 12px 24px rgba(234,179,8,0.4)" }}
                       onClick={() => void handleOAuthLogin("google")}
                       disabled={isSubmitting}
-                      className="w-full flex items-center justify-center gap-3 py-3 rounded-lg font-semibold text-sm mb-4 transition-all disabled:opacity-40"
+                      transition={springPhysics.snappy}
+                      className="w-full flex items-center justify-center gap-3 py-3 rounded-lg font-semibold text-sm mb-4 disabled:opacity-40"
                       style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
                     >
                       {isSubmitting ? (
@@ -297,7 +383,7 @@ function LoginPageContent() {
 
                   {/* Email + password */}
                   <div className="space-y-2.5">
-                    <input
+                    <motion.input
                       id="login-email"
                       type="email"
                       autoComplete="email"
@@ -307,13 +393,16 @@ function LoginPageContent() {
                       onFocus={() => setFocusedField("email")}
                       onBlur={() => setFocusedField(null)}
                       onKeyDown={e => e.key === "Enter" && void handleRealLogin()}
-                      className="w-full rounded-lg py-2.5 px-4 text-sm text-white bg-black/40 outline-none placeholder:text-white/30 transition-all"
+                      animate={!prefersReducedMotion() && focusedField === "email" ? { scale: 1.01 } : {}}
+                      transition={springPhysics.snappy}
+                      className="w-full rounded-lg py-2.5 px-4 text-sm text-white bg-black/40 outline-none placeholder:text-white/30"
                       style={{
-                        border: `1px solid ${focusedField === "email" ? "rgba(234,179,8,0.5)" : "rgba(255,255,255,0.08)"}`,
-                        boxShadow: focusedField === "email" ? "0 0 0 3px rgba(234,179,8,0.08)" : "none",
+                        border: `1px solid ${focusedField === "email" ? "rgba(234,179,8,0.6)" : "rgba(255,255,255,0.08)"}`,
+                        boxShadow: focusedField === "email" ? "0 0 0 3px rgba(234,179,8,0.15)" : "none",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
                       }}
                     />
-                    <input
+                    <motion.input
                       id="login-password"
                       type="password"
                       autoComplete="current-password"
@@ -323,17 +412,22 @@ function LoginPageContent() {
                       onFocus={() => setFocusedField("password")}
                       onBlur={() => setFocusedField(null)}
                       onKeyDown={e => e.key === "Enter" && void handleRealLogin()}
-                      className="w-full rounded-lg py-2.5 px-4 text-sm text-white bg-black/40 outline-none placeholder:text-white/30 transition-all"
+                      animate={!prefersReducedMotion() && focusedField === "password" ? { scale: 1.01 } : {}}
+                      transition={springPhysics.snappy}
+                      className="w-full rounded-lg py-2.5 px-4 text-sm text-white bg-black/40 outline-none placeholder:text-white/30"
                       style={{
-                        border: `1px solid ${focusedField === "password" ? "rgba(234,179,8,0.5)" : "rgba(255,255,255,0.08)"}`,
-                        boxShadow: focusedField === "password" ? "0 0 0 3px rgba(234,179,8,0.08)" : "none",
+                        border: `1px solid ${focusedField === "password" ? "rgba(234,179,8,0.6)" : "rgba(255,255,255,0.08)"}`,
+                        boxShadow: focusedField === "password" ? "0 0 0 3px rgba(234,179,8,0.15)" : "none",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
                       }}
                     />
                     <motion.button
                       id="btn-login-password"
-                      whileTap={{ scale: 0.97 }}
+                      whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
+                      whileHover={prefersReducedMotion() ? {} : { scale: 1.01 }}
                       onClick={() => void handleRealLogin()}
                       disabled={!supabaseReady || isSubmitting}
+                      transition={springPhysics.snappy}
                       className="w-full py-2.5 rounded-lg text-sm font-bold text-black disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ background: "rgba(234,179,8,0.15)", color: "#ffd165", border: "1px solid rgba(234,179,8,0.2)" }}
                     >
@@ -364,7 +458,7 @@ function LoginPageContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.4 }}
+              transition={prefersReducedMotion() ? { duration: 0 } : { ...springPhysics.smooth, duration: 0.5 }}
               className="w-full max-w-sm text-center"
             >
               <div className="rounded-xl p-7"
@@ -392,11 +486,12 @@ function LoginPageContent() {
                     {supabaseReady && (
                       <motion.button
                         type="button"
-                        whileTap={{ scale: 0.97 }}
-                        whileHover={{ scale: 1.01 }}
+                        whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
+                        whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 8px 16px rgba(234,179,8,0.2)" }}
                         onClick={() => void handleOAuthLogin("google")}
                         disabled={isSubmitting}
-                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white/5 py-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
+                        transition={springPhysics.snappy}
+                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white/5 py-3 text-sm font-semibold text-white disabled:opacity-40"
                       >
                         {isSubmitting ? "Conectando…" : "Continuar com Google"}
                       </motion.button>
@@ -410,11 +505,12 @@ function LoginPageContent() {
                     {supabaseReady && (
                       <motion.button
                         type="button"
-                        whileTap={{ scale: 0.97 }}
-                        whileHover={{ scale: 1.01 }}
+                        whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
+                        whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 12px 24px rgba(234,179,8,0.4)" }}
                         onClick={() => void handleOAuthLogin("google")}
                         disabled={isSubmitting}
-                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg py-3 text-sm font-semibold transition-all disabled:opacity-40"
+                        transition={springPhysics.snappy}
+                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg py-3 text-sm font-semibold disabled:opacity-40"
                         style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
                       >
                         {isSubmitting ? "Conectando…" : "Criar conta com Google"}
@@ -447,7 +543,7 @@ function LoginPageContent() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: prefersReducedMotion() ? 0 : 0.6, duration: prefersReducedMotion() ? 0 : 0.4 }}
           className="mt-12 text-center"
         >
           <p className="text-[10px] text-white/20 uppercase tracking-widest"
@@ -472,7 +568,8 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center bg-[#050505]">
         <motion.div className="h-8 w-8 rounded-full border-2 border-yellow-500/20 border-t-yellow-500"
-          animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+          animate={prefersReducedMotion() ? {} : { rotate: 360 }}
+          transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
       </div>
     }>
       <LoginPageContent />
