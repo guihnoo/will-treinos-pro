@@ -24,18 +24,12 @@ import {
 } from "@/lib/willLocalStorage";
 import {
 
-  addFeedCommentRemote,
-  createFeedPostRemote,
   createStudentRemote,
   insertNotificationRemote,
   updateNotificationReadRemote,
-  fetchFeedPostsRemote,
   insertPaymentRemote,
   markPaymentPaidRemote,
-  softDeleteFeedPostRemote,
   submitStudentProofRemote,
-  toggleFeedPostLikeRemote,
-  updateFeedPostModerationRemote,
   uploadPaymentProofToStorage,
   updateLessonRemote,
   updateStudentRemote,
@@ -49,6 +43,7 @@ import { useEnrollmentInviteSideEffects } from "@/hooks/useEnrollmentInviteSideE
 import { useLoadSupabaseCriticalData } from "@/hooks/useLoadSupabaseCriticalData";
 import { useSupabaseLoginActions } from "@/hooks/useSupabaseLoginActions";
 import { useLessonMutations } from "@/hooks/useLessonMutations";
+import { useFeedMutations } from "@/hooks/useFeedMutations";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import { syncWtRoleCookie } from "@/lib/appSessionHelpers";
 import { sendPushToRole } from "@/lib/pushRoleBroadcast";
@@ -347,6 +342,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const { addLesson, updateLesson, deleteLesson, addToWaitlist, promoteFromWaitlist } = useLessonMutations({
     usingSupabaseSession,
     setLessons,
+    setCriticalDataError,
+  });
+
+  const { addPost, togglePostLike, addPostComment, moderatePost, softDeletePost } = useFeedMutations({
+    usingSupabaseSession,
+    sessionRole: user?.role,
+    supabaseAuthUserRef,
+    setPosts,
     setCriticalDataError,
   });
 
@@ -714,111 +717,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return p.map((n) => ({ ...n, read: true }));
     });
   }, [usingSupabaseSession]);
-
-  // ─── FEED POSTS ───
-  const addPost = useCallback((p: WithoutId<Post>) => {
-    if (!usingSupabaseSession) {
-      setPosts((prev) => [{ ...p, id: `p_${willUid()}` }, ...prev]);
-      return;
-    }
-    const supabase = getSupabaseClient();
-    const currentUserId = supabaseAuthUserRef.current?.id;
-    if (!supabase || !currentUserId) {
-      setCriticalDataError("Sessão Supabase indisponível para publicar no feed.");
-      return;
-    }
-    void createFeedPostRemote(supabase, {
-      authorName: p.user.name,
-      authorAvatar: p.user.avatar,
-      authorRole: p.user.isPro ? (user?.role || "coach") : "aluno",
-      content: p.content,
-      mediaUrl: p.media,
-      pinned: p.pinned ?? false,
-      isOfficial: p.isOfficial ?? false,
-      targetRole: p.targetRole ?? "all",
-    })
-      .then(() => fetchFeedPostsRemote(supabase, currentUserId))
-      .then((livePosts) => setPosts(livePosts))
-      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao publicar no feed."));
-  }, [usingSupabaseSession, user?.role]);
-  const togglePostLike = useCallback((id: string) => {
-    if (!usingSupabaseSession) {
-      setPosts((p) =>
-        p.map((post) =>
-          post.id === id ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 } : post,
-        ),
-      );
-      return;
-    }
-    const supabase = getSupabaseClient();
-    const currentUserId = supabaseAuthUserRef.current?.id;
-    if (!supabase || !currentUserId) {
-      setCriticalDataError("Sessão Supabase indisponível para curtir.");
-      return;
-    }
-    void toggleFeedPostLikeRemote(supabase, id, currentUserId)
-      .then(() => fetchFeedPostsRemote(supabase, currentUserId))
-      .then((livePosts) => setPosts(livePosts))
-      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao curtir post."));
-  }, [usingSupabaseSession]);
-  const addPostComment = useCallback((id: string, text: string, userName: string, avatar: string) => {
-    if (!usingSupabaseSession) {
-      setPosts((p) => p.map((post) => (post.id === id ? { ...post, comments: [...post.comments, { user: userName, avatar, text, time: "agora" }] } : post)));
-      return;
-    }
-    const supabase = getSupabaseClient();
-    const currentUserId = supabaseAuthUserRef.current?.id;
-    if (!supabase || !currentUserId) {
-      setCriticalDataError("Sessão Supabase indisponível para comentar.");
-      return;
-    }
-    void addFeedCommentRemote(supabase, { postId: id, userId: currentUserId, userName, userAvatar: avatar, text })
-      .then(() => fetchFeedPostsRemote(supabase, currentUserId))
-      .then((livePosts) => setPosts(livePosts))
-      .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao comentar no post."));
-  }, [usingSupabaseSession]);
-  const moderatePost = useCallback(
-    (id: string, patch: { pinned?: boolean; isOfficial?: boolean; targetRole?: "all" | "student" | "coach" }) => {
-      if (!usingSupabaseSession) {
-        setPosts((prev) =>
-          prev
-            .map((post) => (post.id === id ? { ...post, ...patch } : post))
-            .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))),
-        );
-        return;
-      }
-      const supabase = getSupabaseClient();
-      const currentUserId = supabaseAuthUserRef.current?.id;
-      if (!supabase || !currentUserId) {
-        setCriticalDataError("Sessão Supabase indisponível para moderação.");
-        return;
-      }
-      void updateFeedPostModerationRemote(supabase, id, patch)
-        .then(() => fetchFeedPostsRemote(supabase, currentUserId))
-        .then((livePosts) => setPosts(livePosts))
-        .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao moderar post."));
-    },
-    [usingSupabaseSession],
-  );
-  const softDeletePost = useCallback(
-    (id: string) => {
-      if (!usingSupabaseSession) {
-        setPosts((prev) => prev.filter((post) => post.id !== id));
-        return;
-      }
-      const supabase = getSupabaseClient();
-      const currentUserId = supabaseAuthUserRef.current?.id;
-      if (!supabase || !currentUserId) {
-        setCriticalDataError("Sessão Supabase indisponível para remover post.");
-        return;
-      }
-      void softDeleteFeedPostRemote(supabase, id)
-        .then(() => fetchFeedPostsRemote(supabase, currentUserId))
-        .then((livePosts) => setPosts(livePosts))
-        .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao remover post."));
-    },
-    [usingSupabaseSession],
-  );
 
   // ─── CHECK-IN (legacy) ───
   const checkInStudent = useCallback((lessonId: string, studentId: string, present: boolean) => {
