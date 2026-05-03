@@ -1,7 +1,7 @@
 {
   "name": "will-treinos-pro",
   "version": "1.0.0",
-  "packageManager": "pnpm@9.15.4",
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "next dev",
     "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
@@ -17,15 +17,18 @@
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
     "next": "^15.3.1",
+    "posthog-js": "^1.372.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "25.6.0",
     "@types/react": "19.2.14",
     "@types/web-push": "^3.6.4",
     "autoprefixer": "*",
+    "playwright": "^1.59.1",
     "postcss": "*",
     "tailwindcss": "3.4.1",
     "typescript": "6.0.3"
