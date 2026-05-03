@@ -23,9 +23,8 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
     : "/cadastro";
   const cadastroInviteUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
-    if (!enrollmentInviteCode) return `${window.location.origin}${cadastroPath}`;
     return `${window.location.origin}${cadastroPath}`;
-  }, [cadastroPath, enrollmentInviteCode]);
+  }, [cadastroPath]);
   const generateEnrollmentInviteCode = useCallback(() => {
     const code = generateNewEnrollmentInviteCode();
     app.updateAppConfig({ enrollmentInviteCode: code });

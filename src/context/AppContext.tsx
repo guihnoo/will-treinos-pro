@@ -48,6 +48,7 @@ import {
 } from "@/lib/supabasePersistence";
 import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
 import { generateNewEnrollmentInviteCode, resolveEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
+import { willUid } from "@/lib/willUid";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import {
   CRITICAL_DATA_FETCH_TIMEOUT_MS,
@@ -265,8 +266,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, 800);
     return () => window.clearTimeout(handle);
   }, [appConfig.enrollmentInviteCode, isMounted, usingSupabaseSession]);
-
-  const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
   const loginUser = useCallback((role: Role) => {
     const safeRole: "admin" | "coach" | "aluno" = role === "admin" || role === "coach" || role === "aluno" ? role : "aluno";
@@ -609,7 +608,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ─── LESSONS CRUD ───
   const addLesson = useCallback((l: WithoutId<Lesson>) => {
-    const next: Lesson = { ...l, id: `l_${uid()}` };
+    const next: Lesson = { ...l, id: `l_${willUid()}` };
     if (!usingSupabaseSession) {
       setLessons((p) => [...p, next]);
       return;
@@ -686,7 +685,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const sessionAuthId = supabaseAuthUserRef.current?.id ?? undefined;
       const next: Student = {
         ...s,
-        id: `st_${uid()}`,
+        id: `st_${willUid()}`,
         authUserId: s.authUserId ?? sessionAuthId,
       };
       if (!usingSupabaseSession) {
@@ -831,7 +830,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (prev.some((p) => p.studentId === studentId && p.reference === ref)) return prev;
           return [
             {
-              id: `pay_${uid()}`,
+              id: `pay_${willUid()}`,
               studentId,
               amount: monthlyValue,
               dueDate,
@@ -869,7 +868,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar mensalidade pendente.");
       }
     },
-    [usingSupabaseSession, uid],
+    [usingSupabaseSession],
   );
 
   const updateUser = useCallback((id: string, updates: Partial<User>) => {
@@ -996,12 +995,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addNotification = useCallback(
     (n: WithoutId<Notification>) => {
       if (!usingSupabaseSession) {
-        setNotifications((p) => [{ ...n, id: `n_${uid()}` }, ...p]);
+        setNotifications((p) => [{ ...n, id: `n_${willUid()}` }, ...p]);
         return;
       }
       const supabase = getSupabaseClient();
       if (!supabase) {
-        setNotifications((p) => [{ ...n, id: `n_${uid()}` }, ...p]);
+        setNotifications((p) => [{ ...n, id: `n_${willUid()}` }, ...p]);
         return;
       }
       void insertNotificationRemote(supabase, n)
@@ -1048,7 +1047,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ─── FEED POSTS ───
   const addPost = useCallback((p: WithoutId<Post>) => {
     if (!usingSupabaseSession) {
-      setPosts((prev) => [{ ...p, id: `p_${uid()}` }, ...prev]);
+      setPosts((prev) => [{ ...p, id: `p_${willUid()}` }, ...prev]);
       return;
     }
     const supabase = getSupabaseClient();
