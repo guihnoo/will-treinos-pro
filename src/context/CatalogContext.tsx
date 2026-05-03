@@ -1,20 +1,23 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo } from "react";
-import { useApp, type AppContextType } from "@/context/AppContext";
-import type { LessonCategory, Venue, WorkHours } from "@/context/types";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { LEGACY_BRIDGE } from "@/domain/v1/mockOrm";
+import { wtLs } from "@/lib/willLocalStorage";
+import type { LessonCategory, Venue, WorkHours, WithoutId } from "@/context/types";
+
+const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 type CatalogContextValue = {
   categories: LessonCategory[];
   venues: Venue[];
   workHours: WorkHours;
-  addCategory: AppContextType["addCategory"];
-  updateCategory: AppContextType["updateCategory"];
-  deleteCategory: AppContextType["deleteCategory"];
-  addVenue: AppContextType["addVenue"];
-  updateVenue: AppContextType["updateVenue"];
-  deleteVenue: AppContextType["deleteVenue"];
-  setWorkHours: AppContextType["setWorkHours"];
+  addCategory: (c: WithoutId<LessonCategory>) => void;
+  updateCategory: (id: string, u: Partial<LessonCategory>) => void;
+  deleteCategory: (id: string) => void;
+  addVenue: (v: WithoutId<Venue>) => void;
+  updateVenue: (id: string, u: Partial<Venue>) => void;
+  deleteVenue: (id: string) => void;
+  setWorkHours: (wh: WorkHours) => void;
   getCategory: (id: string) => LessonCategory | undefined;
   getVenue: (id: string) => Venue | undefined;
   getVenueMapsUrl: (venueId: string) => string;
@@ -23,54 +26,55 @@ type CatalogContextValue = {
 const CatalogContext = createContext<CatalogContextValue | undefined>(undefined);
 
 export function CatalogProvider({ children }: { children: React.ReactNode }) {
-  const app = useApp();
-  const getCategory = useCallback(
-    (id: string) => app.categories.find((category) => category.id === id),
-    [app.categories],
-  );
-  const getVenue = useCallback(
-    (id: string) => app.venues.find((venue) => venue.id === id),
-    [app.venues],
-  );
-  const getVenueMapsUrl = useCallback(
-    (venueId: string) => {
-      const venue = app.venues.find((item) => item.id === venueId);
-      return venue ? `https://www.google.com/maps?q=${venue.lat},${venue.lng}` : "#";
-    },
-    [app.venues],
-  );
-  const value = useMemo<CatalogContextValue>(
-    () => ({
-      categories: app.categories,
-      venues: app.venues,
-      workHours: app.workHours,
-      addCategory: app.addCategory,
-      updateCategory: app.updateCategory,
-      deleteCategory: app.deleteCategory,
-      addVenue: app.addVenue,
-      updateVenue: app.updateVenue,
-      deleteVenue: app.deleteVenue,
-      setWorkHours: app.setWorkHours,
-      getCategory,
-      getVenue,
-      getVenueMapsUrl,
-    }),
-    [
-      app.categories,
-      app.venues,
-      app.workHours,
-      app.addCategory,
-      app.updateCategory,
-      app.deleteCategory,
-      app.addVenue,
-      app.updateVenue,
-      app.deleteVenue,
-      app.setWorkHours,
-      getCategory,
-      getVenue,
-      getVenueMapsUrl,
-    ],
-  );
+  const [isMounted, setIsMounted] = useState(false);
+  const [categories, setCategories] = useState<LessonCategory[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [workHours, setWorkHoursState] = useState<WorkHours>(LEGACY_BRIDGE.DEFAULT_WORK_HOURS);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setCategories(wtLs.get("categories", LEGACY_BRIDGE.DEFAULT_CATEGORIES));
+    setVenues(wtLs.get("venues", LEGACY_BRIDGE.DEFAULT_VENUES));
+    setWorkHoursState(wtLs.get("workHours", LEGACY_BRIDGE.DEFAULT_WORK_HOURS));
+  }, []);
+
+  useEffect(() => { if (isMounted) wtLs.set("categories", categories); }, [categories, isMounted]);
+  useEffect(() => { if (isMounted) wtLs.set("venues", venues); }, [venues, isMounted]);
+  useEffect(() => { if (isMounted) wtLs.set("workHours", workHours); }, [workHours, isMounted]);
+
+  const addCategory = useCallback(
+    (c: WithoutId<LessonCategory>) => setCategories(p => [...p, { ...c, id: `cat_${uid()}` }]), []);
+  const updateCategory = useCallback(
+    (id: string, u: Partial<LessonCategory>) => setCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c)), []);
+  const deleteCategory = useCallback(
+    (id: string) => setCategories(p => p.filter(c => c.id !== id)), []);
+
+  const addVenue = useCallback(
+    (v: WithoutId<Venue>) => setVenues(p => [...p, { ...v, id: `v_${uid()}` }]), []);
+  const updateVenue = useCallback(
+    (id: string, u: Partial<Venue>) => setVenues(p => p.map(v => v.id === id ? { ...v, ...u } : v)), []);
+  const deleteVenue = useCallback(
+    (id: string) => setVenues(p => p.filter(v => v.id !== id)), []);
+  const setWorkHours = useCallback((wh: WorkHours) => setWorkHoursState(wh), []);
+
+  const getCategory = useCallback((id: string) => categories.find(c => c.id === id), [categories]);
+  const getVenue = useCallback((id: string) => venues.find(v => v.id === id), [venues]);
+  const getVenueMapsUrl = useCallback((venueId: string) => {
+    const venue = venues.find(v => v.id === venueId);
+    return venue ? `https://www.google.com/maps?q=${venue.lat},${venue.lng}` : "#";
+  }, [venues]);
+
+  const value = useMemo<CatalogContextValue>(() => ({
+    categories, venues, workHours,
+    addCategory, updateCategory, deleteCategory,
+    addVenue, updateVenue, deleteVenue, setWorkHours,
+    getCategory, getVenue, getVenueMapsUrl,
+  }), [
+    categories, venues, workHours,
+    addCategory, updateCategory, deleteCategory,
+    addVenue, updateVenue, deleteVenue, setWorkHours,
+    getCategory, getVenue, getVenueMapsUrl,
+  ]);
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }

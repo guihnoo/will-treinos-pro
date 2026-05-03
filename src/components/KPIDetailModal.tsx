@@ -47,6 +47,7 @@ function AnimatedNumber({ value }: { value: number }) {
 }
 
 export default function KPIDetailModal({ type, onClose, layoutId }: PropsWithLayout) {
+
   const { payments, totalsByStatus, markPayment } = usePayments();
   const { categories, getCategory } = useCatalog();
   const { students, statusCounts, approveStudent, updateStudent } = useStudents();

@@ -11,7 +11,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 
-const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro"]);
+const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro", "/preview"]);
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

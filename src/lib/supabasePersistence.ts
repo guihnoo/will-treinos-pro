@@ -453,11 +453,20 @@ export async function uploadPaymentProofToStorage(
     .from("payment-proofs")
     .upload(path, file, { upsert: false, contentType: file.type || "application/octet-stream" });
   if (uploadError) throw new Error(`Falha ao enviar comprovante: ${uploadError.message}`);
-  const { data, error: signedError } = await supabase.storage
+  // Retorna o path (não a URL assinada) para que a URL seja gerada sob demanda e nunca expire.
+  return path;
+}
+
+/** Gera URL assinada temporária (1h) para visualização de um comprovante. Chame no momento de exibir. */
+export async function getPaymentProofSignedUrl(
+  supabase: SupabaseClient,
+  path: string,
+): Promise<string> {
+  const { data, error } = await supabase.storage
     .from("payment-proofs")
-    .createSignedUrl(path, 60 * 60 * 24 * 30);
-  if (signedError || !data?.signedUrl) {
-    throw new Error(`Falha ao gerar URL do comprovante: ${signedError?.message || "sem URL assinada"}`);
+    .createSignedUrl(path, 60 * 60);
+  if (error || !data?.signedUrl) {
+    throw new Error(`Falha ao gerar URL do comprovante: ${error?.message || "sem URL assinada"}`);
   }
   return data.signedUrl;
 }
