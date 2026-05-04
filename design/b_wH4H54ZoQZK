@@ -1,0 +1,16 @@
+<script>start("c:\\Users\\monte\\OneDrive\\Documentos\\will-treinos-pro-cockpit\\b_wH4H54ZoQZK\\");</script>
+<script>onHasParentDirectory();</script>
+<script>addRow("app","app",1,0,"0 B",1777706371,"5/2/26, 4:19:31 AM");</script>
+<script>addRow("components","components",1,0,"0 B",1777706371,"5/2/26, 4:19:31 AM");</script>
+<script>addRow("hooks","hooks",1,0,"0 B",1777706371,"5/2/26, 4:19:31 AM");</script>
+<script>addRow("lib","lib",1,0,"0 B",1777706371,"5/2/26, 4:19:31 AM");</script>
+<script>addRow("public","public",1,0,"0 B",1777706371,"5/2/26, 4:19:31 AM");</script>
+<script>addRow("styles","styles",1,0,"0 B",1777706371,"5/2/26, 4:19:31 AM");</script>
+<script>addRow(".gitignore",".gitignore",0,228,"228 B",1777705978,"5/2/26, 4:12:58 AM");</script>
+<script>addRow("components.json","components.json",0,427,"427 B",1777705978,"5/2/26, 4:12:58 AM");</script>
+<script>addRow("next-env.d.ts","next-env.d.ts",0,251,"251 B",1777705981,"5/2/26, 4:13:01 AM");</script>
+<script>addRow("next.config.mjs","next.config.mjs",0,181,"181 B",1777705981,"5/2/26, 4:13:01 AM");</script>
+<script>addRow("package.json","package.json",0,2275,"2.2 kB",1777705981,"5/2/26, 4:13:01 AM");</script>
+<script>addRow("pnpm-lock.yaml","pnpm-lock.yaml",0,134301,"131 kB",1777705981,"5/2/26, 4:13:01 AM");</script>
+<script>addRow("postcss.config.mjs","postcss.config.mjs",0,144,"144 B",1777705981,"5/2/26, 4:13:01 AM");</script>
+<script>addRow("tsconfig.json","tsconfig.json",0,596,"596 B",1777705982,"5/2/26, 4:13:02 AM");</script>

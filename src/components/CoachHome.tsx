@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarRange, CalendarPlus, Check, Copy, X, ShieldAlert, UserCheck,
-  Clock, MapPin, Star, ChevronRight, UserPlus,
+  Clock, MapPin, Star, ChevronRight, UserPlus, Dumbbell, Edit2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLessons } from "@/context/LessonsContext";
@@ -12,9 +12,12 @@ import { useStudents } from "@/context/StudentsContext";
 import { useCheckIn } from "@/context/CheckInContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useCatalog } from "@/context/CatalogContext";
+import { useCoaching } from "@/context/CoachingContext";
 import FeedbackModal from "@/components/FeedbackModal";
 import LessonDetailModal from "@/components/LessonDetailModal";
 import PerformanceEvalModal from "@/components/PerformanceEvalModal";
+import TrainingPlanEditor from "@/components/TrainingPlanEditor";
+import PushPermissionBanner from "@/components/PushPermissionBanner";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
 import WeatherWidget from "@/components/WeatherWidget";
@@ -29,14 +32,17 @@ export default function CoachHome() {
   const { getCategory, getVenue } = useCatalog();
   const { user } = useAuth();
   const { todayLessons, todayEnrolledCount, todayPresentCount, todayAbsentCount } = useLessons();
-  const { getStudent } = useStudents();
+  const { getStudent, students } = useStudents();
   const { checkInStudent } = useCheckIn();
+  const { trainingPlans } = useCoaching();
   const { toast } = useToast();
   const [lessonModal, setLessonModal] = useState<string | null>(null);
   const [feedbackTarget, setFeedbackTarget] = useState<{ lessonId: string; studentId: string } | null>(null);
   const [evalTarget, setEvalTarget] = useState<{ lessonId: string; lessonTitle: string; studentId: string } | null>(null);
   const [showCreateLesson, setShowCreateLesson] = useState(false);
-  const hasModalOpen = Boolean(lessonModal || feedbackTarget || evalTarget || showCreateLesson);
+  const [trainingEditorStudent, setTrainingEditorStudent] = useState<string | null>(null);
+  const [editingTrainingPlanId, setEditingTrainingPlanId] = useState<string | null>(null);
+  const hasModalOpen = Boolean(lessonModal || feedbackTarget || evalTarget || showCreateLesson || trainingEditorStudent);
   useBodyScrollLock(hasModalOpen);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
 
@@ -63,8 +69,10 @@ export default function CoachHome() {
         <WeatherWidget />
       </motion.div>
 
+      <PushPermissionBanner role="professor" />
+
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className="mb-6 grid gap-3 sm:grid-cols-2">
+        className="mb-6 grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-[#EAB308]/25 bg-[#EAB308]/8 p-4">
           <div className="flex items-center gap-2 text-[#EAB308]">
             <UserPlus className="h-5 w-5" />
@@ -83,7 +91,7 @@ export default function CoachHome() {
               >
                 <span className="inline-flex items-center justify-center gap-2">
                   <Copy className="h-3.5 w-3.5" />
-                  Copiar link de matrícula
+                  Copiar link
                 </span>
               </button>
             ) : null}
@@ -91,7 +99,7 @@ export default function CoachHome() {
               href="/alunos"
               className={`flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-zinc-200 hover:border-[#EAB308]/35 hover:text-[#EAB308] ${ctaClass}`}
             >
-              Gestão de alunos
+              Gestão
             </Link>
           </div>
         </div>
@@ -100,17 +108,31 @@ export default function CoachHome() {
             <CalendarPlus className="h-5 w-5" />
             <p className="text-xs font-black uppercase tracking-wider">Nova aula</p>
           </div>
-          <p className="mt-2 text-[11px] text-zinc-500">Categoria, horário, local e alunos na turma.</p>
+          <p className="mt-2 text-[11px] text-zinc-500">Categoria, horário, local e alunos.</p>
           <button
             type="button"
             onClick={() => setShowCreateLesson(true)}
             className={`mt-3 w-full rounded-xl border border-[#EAB308]/45 bg-gradient-to-r from-[#EAB308]/18 to-transparent py-3 text-sm font-black text-[#EAB308] hover:border-[#EAB308] ${ctaClass}`}
           >
-            Montar aula na grade
+            Montar aula
           </button>
           <Link href="/agenda" className={`mt-2 block text-center text-[10px] font-bold uppercase tracking-wide text-zinc-600 hover:text-zinc-400 ${FOCUS_RING_GOLD}`}>
-            Ver calendário
+            Calendário
           </Link>
+        </div>
+        <div className="rounded-2xl border border-purple-900/30 bg-purple-950/10 p-4">
+          <div className="flex items-center gap-2 text-purple-400">
+            <Dumbbell className="h-5 w-5" />
+            <p className="text-xs font-black uppercase tracking-wider">Treino</p>
+          </div>
+          <p className="mt-2 text-[11px] text-zinc-500">Prescrever treino personalizado.</p>
+          <button
+            type="button"
+            onClick={() => setTrainingEditorStudent("select")}
+            className={`mt-3 w-full rounded-xl border border-purple-700/40 bg-purple-700/15 py-2.5 text-xs font-bold text-purple-300 hover:bg-purple-700/25 ${ctaClass}`}
+          >
+            Prescrever
+          </button>
         </div>
       </motion.div>
 
@@ -267,6 +289,46 @@ export default function CoachHome() {
         })}
       </div>
 
+      {/* Active Training Plans */}
+      {trainingPlans.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="mt-8">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Dumbbell className="w-5 h-5 text-purple-400" />
+            Planos Ativos ({trainingPlans.length})
+          </h3>
+          <div className="space-y-2">
+            {trainingPlans.map((plan) => {
+              const student = students.find(s => s.id === plan.studentId);
+              if (!student) return null;
+              return (
+                <motion.div key={plan.id}
+                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                  className="bg-[#0A0A0A] border border-zinc-800 rounded-xl p-4 flex items-center justify-between hover:bg-zinc-900/40 transition-colors">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <Dumbbell className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-white text-sm">{plan.title}</p>
+                      <p className="text-xs text-zinc-500">{student.name} • {plan.exercises.length} exercícios</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setTrainingEditorStudent(student.id);
+                      setEditingTrainingPlanId(plan.id);
+                    }}
+                    className={`p-2 rounded-lg hover:bg-purple-500/20 text-purple-400 transition-colors ${FOCUS_RING_GOLD}`}>
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
       {/* Lesson Detail Modal */}
       <AnimatePresence>
         {lessonModal && (() => {
@@ -299,6 +361,66 @@ export default function CoachHome() {
       </AnimatePresence>
 
       <CreateLessonModal isOpen={showCreateLesson} onClose={() => setShowCreateLesson(false)} defaultDate={localDateISO()} />
+
+      {/* Training Plan Editor Modal */}
+      <AnimatePresence>
+        {trainingEditorStudent === "select" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] p-4 flex items-center justify-center"
+            onClick={() => {
+              setTrainingEditorStudent(null);
+              setEditingTrainingPlanId(null);
+            }}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#0A0A0A] border border-zinc-800 rounded-2xl p-6 w-full max-w-sm max-h-[80dvh] overflow-y-auto">
+              <h3 className="text-xl font-bold text-white mb-4">Selecione um aluno</h3>
+              <div className="space-y-2">
+                {students.filter(s => s.status === "active").map(student => (
+                  <button key={student.id}
+                    onClick={() => {
+                      setTrainingEditorStudent(student.id);
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-900 transition-colors text-left border border-zinc-800 hover:border-purple-700/50">
+                    <img src={avatarSrc(student.avatar, student.name)}
+                      className="w-8 h-8 rounded-full object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white text-sm">{student.name}</p>
+                      <p className="text-xs text-zinc-500">{student.phone}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => {
+                setTrainingEditorStudent(null);
+                setEditingTrainingPlanId(null);
+              }}
+                className={`mt-4 w-full py-2 rounded-xl border border-zinc-800 text-zinc-300 text-sm font-medium hover:bg-zinc-900 transition-colors ${FOCUS_RING_GOLD}`}>
+                Cancelar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {trainingEditorStudent && trainingEditorStudent !== "select" && (() => {
+          const student = students.find(s => s.id === trainingEditorStudent);
+          if (!student) return null;
+          const existingPlan = editingTrainingPlanId ? trainingPlans.find(p => p.id === editingTrainingPlanId) : undefined;
+          return (
+            <TrainingPlanEditor
+              key="training-editor"
+              student={student}
+              existingPlan={existingPlan}
+              onClose={() => {
+                setTrainingEditorStudent(null);
+                setEditingTrainingPlanId(null);
+              }}
+            />
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }

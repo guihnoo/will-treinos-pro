@@ -1,0 +1,35 @@
+---
+description: Regras obrigatórias de UI/UX premium para o Will Treinos PRO. Aplica automaticamente o design system Gold + Black com Framer Motion.
+globs: ["**/*.tsx", "**/*.css", "**/*.module.css"]
+alwaysApply: true
+---
+
+# Will Treinos — Design System Guardian
+
+## Identidade Visual
+- Background: `#000000` ou `bg-black` ou `bg-zinc-950`
+- Accent: `#EAB308` / `text-yellow-500` / `bg-yellow-500`
+- Fontes: Lexend (UI), Space Grotesk (dados)
+
+## Glassmorphism Padrão
+```
+backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl
+```
+
+## Animações Obrigatórias
+- **Entrada de Modal:** `initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}`
+- **Entrada de Lista:** `initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}`
+- **Hover de botão:** `whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}`
+- **Transições de página:** Layout animations com `AnimatePresence`
+
+## Proibições Absolutas
+- ❌ `background: white` ou `bg-white` em componentes principais
+- ❌ Ausência de estados: loading, error, empty
+- ❌ Botões sem feedback de hover/press
+- ❌ Cores hardcoded sem relação com a paleta (#EAB308, #000000)
+- ❌ `border-radius: 0` (sempre usar `rounded-lg` ou maior)
+
+## CTAs
+- Primary: `bg-yellow-500 text-black font-bold hover:bg-yellow-400`
+- Secondary: `border border-yellow-500/50 text-yellow-400 hover:border-yellow-400`
+- Danger: `bg-red-950/50 border border-red-500/30 text-red-400`

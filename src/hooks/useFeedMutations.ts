@@ -13,6 +13,7 @@ import {
   updateFeedPostModerationRemote,
 } from "@/lib/supabasePersistence";
 import { willUid } from "@/lib/willUid";
+import { logXpEvent } from "@/lib/xpLogger";
 
 export function useFeedMutations(options: {
   usingSupabaseSession: boolean;
@@ -55,13 +56,16 @@ export function useFeedMutations(options: {
 
   const togglePostLike = useCallback(
     (id: string) => {
+      let wasLiked = false;
       if (!usingSupabaseSession) {
         setPosts((p) =>
-          p.map((post) =>
-            post.id === id
-              ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 }
-              : post,
-          ),
+          p.map((post) => {
+            if (post.id === id) {
+              wasLiked = post.isLiked;
+              return { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 };
+            }
+            return post;
+          }),
         );
         return;
       }
@@ -71,8 +75,28 @@ export function useFeedMutations(options: {
         setCriticalDataError("Sessão Supabase indisponível para curtir.");
         return;
       }
+
+      // Get current like state before toggling
+      setPosts((p) => {
+        const post = p.find((post) => post.id === id);
+        if (post) wasLiked = post.isLiked;
+        return p;
+      });
+
       void toggleFeedPostLikeRemote(supabase, id, currentUserId)
-        .then(() => fetchFeedPostsRemote(supabase, currentUserId))
+        .then(() => {
+          // Log XP only if we're adding a new like (not removing)
+          if (!wasLiked) {
+            void logXpEvent(supabase, {
+              studentId: currentUserId,
+              points: 5,
+              type: "feed_like",
+              description: "Curtiu um post no feed",
+              relatedId: id,
+            });
+          }
+          return fetchFeedPostsRemote(supabase, currentUserId);
+        })
         .then((livePosts) => setPosts(livePosts))
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao curtir post."));
     },
@@ -98,7 +122,17 @@ export function useFeedMutations(options: {
         return;
       }
       void addFeedCommentRemote(supabase, { postId: id, userId: currentUserId, userName, userAvatar: avatar, text })
-        .then(() => fetchFeedPostsRemote(supabase, currentUserId))
+        .then(() => {
+          // Log XP for commenting
+          void logXpEvent(supabase, {
+            studentId: currentUserId,
+            points: 10,
+            type: "feed_comment",
+            description: "Comentou em um post no feed",
+            relatedId: id,
+          });
+          return fetchFeedPostsRemote(supabase, currentUserId);
+        })
         .then((livePosts) => setPosts(livePosts))
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao comentar no post."));
     },

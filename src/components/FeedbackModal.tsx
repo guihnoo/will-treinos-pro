@@ -7,6 +7,9 @@ import type { Student } from "@/context/types";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useCoaching } from "@/context/CoachingContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import { logXpEvent } from "@/lib/xpLogger";
+import { sendPushToUser } from "@/lib/pushRoleBroadcast";
 
 interface Props {
   lessonId: string;
@@ -61,6 +64,30 @@ export default function FeedbackModal({ lessonId, student, onClose }: Props) {
       read: false,
       studentId: student.id
     });
+
+    // Log XP for feedback based on rating and send push
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const xpPoints = Math.round(rating * 10); // 10 XP per star (50 XP max for 5 stars)
+      void logXpEvent(supabase, {
+        studentId: student.id,
+        points: xpPoints,
+        type: "feedback",
+        description: `Feedback de aula: ${rating} estrelas`,
+        relatedId: lessonId,
+      });
+
+      // Send push notification to the student
+      if (student.authUserId) {
+        const stars = "⭐".repeat(rating);
+        void sendPushToUser(student.authUserId, {
+          title: "⭐ Avaliação Recebida",
+          body: `${stars} Você recebeu ${rating} estrelas no feedback da aula!`,
+          url: "/dashboard",
+        });
+      }
+    }
+
     setSubmitted(true);
     setTimeout(onClose, 1500);
   };

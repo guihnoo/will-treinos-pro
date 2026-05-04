@@ -17,6 +17,7 @@ import {
   CreditCard,
   MapPin,
   PlusCircle,
+  Radio,
   RefreshCw,
   UserPlus,
   UserCheck,
@@ -44,9 +45,11 @@ import CockpitHero from "./CockpitHero";
 import OracleInsights from "./OracleInsights";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
+import LiveLessonCoachPanel from "./LiveLessonCoachPanel";
+import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
-import { localDateISO } from "@/lib/dateUtils";
+import { localDateISO, getMonday } from "@/lib/dateUtils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 function currencyBRL(value: number): string {
@@ -100,7 +103,7 @@ export default function WillCockpit() {
   const { appConfig, cadastroPath, cadastroInviteUrl, generateEnrollmentInviteCode } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
   const { user, isLive } = useAuth();
-  const { lessons, todayLessons, todayEnrolledCount } = useLessons();
+  const { lessons, todayLessons, todayEnrolledCount, updateLesson } = useLessons();
   const {
     students,
     statusCounts,
@@ -114,6 +117,7 @@ export default function WillCockpit() {
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [showCourtModal, setShowCourtModal] = useState(false);
   const [showLessonModal, setShowLessonModal] = useState(false);
+  const [showLivePanel, setShowLivePanel] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -136,6 +140,8 @@ export default function WillCockpit() {
     notes: "",
     categoryIds: [] as string[],
   });
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(localDateISO(new Date()));
+  const [calendarWeekStart] = useState<Date>(getMonday(new Date()));
 
   useEffect(() => {
     if (!onboardingStudentId) return;
@@ -162,6 +168,7 @@ export default function WillCockpit() {
     showStudentModal ||
     showQuickActionModal !== null ||
     showCreateLesson ||
+    showLivePanel ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -511,11 +518,11 @@ export default function WillCockpit() {
         </AppSectionCard>
       </motion.div>
 
-      {/* Bloco 2: agenda operacional compacta (home) */}
+      {/* Bloco 2: agenda semanal com grid interativo */}
       <motion.div variants={itemV}>
         <AppSectionCard
-          title="Próximas na quadra (hoje)"
-          subtitle="Visão operacional com foco nas próximas aulas."
+          title="Grade semanal"
+          subtitle="Navegue semana a semana e veja todas as aulas agendadas."
           rightSlot={
             <button
               type="button"
@@ -526,76 +533,33 @@ export default function WillCockpit() {
               className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
               aria-label="Abrir calendário completo na agenda"
             >
-              Calendário completo
+              Agenda completa
             </button>
           }
           className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
-          contentClassName="space-y-2 pt-3"
+          contentClassName="pt-3"
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(59,130,246,0.14),transparent_65%)]" />
-          <div className="mb-1 flex items-center gap-2">
-            <Clock3 className="h-4 w-4 text-[#EAB308]" />
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Agenda operacional</p>
-          </div>
-          <div className="space-y-2">
-          {lessonsDay.length === 0 ? (
-            <AppEmptyState
-              icon={CalendarDays}
-              title="Nenhuma aula para hoje"
-              description="Monte a grade na agenda ou crie uma sessão agora."
-              actionLabel="Criar aula agora"
-              onAction={() => {
-                haptic(10);
-                setShowCreateLesson(true);
-              }}
-              className="border-zinc-800/90 bg-black/45"
-            />
-          ) : null}
-          {lessonsDayTop3.map((item, i) => {
-            const lesson = item.lesson;
-            const category = getCategory(lesson.categoryId);
-            const startHour = Number(lesson.startTime.split(":")[0] ?? "0");
-            const endHour = Number(lesson.endTime.split(":")[0] ?? "0");
-            const inCurrentHour = currentHour >= startHour && currentHour <= endHour;
-            return (
-              <motion.button
-                key={`day-${lesson.id}`}
-                type="button"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.12 + i * 0.05 }}
-                onClick={() => {
-                  haptic(15);
-                  setSelectedLessonId(lesson.id);
-                  setSelectedLessonLayoutId(`lesson-card-day-${lesson.id}`);
-                  setShowLessonModal(true);
-                }}
-                layoutId={`lesson-card-day-${lesson.id}`}
-                className={`w-full rounded-xl border px-3 py-2.5 text-left transition hover:border-[#EAB308]/35 ${
-                  inCurrentHour ? "border-[#EAB308]/45 bg-[#EAB308]/10" : "border-zinc-800/90 bg-black/45"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="min-w-0 truncate text-[12px] font-bold text-zinc-200">{lesson.title}</p>
-                  <span className="whitespace-nowrap text-[10px] font-bold text-zinc-400">{lesson.startTime}</span>
-                </div>
-                <p className="mt-0.5 truncate text-[10px] text-zinc-500">
-                  {category?.name ?? "Sessão"} · {lesson.enrolledStudents.length}/{lesson.maxStudents} atletas
-                </p>
-                {inCurrentHour ? (
-                  <span className="mt-1.5 inline-flex rounded-full border border-[#EAB308]/35 bg-[#EAB308]/10 px-2 py-0.5 text-[10px] font-bold text-[#EAB308]">
-                    Em andamento agora
-                  </span>
-                ) : null}
-              </motion.button>
-            );
-          })}
-          {lessonsDay.length > lessonsDayTop3.length ? (
-            <p className="text-center text-[10px] text-zinc-500" aria-live="polite">
-              +{lessonsDay.length - lessonsDayTop3.length} aula{lessonsDay.length - lessonsDayTop3.length > 1 ? "s" : ""} hoje — ver na agenda
-            </p>
-          ) : null}
-          </div>
+          <WeeklyCalendarGrid
+            weekStart={calendarWeekStart}
+            lessons={lessons}
+            selectedDate={selectedCalendarDate}
+            onSelectDate={(iso) => {
+              haptic(12);
+              setSelectedCalendarDate(iso);
+            }}
+            onSelectLesson={(lessonId) => {
+              haptic(15);
+              setSelectedLessonId(lessonId);
+              setSelectedLessonLayoutId(`lesson-${lessonId}`);
+              setShowLessonModal(true);
+            }}
+            onCreateLesson={() => {
+              haptic(10);
+              setShowCreateLesson(true);
+            }}
+            theme="admin"
+          />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
           <button
             type="button"
@@ -1606,12 +1570,26 @@ export default function WillCockpit() {
                     {selectedLesson.date.split("-").reverse().join("/")} · {selectedLesson.startTime} - {selectedLesson.endTime}
                   </p>
                 </div>
-                <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => {
-                  setShowLessonModal(false);
-                  setSelectedLessonLayoutId(null);
-                }} className={`min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5 ${INTERACTIVE_FOCUS_RING}`}>
-                  <X className="mx-auto h-4 w-4 text-zinc-200" />
-                </motion.button>
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    whileTap={PRESS_SCALE}
+                    type="button"
+                    onClick={() => {
+                      setShowLivePanel(true);
+                      setShowLessonModal(false);
+                    }}
+                    className={`min-h-11 min-w-11 rounded-xl border border-[#EAB308]/30 bg-[#EAB308]/10 hover:border-[#EAB308]/50 hover:bg-[#EAB308]/20 transition ${INTERACTIVE_FOCUS_RING}`}
+                    title="Abrir painel ao vivo"
+                  >
+                    <Radio className="mx-auto h-4 w-4 text-[#EAB308]" />
+                  </motion.button>
+                  <motion.button whileTap={PRESS_SCALE} type="button" onClick={() => {
+                    setShowLessonModal(false);
+                    setSelectedLessonLayoutId(null);
+                  }} className={`min-h-11 min-w-11 rounded-xl border border-white/15 bg-white/5 ${INTERACTIVE_FOCUS_RING}`}>
+                    <X className="mx-auto h-4 w-4 text-zinc-200" />
+                  </motion.button>
+                </div>
               </motion.div>
               <div className={`${MODAL_BODY_SCROLL} flex min-h-0 flex-col`}>
                 <LessonRatingsSheet 
@@ -1744,6 +1722,21 @@ export default function WillCockpit() {
       </AnimatePresence>
 
       <CreateLessonModal isOpen={showCreateLesson} onClose={() => setShowCreateLesson(false)} defaultDate={localDateISO()} />
+
+      <AnimatePresence>
+        {showLivePanel && selectedLesson ? (
+          <LiveLessonCoachPanel
+            lesson={selectedLesson}
+            students={students}
+            onClose={() => setShowLivePanel(false)}
+            onEndClass={() => {
+              setShowLivePanel(false);
+              setActionFeedback(`Aula "${selectedLesson.title}" encerrada.`);
+              updateLesson(selectedLesson.id, { status: "completed" });
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
     </div>
     </LayoutGroup>
   );

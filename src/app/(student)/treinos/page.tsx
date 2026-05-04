@@ -403,12 +403,15 @@ export default function TreinosPage() {
 
       {myPlans.length === 0 && (
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-16 border border-dashed border-zinc-800 rounded-3xl">
-          <Dumbbell className="w-12 h-12 mx-auto text-zinc-700 mb-4" />
-          <h3 className="text-lg font-bold text-zinc-400 mb-2">Nenhum plano ainda</h3>
-          <p className="text-sm text-zinc-600 mb-6">Solicite seu plano de treino personalizado!</p>
-            <motion.button whileTap={{ scale: 0.96 }} onClick={() => { vibrate(20); openWhatsApp(); }}
-            className={`inline-flex items-center gap-2 bg-[#22C55E] text-white px-6 py-3 rounded-2xl font-bold text-sm ${ctaClass}`}>
+          className="text-center py-16 px-6 bg-gradient-to-b from-purple-950/20 to-transparent border border-purple-900/30 rounded-3xl">
+          <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+            className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+            <Dumbbell className="w-8 h-8 text-purple-400" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-white mb-2">Nenhum treino prescrito ainda</h3>
+          <p className="text-sm text-zinc-400 mb-6 max-w-xs mx-auto">Seu professor vai criar um plano personalizado para você em breve. Enquanto isso, prepare-se!</p>
+          <motion.button whileTap={{ scale: 0.96 }} onClick={() => { vibrate(20); openWhatsApp(); }}
+            className={`inline-flex items-center gap-2 bg-[#22C55E] text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-[#16A34A] transition-colors ${ctaClass}`}>
             <PhoneCall className="w-4 h-4" /> Solicitar via WhatsApp
           </motion.button>
         </motion.div>

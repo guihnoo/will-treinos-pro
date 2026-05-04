@@ -1,11 +1,13 @@
 {
   "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "description": "Browser automation oficial Microsoft. Testa UI, valida fluxos, tira screenshots do Will Treinos."
+    },
     "supabase": {
       "command": "npx",
-      "args": [
-        "supabase",
-        "mcp"
-      ],
+      "args": ["supabase", "mcp"],
       "env": {
         "SUPABASE_URL": "${SUPABASE_URL}",
         "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
@@ -14,19 +16,40 @@
     },
     "github": {
       "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-github"
-      ],
+      "args": ["@modelcontextprotocol/server-github"],
       "env": {
         "GITHUB_TOKEN": "${GITHUB_TOKEN}"
       },
       "description": "GitHub repository management, PRs, issues, discussions"
     },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\monte\\Desktop\\will-treinos-pro"],
+      "description": "Acesso seguro ao sistema de arquivos do projeto Will Treinos."
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "description": "Memória persistente entre sessões. Salva decisões arquiteturais."
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "description": "Busca conteúdo web. Consulta docs, APIs, referências externas."
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Documentação sempre atualizada de Next.js 15, Supabase, Tailwind, Framer Motion. USE CONTEXT7 antes de qualquer implementação."
+    },
+    "desktop-commander": {
+      "command": "npx",
+      "args": ["-y", "@wonderwhy-er/desktop-commander@latest"],
+      "description": "Executa comandos shell, lê/escreve arquivos. Roda npm run build, npm test."
+    },
     "posthog": {
       "command": "npx",
-      "args": [
-        "posthog-mcp"
-      ],
+      "args": ["posthog-mcp"],
       "env": {
         "POSTHOG_API_KEY": "${POSTHOG_API_KEY}",
         "POSTHOG_PROJECT_ID": "${POSTHOG_PROJECT_ID}"

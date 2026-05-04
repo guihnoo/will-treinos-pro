@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will Treinos PRO — Área do Aluno</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+    integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+    integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+    crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+    integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+    crossorigin="anonymous"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: #2a2a3e;
+      font-family: 'Lexend', sans-serif;
+      overflow: auto
+    }
+
+    #root {
+      height: 100%
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 4px
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% center
+      }
+
+      100% {
+        background-position: 200% center
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes glow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 20px rgba(234, 179, 8, .15)
+      }
+
+      50% {
+        box-shadow: 0 0 40px rgba(234, 179, 8, .35)
+      }
+    }
+
+    .shimmer-gold {
+      background: linear-gradient(90deg, #EAB308 0%, #F97316 25%, #fff8e1 50%, #F97316 75%, #EAB308 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite
+    }
+
+    .live-dot {
+      animation: pulse 1.2s ease-in-out infinite
+    }
+
+    .gold-glow {
+      animation: glow 3s ease-in-out infinite
+    }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: absolute;
+      bottom: 10px;
+      left: 8px;
+      right: 8px;
+      background: rgba(10, 10, 10, .96);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 8px 4px;
+      z-index: 10
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 4px 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all .2s;
+      min-width: 44px;
+      min-height: 44px;
+      justify-content: center
+    }
+
+    .nav-item.active .nav-icon {
+      color: #EAB308
+    }
+
+    .nav-item.active .nav-dot {
+      display: block
+    }
+
+    .nav-dot {
+      display: none;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #EAB308;
+      margin: 0 auto
+    }
+
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      color: #52525b;
+      transition: color .2s
+    }
+
+    .nav-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: #52525b;
+      text-transform: uppercase;
+      letter-spacing: .06em
+    }
+
+    .nav-item.active .nav-label {
+      color: #EAB308
+    }
+
+    /* Canvas wrapper */
+    .canvas-root {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #2a2a3e;
+    }
+
+    .canvas-toolbar {
+      flex-shrink: 0;
+      height: 44px;
+      background: rgba(20, 20, 36, .98);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px
+    }
+
+    .toolbar-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .15em;
+      color: rgba(255, 255, 255, .35)
+    }
+
+    .toolbar-badge {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      background: rgba(234, 179, 8, .12);
+      border: 1px solid rgba(234, 179, 8, .25);
+      color: #EAB308;
+      padding: 2px 8px;
+      border-radius: 20px
+    }
+
+    .canvas-scroll {
+      flex: 1;
+      padding: 32px 48px 80px;
+      background: #2a2a3e;
+      overflow: visible;
+    }
+
+    .canvas-section {
+      margin-bottom: 56px
+    }
+
+    .section-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      color: rgba(255, 255, 255, .25);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, rgba(255, 255, 255, .08), transparent)
+    }
+
+    .frames-row {
+      display: flex;
+      gap: 48px;
+      align-items: flex-start;
+      padding-bottom: 32px
+    }
+
+    .frame-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0
+    }
+
+    .frame-tag {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .3)
+    }
+
+    /* iOS Device shell */
+    .device {
+      width: 375px;
+      border-radius: 44px;
+      overflow: hidden;
+      background: #050505;
+      box-shadow: 0 40px 100px rgba(0, 0, 0, .9), 0 0 0 8px #000, 0 0 0 9px rgba(255, 255, 255, .08);
+      position: relative;
+      flex-shrink: 0;
+      transform-origin: top center;
+    }
+
+    .device.v1 {
+      box-shadow: 0 40px 100px rgba(0, 0, 0, .9), 0 0 0 8px #000, 0 0 0 10px rgba(234, 179, 8, .5), 0 0 40px rgba(234, 179, 8, .2);
+    }
+
+    .device.v2 {
+      box-shadow: 0 40px 100px rgba(0, 0, 0, .9), 0 0 0 8px #000, 0 0 0 10px rgba(96, 165, 250, .5), 0 0 40px rgba(96, 165, 250, .2);
+    }
+
+    .device-island {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 34px;
+      border-radius: 20px;
+      background: #000;
+      z-index: 20
+    }
+
+    .device-statusbar {
+      height: 50px;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 20px 8px;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0
+    }
+
+    .status-time {
+      font-family: -apple-system, system-ui;
+      font-weight: 600;
+      font-size: 15px;
+      color: #fff
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 5px
+    }
+
+    .device-content {
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative
+    }
+
+    .device-home {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 32px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 8px;
+      z-index: 20;
+      pointer-events: none
+    }
+
+    .home-indicator {
+      width: 120px;
+      height: 4px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, .3)
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const GOLD = '#EAB308';
+    const ORANGE = '#F97316';
+    const GREEN = '#22C55E';
+    const RED = '#EF4444';
+    const BLUE = '#60A5FA';
+    const PURPLE = '#A78BFA';
+    const BG = '#0c0c18';
+    const BG2 = '#14141f';
+
+    // ─── ICONS (inline SVG) ───────────────────────────────────────────────────
+    const Icon = ({ d, size = 18, color = 'currentColor', fill = 'none', sw = 1.8, style = {} }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color}
+        strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={style}>
+        {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
+      </svg>
+    );
+
+    const Icons = {
+      home: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z',
+      dumbbell: ['M6.5 6.5h11', 'M6.5 17.5h11', 'M3 8.5h3v7H3z', 'M18 8.5h3v7h-3z'],
+      calendar: ['M8 2v4', 'M16 2v4', 'M3 10h18', 'M3 6a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6z'],
+      image: ['M3 3h18v18H3z', 'M8.5 8.5m-1.5 0a1.5 1.5 0 103 0 1.5 1.5 0 10-3 0', 'M21 15l-5-5L5 21'],
+      wallet: ['M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z', 'M16 3l-4 4-4-4'],
+      user: ['M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2', 'M12 11a4 4 0 100-8 4 4 0 000 8'],
+      bell: ['M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9', 'M13.73 21a2 2 0 01-3.46 0'],
+      star: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+      trophy: ['M6 9H2V3h4', 'M18 9h4V3h-4', 'M6 3h12v10a6 6 0 01-12 0V3z', 'M9 22v-3', 'M15 22v-3', 'M7 22h10'],
+      check: 'M20 6L9 17l-5-5',
+      chevronRight: 'M9 18l6-6-6-6',
+      chevronDown: 'M6 9l6 6 6-6',
+      zap: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
+      lock: ['M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z', 'M7 11V7a5 5 0 0110 0v4'],
+      play: 'M5 3l14 9-14 9V3z',
+      clock: ['M12 22a10 10 0 100-20 10 10 0 000 20', 'M12 6v6l4 2'],
+      mapPin: ['M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z', 'M12 10a1 1 0 100-2 1 1 0 000 2'],
+      trendUp: 'M23 6l-9.5 9.5-5-5L1 18',
+      edit: ['M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7', 'M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z'],
+      settings: ['M12 15a3 3 0 100-6 3 3 0 000 6', 'M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 012.83-2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 01-1.82-1H14a1.65 1.65 0 01-1-1.51V3a2 2 0 00-4 0v1.09A1.65 1.65 0 017.5 5.5'],
+      logout: ['M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4', 'M16 17l5-5-5-5', 'M21 12H9'],
+      instagram: ['M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z', 'M17.5 6.5h.01', 'M7 2h10a5 5 0 015 5v10a5 5 0 01-5 5H7a5 5 0 01-5-5V7a5 5 0 015-5z'],
+      shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+      phone: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.06 1.18 2 2 0 012.06.02h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z',
+      mail: ['M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z', 'M22 6l-10 7L2 6'],
+      refresh: ['M23 4v6h-6', 'M1 20v-6h6', 'M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15'],
+      target: ['M12 22a10 10 0 100-20 10 10 0 000 20', 'M12 18a6 6 0 100-12 6 6 0 000 12', 'M12 14a2 2 0 100-4 2 2 0 000 4'],
+      medal: ['M12 15a7 7 0 100-14 7 7 0 000 14', 'M8.21 13.89L7 23l5-3 5 3-1.21-9.12'],
+      x: 'M18 6L6 18M6 6l12 12',
+    };
+
+    // ─── DEVICE SHELL ─────────────────────────────────────────────────────────
+    function Device({ height = 812, children, tag, variant = 'v1' }) {
+      const isV1 = variant === 'v1';
+      return (
+        <div className="frame-col">
+          <span className="frame-tag" style={{ color: isV1 ? 'rgba(234,179,8,.55)' : 'rgba(96,165,250,.55)' }}>{tag}</span>
+          <div className={`device ${variant}`} style={{ height }}>
+            <div className="device-island" />
+            {/* Status bar */}
+            <div className="device-statusbar">
+              <span className="status-time">9:41</span>
+              <div className="status-icons">
+                <svg width="17" height="12" viewBox="0 0 19 12"><rect x="0" y="7.5" width="3.2" height="4.5" rx=".7" fill="#fff" /><rect x="4.8" y="5" width="3.2" height="7" rx=".7" fill="#fff" /><rect x="9.6" y="2.5" width="3.2" height="9.5" rx=".7" fill="#fff" /><rect x="14.4" y="0" width="3.2" height="12" rx=".7" fill="#fff" /></svg>
+                <svg width="15" height="12" viewBox="0 0 17 12"><path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z" fill="#fff" /><path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z" fill="#fff" /><circle cx="8.5" cy="10.5" r="1.5" fill="#fff" /></svg>
+                <svg width="25" height="12" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="rgba(255,255,255,.35)" fill="none" /><rect x="2" y="2" width="20" height="9" rx="2" fill="#fff" /><path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill="rgba(255,255,255,.4)" /></svg>
+              </div>
+            </div>
+            {/* Screen content */}
+            <div className="device-content" style={{ height: height - 50 - 32, overflowY: 'auto', overflowX: 'hidden', position: 'relative', display: 'block' }}>
+              {children}
+            </div>
+            <div className="device-home"><div className="home-indicator" /></div>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── BOTTOM NAVIGATION ────────────────────────────────────────────────────
+    function BottomNav({ active = 'home' }) {
+      const tabs = [
+        { id: 'home', label: 'Home', icon: 'home' },
+        { id: 'treinos', label: 'Treinos', icon: 'dumbbell' },
+        { id: 'agenda', label: 'Agenda', icon: 'calendar' },
+        { id: 'feed', label: 'Feed', icon: 'image' },
+        { id: 'perfil', label: 'Perfil', icon: 'user' },
+      ];
+      return (
+        <div className="bottom-nav">
+          {tabs.map(t => (
+            <div key={t.id} className={`nav-item ${active === t.id ? 'active' : ''}`}>
+              <Icon d={Icons[t.icon]} size={20} color={active === t.id ? GOLD : '#52525b'} />
+              <div className="nav-dot" />
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ─── MINI BAR ─────────────────────────────────────────────────────────────
+    function MiniBar({ label, value, color, pct }) {
+      return (
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span style={{ fontSize: 10, color: '#71717a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em' }}>{label}</span>
+            <span style={{ fontSize: 11, color, fontWeight: 700 }}>{value}</span>
+          </div>
+          <div style={{ height: 4, background: '#18181b', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width .6s' }} />
+          </div>
+        </div>
+      );
+    }
+
+    // ─── STAT PILL ────────────────────────────────────────────────────────────
+    function StatPill({ label, value, color = '#EAB308', icon }) {
+      return (
+        <div style={{
+          background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)',
+          borderRadius: 14, padding: '10px 12px', textAlign: 'center', flex: 1,
+        }}>
+          {icon && <Icon d={Icons[icon]} size={14} color={color} style={{ marginBottom: 4, display: 'block', margin: '0 auto 4px' }} />}
+          <div style={{ fontSize: 16, fontWeight: 800, color, letterSpacing: '-.02em' }}>{value}</div>
+          <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginTop: 2 }}>{label}</div>
+        </div>
+      );
+    }
+
+    // ─── SECTION HEADER ───────────────────────────────────────────────────────
+    function SectionHeader({ title, action }) {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.14em', color: 'rgba(255,255,255,.7)' }}>{title}</span>
+          {action && <span style={{ fontSize: 10, color: GOLD, fontWeight: 700, cursor: 'pointer' }}>{action}</span>}
+        </div>
+      );
+    }
+
+    // ─── GOLD DIVIDER ─────────────────────────────────────────────────────────
+    function GoldLine() {
+      return <div style={{ height: 1, background: 'linear-gradient(to right,transparent,rgba(234,179,8,.25),transparent)', margin: '12px 0' }} />;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 1 — HOME  V1: FOCUS
+    // ════════════════════════════════════════════════════════════
+    function HomeV1() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          {/* Glow */}
+          <div style={{
+            position: 'absolute', top: -40, left: -40, width: 300, height: 300, borderRadius: '50%',
+            background: 'radial-gradient(circle,rgba(234,179,8,.12),transparent 70%)', filter: 'blur(60px)', pointerEvents: 'none'
+          }} />
+
+          <div style={{ padding: '12px 16px 0', position: 'relative' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%',
+                  background: 'linear-gradient(135deg,rgba(234,179,8,.2),rgba(249,115,22,.1))',
+                  border: '2px solid rgba(234,179,8,.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20,
+                }}>🏐</div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: '-.02em' }}>
+                    Bom dia, <span style={{ color: GOLD }}>Ricardo!</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: '#52525b', fontWeight: 600 }}>Mensal · Vôlei · pronto para evoluir</div>
+                </div>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <Icon d={Icons.bell} size={20} color='#52525b' />
+                <div style={{ position: 'absolute', top: -3, right: -3, width: 8, height: 8, borderRadius: '50%', background: RED, border: '1px solid #050505' }} />
+              </div>
+            </div>
+
+            {/* Next lesson hero */}
+            <div style={{
+              background: 'linear-gradient(135deg,rgba(234,179,8,.12),rgba(234,179,8,.04))',
+              border: '1px solid rgba(234,179,8,.25)',
+              borderRadius: 20, padding: 16, marginBottom: 16,
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                background: 'linear-gradient(to right,transparent,#EAB308,transparent)'
+              }} />
+              <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.18em', marginBottom: 6 }}>
+                ⚡ PRÓXIMA AULA
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '-.03em', marginBottom: 4 }}>
+                Vôlei Intermediário
+              </div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 11, color: '#a1a1aa' }}>
+                  <Icon d={Icons.clock} size={12} color='#a1a1aa' /> 19:00 - 21:00
+                </span>
+                <span style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 11, color: '#a1a1aa' }}>
+                  <Icon d={Icons.mapPin} size={12} color='#a1a1aa' /> Arena Sul
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{
+                  flex: 1, background: GOLD, color: '#000',
+                  borderRadius: 12, padding: '10px 14px',
+                  fontSize: 12, fontWeight: 800, textAlign: 'center',
+                  letterSpacing: '.02em',
+                }}>
+                  ⚡ Check-in
+                </div>
+                <div style={{
+                  background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)',
+                  borderRadius: 12, padding: '10px 14px',
+                  fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.6)', textAlign: 'center',
+                }}>
+                  Detalhes
+                </div>
+              </div>
+            </div>
+
+            {/* KPI row */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <StatPill label="Aulas" value="42" color={GOLD} icon="trophy" />
+              <StatPill label="Sequência" value="7🔥" color={ORANGE} />
+              <StatPill label="Nota" value="8.4" color={GREEN} icon="star" />
+              <StatPill label="Freq." value="87%" color={BLUE} />
+            </div>
+
+            {/* Merit score */}
+            <div style={{ marginBottom: 16 }}>
+              <SectionHeader title="Merit Score" action="Detalhes →" />
+              <div style={{
+                background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                borderRadius: 16, padding: 14,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>76</div>
+                    <div style={{ fontSize: 10, color: '#71717a', fontWeight: 600, textTransform: 'uppercase' }}>Tier: <span style={{ color: GOLD }}>Ouro</span></div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{
+                      display: 'inline-flex', gap: 6, alignItems: 'center',
+                      padding: '4px 10px', borderRadius: 20,
+                      background: 'rgba(234,179,8,.1)', border: '1px solid rgba(234,179,8,.2)',
+                    }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: GOLD }}>🥇 OURO II</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#52525b', marginTop: 4 }}>4pts p/ Platina</div>
+                  </div>
+                </div>
+                <MiniBar label="Consistência" value="74%" color={GREEN} pct={74} />
+                <MiniBar label="Técnica" value="82%" color={GOLD} pct={82} />
+                <MiniBar label="Competitivo" value="70%" color={PURPLE} pct={70} />
+              </div>
+            </div>
+
+            {/* Weekly */}
+            <div style={{ marginBottom: 16 }}>
+              <SectionHeader title="Minha Semana" action="Ver agenda" />
+              <div style={{ display: 'flex', gap: 6 }}>
+                {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((d, i) => (
+                  <div key={d} style={{
+                    flex: 1, borderRadius: 10,
+                    background: i < 3 ? 'rgba(34,197,94,.15)' : i === 3 ? 'rgba(234,179,8,.12)' : 'rgba(255,255,255,.03)',
+                    border: `1px solid ${i < 3 ? 'rgba(34,197,94,.3)' : i === 3 ? 'rgba(234,179,8,.3)' : 'rgba(255,255,255,.06)'}`,
+                    padding: '8px 4px', textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 8, color: '#71717a', fontWeight: 700, marginBottom: 4 }}>{d}</div>
+                    <div style={{ fontSize: 16 }}>{i < 3 ? '✓' : i === 3 ? '→' : '·'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Daily quote */}
+            <div style={{
+              background: 'rgba(255,255,255,.02)',
+              border: '1px solid rgba(255,255,255,.06)',
+              borderRadius: 14, padding: 12,
+            }}>
+              <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 6 }}>
+                💬 Citação do dia
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', fontStyle: 'italic', lineHeight: 1.6, marginBottom: 4 }}>
+                "Campeões treinam quando os outros descansam."
+              </div>
+              <div style={{ fontSize: 10, color: '#52525b' }}>— Anônimo · Alto Nível</div>
+            </div>
+          </div>
+          <BottomNav active="home" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 1 — HOME  V2: KINETIC
+    // ════════════════════════════════════════════════════════════
+    function HomeV2() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          {/* Hero full-bleed */}
+          <div style={{
+            background: 'linear-gradient(180deg,rgba(234,179,8,.18) 0%,rgba(5,5,5,0) 100%)',
+            padding: '12px 16px 20px', position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 20 L40 20 M20 0 L20 40\' fill=\'none\' stroke=\'rgba(234,179,8,.04)\' stroke-width=\'1\'/%3E%3C/svg%3E")', pointerEvents: 'none' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'rgba(234,179,8,.15)', border: '1px solid rgba(234,179,8,.3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 900, fontStyle: 'italic', fontSize: 18, color: GOLD,
+                }}>W</div>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', fontFamily: "'Space Grotesk',sans-serif", letterSpacing: '.15em', textTransform: 'uppercase' }}>WILL PRO</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
+                }}>
+                  <Icon d={Icons.bell} size={16} color='#71717a' />
+                  <div style={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, borderRadius: '50%', background: RED }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Athlete identity */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%', flexShrink: 0,
+                background: 'linear-gradient(135deg,rgba(234,179,8,.25),rgba(249,115,22,.15))',
+                border: '2px solid rgba(234,179,8,.5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
+              }}>🏐</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'rgba(234,179,8,.7)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 2 }}>
+                  Bom dia
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-.04em', lineHeight: 1 }} className="shimmer-gold">
+                  RICARDO
+                </div>
+                <div style={{ fontSize: 10, color: '#52525b', marginTop: 3 }}>
+                  🥇 Ouro II · 76pts Merit · 7🔥 streak
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 12,
+                  background: 'rgba(234,179,8,.1)', border: '1px solid rgba(234,179,8,.25)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: GOLD }}>87</div>
+                  <div style={{ fontSize: 7, color: '#71717a', fontWeight: 700 }}>FREQ%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* XP bar */}
+            <div style={{ marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>Lv.5 · 420 XP</span>
+                <span style={{ fontSize: 9, color: GOLD, fontWeight: 700 }}>500 p/ Lv.6 →</span>
+              </div>
+              <div style={{ height: 5, background: 'rgba(255,255,255,.06)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ width: '84%', height: '100%', background: `linear-gradient(to right,${GOLD},${ORANGE})`, borderRadius: 4 }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: '0 16px' }}>
+            {/* Próxima aula — scorecard */}
+            <div style={{
+              background: 'rgba(5,5,5,.8)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,.08)',
+              borderRadius: 20, padding: 14, marginBottom: 12,
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', top: 0, right: 0, width: 120, height: 120,
+                background: 'radial-gradient(circle,rgba(234,179,8,.08),transparent 70%)', pointerEvents: 'none'
+              }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 4 }}>HOJE · 19:00</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-.03em' }}>Vôlei Intermediário</div>
+                  <div style={{ fontSize: 10, color: '#71717a', marginTop: 2 }}>Arena Sul · 12/16 alunos</div>
+                </div>
+                <div style={{
+                  background: 'rgba(34,197,94,.12)', border: '1px solid rgba(34,197,94,.3)',
+                  borderRadius: 8, padding: '4px 8px',
+                  fontSize: 9, fontWeight: 800, color: GREEN, textTransform: 'uppercase',
+                }}>Aberto</div>
+              </div>
+              {/* Progress bar */}
+              <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <div key={i} style={{
+                    flex: 1, height: 3, borderRadius: 2,
+                    background: i < 12 ? `rgba(234,179,8,.6)` : 'rgba(255,255,255,.08)',
+                  }} />
+                ))}
+              </div>
+              <button style={{
+                width: '100%', background: `linear-gradient(135deg,${GOLD},${ORANGE})`,
+                color: '#000', border: 'none', borderRadius: 12, padding: '12px',
+                fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                boxShadow: '0 0 20px rgba(234,179,8,.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}>
+                <Icon d={Icons.zap} size={14} color='#000' fill='#000' />
+                Registrar chegada
+              </button>
+            </div>
+
+            {/* 4-stat row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+              {[
+                { label: 'AULAS FEITAS', value: '42', sub: '+3 esse mês', color: GOLD },
+                { label: 'STREAK', value: '7🔥', sub: 'Recorde: 12', color: ORANGE },
+                { label: 'NOTA MÉDIA', value: '8.4', sub: '↑ 0.3 vs último mês', color: GREEN },
+                { label: 'FREQUÊNCIA', value: '87%', sub: 'Meta: 85% ✓', color: BLUE },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                  borderRadius: 14, padding: '12px 14px', position: 'relative', overflow: 'hidden',
+                }}>
+                  <div style={{
+                    position: 'absolute', top: -8, right: -8, width: 40, height: 40,
+                    borderRadius: '50%', opacity: .15, filter: 'blur(12px)', background: s.color
+                  }} />
+                  <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>{s.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: s.color, letterSpacing: '-.03em' }}>{s.value}</div>
+                  <div style={{ fontSize: 9, color: '#71717a', marginTop: 2 }}>{s.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Achievement tracks */}
+            <SectionHeader title="Trilhas" action="Ver todas" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { label: 'Consistência', score: 74, goal: 74, color: GREEN, unlocked: true },
+                { label: 'Técnica', score: 76, goal: 76, color: GOLD, unlocked: true },
+                { label: 'Fundamentos', score: 68, goal: 72, color: BLUE, unlocked: false },
+              ].map((t, i) => (
+                <div key={i} style={{
+                  background: BG2, border: `1px solid ${t.unlocked ? `${t.color}30` : 'rgba(255,255,255,.05)'}`,
+                  borderRadius: 14, padding: '10px 12px',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                    background: `${t.color}15`, border: `1px solid ${t.color}25`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14,
+                  }}>{t.unlocked ? '✅' : '🔒'}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.8)' }}>{t.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: t.color }}>{t.score}/{t.goal}</span>
+                    </div>
+                    <div style={{ height: 3, background: 'rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(100, (t.score / t.goal) * 100)}%`, height: '100%', background: t.color, borderRadius: 3 }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <BottomNav active="home" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 2 — TREINOS  V1: FOCUS
+    // ════════════════════════════════════════════════════════════
+    function TreinosV1() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          <div style={{ padding: '12px 16px 0' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 4 }}>ÁREA DO ALUNO</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>Meus Treinos</div>
+              </div>
+              <Icon d={Icons.dumbbell} size={22} color={GOLD} />
+            </div>
+
+            {/* XP card */}
+            <div style={{
+              background: BG2, border: '1px solid rgba(234,179,8,.2)',
+              borderRadius: 16, padding: 14, marginBottom: 16,
+              display: 'flex', gap: 12, alignItems: 'center',
+            }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'rgba(234,179,8,.1)', border: '1px solid rgba(234,179,8,.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20,
+              }}>⚡</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>Will Rank · Lv. 4</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: GOLD,
+                    background: 'rgba(234,179,8,.1)', border: '1px solid rgba(234,179,8,.2)',
+                    padding: '2px 8px', borderRadius: 20
+                  }}>360 XP</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(255,255,255,.06)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ width: '72%', height: '100%', background: `linear-gradient(to right,${GOLD},${ORANGE})`, borderRadius: 4 }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontSize: 9, color: '#52525b' }}>30 séries feitas</span>
+                  <span style={{ fontSize: 9, color: '#52525b' }}>Lv.5 em 6 séries</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Plan card */}
+            <div style={{ marginBottom: 8 }}>
+              <SectionHeader title="Plano Ativo" />
+              <div style={{
+                background: BG2, border: '1px solid rgba(255,255,255,.07)',
+                borderRadius: 16, overflow: 'hidden',
+              }}>
+                <div style={{ padding: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Força Base — Semana 3</div>
+                      <div style={{ fontSize: 10, color: '#52525b', marginTop: 2 }}>8 exercícios · Criado 28 abr</div>
+                    </div>
+                    <div style={{
+                      fontSize: 11, fontWeight: 700, color: GREEN,
+                      background: 'rgba(34,197,94,.1)', border: '1px solid rgba(34,197,94,.25)',
+                      padding: '3px 8px', borderRadius: 20,
+                    }}>62%</div>
+                  </div>
+                  <div style={{ height: 6, background: 'rgba(255,255,255,.06)', borderRadius: 4, overflow: 'hidden', marginBottom: 14 }}>
+                    <div style={{ width: '62%', height: '100%', background: `linear-gradient(to right,${GOLD},${GREEN})`, borderRadius: 4 }} />
+                  </div>
+                </div>
+
+                {/* Exercise list */}
+                {[
+                  { name: 'Agachamento Livre', sets: '4', reps: '8x', done: true },
+                  { name: 'Supino Reto', sets: '3', reps: '10x', done: true },
+                  { name: 'Leg Press 45°', sets: '4', reps: '12x', done: false },
+                  { name: 'Rosca Direta', sets: '3', reps: '12x', done: false },
+                ].map((ex, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px',
+                    borderTop: '1px solid rgba(255,255,255,.04)',
+                    background: ex.done ? 'rgba(34,197,94,.04)' : 'transparent',
+                  }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                      background: ex.done ? 'rgba(34,197,94,.12)' : 'rgba(234,179,8,.08)',
+                      border: `1px solid ${ex.done ? 'rgba(34,197,94,.25)' : 'rgba(234,179,8,.15)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Icon d={ex.done ? Icons.check : Icons.play} size={14} color={ex.done ? GREEN : GOLD} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: ex.done ? '#52525b' : '#fff' }}>{ex.name}</div>
+                      <div style={{ fontSize: 10, color: '#52525b' }}>{ex.sets} séries × {ex.reps}</div>
+                    </div>
+                    {ex.done && <span style={{ fontSize: 9, fontWeight: 700, color: GREEN }}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <BottomNav active="treinos" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 2 — TREINOS  V2: KINETIC
+    // ════════════════════════════════════════════════════════════
+    function TreinosV2() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          {/* Hero strip */}
+          <div style={{
+            background: 'linear-gradient(135deg,rgba(139,92,246,.15),rgba(234,179,8,.08))',
+            padding: '12px 16px 16px', borderBottom: '1px solid rgba(255,255,255,.04)',
+          }}>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.18em', marginBottom: 4 }}>MEUS TREINOS</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>Força Base</div>
+                <div style={{ fontSize: 11, color: '#71717a', marginTop: 2 }}>Semana 3 de 8 · Prof. Will</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-.03em' }} className="shimmer-gold">62%</div>
+                <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700 }}>CONCLUÍDO</div>
+              </div>
+            </div>
+            <div style={{ height: 4, background: 'rgba(255,255,255,.06)', borderRadius: 4, overflow: 'hidden', marginTop: 10 }}>
+              <div style={{ width: '62%', height: '100%', background: `linear-gradient(to right,${PURPLE},${GOLD})`, borderRadius: 4 }} />
+            </div>
+          </div>
+
+          <div style={{ padding: '12px 16px 0' }}>
+            {/* Level pill */}
+            <div style={{
+              display: 'flex', gap: 12, marginBottom: 16,
+            }}>
+              {[
+                { label: 'NÍVEL', value: 'Lv.4', color: PURPLE },
+                { label: 'XP', value: '360', color: GOLD },
+                { label: 'SÉRIES', value: '30/42', color: GREEN },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  flex: 1, background: BG2,
+                  border: '1px solid rgba(255,255,255,.06)',
+                  borderRadius: 12, padding: '8px 10px', textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{s.label}</div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: s.color, marginTop: 2 }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Exercise cards */}
+            <SectionHeader title="Exercícios" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[
+                { name: 'Agachamento Livre', sets: 4, reps: '8x', rest: '90s', done: true, note: 'Focar postura lombar' },
+                { name: 'Supino Reto', sets: 3, reps: '10x', rest: '60s', done: true, note: 'Barra + 20kg' },
+                { name: 'Leg Press 45°', sets: 4, reps: '12x', rest: '90s', done: false, note: 'Amplitude total' },
+                { name: 'Rosca Direta', sets: 3, reps: '12x', rest: '60s', done: false, note: '' },
+                { name: 'Remada Baixa', sets: 3, reps: '12x', rest: '60s', done: false, note: '' },
+              ].map((ex, i) => (
+                <div key={i} style={{
+                  background: ex.done ? 'rgba(34,197,94,.06)' : BG2,
+                  border: `1px solid ${ex.done ? 'rgba(34,197,94,.2)' : 'rgba(255,255,255,.06)'}`,
+                  borderRadius: 14, padding: '12px 14px',
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                  {!ex.done && <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                    background: `linear-gradient(to right,rgba(234,179,8,.6),transparent)`
+                  }} />}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: ex.done ? 'rgba(34,197,94,.12)' : 'rgba(234,179,8,.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Icon d={ex.done ? Icons.check : Icons.play} size={16} color={ex.done ? GREEN : GOLD} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: ex.done ? '#52525b' : '#fff' }}>{ex.name}</div>
+                      <div style={{ display: 'flex', gap: 10, marginTop: 3 }}>
+                        <span style={{ fontSize: 10, color: '#71717a' }}>{ex.sets}×{ex.reps}</span>
+                        <span style={{ fontSize: 10, color: '#52525b' }}>⏱ {ex.rest}</span>
+                        {ex.note && <span style={{ fontSize: 10, color: 'rgba(234,179,8,.6)', fontStyle: 'italic' }}>{ex.note}</span>}
+                      </div>
+                    </div>
+                    {/* Set dots */}
+                    <div style={{ display: 'flex', gap: 3 }}>
+                      {Array.from({ length: ex.sets }).map((_, j) => (
+                        <div key={j} style={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          background: ex.done || j < (ex.done ? ex.sets : 0) ? GREEN : 'rgba(255,255,255,.1)',
+                        }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <BottomNav active="treinos" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 3 — AGENDA  V1
+    // ════════════════════════════════════════════════════════════
+    function AgendaV1() {
+      const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+      const dates = [5, 6, 7, 8, 9, 10, 11];
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          <div style={{ padding: '12px 16px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 4 }}>MAIO 2026</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>Agenda</div>
+              </div>
+              <div style={{
+                background: 'rgba(234,179,8,.1)', border: '1px solid rgba(234,179,8,.25)',
+                borderRadius: 10, padding: '6px 10px',
+                fontSize: 10, fontWeight: 700, color: GOLD,
+              }}>Hoje ↗</div>
+            </div>
+
+            {/* Date strip */}
+            <div style={{ display: 'flex', gap: 5, marginBottom: 16, overflowX: 'auto' }}>
+              {days.map((d, i) => (
+                <div key={d} style={{
+                  minWidth: 44, borderRadius: 12,
+                  background: i === 2 ? GOLD : 'rgba(255,255,255,.03)',
+                  border: `1px solid ${i === 2 ? GOLD : 'rgba(255,255,255,.06)'}`,
+                  padding: '8px 4px', textAlign: 'center', cursor: 'pointer', flexShrink: 0,
+                }}>
+                  <div style={{ fontSize: 8, color: i === 2 ? '#000' : '#52525b', fontWeight: 700, marginBottom: 3 }}>{d}</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: i === 2 ? '#000' : '#fff' }}>{dates[i]}</div>
+                  {i === 2 && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#000', margin: '3px auto 0' }} />}
+                  {i === 4 && <div style={{ width: 4, height: 4, borderRadius: '50%', background: GOLD, margin: '3px auto 0' }} />}
+                </div>
+              ))}
+            </div>
+
+            {/* Day stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 14 }}>
+              {[
+                { label: 'Aulas', value: '2', color: GOLD },
+                { label: 'Check-in', value: '1/2', color: GREEN },
+                { label: 'Score', value: '8.6', color: BLUE },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                  borderRadius: 10, padding: '8px', textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: 8, color: '#52525b', fontWeight: 700, textTransform: 'uppercase' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Lessons */}
+            <SectionHeader title="Quarta, 07 mai" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { time: '08:00', title: 'Vôlei Avançado', cat: 'Tático', color: '#8B5CF6', venue: 'Arena Norte', status: 'confirmed', enrolled: 14, max: 16 },
+                { time: '19:00', title: 'Vôlei Intermediário', cat: 'Técnica', color: '#38BDF8', venue: 'Arena Sul', status: 'open', enrolled: 12, max: 16 },
+              ].map((l, i) => (
+                <div key={i} style={{
+                  display: 'flex', gap: 8, alignItems: 'flex-start',
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#52525b', width: 40, flexShrink: 0, paddingTop: 14, textAlign: 'right' }}>{l.time}</div>
+                  <div style={{ width: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 18, flexShrink: 0 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: l.color, boxShadow: `0 0 8px ${l.color}80` }} />
+                    {i === 0 && <div style={{ width: 1, height: 60, background: 'rgba(255,255,255,.06)', marginTop: 4 }} />}
+                  </div>
+                  <div style={{
+                    flex: 1, background: BG2, borderRadius: 14, padding: 12,
+                    borderLeft: `3px solid ${l.color}`,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{l.title}</div>
+                        <div style={{ fontSize: 10, color: '#71717a', marginTop: 2 }}>{l.venue} · {l.enrolled}/{l.max}</div>
+                      </div>
+                      <div style={{
+                        fontSize: 9, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                        background: l.status === 'confirmed' ? 'rgba(96,165,250,.12)' : 'rgba(34,197,94,.1)',
+                        color: l.status === 'confirmed' ? BLUE : GREEN,
+                        border: `1px solid ${l.status === 'confirmed' ? 'rgba(96,165,250,.25)' : 'rgba(34,197,94,.25)'}`,
+                        height: 'fit-content',
+                      }}>
+                        {l.status === 'confirmed' ? '✓ Confirmado' : 'Check-in liberado'}
+                      </div>
+                    </div>
+                    {l.status === 'open' && (
+                      <button style={{
+                        marginTop: 6, width: '100%', background: `${GOLD}18`,
+                        border: `1px solid ${GOLD}40`, borderRadius: 8, padding: '7px',
+                        fontSize: 11, fontWeight: 700, color: GOLD, cursor: 'pointer',
+                      }}>
+                        ⚡ Registrar chegada
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <BottomNav active="agenda" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 3 — AGENDA  V2
+    // ════════════════════════════════════════════════════════════
+    function AgendaV2() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          {/* Hero month header */}
+          <div style={{
+            background: 'linear-gradient(180deg,rgba(56,189,248,.1),transparent)',
+            padding: '12px 16px 16px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>Agenda</div>
+              <div style={{ fontSize: 10, color: BLUE, fontWeight: 700, fontFamily: "'Space Grotesk',sans-serif", letterSpacing: '.12em', textTransform: 'uppercase' }}>
+                Maio 2026
+              </div>
+            </div>
+
+            {/* Mini calendar week */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
+              {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d, i) => (
+                <div key={i} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 8, color: '#52525b', fontWeight: 700, marginBottom: 4 }}>{d}</div>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: i === 2 ? '50%' : 8, margin: '0 auto',
+                    background: i === 2 ? BLUE : i === 4 ? 'rgba(234,179,8,.12)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: i === 4 ? '1px solid rgba(234,179,8,.3)' : 'none',
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: i === 2 ? 900 : 600, color: i === 2 ? '#fff' : '#fff' }}>
+                      {[5, 6, 7, 8, 9, 10, 11][i]}
+                    </span>
+                  </div>
+                  {/* lesson dot */}
+                  {[true, false, true, false, true, false, false][i] && (
+                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: i === 2 ? '#fff' : GOLD, margin: '4px auto 0' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ padding: '0 16px' }}>
+            {/* Next lesson callout */}
+            <div style={{
+              background: `linear-gradient(135deg,rgba(56,189,248,.12),rgba(56,189,248,.04))`,
+              border: '1px solid rgba(56,189,248,.25)',
+              borderRadius: 18, padding: 14, marginTop: 12, marginBottom: 12,
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                background: 'linear-gradient(to right,transparent,#38BDF8,transparent)'
+              }} />
+              <div style={{ fontSize: 9, color: BLUE, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 6 }}>
+                PRÓXIMA SESSÃO
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 4 }}>Vôlei Intermediário</div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 10, color: '#71717a' }}>🕖 19:00 – 21:00</span>
+                <span style={{ fontSize: 10, color: '#71717a' }}>📍 Arena Sul</span>
+                <span style={{ fontSize: 10, color: GREEN }}>12/16 vagas</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button style={{
+                  flex: 2, background: `linear-gradient(135deg,${BLUE},#0284C7)`,
+                  color: '#fff', border: 'none', borderRadius: 10, padding: '10px',
+                  fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                }}>⚡ Check-in</button>
+                <button style={{
+                  flex: 1, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)',
+                  color: 'rgba(255,255,255,.5)', borderRadius: 10, padding: '10px',
+                  fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                }}>+ Detalhes</button>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            <SectionHeader title="Quarta-feira, 7 mai" />
+            <div style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', left: 19, top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,.04)' }} />
+              {[
+                { time: '08:00', title: 'Vôlei Avançado', color: PURPLE, icon: '🏐', state: 'done', note: 'Score: 9.2 ⭐' },
+                { time: '12:00', title: 'Almoço / Descanso', color: '#374151', icon: '☀️', state: 'rest', note: 'Recuperação ativa' },
+                { time: '19:00', title: 'Vôlei Intermediário', color: BLUE, icon: '🏐', state: 'upcoming', note: 'Check-in liberado às 18:00' },
+              ].map((ev, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div style={{ width: 38, flexShrink: 0, textAlign: 'right' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#52525b' }}>{ev.time}</span>
+                  </div>
+                  <div style={{
+                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                    background: ev.state === 'done' ? 'rgba(34,197,94,.2)' : ev.state === 'rest' ? 'rgba(55,65,81,.4)' : `${ev.color}25`,
+                    border: `2px solid ${ev.state === 'done' ? GREEN : ev.state === 'rest' ? '#374151' : ev.color}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1, position: 'relative', fontSize: 10, marginTop: 2,
+                  }}>
+                    {ev.state === 'done' ? <Icon d={Icons.check} size={10} color={GREEN} /> : ev.icon}
+                  </div>
+                  <div style={{
+                    flex: 1, background: ev.state === 'upcoming' ? `${ev.color}0d` : 'rgba(255,255,255,.02)',
+                    border: `1px solid ${ev.state === 'upcoming' ? `${ev.color}30` : 'rgba(255,255,255,.04)'}`,
+                    borderRadius: 12, padding: '10px 12px',
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: ev.state === 'rest' ? '#52525b' : '#fff', marginBottom: 2 }}>{ev.title}</div>
+                    <div style={{ fontSize: 10, color: '#52525b' }}>{ev.note}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <BottomNav active="agenda" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 4 — FEED  V1
+    // ════════════════════════════════════════════════════════════
+    function FeedV1() {
+      const posts = [
+        { avatar: '🏐', name: 'Prof. Will', time: '2h', content: 'Treino de hoje foi incrível! Turma intermediária arrasou nos fundamentos de recepção. Continuem assim! 💪', likes: 24, img: false, type: 'coach' },
+        { avatar: '🏅', name: 'Ricardo Alves', time: '5h', content: 'Consegui minha melhor sequência de saques hoje! 7 seguidos sem errar 🔥 Obrigado ao Prof. Will pelo feedback.', likes: 18, img: false, type: 'achievement' },
+        { avatar: '📊', name: 'Academia Will', time: '1d', content: '📢 RESULTADO DO MÊS: Top 3 alunos em frequência:\n1. Ana Lima — 100%\n2. Bruno Torres — 96%\n3. Ricardo Alves — 87%', likes: 42, img: false, type: 'official' },
+      ];
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          <div style={{ padding: '12px 16px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>Rede</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{
+                  background: 'rgba(234,179,8,.1)', border: '1px solid rgba(234,179,8,.2)',
+                  borderRadius: 20, padding: '4px 10px',
+                  fontSize: 10, fontWeight: 700, color: GOLD,
+                }}>🔴 Ao vivo</div>
+              </div>
+            </div>
+
+            {/* New post box */}
+            <div style={{
+              background: BG2, border: '1px solid rgba(255,255,255,.07)',
+              borderRadius: 14, padding: 12, marginBottom: 14,
+              display: 'flex', gap: 10, alignItems: 'center',
+            }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(234,179,8,.15)', border: '1px solid rgba(234,179,8,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏐</div>
+              <div style={{ flex: 1, fontSize: 12, color: '#52525b', padding: '8px 12px', background: 'rgba(255,255,255,.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,.05)' }}>
+                Compartilhe sua evolução...
+              </div>
+              <div style={{ background: GOLD, borderRadius: 8, padding: '6px 10px', fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer' }}>Post</div>
+            </div>
+
+            {posts.map((p, i) => (
+              <div key={i} style={{
+                background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                borderRadius: 16, padding: 14, marginBottom: 10,
+              }}>
+                {p.type === 'official' && (
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                    background: 'linear-gradient(to right,transparent,rgba(234,179,8,.5),transparent)', borderRadius: '16px 16px 0 0'
+                  }} />
+                )}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                    background: p.type === 'coach' ? 'rgba(234,179,8,.15)' : p.type === 'achievement' ? 'rgba(34,197,94,.15)' : 'rgba(139,92,246,.15)',
+                    border: `1px solid ${p.type === 'coach' ? 'rgba(234,179,8,.3)' : p.type === 'achievement' ? 'rgba(34,197,94,.3)' : 'rgba(139,92,246,.3)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                  }}>{p.avatar}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{p.name}</span>
+                      <span style={{ fontSize: 10, color: '#52525b' }}>{p.time}</span>
+                    </div>
+                    {p.type === 'coach' && <span style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>Professor</span>}
+                    {p.type === 'achievement' && <span style={{ fontSize: 9, color: GREEN, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>Conquista</span>}
+                    {p.type === 'official' && <span style={{ fontSize: 9, color: PURPLE, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>Oficial</span>}
+                  </div>
+                </div>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', lineHeight: 1.6, marginBottom: 10, whiteSpace: 'pre-line' }}>{p.content}</p>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <button style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                    <span style={{ fontSize: 14 }}>❤️</span>
+                    <span style={{ fontSize: 11, color: '#52525b', fontWeight: 600 }}>{p.likes}</span>
+                  </button>
+                  <button style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                    <span style={{ fontSize: 12, color: '#52525b' }}>💬 Comentar</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <BottomNav active="feed" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 4 — FEED  V2
+    // ════════════════════════════════════════════════════════════
+    function FeedV2() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          {/* Stories strip */}
+          <div style={{ padding: '12px 0 0' }}>
+            <div style={{ padding: '0 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>Rede</div>
+              <div style={{
+                display: 'inline-flex', gap: 5, alignItems: 'center',
+                padding: '4px 10px', borderRadius: 20,
+                background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)',
+              }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: RED }} className="live-dot" />
+                <span style={{ fontSize: 9, fontWeight: 800, color: RED, textTransform: 'uppercase', letterSpacing: '.12em' }}>Ao Vivo</span>
+              </div>
+            </div>
+
+            {/* Story circles */}
+            <div style={{ display: 'flex', gap: 10, padding: '0 16px 12px', overflowX: 'auto' }}>
+              {[
+                { name: 'Meu story', emoji: '➕', color: 'rgba(234,179,8,.2)', border: 'rgba(234,179,8,.4)' },
+                { name: 'Prof. Will', emoji: '🏐', color: 'rgba(234,179,8,.15)', border: GOLD, live: true },
+                { name: 'Ana Lima', emoji: '🏅', color: 'rgba(34,197,94,.1)', border: GREEN },
+                { name: 'Bruno', emoji: '💪', color: 'rgba(139,92,246,.1)', border: PURPLE },
+                { name: 'Turma A', emoji: '🏐', color: 'rgba(56,189,248,.1)', border: BLUE },
+              ].map((s, i) => (
+                <div key={i} style={{ textAlign: 'center', flexShrink: 0 }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: '50%',
+                    background: s.color, border: `2px solid ${s.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 22, margin: '0 auto 4px', position: 'relative',
+                  }}>
+                    {s.emoji}
+                    {s.live && <div style={{
+                      position: 'absolute', bottom: 0, right: 0,
+                      width: 14, height: 14, borderRadius: '50%',
+                      background: RED, border: '2px solid #050505',
+                      fontSize: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700,
+                    }}>!</div>}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#52525b', fontWeight: 600, maxWidth: 52, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+                </div>
+              ))}
+            </div>
+            <GoldLine />
+          </div>
+
+          <div style={{ padding: '0 16px' }}>
+            {/* Achievement highlight */}
+            <div style={{
+              background: 'linear-gradient(135deg,rgba(234,179,8,.12),rgba(249,115,22,.06))',
+              border: '1px solid rgba(234,179,8,.2)',
+              borderRadius: 18, padding: 14, marginBottom: 12,
+              display: 'flex', gap: 12, alignItems: 'center',
+            }}>
+              <div style={{ fontSize: 36 }}>🏆</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 4 }}>
+                  SUA CONQUISTA
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Trilha Técnica desbloqueada!</div>
+                <div style={{ fontSize: 11, color: '#71717a', marginTop: 2 }}>Você atingiu 76pts — Tier Ouro confirmado.</div>
+              </div>
+            </div>
+
+            {/* Feed posts */}
+            {[
+              { emoji: '🏐', name: 'Prof. Will', role: 'Professor', time: '2h', text: 'Treino de hoje foi incrível! Turma intermediária arrasou nos fundamentos. 💪', color: GOLD, likes: 24 },
+              { emoji: '🏅', name: 'Ricardo A.', role: 'Atleta · Você', time: '5h', text: '7 saques seguidos hoje! Novo recorde pessoal 🔥', color: GREEN, likes: 18, highlight: true },
+              { emoji: '📢', name: 'Will Treinos PRO', role: 'Oficial', time: '1d', text: 'Top frequência do mês: Ana 100% · Bruno 96% · Ricardo 87% 🏆', color: PURPLE, likes: 42 },
+            ].map((p, i) => (
+              <div key={i} style={{
+                background: p.highlight ? 'rgba(34,197,94,.04)' : BG2,
+                border: `1px solid ${p.highlight ? 'rgba(34,197,94,.2)' : 'rgba(255,255,255,.06)'}`,
+                borderRadius: 16, padding: 14, marginBottom: 10, position: 'relative', overflow: 'hidden',
+              }}>
+                {p.highlight && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: GREEN, borderRadius: '0 3px 3px 0' }} />}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                    background: `${p.color}18`, border: `2px solid ${p.color}40`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                  }}>{p.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{p.name}</div>
+                    <div style={{ fontSize: 9, color: p.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em' }}>{p.role} · {p.time}</div>
+                  </div>
+                  <Icon d={Icons.chevronRight} size={14} color='#374151' />
+                </div>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', lineHeight: 1.6, marginBottom: 10 }}>{p.text}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <span style={{ fontSize: 14 }}>❤️</span><span style={{ fontSize: 11, color: '#52525b' }}>{p.likes}</span>
+                    </button>
+                    <button style={{ fontSize: 11, color: '#52525b', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>💬 Resp.</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <BottomNav active="feed" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 5 — FINANCEIRO  V1
+    // ════════════════════════════════════════════════════════════
+    function FinanceiroV1() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          <div style={{ padding: '12px 16px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 4 }}>MEU PLANO</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>Financeiro</div>
+              </div>
+              <Icon d={Icons.wallet} size={22} color={GOLD} />
+            </div>
+
+            {/* Status card */}
+            <div style={{
+              background: 'linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.03))',
+              border: '1px solid rgba(34,197,94,.25)',
+              borderRadius: 20, padding: 16, marginBottom: 14,
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                background: 'linear-gradient(to right,transparent,#22C55E,transparent)'
+              }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontSize: 9, color: GREEN, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 6 }}>STATUS DA MENSALIDADE</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>R$ 250,00</div>
+                  <div style={{ fontSize: 11, color: '#71717a', marginTop: 4 }}>Mensal · Vence dia 10</div>
+                </div>
+                <div style={{
+                  background: 'rgba(34,197,94,.15)', border: '1px solid rgba(34,197,94,.3)',
+                  borderRadius: 10, padding: '6px 12px',
+                  fontSize: 11, fontWeight: 800, color: GREEN,
+                }}>✓ Em dia</div>
+              </div>
+              <GoldLine />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: GREEN }}>3</div>
+                  <div style={{ fontSize: 9, color: '#52525b', textTransform: 'uppercase', letterSpacing: '.08em' }}>Pagas</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: GOLD }}>0</div>
+                  <div style={{ fontSize: 9, color: '#52525b', textTransform: 'uppercase', letterSpacing: '.08em' }}>Pendentes</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>9</div>
+                  <div style={{ fontSize: 9, color: '#52525b', textTransform: 'uppercase', letterSpacing: '.08em' }}>Restantes</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment history */}
+            <SectionHeader title="Histórico" action="Ver todos →" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[
+                { month: 'Maio 2026', value: 'R$ 250', date: 'Vence 10/05', status: 'pending' },
+                { month: 'Abril 2026', value: 'R$ 250', date: 'Pago 08/04', status: 'paid' },
+                { month: 'Março 2026', value: 'R$ 250', date: 'Pago 07/03', status: 'paid' },
+                { month: 'Fev. 2026', value: 'R$ 250', date: 'Pago 09/02', status: 'paid' },
+              ].map((p, i) => (
+                <div key={i} style={{
+                  background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                  borderRadius: 14, padding: '12px 14px',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: p.status === 'paid' ? 'rgba(34,197,94,.1)' : 'rgba(234,179,8,.1)',
+                    border: `1px solid ${p.status === 'paid' ? 'rgba(34,197,94,.2)' : 'rgba(234,179,8,.2)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16,
+                  }}>{p.status === 'paid' ? '✅' : '⏳'}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{p.month}</div>
+                    <div style={{ fontSize: 10, color: '#52525b' }}>{p.date}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: p.status === 'paid' ? GREEN : GOLD }}>{p.value}</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: p.status === 'paid' ? GREEN : GOLD, textTransform: 'uppercase' }}>
+                      {p.status === 'paid' ? 'Pago' : 'Pendente'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* PIX CTA */}
+            <div style={{
+              marginTop: 12, background: 'rgba(255,255,255,.02)',
+              border: '1px dashed rgba(255,255,255,.08)', borderRadius: 14, padding: 12, textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 11, color: '#52525b', marginBottom: 8 }}>Pague via PIX e mantenha seu acesso ativo</div>
+              <button style={{
+                background: 'rgba(34,197,94,.12)', border: '1px solid rgba(34,197,94,.3)',
+                color: GREEN, borderRadius: 10, padding: '8px 20px',
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}>
+                📋 Copiar chave PIX
+              </button>
+            </div>
+          </div>
+          <BottomNav active="financeiro" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 5 — FINANCEIRO  V2
+    // ════════════════════════════════════════════════════════════
+    function FinanceiroV2() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          {/* Hero balance */}
+          <div style={{
+            background: 'linear-gradient(180deg,rgba(34,197,94,.12) 0%,transparent 100%)',
+            padding: '12px 16px 20px', position: 'relative', overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 80% 50%,rgba(34,197,94,.06),transparent 60%)', pointerEvents: 'none' }} />
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.2em', marginBottom: 12 }}>MINHA CONTA</div>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: GREEN, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 6 }}>
+                ✓ MENSALIDADE EM DIA
+              </div>
+              <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', letterSpacing: '-.04em' }}>R$ 250</div>
+              <div style={{ fontSize: 12, color: '#71717a', marginTop: 4 }}>Plano Mensal · Vence 10/05</div>
+            </div>
+
+            {/* Circle chart */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 4 }}>
+              {[
+                { label: 'Meses pagos', value: '3', color: GREEN },
+                { label: 'Próximo', value: '10 mai', color: GOLD },
+                { label: 'Anuidade', value: '37%', color: BLUE },
+              ].map((s, i) => (
+                <div key={i} style={{ textAlign: 'center' }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: '50%', margin: '0 auto 6px',
+                    background: `${s.color}12`, border: `2px solid ${s.color}40`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 900, color: s.color,
+                  }}>{s.value}</div>
+                  <div style={{ fontSize: 8, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ padding: '0 16px' }}>
+            {/* Quick action */}
+            <div style={{
+              display: 'flex', gap: 8, marginTop: 12, marginBottom: 16,
+            }}>
+              <button style={{
+                flex: 2, background: `linear-gradient(135deg,${GREEN},#16A34A)`,
+                color: '#fff', border: 'none', borderRadius: 14, padding: '12px',
+                fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center',
+              }}>
+                📋 Copiar chave PIX
+              </button>
+              <button style={{
+                flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)',
+                color: 'rgba(255,255,255,.5)', borderRadius: 14, padding: '12px',
+                fontSize: 11, cursor: 'pointer',
+              }}>
+                Extrato
+              </button>
+            </div>
+
+            {/* Timeline */}
+            <SectionHeader title="Histórico de pagamentos" />
+            <div style={{ position: 'relative' }}>
+              {[
+                { label: 'Maio 2026', sub: 'Vence 10/05 · R$ 250', status: 'pending', color: GOLD },
+                { label: 'Abril 2026', sub: 'Pago em 08/04 · R$ 250', status: 'paid', color: GREEN },
+                { label: 'Março 2026', sub: 'Pago em 07/03 · R$ 250', status: 'paid', color: GREEN },
+                { label: 'Fev. 2026', sub: 'Pago em 09/02 · R$ 250', status: 'paid', color: GREEN },
+              ].map((p, i) => (
+                <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: `${p.color}20`, border: `2px solid ${p.color}50`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 700, color: p.color,
+                    }}>{p.status === 'paid' ? '✓' : '·'}</div>
+                    {i < 3 && <div style={{ width: 1, height: 30, background: 'rgba(255,255,255,.04)', marginTop: 2 }} />}
+                  </div>
+                  <div style={{
+                    flex: 1, background: BG2,
+                    border: `1px solid ${p.status === 'pending' ? `${GOLD}30` : 'rgba(255,255,255,.05)'}`,
+                    borderRadius: 12, padding: '10px 12px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: p.status === 'pending' ? GOLD : '#fff' }}>{p.label}</div>
+                      <div style={{ fontSize: 10, color: '#52525b', marginTop: 2 }}>{p.sub}</div>
+                    </div>
+                    <div style={{
+                      fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 20,
+                      background: `${p.color}10`, color: p.color, border: `1px solid ${p.color}25`,
+                    }}>
+                      {p.status === 'paid' ? 'Pago' : 'Pendente'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <BottomNav active="financeiro" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 6 — PERFIL  V1
+    // ════════════════════════════════════════════════════════════
+    function PerfilV1() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          <div style={{ padding: '12px 16px 0' }}>
+            {/* Identity card */}
+            <div style={{
+              background: 'rgba(10,10,10,.9)', border: '1px solid rgba(255,255,255,.07)',
+              borderRadius: 20, padding: 16, marginBottom: 14,
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                position: 'absolute', top: -20, right: -20, width: 100, height: 100,
+                borderRadius: '50%', background: 'rgba(234,179,8,.06)', filter: 'blur(30px)'
+              }} />
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 14 }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
+                  background: 'linear-gradient(135deg,rgba(234,179,8,.2),rgba(249,115,22,.1))',
+                  border: '3px solid rgba(234,179,8,.5)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32,
+                  position: 'relative',
+                }}>
+                  🏐
+                  <div style={{
+                    position: 'absolute', bottom: 0, right: 0, width: 22, height: 22,
+                    borderRadius: '50%', background: GOLD, border: '2px solid #050505',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10,
+                  }}>📷</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9, color: GOLD, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.15em', marginBottom: 3 }}>ATHLETE ID</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '-.03em' }}>Ricardo Alves</div>
+                  <div style={{ fontSize: 10, color: '#71717a', marginTop: 2 }}>Mensal · Desde Fev 2025</div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#000', background: GOLD, padding: '2px 8px', borderRadius: 20 }}>✓ Ativo</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#a1a1aa', background: 'rgba(255,255,255,.06)', padding: '2px 8px', borderRadius: 20 }}>Vôlei</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                {[
+                  { label: 'Level', value: 'Lv.5', color: GOLD },
+                  { label: 'XP Total', value: '1.2K', color: '#fff' },
+                  { label: 'Foco', value: 'Ataque', color: '#a1a1aa' },
+                ].map((s, i) => (
+                  <div key={i} style={{
+                    background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.05)',
+                    borderRadius: 10, padding: '8px', textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', marginBottom: 3 }}>{s.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: s.color }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase' }}>Progressão semanal</span>
+                  <span style={{ fontSize: 9, color: GOLD, fontWeight: 700 }}>420/1000 XP</span>
+                </div>
+                <div style={{ height: 6, background: 'rgba(255,255,255,.06)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ width: '42%', height: '100%', background: `linear-gradient(to right,${GOLD},${ORANGE})`, borderRadius: 4 }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              {[
+                { label: 'Aulas', value: '42', color: GOLD, icon: 'calendar' },
+                { label: 'Freq.', value: '87%', color: GREEN, icon: 'trendUp' },
+                { label: 'Nota', value: '8.4', color: BLUE, icon: 'star' },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  flex: 1, background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                  borderRadius: 14, padding: 12, textAlign: 'center', position: 'relative', overflow: 'hidden',
+                }}>
+                  <div style={{ position: 'absolute', top: -6, right: -6, width: 28, height: 28, borderRadius: '50%', background: s.color, opacity: .1, filter: 'blur(8px)' }} />
+                  <Icon d={Icons[s.icon]} size={14} color={s.color} style={{ display: 'block', margin: '0 auto 4px' }} />
+                  <div style={{ fontSize: 18, fontWeight: 900, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: 8, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Contact */}
+            <SectionHeader title="Dados de contato" action={<span style={{ display: 'flex', gap: 4, alignItems: 'center' }}><Icon d={Icons.edit} size={12} color={GOLD} /> Editar</span>} />
+            <div style={{ background: BG2, border: '1px solid rgba(255,255,255,.06)', borderRadius: 14, overflow: 'hidden', marginBottom: 12 }}>
+              {[
+                { icon: 'phone', label: 'WhatsApp', value: '(21) 99999-1234' },
+                { icon: 'mail', label: 'E-mail', value: 'ricardo@email.com' },
+                { icon: 'instagram', label: 'Instagram', value: '@ricardo.volei' },
+              ].map((f, i) => (
+                <div key={i} style={{
+                  display: 'flex', gap: 10, alignItems: 'center', padding: '12px 14px',
+                  borderBottom: i < 2 ? '1px solid rgba(255,255,255,.04)' : 'none',
+                }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                    background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Icon d={Icons[f.icon]} size={14} color='#52525b' />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{f.label}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,.8)', marginTop: 1 }}>{f.value}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Logout */}
+            <button style={{
+              width: '100%', background: 'none', border: '1px solid rgba(255,255,255,.07)',
+              borderRadius: 12, padding: '12px', cursor: 'pointer',
+              display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center',
+              color: '#52525b', fontSize: 12, fontWeight: 700,
+            }}>
+              <Icon d={Icons.logout} size={14} color='#52525b' />
+              Sair da conta
+            </button>
+          </div>
+          <BottomNav active="perfil" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TELA 6 — PERFIL  V2
+    // ════════════════════════════════════════════════════════════
+    function PerfilV2() {
+      return (
+        <div style={{ background: BG, minHeight: '100%', paddingBottom: 88 }}>
+          {/* Full-bleed hero */}
+          <div style={{
+            background: 'linear-gradient(180deg,rgba(234,179,8,.15) 0%,rgba(5,5,5,0) 80%)',
+            padding: '12px 16px 20px', position: 'relative', overflow: 'hidden', textAlign: 'center',
+          }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'1\' fill=\'rgba(234,179,8,.06)\'/%3E%3C/svg%3E")', pointerEvents: 'none' }} />
+
+            {/* Avatar */}
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 12 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: '50%', margin: '0 auto',
+                background: 'linear-gradient(135deg,rgba(234,179,8,.25),rgba(249,115,22,.15))',
+                border: '3px solid rgba(234,179,8,.6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36,
+                boxShadow: '0 0 30px rgba(234,179,8,.2)',
+              }}>🏐</div>
+              <div style={{
+                position: 'absolute', bottom: 0, right: 0,
+                width: 24, height: 24, borderRadius: '50%',
+                background: `linear-gradient(135deg,${GOLD},${ORANGE})`,
+                border: '2px solid #050505',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
+              }}>📷</div>
+              {/* Tier badge */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0,
+                background: GOLD, color: '#000',
+                borderRadius: 20, padding: '2px 6px',
+                fontSize: 8, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.08em',
+                border: '1px solid rgba(0,0,0,.2)',
+              }}>🥇 OURO</div>
+            </div>
+
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '-.04em', marginBottom: 3 }}>
+              Ricardo Alves
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', fontWeight: 600 }}>
+              Mensal · Ativo · Desde Fev 2025
+            </div>
+
+            {/* XP progress ring (simple bar) */}
+            <div style={{ maxWidth: 220, margin: '14px auto 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 9, color: '#52525b', fontWeight: 700 }}>Lv.5 — 420 XP</span>
+                <span style={{ fontSize: 9, color: GOLD, fontWeight: 700 }}>1000 p/ Lv.6</span>
+              </div>
+              <div style={{ height: 6, background: 'rgba(255,255,255,.06)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ width: '42%', height: '100%', background: `linear-gradient(to right,${GOLD},${ORANGE})`, borderRadius: 4 }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: '0 16px' }}>
+            {/* Metric cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+              {[
+                { label: 'AULAS FEITAS', value: '42', sub: 'Total histórico', color: GOLD, icon: 'trophy' },
+                { label: 'FREQUÊNCIA', value: '87%', sub: 'Meta: 85% ✓', color: GREEN, icon: 'trendUp' },
+                { label: 'NOTA MÉDIA', value: '8.4', sub: 'Avaliação coach', color: BLUE, icon: 'star' },
+                { label: 'MERIT SCORE', value: '76pts', sub: 'Tier Ouro II', color: PURPLE, icon: 'medal' },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                  borderRadius: 14, padding: '12px 14px', position: 'relative', overflow: 'hidden',
+                }}>
+                  <div style={{ position: 'absolute', top: -10, right: -10, width: 40, height: 40, borderRadius: '50%', background: s.color, opacity: .08, filter: 'blur(12px)' }} />
+                  <div style={{ fontSize: 9, color: '#52525b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>{s.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: s.color, letterSpacing: '-.02em' }}>{s.value}</div>
+                  <div style={{ fontSize: 9, color: '#71717a', marginTop: 2 }}>{s.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Contact + settings */}
+            <SectionHeader title="Informações" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+              {[
+                { icon: 'phone', label: '(21) 99999-1234', sub: 'WhatsApp' },
+                { icon: 'mail', label: 'ricardo@email.com', sub: 'E-mail' },
+                { icon: 'instagram', label: '@ricardo.volei', sub: 'Instagram' },
+                { icon: 'settings', label: 'Configurações', sub: 'Categorias · Locais · Notificações' },
+              ].map((row, i) => (
+                <div key={i} style={{
+                  background: BG2, border: '1px solid rgba(255,255,255,.06)',
+                  borderRadius: 12, padding: '10px 14px',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                    background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Icon d={Icons[row.icon]} size={15} color='#71717a' />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.8)' }}>{row.label}</div>
+                    <div style={{ fontSize: 10, color: '#52525b' }}>{row.sub}</div>
+                  </div>
+                  <Icon d={Icons.chevronRight} size={14} color='#374151' />
+                </div>
+              ))}
+            </div>
+
+            <button style={{
+              width: '100%', background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.2)',
+              borderRadius: 12, padding: '12px', cursor: 'pointer',
+              display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center',
+              color: 'rgba(239,68,68,.7)', fontSize: 12, fontWeight: 700,
+            }}>
+              <Icon d={Icons.logout} size={14} color='rgba(239,68,68,.7)' />
+              Sair da conta
+            </button>
+          </div>
+          <BottomNav active="perfil" />
+        </div>
+      );
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // MAIN APP — Canvas
+    // ════════════════════════════════════════════════════════════
+    const SECTIONS = [
+      { id: 'home', label: '01 — Home', V1: HomeV1, V2: HomeV2, height: 680 },
+      { id: 'treinos', label: '02 — Treinos', V1: TreinosV1, V2: TreinosV2, height: 680 },
+      { id: 'agenda', label: '03 — Agenda', V1: AgendaV1, V2: AgendaV2, height: 680 },
+      { id: 'feed', label: '04 — Feed', V1: FeedV1, V2: FeedV2, height: 680 },
+      { id: 'financeiro', label: '05 — Financeiro', V1: FinanceiroV1, V2: FinanceiroV2, height: 680 },
+      { id: 'perfil', label: '06 — Perfil', V1: PerfilV1, V2: PerfilV2, height: 680 },
+    ];
+
+    function App() {
+      const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+        "accentColor": "blue",
+        "cardStyle": "dark"
+      }/*EDITMODE-END*/);
+
+      return (
+        <div className="canvas-root">
+          {/* Toolbar */}
+          <div className="canvas-toolbar">
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(234,179,8,.4)' }} />
+            <span className="toolbar-title">Will Treinos PRO</span>
+            <span className="toolbar-badge">Área do Aluno</span>
+            <span className="toolbar-badge">6 telas · 2 variações</span>
+            <div style={{ flex: 1 }} />
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.2)', fontFamily: "'Space Grotesk',sans-serif" }}>V1 Focus · V2 Kinetic</span>
+          </div>
+
+          {/* Canvas scroll */}
+          <div className="canvas-scroll">
+            {/* Legend row */}
+            <div style={{ display: 'flex', gap: 32, marginBottom: 32, paddingLeft: 4 }}>
+              {['V1 — Focus (hierarquia clara, info progressiva)', 'V2 — Kinetic (hero imersivo, dados como scorecard esportivo)'].map((l, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ width: 24, height: 3, borderRadius: 2, background: i === 0 ? GOLD : BLUE }} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', fontFamily: "'Space Grotesk',sans-serif" }}>{l}</span>
+                </div>
+              ))}
+            </div>
+
+            {SECTIONS.map(section => (
+              <div className="canvas-section" key={section.id}>
+                <div className="section-label">{section.label}</div>
+                <div className="frames-row">
+                  <Device height={section.height} tag="V1 — Focus" variant="v1">
+                    <section.V1 />
+                  </Device>
+                  <Device height={section.height} tag="V2 — Kinetic" variant="v2">
+                    <section.V2 />
+                  </Device>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tweaks Panel */}
+          <TweaksPanel>
+            <TweakSection label="Variações" />
+            <TweakRadio label="Cor de Destaque" value={tweaks.accentColor}
+              options={['gold', 'blue', 'purple']}
+              onChange={(v) => setTweak('accentColor', v)} />
+            <TweakSection label="Cards" />
+            <TweakRadio label="Estilo" value={tweaks.cardStyle}
+              options={['dark', 'glass']}
+              onChange={(v) => setTweak('cardStyle', v)} />
+          </TweaksPanel>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+      <rect width="120" height="80" fill="#050505" />
+      <rect x="8" y="8" width="22" height="64" rx="4" fill="#111" stroke="#EAB308" stroke-width="1" />
+      <rect x="36" y="8" width="22" height="64" rx="4" fill="#111" stroke="#38BDF8" stroke-width="1" />
+      <rect x="64" y="8" width="22" height="64" rx="4" fill="#111" stroke="#EAB308" stroke-width="1" />
+      <rect x="92" y="8" width="20" height="64" rx="4" fill="#111" stroke="#38BDF8" stroke-width="1" />
+      <text x="60" y="76" font-size="6" text-anchor="middle" fill="rgba(255,255,255,.3)" font-family="monospace">ÁREA DO
+        ALUNO</text>
+    </svg>
+  </template>
+</body>
+
+</html>

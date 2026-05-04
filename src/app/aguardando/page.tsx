@@ -6,6 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { motion } from "framer-motion";
 
+export const dynamic = "force-dynamic";
+
 export default function AguardandoPage() {
   const router = useRouter();
   const { user, authResolved, logout } = useAuth();

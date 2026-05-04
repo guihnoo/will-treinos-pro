@@ -1,0 +1,60 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "description": "Browser automation oficial Microsoft. Testa UI, valida fluxos, tira screenshots."
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--read-only"],
+      "env": {
+        "SUPABASE_URL": "SEU_SUPABASE_URL_AQUI",
+        "SUPABASE_SERVICE_ROLE_KEY": "SEU_SERVICE_KEY_AQUI"
+      },
+      "description": "Banco de dados Supabase. Inspeciona schema, testa RLS, cria dados de seed."
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "SEU_GITHUB_PAT_AQUI"
+      },
+      "description": "GitHub: abre issues de bugs, cria PRs, faz code review automático."
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\monte\\Desktop\\will-treinos-pro"
+      ],
+      "description": "Acesso seguro ao sistema de arquivos do projeto."
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "description": "Memória persistente entre sessões. Salva decisões arquiteturais."
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "description": "Busca conteúdo web. Consulta docs, APIs, referências externas."
+    },
+    "desktop-commander": {
+      "command": "npx",
+      "args": ["-y", "@wonderwhy-er/desktop-commander"],
+      "description": "Canivete suíço: roda programas, executa shell, lê/escreve arquivos."
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "description": "Documentação sempre atualizada de Next.js, Supabase, Tailwind, Framer Motion."
+    },
+    "mcp-doctor": {
+      "command": "npx",
+      "args": ["-y", "mcp-doctor"],
+      "description": "Diagnostica e verifica saúde de todos os outros MCPs."
+    }
+  }
+}

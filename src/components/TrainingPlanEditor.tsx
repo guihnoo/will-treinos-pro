@@ -1,15 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Plus, Trash2, Save, Dumbbell, Timer, Zap, RotateCcw, ChevronDown } from "lucide-react";
-import type { Student } from "@/context/types";
+import { X, Plus, Trash2, Save, Dumbbell, Timer, Zap, RotateCcw, ChevronDown, AlertCircle } from "lucide-react";
+import type { Student, TrainingPlan } from "@/context/types";
 import { useCoaching } from "@/context/CoachingContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import { sendPushToUser } from "@/lib/pushRoleBroadcast";
 
-interface Props { student: Student; onClose: () => void; }
+interface Props {
+  student: Student;
+  onClose: () => void;
+  existingPlan?: TrainingPlan;
+}
 
 const EXERCISE_LIBRARY = [
   { category: "Fundamentos", exercises: ["Manchete", "Toque", "Saque Viagem", "Saque Flutuante", "Cortada", "Bloqueio", "Defesa"] },
@@ -20,16 +26,27 @@ const EXERCISE_LIBRARY = [
 
 interface Exercise { name: string; sets: number; reps: string; rest: string; notes: string; }
 
-export default function TrainingPlanEditor({ student, onClose }: Props) {
-  const { addTrainingPlan } = useCoaching();
+export default function TrainingPlanEditor({ student, onClose, existingPlan }: Props) {
+  const { addTrainingPlan, updateTrainingPlan, deleteTrainingPlan } = useCoaching();
   const { addNotification } = useNotifications();
   const { toast } = useToast();
   useBodyScrollLock(true);
-  const [planName, setPlanName] = useState(`Treino — ${student.name.split(" ")[0]}`);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+
+  const isEditMode = !!existingPlan;
+  const [planName, setPlanName] = useState(existingPlan?.title || `Treino — ${student.name.split(" ")[0]}`);
+  const [exercises, setExercises] = useState<Exercise[]>(
+    existingPlan?.exercises.map(e => ({
+      name: e.name,
+      sets: parseInt(e.sets) || 3,
+      reps: e.reps,
+      rest: e.rest || "60s",
+      notes: e.notes || ""
+    })) || []
+  );
   const [showLibrary, setShowLibrary] = useState(false);
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const addExercise = (name: string) => {
     setExercises(prev => [...prev, { name, sets: 3, reps: "10", rest: "60s", notes: "" }]);
     setShowLibrary(false);
@@ -45,25 +62,58 @@ export default function TrainingPlanEditor({ student, onClose }: Props) {
 
   const handleSave = () => {
     if (exercises.length === 0) return;
-    addTrainingPlan({
-      studentId: student.id,
-      title: planName,
-      exercises: exercises.map(e => ({
-        name: e.name, sets: String(e.sets), reps: e.reps, rest: e.rest, notes: e.notes
-      })),
-      createdAt: new Date().toISOString().split("T")[0],
-    });
-    addNotification({
-      type: "message",
-      title: "Treino Personalizado",
-      message: `Novo plano de treino disponível: ${planName}.`,
-      time: "agora",
-      read: false,
-      studentId: student.id
-    });
+
+    const serialized = exercises.map(e => ({
+      name: e.name,
+      sets: String(e.sets),
+      reps: e.reps,
+      rest: e.rest,
+      notes: e.notes
+    }));
+
+    if (isEditMode && existingPlan) {
+      updateTrainingPlan(existingPlan.id, {
+        title: planName,
+        exercises: serialized
+      });
+      toast(`✏️ Treino atualizado!`);
+    } else {
+      addTrainingPlan({
+        studentId: student.id,
+        title: planName,
+        exercises: serialized,
+        createdAt: new Date().toISOString().split("T")[0],
+      });
+      addNotification({
+        type: "message",
+        title: "Treino Personalizado",
+        message: `Novo plano de treino disponível: ${planName}.`,
+        time: "agora",
+        read: false,
+        studentId: student.id
+      });
+
+      // Send push notification to the student
+      if (student.authUserId) {
+        void sendPushToUser(student.authUserId, {
+          title: "🏋️ Novo Treino Prescrito",
+          body: `${planName} está pronto para você executar!`,
+          url: "/treinos",
+        });
+      }
+
+      toast(`🏋️ Treino salvo para ${student.name.split(" ")[0]}!`);
+    }
     setSaved(true);
-    toast(`🏋️ Treino salvo para ${student.name.split(" ")[0]}!`);
     setTimeout(onClose, 1200);
+  };
+
+  const handleDelete = () => {
+    if (!isEditMode || !existingPlan) return;
+    deleteTrainingPlan(existingPlan.id);
+    toast(`🗑️ Treino removido`);
+    setShowDeleteConfirm(false);
+    setTimeout(onClose, 800);
   };
 
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0);
@@ -89,6 +139,37 @@ export default function TrainingPlanEditor({ student, onClose }: Props) {
             </motion.div>
           ) : (
             <motion.div key="form" className="p-6">
+              {/* Delete Confirmation */}
+              <AnimatePresence>
+                {showDeleteConfirm && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/80 flex items-center justify-center z-[300]"
+                    onClick={() => setShowDeleteConfirm(false)}>
+                    <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+                      onClick={e => e.stopPropagation()}
+                      className="bg-[#0A0A0A] border border-zinc-800 rounded-2xl p-6 max-w-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-[#EF4444]/10 flex items-center justify-center">
+                          <AlertCircle className="w-5 h-5 text-[#EF4444]" />
+                        </div>
+                        <h4 className="text-lg font-bold text-white">Remover Treino?</h4>
+                      </div>
+                      <p className="text-sm text-zinc-400 mb-6">Esta ação não pode ser desfeita. O plano será removido permanentemente.</p>
+                      <div className="flex gap-3">
+                        <button onClick={() => setShowDeleteConfirm(false)}
+                          className="flex-1 py-2 rounded-lg border border-zinc-800 text-white text-sm font-medium hover:bg-zinc-900 transition-colors">
+                          Cancelar
+                        </button>
+                        <button onClick={handleDelete}
+                          className="flex-1 py-2 rounded-lg bg-[#EF4444] text-white text-sm font-medium hover:bg-[#DC2626] transition-colors">
+                          Remover
+                        </button>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Header */}
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
@@ -96,7 +177,7 @@ export default function TrainingPlanEditor({ student, onClose }: Props) {
                     <Dumbbell className="w-5 h-5 text-[#8B5CF6]" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">Treino Personalizado</h3>
+                    <h3 className="text-lg font-bold text-white">{isEditMode ? "Editar Treino" : "Treino Personalizado"}</h3>
                     <p className="text-xs text-zinc-500">{student.name}</p>
                   </div>
                 </div>
@@ -202,15 +283,23 @@ export default function TrainingPlanEditor({ student, onClose }: Props) {
                 </motion.button>
               )}
 
-              {/* Save */}
-              <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave}
-                className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                  exercises.length > 0
-                    ? "bg-[#8B5CF6] text-white shadow-[0_0_20px_rgba(139,92,246,0.2)]"
-                    : "bg-zinc-900 text-zinc-600 cursor-not-allowed"
-                }`}>
-                <Save className="w-4 h-4" /> Salvar Treino ({exercises.length} exercícios)
-              </motion.button>
+              {/* Actions */}
+              <div className="space-y-2">
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave}
+                  className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                    exercises.length > 0
+                      ? "bg-[#8B5CF6] text-white shadow-[0_0_20px_rgba(139,92,246,0.2)]"
+                      : "bg-zinc-900 text-zinc-600 cursor-not-allowed"
+                  }`}>
+                  <Save className="w-4 h-4" /> {isEditMode ? "Atualizar" : "Salvar"} Treino ({exercises.length} exercícios)
+                </motion.button>
+                {isEditMode && (
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full py-2 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-zinc-900 text-[#EF4444] hover:bg-red-950/20 transition-all border border-red-900/50">
+                    <Trash2 className="w-4 h-4" /> Excluir Plano
+                  </motion.button>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

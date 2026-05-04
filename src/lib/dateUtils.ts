@@ -1,5 +1,6 @@
 /** Local calendar date YYYY-MM-DD (avoids UTC drift from toISOString). */
-export function localDateISO(d = new Date()): string {
+export function localDateISO(d: Date | string = new Date()): string {
+  if (typeof d === "string") return d; // Already in YYYY-MM-DD format
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -28,4 +29,21 @@ export function lessonLocalDateTime(dateStr: string, startTime: string): Date {
   const [y, mo, day] = dateStr.split("-").map(Number);
   const [hh, mm] = startTime.split(":").map(Number);
   return new Date(y, (mo || 1) - 1, day || 1, hh || 0, mm || 0, 0, 0);
+}
+
+/** Format date to short readable format (e.g., "4 Mai" or "04 de Maio"). */
+export function formatDateShort(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const day = date.getDate();
+  const monthIdx = date.getMonth();
+  const monthsShort = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return `${day} ${monthsShort[monthIdx]}`;
+}
+
+/** Return the Monday of the week containing the given date. */
+export function getMonday(d: Date | string): Date {
+  const date = typeof d === "string" ? new Date(d) : new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(date.setDate(diff));
 }

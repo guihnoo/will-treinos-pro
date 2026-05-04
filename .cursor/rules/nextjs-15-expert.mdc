@@ -1,0 +1,162 @@
+---
+description: Especialista absoluto em Next.js 15 App Router para o Will Treinos PRO. Aplica automaticamente em qualquer arquivo dentro de app/, components/, lib/.
+globs: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}"]
+alwaysApply: true
+---
+
+# Will Treinos — Next.js 15 App Router Expert
+
+Você é um engenheiro Next.js 15 de nível sênior. Aplique estas regras sem exceção.
+
+## ⚠️ NEXT.JS 15 BREAKING CHANGES (crítico)
+```typescript
+// ❌ ERRADO — Next.js 14 e anterior
+export default function Page({ params }) {
+  const { id } = params; // ERRO em Next.js 15!
+}
+
+// ✅ CORRETO — Next.js 15
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params; // SEMPRE await em params, searchParams, cookies, headers
+}
+```
+
+## ARQUITETURA — REGRAS ABSOLUTAS
+
+### Server Components First
+```typescript
+// ✅ Default: Server Component (sem 'use client')
+// Busca dados direto, sem useState, sem useEffect
+export default async function TrainingPage() {
+  const trainings = await getTrainingsFromSupabase(); // direto no servidor
+  return <TrainingList trainings={trainings} />;
+}
+
+// ✅ Client Component apenas quando necessário
+'use client'; // obrigatório quando usa: useState, useEffect, onClick, formulários interativos
+import { useState } from 'react';
+```
+
+### Server Actions para Mutations
+```typescript
+// ✅ CORRETO — Server Action com Zod
+'use server';
+import { z } from 'zod';
+
+const CheckInSchema = z.object({
+  studentId: z.string().uuid(),
+  fundamentoId: z.string(),
+  notes: z.string().optional(),
+});
+
+export async function createCheckIn(formData: FormData) {
+  const validated = CheckInSchema.safeParse(Object.fromEntries(formData));
+  if (!validated.success) return { error: validated.error.flatten() };
+  
+  const { data, error } = await supabase.from('check_ins').insert(validated.data);
+  if (error) return { error: error.message };
+  
+  revalidatePath('/student/dashboard');
+  return { success: true };
+}
+```
+
+### Layout e Loading States
+```
+app/
+├── layout.tsx          # Root layout — providers globais
+├── loading.tsx         # Skeleton global
+├── error.tsx           # Error boundary global
+├── (auth)/
+│   ├── login/page.tsx
+│   └── register/page.tsx
+├── (dashboard)/
+│   ├── layout.tsx      # Dashboard layout com sidebar
+│   ├── loading.tsx     # Dashboard skeleton
+│   ├── student/
+│   │   ├── page.tsx    # Área do Aluno (V2 Kinetic)
+│   │   └── loading.tsx # Student skeleton
+│   └── admin/
+│       ├── page.tsx    # Cockpit Admin
+│       └── loading.tsx
+```
+
+## DATA FETCHING — PADRÕES CORRETOS
+
+### Parallel Fetching (performance)
+```typescript
+// ✅ Busca paralela — não sequencial!
+export default async function StudentDashboard() {
+  const [profile, trainings, xpLog] = await Promise.all([
+    getProfile(),
+    getTrainings(),
+    getXPLog(),
+  ]);
+  
+  return <Dashboard profile={profile} trainings={trainings} xp={xpLog} />;
+}
+```
+
+### Suspense para streaming
+```tsx
+import { Suspense } from 'react';
+import { TrainingSkeleton } from '@/components/skeletons';
+
+export default function Page() {
+  return (
+    <Suspense fallback={<TrainingSkeleton />}>
+      <TrainingList />  {/* async Server Component */}
+    </Suspense>
+  );
+}
+```
+
+## METADATA API (SEO)
+```typescript
+// app/student/page.tsx
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Área do Aluno | Will Treinos PRO',
+  description: 'Seu dashboard de treinos, XP e evolução no voleibol.',
+  openGraph: {
+    title: 'Will Treinos PRO',
+    images: ['/og-image.png'],
+  },
+};
+```
+
+## MIDDLEWARE (Auth Guard)
+```typescript
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isAuth = request.cookies.get('auth-token');
+  
+  if (!isAuth && pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/admin/:path*'],
+};
+```
+
+## PROIBIÇÕES ABSOLUTAS
+- ❌ `getServerSideProps`, `getStaticProps`, `getInitialProps` — Pages Router antigo
+- ❌ `params.id` sem `await` — Next.js 15 quebra
+- ❌ `useState` em Server Components — erro de runtime
+- ❌ Importar Server-only code em Client Components
+- ❌ `fetch` sem configuração de cache em produção
+- ❌ `SUPABASE_SERVICE_ROLE_KEY` em arquivos com `'use client'`
+
+## PERFORMANCE TARGETS
+- Lighthouse Score: ≥ 90 em todas as categorias
+- LCP < 2.5s, FID < 100ms, CLS < 0.1
+- Bundle inicial < 200KB (gzipped)
+- `next/image` em TODAS as imagens
+- `next/font` para Lexend e Space Grotesk

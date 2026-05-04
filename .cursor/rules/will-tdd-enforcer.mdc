@@ -1,0 +1,42 @@
+---
+description: Enforcer de testes para o Will Treinos PRO. Toda nova feature deve ter teste. Todo bug deve ter teste de regressão.
+globs: ["**/*.tsx", "**/*.ts", "!**/*.test.*", "!**/*.spec.*"]
+alwaysApply: false
+---
+
+# Will Treinos — TDD Enforcer
+
+## Regra de Ouro
+Antes de escrever uma feature, escreva o teste. Se você não tiver certeza de como testar, questione o design antes de codar.
+
+## Quando Criar Testes
+- Novo componente de formulário → teste de submissão + validação
+- Nova API Route → teste de autenticação + resposta esperada
+- Nova função de XP → teste de cálculo + edge cases
+- Novo fluxo de navegação → teste Playwright E2E
+
+## Template Playwright
+```typescript
+// tests/e2e/[feature-name].spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('[Feature Name]', () => {
+  test('deve [comportamento esperado]', async ({ page }) => {
+    await page.goto('/');
+    // ... interações
+    await expect(page.getByTestId('[id-do-elemento]')).toBeVisible();
+  });
+});
+```
+
+## IDs de Teste Obrigatórios
+Sempre adicionar `data-testid` em:
+- Formulários: `data-testid="form-[nome]"`
+- Botões de ação: `data-testid="btn-[ação]"`
+- Modais: `data-testid="modal-[nome]"`
+- Dados dinâmicos: `data-testid="[entidade]-[campo]"`
+
+## Cobertura Mínima
+- Fluxos críticos (auth, pagamento): 100%
+- Componentes de UI: 70%
+- Funções utilitárias: 90%

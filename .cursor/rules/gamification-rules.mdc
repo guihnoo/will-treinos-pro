@@ -1,0 +1,49 @@
+---
+description: Regras de gamificação XP para o Will Treinos PRO. XP assimétrico por fundamento de vôlei, sistema de níveis, multiplicadores, auditoria xp_log. Aplica em arquivos de XP, gamificação e cálculo de pontos.
+globs: ["lib/xp/**", "hooks/useXP*", "components/xp/**", "components/gamification/**"]
+alwaysApply: false
+---
+
+# Will Treinos — Gamification & XP Rules
+
+## Multiplicadores por Fundamento (IMUTÁVEIS)
+```
+saque:         1.2x  (técnica difícil, recompensa mais)
+levantamento:  1.3x  (mais complexo, maior recompensa)
+recepção:      1.1x  (base do jogo)
+ataque:        1.0x  (base)
+bloqueio:      1.15x (timing difícil)
+defesa:        1.05x (posicionamento)
+```
+
+## Valores Base de XP
+- Check-in aprovado: 10~20 XP (base 15)
+- Avaliação recebida: 50~100 XP (base 75)
+- Auto-avaliação: 20~30 XP (base 25)
+- Treino completado: 15~25 XP (base 20)
+- Streak 7 dias: +50 XP (bônus fixo)
+- Marco de 500 XP: +100 XP (bônus automático)
+
+## Sistema de Níveis
+1. Iniciante (0-199 XP) — cinza
+2. Aprendiz (200-499 XP) — azul
+3. Praticante (500-999 XP) — verde
+4. Atleta (1000-1999 XP) — âmbar
+5. Destaque (2000-3499 XP) — vermelho
+6. Elite (3500-5999 XP) — roxo
+7. Campeão (6000-9999 XP) — **GOLD #EAB308**
+8. Lendário (10000+ XP) — branco
+
+## Regras Anti-Fraude
+- ❌ Nunca dar XP duplicado para o mesmo referenceId
+- ❌ Coach não aprova check-in de si mesmo
+- ❌ xp_log é IMUTÁVEL (sem UPDATE/DELETE)
+- ❌ Bônus máximo do coach: +50% do base
+- ✅ Sempre salvar referenceId para rastreabilidade
+
+## UI/UX de XP
+- Animação float de "+XP" ao ganhar (Framer Motion)
+- Barra de progresso em gold (#EAB308) com animação suave
+- Toast notification ao subir de nível
+- Histórico de XP com ícone por tipo de evento
+- NUNCA mostrar XP de outros alunos sem consentimento

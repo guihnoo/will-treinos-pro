@@ -13,7 +13,9 @@ import { useNotifications } from "@/context/NotificationsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCoaching } from "@/context/CoachingContext";
 import type { Lesson } from "@/context/types";
-import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award } from "lucide-react";
+import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersistence";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
 import WeatherWidget from "@/components/WeatherWidget";
 import Link from "next/link";
@@ -464,6 +466,7 @@ export default function StudentHome() {
   const [kpiCount, setKpiCount] = useState({ aulas: 0, streak: 0, nota: 0, freq: 0 });
   const [showDailyQuote, setShowDailyQuote] = useState(false);
   const [showXpModal, setShowXpModal] = useState(false);
+  const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
     showNotif ||
@@ -500,6 +503,16 @@ export default function StudentHome() {
     const savedTier = wtLsGetString("equipped_tier_id", "");
     if (savedTier) setEquippedTierId(savedTier);
   }, [hydrated]);
+
+  useEffect(() => {
+    if (!showXpModal || !user?.id) {
+      setXpLogEntries([]);
+      return;
+    }
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    void fetchXpLogEntriesRemote(supabase, user.id, 10).then(entries => setXpLogEntries(entries));
+  }, [showXpModal, user?.id]);
 
   const profile = students.find(s => s.id === user?.id);
   const myLessons = lessons.filter(l => l.enrolledStudents.includes(user?.id || ""));
@@ -2584,6 +2597,63 @@ export default function StudentHome() {
                       </div>
                     );
                   })()}
+
+                  {/* Últimas conquistas (XP Log) */}
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-3 flex items-center gap-2">
+                      <Flame className="w-3.5 h-3.5" /> Últimas conquistas
+                    </p>
+                    {xpLogEntries.length === 0 ? (
+                      <p className="text-[11px] text-zinc-500 text-center py-4">Nenhuma conquista registrada ainda. Comece treinando!</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {xpLogEntries.map((entry, idx) => {
+                          const icons: Record<string, React.ReactNode> = {
+                            checkin: <CheckCircle2 className="w-3.5 h-3.5 text-[#22C55E]" />,
+                            feedback: <Star className="w-3.5 h-3.5 text-[#EAB308]" />,
+                            feed_like: <Heart className="w-3.5 h-3.5 text-[#EF4444]" />,
+                            feed_comment: <MessageCircle className="w-3.5 h-3.5 text-[#06B6D4]" />,
+                            evaluation: <Award className="w-3.5 h-3.5 text-[#A78BFA]" />,
+                            training_completed: <Trophy className="w-3.5 h-3.5 text-[#F97316]" />,
+                          };
+                          const labels: Record<string, string> = {
+                            checkin: "Check-in aprovado",
+                            feedback: "Feedback de aula",
+                            feed_like: "Curtiu no feed",
+                            feed_comment: "Comentou no feed",
+                            evaluation: "Avaliação recebida",
+                            training_completed: "Treino completado",
+                          };
+                          const timeAgo = (() => {
+                            const now = new Date();
+                            const then = new Date(entry.createdAt);
+                            const diff = Math.floor((now.getTime() - then.getTime()) / 1000);
+                            if (diff < 60) return "agora";
+                            if (diff < 3600) return `${Math.floor(diff / 60)}m atrás`;
+                            if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
+                            return `${Math.floor(diff / 86400)}d atrás`;
+                          })();
+                          return (
+                            <motion.div key={entry.id}
+                              initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              className="flex items-center justify-between p-2.5 rounded-lg hover:bg-zinc-900/40 transition-colors">
+                              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                <div className="flex-shrink-0">{icons[entry.type] || <Trophy className="w-3.5 h-3.5 text-zinc-500" />}</div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] font-medium text-zinc-300">{labels[entry.type] || entry.description}</p>
+                                  <p className="text-[9px] text-zinc-600">{timeAgo}</p>
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0 text-right">
+                                <p className="text-[11px] font-bold text-[#EAB308]">+{entry.points}</p>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

@@ -1,0 +1,183 @@
+---
+description: Especialista em Supabase + RLS para o Will Treinos PRO. Aplica em arquivos que interagem com o banco de dados Supabase.
+globs: ["lib/supabase/**/*.{ts,tsx}", "app/api/**/*.ts", "**/*supabase*", "**/*db*", "**/*database*"]
+alwaysApply: false
+---
+
+# Will Treinos — Supabase & Database Expert
+
+## Stack de Banco de Dados
+- **PostgreSQL via Supabase** (cloud-hosted)
+- **RLS (Row Level Security):** habilitado em TODAS as tabelas
+- **Realtime:** para notificações e updates ao vivo
+- **Storage:** para avatares e arquivos de treino
+
+## Cliente Supabase — Padrão Correto
+
+### Server-side (Server Components, Server Actions, API Routes)
+```typescript
+// lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+export async function createClient() {
+  const cookieStore = await cookies(); // Next.js 15: await obrigatório
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+}
+```
+
+### Client-side (Client Components apenas)
+```typescript
+// lib/supabase/client.ts
+import { createBrowserClient } from '@supabase/ssr';
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+```
+
+## SCHEMA DE TABELAS DO WILL TREINOS
+
+```sql
+-- Perfis de usuários (estende auth.users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  role TEXT CHECK (role IN ('admin', 'owner', 'coach', 'student')) DEFAULT 'student',
+  status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  avatar_url TEXT,
+  xp_total INTEGER DEFAULT 0,
+  level INTEGER DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Planos de treino
+CREATE TABLE training_plans (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  coach_id UUID REFERENCES profiles(id),
+  title TEXT NOT NULL,
+  fundamento TEXT NOT NULL, -- saque, recepção, levantamento, ataque, bloqueio, defesa
+  exercises JSONB NOT NULL DEFAULT '[]',
+  status TEXT CHECK (status IN ('draft', 'active', 'completed')) DEFAULT 'draft',
+  prescribed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Check-ins de treino
+CREATE TABLE check_ins (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  training_plan_id UUID REFERENCES training_plans(id),
+  notes TEXT,
+  status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  xp_awarded INTEGER,
+  checked_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Log de XP (auditoria completa)
+CREATE TABLE xp_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  xp_amount INTEGER NOT NULL,
+  event_type TEXT NOT NULL, -- 'check_in', 'evaluation', 'interaction', 'bonus'
+  reference_id UUID, -- ID do check_in, avaliação, etc.
+  description TEXT,
+  logged_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Notificações
+CREATE TABLE notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  recipient_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  type TEXT NOT NULL, -- 'new_student', 'check_in_approved', 'training_prescribed'
+  title TEXT NOT NULL,
+  body TEXT,
+  read BOOLEAN DEFAULT FALSE,
+  data JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## RLS POLICIES — PADRÕES SEGUROS
+
+```sql
+-- ✅ Aluno vê apenas seu próprio perfil
+CREATE POLICY "students_own_profile"
+ON profiles FOR SELECT
+USING (auth.uid() = id OR
+  EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('coach', 'admin', 'owner'))
+);
+
+-- ✅ Coach/Admin vê treinos da sua equipe
+CREATE POLICY "coaches_see_team_trainings"
+ON training_plans FOR SELECT
+USING (
+  student_id = auth.uid() OR
+  coach_id = auth.uid() OR
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'owner'))
+);
+
+-- ✅ Aluno só vê seu próprio XP
+CREATE POLICY "students_own_xp"
+ON xp_log FOR SELECT
+USING (student_id = auth.uid());
+```
+
+## PADRÕES DE QUERY
+
+### Query com tipo seguro
+```typescript
+const { data, error } = await supabase
+  .from('training_plans')
+  .select(`
+    id, title, fundamento, status,
+    student:profiles!student_id(name, avatar_url),
+    exercises
+  `)
+  .eq('student_id', userId)
+  .eq('status', 'active')
+  .order('prescribed_at', { ascending: false });
+
+if (error) throw new Error(`Supabase error: ${error.message}`);
+```
+
+### Realtime para notificações
+```typescript
+const channel = supabase
+  .channel('notifications')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'notifications',
+    filter: `recipient_id=eq.${userId}`,
+  }, (payload) => {
+    // Atualiza UI com nova notificação
+    addNotification(payload.new);
+  })
+  .subscribe();
+```
+
+## PROIBIÇÕES
+- ❌ `SUPABASE_SERVICE_ROLE_KEY` em Client Components
+- ❌ Queries sem RLS (usar sempre anon key no client)
+- ❌ `.from('profiles').select('*')` sem filtro (sempre limitar campos)
+- ❌ Inserir sem validação Zod primeiro
+- ❌ Queries em Client Components quando pode ser Server Component

@@ -15,6 +15,12 @@ interface Props {
   onClose: () => void;
 }
 
+interface ApprovalStep {
+  studentId: string;
+  stage: "confirm" | "notes" | "done";
+  notes?: string;
+}
+
 const iconMap: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   new_student: { icon: UserPlus, color: "#06B6D4", bg: "rgba(6,182,212,0.1)" },
   payment_late: { icon: AlertTriangle, color: "#EF4444", bg: "rgba(239,68,68,0.1)" },
@@ -26,9 +32,11 @@ const iconMap: Record<string, { icon: React.ElementType; color: string; bg: stri
 
 export default function NotificationDetailModal({ notification, open, onClose }: Props) {
   const { user } = useAuth();
-  const { students } = useStudents();
+  const { students, approveStudent } = useStudents();
   const { markNotificationRead, markAllNotificationsRead } = useNotifications();
   const [actionLoading, setActionLoading] = useState(false);
+  const [approvalStep, setApprovalStep] = useState<ApprovalStep | null>(null);
+  const [notesText, setNotesText] = useState("");
 
   // Mark as read when opened
   React.useEffect(() => {
@@ -53,17 +61,33 @@ export default function NotificationDetailModal({ notification, open, onClose }:
   // Find related student if any
   const student = notification.studentId ? students.find(s => s.id === notification.studentId) : null;
 
-  // Handle action buttons (approve, reject, view profile, etc)
-  const handleApproveStudent = async () => {
+  const handleStartApproval = () => {
     if (!student) return;
-    setActionLoading(true);
-    try {
-      // Trigger approve flow — you'd usually open ApprovalModal instead
-      // For now, just show feedback
-      console.log("Approve student:", student.id);
-    } finally {
-      setActionLoading(false);
-      onClose();
+    setApprovalStep({ studentId: student.id, stage: "confirm" });
+    setNotesText("");
+  };
+
+  const handleApproveStudent = async () => {
+    if (!student || !approvalStep) return;
+
+    if (approvalStep.stage === "confirm") {
+      setApprovalStep({ ...approvalStep, stage: "notes" });
+      return;
+    }
+
+    if (approvalStep.stage === "notes") {
+      setActionLoading(true);
+      try {
+        approveStudent(student.id);
+        setApprovalStep({ ...approvalStep, stage: "done" });
+        setTimeout(() => {
+          setApprovalStep(null);
+          onClose();
+        }, 1500);
+      } catch (error) {
+        console.error("Erro ao aprovar aluno:", error);
+        setActionLoading(false);
+      }
     }
   };
 
@@ -187,39 +211,120 @@ export default function NotificationDetailModal({ notification, open, onClose }:
               )}
             </div>
 
+            {/* Approval Flow */}
+            {approvalStep && student && (
+              <div className="border-t border-zinc-800 bg-zinc-900/50 p-4 space-y-3">
+                {approvalStep.stage === "confirm" && (
+                  <>
+                    <p className="text-sm text-zinc-300">
+                      Deseja aprovar <strong>{student.name}</strong> como novo aluno?
+                    </p>
+                    <div className="flex gap-2">
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleApproveStudent}
+                        disabled={actionLoading}
+                        className="flex-1 bg-emerald-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition text-sm"
+                      >
+                        Continuar
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setApprovalStep(null)}
+                        className="flex-1 border border-zinc-700 text-white font-semibold py-2 px-3 rounded-lg hover:bg-zinc-900/50 transition text-sm"
+                      >
+                        Cancelar
+                      </motion.button>
+                    </div>
+                  </>
+                )}
+
+                {approvalStep.stage === "notes" && (
+                  <>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">
+                      Notas (opcional)
+                    </label>
+                    <textarea
+                      value={notesText}
+                      onChange={(e) => setNotesText(e.target.value)}
+                      placeholder="Ex: Grande potencial, trabalhar condicionamento..."
+                      maxLength={500}
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#EAB308] resize-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleApproveStudent}
+                        disabled={actionLoading}
+                        className="flex-1 bg-gradient-to-r from-[#EAB308] to-[#F97316] text-black font-bold py-2 px-3 rounded-lg hover:opacity-90 disabled:opacity-50 transition text-sm"
+                      >
+                        {actionLoading ? "Aprovando..." : "Confirmar Aprovação"}
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setApprovalStep(null)}
+                        disabled={actionLoading}
+                        className="flex-1 border border-zinc-700 text-white font-semibold py-2 px-3 rounded-lg hover:bg-zinc-900/50 transition text-sm disabled:opacity-50"
+                      >
+                        Voltar
+                      </motion.button>
+                    </div>
+                  </>
+                )}
+
+                {approvalStep.stage === "done" && (
+                  <div className="text-center py-2">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="inline-flex w-12 h-12 rounded-full bg-emerald-500/20 items-center justify-center mb-2"
+                    >
+                      <Check className="w-6 h-6 text-emerald-400" />
+                    </motion.div>
+                    <p className="text-sm font-semibold text-emerald-300">
+                      {student.name} aprovado com sucesso!
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Actions Footer */}
-            <div className="border-t border-zinc-800 bg-[#0A0A0A] p-4 flex gap-3 flex-shrink-0">
-              {notification.type === "new_student" && student && user?.role === "admin" && (
-                <>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleApproveStudent}
-                    disabled={actionLoading}
-                    className="flex-1 bg-gradient-to-r from-[#EAB308] to-[#F97316] text-black font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity text-sm"
-                  >
-                    <Check className="w-4 h-4" />
-                    Revisar Aluno
-                  </motion.button>
+            {!approvalStep && (
+              <div className="border-t border-zinc-800 bg-[#0A0A0A] p-4 flex gap-3 flex-shrink-0">
+                {notification.type === "new_student" && student && user?.role === "admin" && (
+                  <>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleStartApproval}
+                      disabled={actionLoading}
+                      className="flex-1 bg-gradient-to-r from-[#EAB308] to-[#F97316] text-black font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity text-sm"
+                    >
+                      <Check className="w-4 h-4" />
+                      Revisar Aluno
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={onClose}
+                      className="flex-1 border border-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-zinc-900/50 transition-colors text-sm"
+                    >
+                      Depois
+                    </motion.button>
+                  </>
+                )}
+
+                {notification.type !== "new_student" && (
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={onClose}
-                    className="flex-1 border border-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-zinc-900/50 transition-colors text-sm"
+                    className="w-full border border-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-zinc-900/50 transition-colors text-sm"
                   >
-                    Depois
+                    Fechar
                   </motion.button>
-                </>
-              )}
-
-              {notification.type !== "new_student" && (
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onClose}
-                  className="w-full border border-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-zinc-900/50 transition-colors text-sm"
-                >
-                  Fechar
-                </motion.button>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

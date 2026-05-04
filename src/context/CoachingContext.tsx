@@ -13,6 +13,8 @@ type CoachingContextValue = {
   addFeedback: (fb: WithoutId<PerformanceFeedback>) => void;
   trainingPlans: TrainingPlan[];
   addTrainingPlan: (plan: WithoutId<TrainingPlan>) => void;
+  updateTrainingPlan: (id: string, patch: Partial<Omit<TrainingPlan, "id">>) => void;
+  deleteTrainingPlan: (id: string) => void;
 };
 
 const CoachingContext = createContext<CoachingContextValue | undefined>(undefined);
@@ -37,6 +39,12 @@ export function CoachingProvider({ children }: { children: React.ReactNode }) {
   const addTrainingPlan = useCallback(
     (plan: WithoutId<TrainingPlan>) =>
       setTrainingPlans(p => [...p, { ...plan, id: `tp_${uid()}` }]), []);
+  const updateTrainingPlan = useCallback(
+    (id: string, patch: Partial<Omit<TrainingPlan, "id">>) =>
+      setTrainingPlans(p => p.map(plan => plan.id === id ? { ...plan, ...patch } : plan)), []);
+  const deleteTrainingPlan = useCallback(
+    (id: string) =>
+      setTrainingPlans(p => p.filter(plan => plan.id !== id)), []);
 
   const value = useMemo<CoachingContextValue>(() => ({
     quickMessages: LEGACY_BRIDGE.MOCK_QUICK_MESSAGES,
@@ -44,7 +52,9 @@ export function CoachingProvider({ children }: { children: React.ReactNode }) {
     addFeedback,
     trainingPlans,
     addTrainingPlan,
-  }), [feedbacks, addFeedback, trainingPlans, addTrainingPlan]);
+    updateTrainingPlan,
+    deleteTrainingPlan,
+  }), [feedbacks, addFeedback, trainingPlans, addTrainingPlan, updateTrainingPlan, deleteTrainingPlan]);
 
   return <CoachingContext.Provider value={value}>{children}</CoachingContext.Provider>;
 }

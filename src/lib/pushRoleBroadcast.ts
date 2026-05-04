@@ -24,3 +24,28 @@ export async function sendPushToRole(
     // push é best-effort — nunca interfere no fluxo principal
   }
 }
+
+/** Envia push para um usuário específico. Fire-and-forget — nunca lança exceção. */
+export async function sendPushToUser(
+  userId: string,
+  payload: { title: string; body: string; url?: string },
+): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    await fetch("/api/push/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ payload, targetUserId: userId }),
+    });
+  } catch {
+    // push é best-effort — nunca interfere no fluxo principal
+  }
+}

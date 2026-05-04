@@ -5,7 +5,8 @@ import type { Lesson, Notification, Student, WithoutId } from "@/context/types";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { updateLessonRemote } from "@/lib/supabasePersistence";
 import { logDevEvent } from "@/lib/devEventsLogger";
-import { sendPushToRole } from "@/lib/pushRoleBroadcast";
+import { sendPushToRole, sendPushToUser } from "@/lib/pushRoleBroadcast";
+import { logXpEvent } from "@/lib/xpLogger";
 
 export function useCheckInActions(options: {
   usingSupabaseSession: boolean;
@@ -142,10 +143,23 @@ export function useCheckInActions(options: {
         recipientId: studentId,
       });
 
-      void sendPushToRole("aluno", {
-        title: "✅ Check-in Aprovado",
-        body: "Sua presença foi confirmada na aula.",
-        url: "/dashboard",
+      // Send targeted push to the specific student
+      const student = students.find(s => s.id === studentId);
+      if (student?.authUserId) {
+        void sendPushToUser(student.authUserId, {
+          title: "✅ Check-in Aprovado",
+          body: "Sua presença foi confirmada na aula.",
+          url: "/dashboard",
+        });
+      }
+
+      // Log XP event
+      void logXpEvent(supabase, {
+        studentId,
+        points: 50,
+        type: "checkin",
+        description: `Check-in aprovado`,
+        relatedId: lessonId,
       });
     },
     [usingSupabaseSession, students, setLessons, setCriticalDataError, addNotification],

@@ -10,6 +10,7 @@ import type {
   Post,
   Student,
   StudentStatus,
+  TrainingPlan,
   WithoutId,
 } from "@/context/types";
 import { paymentReferenceForDate } from "@/lib/dateUtils";
@@ -713,4 +714,353 @@ export async function createPublicLeadRemote(
   if (error) {
     throw new Error(`Falha ao registrar cadastro público: ${error.message}`);
   }
+
+  // 🔔 Dispara notificação para admin de novo aluno cadastrado
+  try {
+    await insertNotificationRemote(supabase, {
+      type: "new_student",
+      title: "🆕 Novo Aluno Cadastrado",
+      message: `${payload.name} se cadastrou e aguarda aprovação.`,
+      time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      read: false,
+      studentId: id,
+      isGlobal: true, // Todos os admins veem
+    });
+  } catch {
+    // Fire-and-forget: falha na notif não interrompe o cadastro
+  }
+}
+
+// ─── Training Plans ─────────────────────────────────────────────────────────
+
+function mapTrainingPlan(row: DbRow): TrainingPlan {
+  return {
+    id: asString(row.id),
+    studentId: asString(row.student_id ?? row.studentId),
+    title: asString(row.title),
+    exercises: Array.isArray(row.exercises) ? row.exercises : [],
+    createdAt: asString(row.created_at ?? row.createdAt, new Date().toISOString()),
+  };
+}
+
+function serializeTrainingPlan(plan: TrainingPlan) {
+  return {
+    id: plan.id,
+    student_id: plan.studentId,
+    title: plan.title,
+    exercises: plan.exercises ?? [],
+    created_at: plan.createdAt,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function serializeTrainingPlanPatch(patch: Partial<Omit<TrainingPlan, "id">>) {
+  const payload: Record<string, unknown> = {};
+  if (patch.title !== undefined) payload.title = patch.title;
+  if (patch.exercises !== undefined) payload.exercises = patch.exercises;
+  if (patch.studentId !== undefined) payload.student_id = patch.studentId;
+  payload.updated_at = new Date().toISOString();
+  return payload;
+}
+
+export async function fetchTrainingPlansRemote(supabase: SupabaseClient): Promise<TrainingPlan[]> {
+  const { data, error } = await supabase
+    .from("training_plans")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Falha ao carregar planos de treino: ${error.message}`);
+  }
+
+  return (data || []).map((row) => mapTrainingPlan(row as DbRow));
+}
+
+export async function upsertTrainingPlanRemote(supabase: SupabaseClient, plan: TrainingPlan): Promise<TrainingPlan> {
+  const { data, error } = await supabase
+    .from("training_plans")
+    .upsert(serializeTrainingPlan(plan), { onConflict: "id" })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`Falha ao salvar plano de treino: ${error.message}`);
+  }
+
+  return mapTrainingPlan((data || {}) as DbRow);
+}
+
+export async function updateTrainingPlanRemote(
+  supabase: SupabaseClient,
+  id: string,
+  patch: Partial<Omit<TrainingPlan, "id">>,
+): Promise<void> {
+  const payload = serializeTrainingPlanPatch(patch);
+  if (Object.keys(payload).length === 0) return;
+
+  const { error } = await supabase.from("training_plans").update(payload).eq("id", id);
+
+  if (error) {
+    throw new Error(`Falha ao atualizar plano de treino: ${error.message}`);
+  }
+}
+
+export async function deleteTrainingPlanRemote(supabase: SupabaseClient, id: string): Promise<void> {
+  const { error } = await supabase.from("training_plans").delete().eq("id", id);
+
+  if (error) {
+    throw new Error(`Falha ao remover plano de treino: ${error.message}`);
+  }
+}
+
+// ─── XP Log ────────────────────────────────────────────────────────────────
+
+export interface XpLogEntry {
+  id: string;
+  studentId: string;
+  points: number;
+  type: "evaluation" | "checkin" | "feedback" | "feed_like" | "feed_comment" | "training_completed";
+  description?: string;
+  relatedId?: string;
+  createdAt: string;
+}
+
+function mapXpLogEntry(row: DbRow): XpLogEntry {
+  return {
+    id: asString(row.id),
+    studentId: asString(row.student_id ?? row.studentId),
+    points: asNumber(row.points),
+    type: asString(row.type) as XpLogEntry["type"],
+    description: asString(row.description) || undefined,
+    relatedId: asString(row.related_id ?? row.relatedId) || undefined,
+    createdAt: asString(row.created_at ?? row.createdAt),
+  };
+}
+
+export async function fetchXpLogEntriesRemote(
+  supabase: SupabaseClient,
+  studentId: string,
+  limit = 10
+): Promise<XpLogEntry[]> {
+  const { data, error } = await supabase
+    .from("xp_log")
+    .select("*")
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error(`Falha ao carregar histórico de XP: ${error.message}`);
+    return [];
+  }
+
+  return (data || []).map((row) => mapXpLogEntry(row as DbRow));
+}
+
+// Phase 5: Live Lesson Panel
+
+export type CoachMessage = {
+  id: string;
+  lessonId: string;
+  sessionId: string;
+  coachId: string;
+  messageType: "message" | "alert" | "activity" | "duration_change";
+  content: string;
+  targetStudentId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type StudentActivity = {
+  id: string;
+  lessonId: string;
+  studentId: string;
+  status: "present" | "exercising" | "resting" | "injured" | "absent";
+  updatedAt: string;
+  updatedBy: string;
+};
+
+export type LessonSession = {
+  id: string;
+  lessonId: string;
+  startedAt: string;
+  endedAt?: string;
+  currentActivity?: string;
+  coachNotes?: string;
+  createdBy: string;
+};
+
+export async function startLessonSessionRemote(
+  supabase: SupabaseClient,
+  lessonId: string,
+  coachId: string
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("lesson_sessions")
+    .insert({
+      lesson_id: lessonId,
+      started_at: new Date().toISOString(),
+      created_by: coachId,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(`Falha ao iniciar aula ao vivo: ${error.message}`);
+  }
+
+  return asString(data?.id || "");
+}
+
+export async function endLessonSessionRemote(
+  supabase: SupabaseClient,
+  sessionId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("lesson_sessions")
+    .update({ ended_at: new Date().toISOString() })
+    .eq("id", sessionId);
+
+  if (error) {
+    throw new Error(`Falha ao encerrar aula ao vivo: ${error.message}`);
+  }
+}
+
+export async function sendCoachMessageRemote(
+  supabase: SupabaseClient,
+  lessonId: string,
+  sessionId: string,
+  coachId: string,
+  message: {
+    messageType: CoachMessage["messageType"];
+    content: string;
+    targetStudentId?: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("lesson_coach_messages")
+    .insert({
+      lesson_id: lessonId,
+      session_id: sessionId,
+      coach_id: coachId,
+      message_type: message.messageType,
+      content: message.content,
+      target_student_id: message.targetStudentId || null,
+      metadata: message.metadata || null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(`Falha ao enviar mensagem: ${error.message}`);
+  }
+
+  return asString(data?.id || "");
+}
+
+export async function updateStudentActivityRemote(
+  supabase: SupabaseClient,
+  lessonId: string,
+  studentId: string,
+  status: StudentActivity["status"],
+  coachId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("lesson_student_activity")
+    .upsert(
+      {
+        lesson_id: lessonId,
+        student_id: studentId,
+        status,
+        updated_at: new Date().toISOString(),
+        updated_by: coachId,
+      },
+      { onConflict: "lesson_id, student_id" }
+    );
+
+  if (error) {
+    throw new Error(`Falha ao atualizar atividade do aluno: ${error.message}`);
+  }
+}
+
+export async function fetchCoachMessagesRemote(
+  supabase: SupabaseClient,
+  lessonId: string,
+  limit = 50
+): Promise<CoachMessage[]> {
+  const { data, error } = await supabase
+    .from("lesson_coach_messages")
+    .select("*")
+    .eq("lesson_id", lessonId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error(`Falha ao carregar mensagens: ${error.message}`);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    id: asString(row.id),
+    lessonId: asString(row.lesson_id ?? row.lessonId),
+    sessionId: asString(row.session_id ?? row.sessionId),
+    coachId: asString(row.coach_id ?? row.coachId),
+    messageType: (asString(row.message_type ?? row.messageType) as CoachMessage["messageType"]) || "message",
+    content: asString(row.content),
+    targetStudentId: asString(row.target_student_id ?? row.targetStudentId) || undefined,
+    metadata: typeof row.metadata === "object" ? row.metadata : undefined,
+    createdAt: asString(row.created_at ?? row.createdAt),
+  }));
+}
+
+export async function fetchStudentActivityRemote(
+  supabase: SupabaseClient,
+  lessonId: string
+): Promise<StudentActivity[]> {
+  const { data, error } = await supabase
+    .from("lesson_student_activity")
+    .select("*")
+    .eq("lesson_id", lessonId);
+
+  if (error) {
+    console.error(`Falha ao carregar atividades: ${error.message}`);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    id: asString(row.id),
+    lessonId: asString(row.lesson_id ?? row.lessonId),
+    studentId: asString(row.student_id ?? row.studentId),
+    status: (asString(row.status) as StudentActivity["status"]) || "present",
+    updatedAt: asString(row.updated_at ?? row.updatedAt),
+    updatedBy: asString(row.updated_by ?? row.updatedBy),
+  }));
+}
+
+export async function fetchLessonSessionRemote(
+  supabase: SupabaseClient,
+  lessonId: string
+): Promise<LessonSession | null> {
+  const { data, error } = await supabase
+    .from("lesson_sessions")
+    .select("*")
+    .eq("lesson_id", lessonId)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    id: asString(data.id),
+    lessonId: asString(data.lesson_id ?? data.lessonId),
+    startedAt: asString(data.started_at ?? data.startedAt),
+    endedAt: asString(data.ended_at ?? data.endedAt) || undefined,
+    currentActivity: asString(data.current_activity ?? data.currentActivity) || undefined,
+    coachNotes: asString(data.coach_notes ?? data.coachNotes) || undefined,
+    createdBy: asString(data.created_by ?? data.createdBy),
+  };
 }

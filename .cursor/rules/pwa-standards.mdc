@@ -1,0 +1,41 @@
+---
+description: Regras de PWA para o Will Treinos PRO. Web Push, Service Worker, manifest.json, offline mode, iOS support. Aplica automaticamente em arquivos relacionados a notificações e PWA.
+globs: ["public/sw.js", "public/manifest.json", "hooks/usePush*", "lib/notifications/**", "app/layout.tsx"]
+alwaysApply: false
+---
+
+# Will Treinos — PWA Standards
+
+## Checklist Obrigatório
+- [ ] `manifest.json` com `theme_color: "#000000"` e `background_color: "#000000"`
+- [ ] Service Worker em `public/sw.js` (não em `app/`)
+- [ ] VAPID keys em variáveis de ambiente (NUNCA no código)
+- [ ] Push subscription salva no Supabase com RLS
+- [ ] `apple-mobile-web-app-capable` no `<head>`
+- [ ] Ícones em todos os tamanhos: 72, 96, 128, 144, 152, 192, 384, 512px
+
+## iOS Push — Requisitos
+- Funciona SOMENTE se instalado na home screen (iOS 16.4+)
+- Mostrar prompt de instalação antes de pedir permissão de notificação
+- Usar `usePWA()` hook para detectar se está instalado
+
+## VAPID Keys — Uso Correto
+```typescript
+// ✅ Client: apenas NEXT_PUBLIC_VAPID_PUBLIC_KEY
+// ✅ Server: VAPID_PRIVATE_KEY (nunca expor no client)
+// ❌ Nunca usar service role key em push routes
+```
+
+## Eventos de Push do Will Treinos
+- `new_student_registered` → Admin recebe
+- `student_approved` → Aluno recebe  
+- `training_prescribed` → Aluno recebe
+- `check_in_approved` → Aluno recebe (+ informar XP ganho)
+- `check_in_rejected` → Aluno recebe
+- `new_check_in_pending` → Coach recebe
+- `xp_milestone` → Aluno recebe (a cada 500 XP)
+
+## Prompt de Permissão — UX Correto
+❌ NUNCA pedir permissão no page load
+✅ Pedir DEPOIS que o aluno fizer algo (aprovação de check-in, ver primeiro treino)
+✅ Explicar o benefício antes de pedir ("Receba notificações quando seu treino for aprovado")

@@ -132,8 +132,66 @@ async function handleApproveCheckIn(
   userId: string,
   action: QueuedAction,
 ) {
-  // Similar a handleRequestCheckIn, mas marca como 'approved'
-  return NextResponse.json({ ok: true, action: "approveCheckIn" });
+  const { lessonId, studentId } = action.payload as {
+    lessonId: string;
+    studentId: string;
+  };
+
+  if (!lessonId || !studentId) {
+    return NextResponse.json({ error: "lessonId e studentId obrigatórios" }, { status: 400 });
+  }
+
+  // Buscar lição com check-in requests
+  const { data: lesson, error: fetchError } = await client
+    .from("lessons")
+    .select("check_in_requests, present_students")
+    .eq("id", lessonId)
+    .single();
+
+  if (fetchError || !lesson) {
+    return NextResponse.json({ error: "Lição não encontrada" }, { status: 404 });
+  }
+
+  // Encontrar check-in request do aluno
+  const checkInRequests = lesson.check_in_requests || [];
+  const requestIndex = checkInRequests.findIndex((r: { studentId: string }) => r.studentId === studentId);
+
+  if (requestIndex === -1) {
+    return NextResponse.json({ error: "Check-in request não encontrado" }, { status: 404 });
+  }
+
+  // Atualizar request para "approved"
+  const approvedRequest = {
+    ...checkInRequests[requestIndex],
+    status: "approved",
+    approvedAt: new Date().toISOString(),
+  };
+
+  const updated = [
+    ...checkInRequests.slice(0, requestIndex),
+    approvedRequest,
+    ...checkInRequests.slice(requestIndex + 1),
+  ];
+
+  // Adicionar à lista de presentes se ainda não estiver
+  const presentStudents = lesson.present_students || [];
+  if (!presentStudents.includes(studentId)) {
+    presentStudents.push(studentId);
+  }
+
+  const { error: updateError } = await client
+    .from("lessons")
+    .update({
+      check_in_requests: updated,
+      present_students: presentStudents,
+    })
+    .eq("id", lessonId);
+
+  if (updateError) {
+    throw new Error(`Falha ao aprovar check-in: ${updateError.message}`);
+  }
+
+  return NextResponse.json({ ok: true, action: "approveCheckIn", lessonId, studentId });
 }
 
 async function handleAddPost(

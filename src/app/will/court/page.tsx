@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, ClipboardList, Users, X } from "lucide-react";
+import { ArrowUpRight, ClipboardList, Users, X, Zap } from "lucide-react";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useCatalog } from "@/context/CatalogContext";
@@ -185,6 +185,13 @@ export default function WillCourtPage() {
                       </option>
                     ))}
                   </select>
+                  <Link
+                    href={`/will/court/${selectedLesson.id}/live`}
+                    className="inline-flex items-center gap-1 rounded-xl border border-green-500/35 bg-green-500/10 px-2.5 py-2 text-[11px] font-bold text-green-400 hover:bg-green-500/20 transition-colors"
+                  >
+                    <Zap className="h-3 w-3" />
+                    Aula Ao Vivo
+                  </Link>
                   <Link
                     href="/will/evaluations/templates"
                     className="inline-flex items-center gap-1 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 px-2.5 py-2 text-[11px] font-bold text-[#EAB308]"

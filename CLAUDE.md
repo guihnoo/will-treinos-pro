@@ -181,17 +181,54 @@ Código limpo · TypeScript estrito · Build verde · Registrar no MASTER MEMORY
 
 ---
 
-## 🧠 MEMÓRIA DO PROJETO
+## 🧠 MEMÓRIA DO PROJETO — PROTOCOLO OBRIGATÓRIO
 
+### 📖 INÍCIO DE TODA SESSÃO (leitura obrigatória)
 Antes de qualquer tarefa, leia:
 ```
 WILLPRO_MASTER_MEMORY.md
 ```
+Isso restaura o contexto completo: onde paramos, o que está feito, o que está pendente.
 
-Ao concluir qualquer tarefa estrutural, registre no bloco `## 3. LOG DE ATUALIZAÇÕES`:
+### ✍️ LOGGING AUTOMÁTICO — REGRA INVIOLÁVEL
+
+**TODA interação significativa DEVE ser registrada.** Sem exceção.
+
+Isso inclui:
+- ✅ Qualquer feature implementada (mesmo parcial)
+- ✅ Qualquer decisão arquitetural tomada
+- ✅ Qualquer bug corrigido
+- ✅ Qualquer configuração alterada (MCP, agents, env vars)
+- ✅ Qualquer instalação de dependência
+- ✅ Qualquer discussão que resulte em decisão de produto
+
+**Formato do log em `WILLPRO_MASTER_MEMORY.md` → bloco `## LOG DE ATUALIZAÇÕES`:**
 ```
-- **[DD/MM/AAAA HH:MM BRT] (Claude):** **[Sprint/Feature]** — Descrição técnica. Build OK (exit 0). **Git:** push `origin/main`.
+- **[DD/MM/AAAA HH:MM BRT] (Claude):** **[Categoria]** — Descrição do que foi feito/decidido. Status: ✅ Completo | 🔄 Em progresso | ⚠️ Pendente.
 ```
+
+**Categorias:**
+- `[FEATURE]` — nova funcionalidade implementada
+- `[CONFIG]` — configuração de ambiente, MCPs, agents
+- `[FIX]` — correção de bug
+- `[ARCH]` — decisão arquitetural
+- `[SECURITY]` — auditoria ou correção de segurança
+- `[PERF]` — otimização de performance
+- `[DESIGN]` — mudança visual ou de UX
+- `[INSTALL]` — dependência ou ferramenta instalada
+
+**Exemplo real:**
+```
+- **[04/05/2026 03:30 BRT] (Claude):** [CONFIG] Arsenal de agentes instalado — 14 subagentes em .claude/agents/, 9 cursor rules em .cursor/rules/, 8 MCPs em .claude/mcp.json. Status: ✅ Completo.
+- **[04/05/2026 03:30 BRT] (Claude):** [INSTALL] web-push instalado para notificações PWA. VAPID keys pendentes de geração. Status: ⚠️ Pendente.
+```
+
+### 🔄 ATUALIZAR TAMBÉM O CLAUDE.md
+Se uma decisão muda a arquitetura, stack, ou padrões do projeto → atualizar a seção relevante neste arquivo.
+
+### ⚡ SUBAGENTE memory-logger
+Para logging rápido sem interromper o fluxo, use: `@memory-logger`
+Ele registra automaticamente e retorna confirmação.
 
 ---
 
