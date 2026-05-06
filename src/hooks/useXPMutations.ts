@@ -2,13 +2,35 @@ import { useCallback } from "react";
 import type { XPLog, CardTier, XPLogType, VolleyballFundamental, WithoutId } from "@/context/types";
 import { CARD_TIER_THRESHOLDS } from "@/context/types";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import {
+  validateXPTransaction,
+  getValidationNotes,
+} from "@/lib/xpAntiCheat";
 
 export function useXPMutations() {
-  // Log XP transaction
+  // Log XP transaction with anti-cheat validation
   const logXP = useCallback(
     async (xpLog: WithoutId<XPLog>): Promise<XPLog | null> => {
       const supabase = getSupabaseClient();
       if (!supabase) return null;
+
+      // Run anti-cheat validation
+      const validation = await validateXPTransaction(
+        xpLog.studentId,
+        xpLog.points,
+        xpLog.type,
+        xpLog.relatedId
+      );
+
+      // Get detailed validation notes (for outlier detection)
+      const validationNotes =
+        xpLog.validationNotes ||
+        (await getValidationNotes(
+          xpLog.studentId,
+          xpLog.points,
+          xpLog.type,
+          xpLog.relatedId
+        ));
 
       const { data, error } = await supabase
         .from("xp_log")
@@ -22,8 +44,8 @@ export function useXPMutations() {
           source_entity: xpLog.sourceEntity,
           related_id: xpLog.relatedId,
           description: xpLog.description,
-          validation_passed: xpLog.validationPassed ?? true,
-          validation_notes: xpLog.validationNotes,
+          validation_passed: validation.isValid,
+          validation_notes: validation.isValid ? validationNotes : validation.validationNotes,
           created_by: xpLog.createdBy,
         })
         .select()
@@ -32,6 +54,14 @@ export function useXPMutations() {
       if (error) {
         console.error("[useXPMutations] logXP error:", error);
         return null;
+      }
+
+      // Log if validation failed (for admin audit)
+      if (!validation.isValid) {
+        console.warn(
+          `[useXPMutations] XP transaction blocked: ${validation.validationNotes}`,
+          { studentId: xpLog.studentId, points: xpLog.points }
+        );
       }
 
       return {
