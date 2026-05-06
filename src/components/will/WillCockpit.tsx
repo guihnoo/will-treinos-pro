@@ -15,6 +15,7 @@ import {
   Coins,
   Copy,
   CreditCard,
+  Dumbbell,
   MapPin,
   PlusCircle,
   Radio,
@@ -46,6 +47,7 @@ import OracleInsights from "./OracleInsights";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
 import LiveLessonCoachPanel from "./LiveLessonCoachPanel";
+import TrainingPlansPanel from "./TrainingPlansPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -119,6 +121,7 @@ export default function WillCockpit() {
   const [showCourtModal, setShowCourtModal] = useState(false);
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [showLivePanel, setShowLivePanel] = useState(false);
+  const [showTrainingPlans, setShowTrainingPlans] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -170,6 +173,7 @@ export default function WillCockpit() {
     showQuickActionModal !== null ||
     showCreateLesson ||
     showLivePanel ||
+    showTrainingPlans ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -750,6 +754,18 @@ export default function WillCockpit() {
             <Newspaper className="h-5 w-5 text-[#EAB308]" />
             A Rede (Moderação Ativa)
           </Link>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowTrainingPlans(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir planos de treino"
+          >
+            <Dumbbell className="h-5 w-5 text-emerald-400" />
+            Planos de Treino
+          </button>
           </div>
         </AppSectionCard>
       </motion.div>
@@ -1780,6 +1796,19 @@ export default function WillCockpit() {
               setShowLivePanel(false);
               setActionFeedback(`Aula "${selectedLesson.title}" encerrada.`);
               updateLesson(selectedLesson.id, { status: "completed" });
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTrainingPlans ? (
+          <TrainingPlansPanel
+            plans={[] as any[]}
+            students={students}
+            onClose={() => setShowTrainingPlans(false)}
+            onSelectPlan={(plan) => {
+              setActionFeedback(`Plano de treino "${plan.title}" selecionado.`);
             }}
           />
         ) : null}
