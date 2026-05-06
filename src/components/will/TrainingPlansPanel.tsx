@@ -15,6 +15,7 @@ import {
 import type { TrainingPlan, Student } from "@/context/types";
 import { useTrainingPlanMutations } from "@/hooks/useTrainingPlanMutations";
 import UserAvatar from "@/components/ui/UserAvatar";
+import TrainingPlanEditor from "@/components/TrainingPlanEditor";
 import { SPRING_PREMIUM, PRESS_SCALE } from "@/components/ui/motionTokens";
 
 interface TrainingPlansPanelProps {
@@ -47,6 +48,8 @@ export default function TrainingPlansPanel({
   const { updatePlan, deletePlan } = useTrainingPlanMutations();
   const [filter, setFilter] = useState<"all" | "active" | "paused">("active");
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [editorStudent, setEditorStudent] = useState<Student | null>(null);
+  const [editingPlan, setEditingPlan] = useState<TrainingPlan | null>(null);
 
   const filteredPlans = useMemo(() => {
     if (filter === "all") return plans;
@@ -220,11 +223,33 @@ export default function TrainingPlansPanel({
 
         {/* Footer */}
         <div className="flex items-center gap-2 px-5 py-3 border-t border-white/5 bg-black/50 shrink-0">
-          <button className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-[#EAB308]/20 text-[#EAB308] hover:bg-[#EAB308]/30 text-xs font-bold uppercase tracking-wider transition">
+          <button
+            onClick={() => {
+              // Open student selector if not yet selected, otherwise open editor for first student
+              if (students.length > 0) {
+                setEditorStudent(students[0]);
+              }
+            }}
+            className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-[#EAB308]/20 text-[#EAB308] hover:bg-[#EAB308]/30 text-xs font-bold uppercase tracking-wider transition"
+          >
             <Plus className="w-3.5 h-3.5" />
             Novo Plano
           </button>
         </div>
+
+        {/* Editor Modal */}
+        <AnimatePresence>
+          {editorStudent && (
+            <TrainingPlanEditor
+              student={editorStudent}
+              existingPlan={editingPlan || undefined}
+              onClose={() => {
+                setEditorStudent(null);
+                setEditingPlan(null);
+              }}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

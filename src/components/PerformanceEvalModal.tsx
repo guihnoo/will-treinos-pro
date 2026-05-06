@@ -3,11 +3,13 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Zap, Brain, MessageSquare, TrendingUp, Save, ChevronDown } from "lucide-react";
-import type { Student } from "@/context/types";
+import type { Student, VolleyballFundamental } from "@/context/types";
+import { calculateXPFromEvaluation } from "@/context/types";
 import { useCoaching } from "@/context/CoachingContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { avatarSrc } from "@/lib/avatarSrc";
+import { useXPMutations } from "@/hooks/useXPMutations";
 
 interface Props {
   student: Student;
@@ -26,6 +28,7 @@ const PILLARS = [
 
 export default function PerformanceEvalModal({ student, lessonId, lessonTitle, onClose }: Props) {
   const { addFeedback } = useCoaching();
+  const { logXP, checkAchievementUnlock, getStudentTotalXP } = useXPMutations();
   const { toast } = useToast();
   useBodyScrollLock(true);
 
@@ -41,8 +44,32 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
   const scoreColor = (s: number) => s >= 8 ? "#22C55E" : s >= 6 ? "#EAB308" : "#EF4444";
   const scoreLabel = (s: number) => s >= 9 ? "Excepcional" : s >= 8 ? "Muito Bom" : s >= 6 ? "Bom" : s >= 4 ? "Regular" : "Precisa Evoluir";
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaving(true);
+
+    // Determine dominant fundamental from pillar scores
+    const dominantFundamental: VolleyballFundamental = scores.tecnico > 7 ? "posicionamento" : "recepcao";
+
+    // Calculate XP (formula: 100 × (nota/10)² × 10 × multiplier)
+    const { basePoints, multiplier, totalPoints } = calculateXPFromEvaluation(avg, dominantFundamental);
+
+    // Log XP transaction (fire and forget, will complete after modal closes)
+    logXP({
+      studentId: student.id,
+      points: totalPoints,
+      basePoints,
+      multiplierType: dominantFundamental,
+      multiplierValue: multiplier,
+      type: "evaluation",
+      sourceEntity: "lesson",
+      relatedId: lessonId,
+      description: `Avaliação em ${lessonTitle} (média ${avg})`,
+      validationPassed: true,
+    }).catch(() => {
+      console.warn("[PerformanceEvalModal] XP logging failed, continuing anyway");
+    });
+
+    // Save feedback locally
     addFeedback({
       lessonId,
       studentId: student.id,
@@ -61,8 +88,20 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
         evolucao: scores.evolucao,
       },
     });
+
+    // Check for achievement unlock (async, fire and forget)
+    getStudentTotalXP(student.id).then((total) => {
+      if (total !== null) {
+        checkAchievementUnlock(student.id, total).then((tier) => {
+          if (tier) {
+            toast(`🏆 ${student.name.split(" ")[0]} desbloqueou Card ${tier.toUpperCase()}!`);
+          }
+        });
+      }
+    });
+
     setTimeout(() => {
-      toast(`✅ Avaliação de ${student.name.split(" ")[0]} salva!`);
+      toast(`✅ Avaliação de ${student.name.split(" ")[0]} salva! +${totalPoints} XP`);
       onClose();
     }, 600);
   };

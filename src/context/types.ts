@@ -197,3 +197,65 @@ export interface AppConfig {
   enrollmentInviteCode?: string;
   studentProfilePolicy?: Partial<StudentProfileEditPolicy>;
 }
+
+// ─── Phase 8: Gamification XP System ──────────────────────────────────────────
+
+export type VolleyballFundamental = "ataque" | "levantamento" | "bloqueio" | "saque" | "defesa" | "recepcao" | "posicionamento";
+
+export const FUNDAMENTAL_MULTIPLIERS: Record<VolleyballFundamental, number> = {
+  ataque: 2.0,
+  levantamento: 1.8,
+  bloqueio: 1.6,
+  saque: 1.5,
+  defesa: 1.4,
+  recepcao: 1.3,
+  posicionamento: 1.2,
+};
+
+export type XPLogType = "evaluation" | "checkin" | "social_like" | "social_comment" | "training_completed" | "achievement_unlock";
+
+export interface XPLog {
+  id: string;
+  studentId: string;
+  points: number;           // final points (after multiplier)
+  basePoints: number;       // points before multiplier
+  multiplierType: VolleyballFundamental | "none";
+  multiplierValue: number;
+  type: XPLogType;
+  sourceEntity?: "lesson" | "training_plan" | "post" | "achievement";
+  relatedId?: string;    // uuid of related entity
+  description?: string;
+  validationPassed?: boolean;
+  validationNotes?: string;
+  createdAt?: string;
+  createdBy?: string;    // coach/admin who initiated
+}
+
+export type CardTier = "bronze" | "prata" | "ouro" | "diamante" | "elite";
+
+export const CARD_TIER_THRESHOLDS: Record<CardTier, number> = {
+  bronze: 500,
+  prata: 1500,
+  ouro: 3000,
+  diamante: 6000,
+  elite: 10000,
+};
+
+export interface StudentAchievement {
+  id: string;
+  studentId: string;
+  tierId: CardTier;
+  xpThreshold: number;
+  unlockedAt: string;
+}
+
+// XP calculation formula: 100 × (nota/10)² × 10 × multiplier
+export function calculateXPFromEvaluation(
+  grade: number,  // 0-10
+  fundamental: VolleyballFundamental = "posicionamento"
+): { basePoints: number; multiplier: number; totalPoints: number } {
+  const basePoints = Math.round(100 * Math.pow(grade / 10, 2) * 10);
+  const multiplier = FUNDAMENTAL_MULTIPLIERS[fundamental] || 1;
+  const totalPoints = Math.round(basePoints * multiplier);
+  return { basePoints, multiplier, totalPoints };
+}
