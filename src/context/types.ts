@@ -98,10 +98,39 @@ export interface PerformanceFeedback {
   pillarScores?: PillarScores;
 }
 
+export type PlanStatus = 'active' | 'paused' | 'completed' | 'archived';
+export type Intensity = 'leve' | 'moderado' | 'intenso' | 'máximo';
+export type DayName = 'segunda' | 'terça' | 'quarta' | 'quinta' | 'sexta' | 'sábado' | 'domingo';
+
+export interface TrainingExercise {
+  id: string;
+  planId: string;
+  weekNumber: number;
+  dayName: DayName;
+  exerciseName: string;
+  sets: number;
+  repsMin?: number;
+  repsMax?: number;
+  durationMinutes?: number;
+  intensity: Intensity;
+  notes?: string;
+  completedAt?: string | null;
+  completedReps?: number;
+  completedWeight?: number;
+}
+
 export interface TrainingPlan {
-  id: string; studentId: string; title: string;
-  exercises: { name: string; sets: string; reps: string; rest?: string; notes: string }[];
+  id: string;
+  coachId: string;
+  studentId: string;
+  title: string;
+  description?: string;
+  startDate: string; // ISO date
+  endDate?: string;
+  status: PlanStatus;
+  exercises?: TrainingExercise[];
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface QuickMessage {

@@ -47,9 +47,10 @@ import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
 import LiveLessonCoachPanel from "./LiveLessonCoachPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
+import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
-import { localDateISO, getMonday } from "@/lib/dateUtils";
+import { localDateISO, getMonday, paymentReferenceForDate } from "@/lib/dateUtils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 function currencyBRL(value: number): string {
@@ -317,6 +318,50 @@ export default function WillCockpit() {
   const currentHour = now.getHours();
   const timeGreeting =
     currentHour >= 5 && currentHour < 12 ? "Bom dia" : currentHour >= 12 && currentHour < 18 ? "Boa tarde" : "Boa noite";
+
+  // Sparkline data: last 6 months revenue
+  const revenueSparkPoints = useMemo(() => {
+    const months: Record<string, number> = {};
+    payments.forEach((p) => {
+      if (p.status === "paid") {
+        const ref = p.reference; // "MAY/26" format
+        months[ref] = (months[ref] ?? 0) + p.amount;
+      }
+    });
+    // Generate last 6 months in chronological order
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    const result: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(sixMonthsAgo);
+      d.setMonth(d.getMonth() + i);
+      const ref = paymentReferenceForDate(d);
+      result.push(months[ref] ?? 0);
+    }
+    return result;
+  }, [payments, now]);
+
+  // Sparkline data: last 6 weeks active students (unique per week)
+  const activeStudentsSparkPoints = useMemo(() => {
+    const weekCounts: number[] = [];
+    const sixWeeksAgo = new Date(now);
+    sixWeeksAgo.setDate(sixWeeksAgo.getDate() - (6 * 7 - 7)); // 5 weeks back to get 6 weeks
+    for (let w = 0; w < 6; w++) {
+      const weekStart = new Date(sixWeeksAgo);
+      weekStart.setDate(weekStart.getDate() + w * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      const active = new Set<string>();
+      lessons.forEach((l) => {
+        const lessonDate = new Date(`${l.date}T00:00:00`);
+        if (lessonDate >= weekStart && lessonDate <= weekEnd) {
+          l.enrolledStudents.forEach((sid) => active.add(sid));
+        }
+      });
+      weekCounts.push(active.size);
+    }
+    return weekCounts;
+  }, [lessons, now]);
 
   const handleCockpitResolver = () => {
     haptic(18);
@@ -615,6 +660,7 @@ export default function WillCockpit() {
             <p className="text-[11px] text-zinc-500">Toque para abrir cobrança tática por WhatsApp.</p>
             <span className="text-[10px] font-bold text-zinc-400">{currentMonthReference}</span>
           </div>
+          <KpiSparkline points={revenueSparkPoints} accent="emerald" label="últimos 6 meses" animated />
         </KpiActionCard>
 
         <KpiActionCard
@@ -653,6 +699,7 @@ export default function WillCockpit() {
               <ArrowUpRight className="h-3.5 w-3.5" />
             </button>
           </div>
+          <KpiSparkline points={activeStudentsSparkPoints} accent="gold" label="atletas ativos 6 semanas" animated />
         </KpiActionCard>
       </motion.div>
 

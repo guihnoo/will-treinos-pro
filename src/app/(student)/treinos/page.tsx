@@ -104,13 +104,13 @@ interface Exercise { name: string; sets: string; reps: string; rest?: string; no
 function ExerciseModal({
   ex, planId, exIdx, done, onToggleSet, onClose
 }: {
-  ex: Exercise; planId: string; exIdx: number;
+  ex: any; planId: string; exIdx: number;
   done: Record<string, boolean>;
   onToggleSet: (key: string, restSec: number, planId: string) => void;
   onClose: () => void;
 }) {
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
-  const sets = parseSets(ex.sets);
+  const sets = typeof ex.sets === "string" ? parseSets(ex.sets) : (ex.sets || 0);
   const restSec = ex.rest ? parseInt(ex.rest) * (ex.rest.includes("min") ? 60 : 1) : 60;
   let completedSets = 0;
   for (let i = 0; i < sets; i++) { if (done[`${planId}_${exIdx}_${i}`]) completedSets++; }
@@ -221,14 +221,14 @@ export default function TreinosPage() {
     totalSeconds: number;
     intervalId: ReturnType<typeof setInterval> | null;
   } | null>(null);
-  const [exerciseModal, setExerciseModal] = useState<{ ex: Exercise; planId: string; exIdx: number } | null>(null);
+  const [exerciseModal, setExerciseModal] = useState<{ ex: any; planId: string; exIdx: number } | null>(null);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
 
-  const myPlans = trainingPlans.filter(p => p.studentId === user?.id);
+  const myPlans = (trainingPlans as any[]).filter((p: any) => p.studentId === user?.id);
   const didAutoExpand = useRef(false);
 
   const totalSets = useMemo(
-    () => myPlans.reduce((acc, plan) => acc + plan.exercises.reduce((sum, ex) => sum + parseSets(ex.sets), 0), 0),
+    () => myPlans.reduce((acc, plan) => acc + plan.exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0), 0),
     [myPlans]
   );
   const completedSets = useMemo(
@@ -284,12 +284,12 @@ export default function TreinosPage() {
 
   const planProgressFromState = (
     planId: string,
-    exercises: Exercise[],
+    exercises: any[],
     doneState: Record<string, boolean>
   ) => {
     let total = 0, completed = 0;
     exercises.forEach((ex, ei) => {
-      const sets = parseSets(ex.sets);
+      const sets = typeof ex.sets === "string" ? parseSets(ex.sets) : (ex.sets || 0);
       total += sets;
       for (let s = 0; s < sets; s++) {
         if (doneState[`${planId}_${ei}_${s}`]) completed++;
@@ -340,7 +340,7 @@ export default function TreinosPage() {
     }
   };
 
-  const planProgress = (planId: string, exercises: Exercise[]) =>
+  const planProgress = (planId: string, exercises: any[]) =>
     planProgressFromState(planId, exercises, done);
 
   const openWhatsApp = () =>
@@ -475,7 +475,7 @@ export default function TreinosPage() {
                     className="px-4 pb-4 space-y-2 border-t border-zinc-800/60 pt-3"
                   >
                     {plan.exercises.map((ex, ei) => {
-                      const sets = parseSets(ex.sets);
+                      const sets = typeof ex.sets === "string" ? parseSets(ex.sets) : (ex.sets || 0);
                       let completedSets = 0;
                       for (let i = 0; i < sets; i++) { if (done[`${plan.id}_${ei}_${i}`]) completedSets++; }
                       const exDone = completedSets === sets && sets > 0;
@@ -569,7 +569,7 @@ export default function TreinosPage() {
       <AnimatePresence>
         {exerciseModal && (
           <ExerciseModal
-            ex={exerciseModal.ex}
+            ex={exerciseModal.ex as any}
             planId={exerciseModal.planId}
             exIdx={exerciseModal.exIdx}
             done={done}

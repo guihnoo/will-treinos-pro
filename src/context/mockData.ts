@@ -239,27 +239,38 @@ export const MOCK_FEEDBACKS: PerformanceFeedback[] = [
 export const MOCK_TRAINING_PLANS: TrainingPlan[] = [
   {
     id: "tp1",
+    coachId: "coach1",
     studentId: "s1",
     title: "Condicionamento Para Estadual 🏆",
+    description: "Plano de 4 semanas focado em explosão e potência",
+    startDate: "2026-04-01",
+    endDate: "2026-04-28",
+    status: "active",
     createdAt: "2026-04-01",
+    updatedAt: "2026-04-01",
     exercises: [
-      { name: "Agachamento Explosivo", sets: "4", reps: "12", rest: "60s", notes: "Foco na explosão na subida — simular impulso de ataque" },
-      { name: "Salto com Corda", sets: "3", reps: "2min", rest: "45s", notes: "Manter ritmo constante, sem pausas" },
-      { name: "Pré-Saque: Rotação de Ombro", sets: "3", reps: "15", rest: "30s", notes: "Aquecimento do manõ de ataque" },
-      { name: "Abdominal Prancha", sets: "3", reps: "45s", rest: "30s", notes: "Core ativo para estabilidade no salto" },
-      { name: "Fundamento: Saque Viagem", sets: "5", reps: "10", rest: "90s", notes: "10 saques perfeitos por série — foco na trajetória" },
+      { id: "ex1", planId: "tp1", weekNumber: 1, dayName: "segunda", exerciseName: "Agachamento Explosivo", sets: 4, repsMin: 10, repsMax: 12, intensity: "intenso", notes: "Foco na explosão na subida — simular impulso de ataque" },
+      { id: "ex2", planId: "tp1", weekNumber: 1, dayName: "segunda", exerciseName: "Salto com Corda", sets: 3, durationMinutes: 2, intensity: "moderado", notes: "Manter ritmo constante, sem pausas" },
+      { id: "ex3", planId: "tp1", weekNumber: 1, dayName: "quarta", exerciseName: "Pré-Saque: Rotação de Ombro", sets: 3, repsMin: 15, repsMax: 15, intensity: "moderado", notes: "Aquecimento do manõ de ataque" },
+      { id: "ex4", planId: "tp1", weekNumber: 1, dayName: "quarta", exerciseName: "Abdominal Prancha", sets: 3, durationMinutes: 1, intensity: "intenso", notes: "Core ativo para estabilidade no salto" },
+      { id: "ex5", planId: "tp1", weekNumber: 2, dayName: "segunda", exerciseName: "Fundamento: Saque Viagem", sets: 5, repsMin: 10, repsMax: 10, intensity: "intenso", notes: "10 saques perfeitos por série — foco na trajetória" },
     ]
   },
   {
     id: "tp2",
+    coachId: "coach1",
     studentId: "s1",
     title: "Fundamentos Técnicos ⚡",
+    description: "Revisão de técnicas fundamentais",
+    startDate: "2026-04-15",
+    status: "active",
     createdAt: "2026-04-15",
+    updatedAt: "2026-04-15",
     exercises: [
-      { name: "Manchete Frontal", sets: "4", reps: "20", rest: "30s", notes: "Antebraços paralelos ao solo, contato no centro da bola" },
-      { name: "Levantamento de Dedos", sets: "3", reps: "20", rest: "30s", notes: "Dedos firmes, bola no alto — foco em precisão" },
-      { name: "Bloqueio com Passada", sets: "4", reps: "8", rest: "45s", notes: "Penúltimo passo explosivo, salto com braços estendidos" },
-      { name: "Posicionamento Tático", sets: "3", reps: "15min", rest: "60s", notes: "Rotação de posições 1 a 6 com visualização da linha" },
+      { id: "ex6", planId: "tp2", weekNumber: 1, dayName: "segunda", exerciseName: "Manchete Frontal", sets: 4, repsMin: 20, repsMax: 20, intensity: "moderado", notes: "Antebraços paralelos ao solo, contato no centro da bola" },
+      { id: "ex7", planId: "tp2", weekNumber: 1, dayName: "terça", exerciseName: "Levantamento de Dedos", sets: 3, repsMin: 20, repsMax: 20, intensity: "moderado", notes: "Dedos firmes, bola no alto — foco em precisão" },
+      { id: "ex8", planId: "tp2", weekNumber: 1, dayName: "quarta", exerciseName: "Bloqueio com Passada", sets: 4, repsMin: 8, repsMax: 8, intensity: "intenso", notes: "Penúltimo passo explosivo, salto com braços estendidos" },
+      { id: "ex9", planId: "tp2", weekNumber: 2, dayName: "quinta", exerciseName: "Posicionamento Tático", sets: 3, durationMinutes: 15, intensity: "moderado", notes: "Rotação de posições 1 a 6 com visualização da linha" },
     ]
   }
 ];

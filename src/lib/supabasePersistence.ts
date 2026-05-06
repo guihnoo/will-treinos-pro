@@ -7,6 +7,7 @@ import type {
   Notification,
   Payment,
   PaymentStatus,
+  PlanStatus,
   Post,
   Student,
   StudentStatus,
@@ -734,31 +735,49 @@ export async function createPublicLeadRemote(
 // ─── Training Plans ─────────────────────────────────────────────────────────
 
 function mapTrainingPlan(row: DbRow): TrainingPlan {
+  const desc = row.description ?? row.description;
+  const endDate = row.end_date ?? row.endDate;
   return {
     id: asString(row.id),
+    coachId: asString(row.coach_id ?? row.coachId, ""),
     studentId: asString(row.student_id ?? row.studentId),
     title: asString(row.title),
+    description: desc ? String(desc) : undefined,
+    startDate: asString(row.start_date ?? row.startDate, new Date().toISOString().split("T")[0]),
+    endDate: endDate ? String(endDate) : undefined,
+    status: (row.status ?? "active") as PlanStatus,
     exercises: Array.isArray(row.exercises) ? row.exercises : [],
     createdAt: asString(row.created_at ?? row.createdAt, new Date().toISOString()),
+    updatedAt: asString(row.updated_at ?? row.updatedAt, new Date().toISOString()),
   };
 }
 
 function serializeTrainingPlan(plan: TrainingPlan) {
   return {
     id: plan.id,
+    coach_id: plan.coachId,
     student_id: plan.studentId,
     title: plan.title,
+    description: plan.description ?? null,
+    start_date: plan.startDate,
+    end_date: plan.endDate ?? null,
+    status: plan.status,
     exercises: plan.exercises ?? [],
     created_at: plan.createdAt,
-    updated_at: new Date().toISOString(),
+    updated_at: plan.updatedAt,
   };
 }
 
 function serializeTrainingPlanPatch(patch: Partial<Omit<TrainingPlan, "id">>) {
   const payload: Record<string, unknown> = {};
-  if (patch.title !== undefined) payload.title = patch.title;
-  if (patch.exercises !== undefined) payload.exercises = patch.exercises;
+  if (patch.coachId !== undefined) payload.coach_id = patch.coachId;
   if (patch.studentId !== undefined) payload.student_id = patch.studentId;
+  if (patch.title !== undefined) payload.title = patch.title;
+  if (patch.description !== undefined) payload.description = patch.description;
+  if (patch.startDate !== undefined) payload.start_date = patch.startDate;
+  if (patch.endDate !== undefined) payload.end_date = patch.endDate;
+  if (patch.status !== undefined) payload.status = patch.status;
+  if (patch.exercises !== undefined) payload.exercises = patch.exercises;
   payload.updated_at = new Date().toISOString();
   return payload;
 }
