@@ -48,6 +48,7 @@ import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonRatingsSheet from "./LessonRatingsSheet";
 import LiveLessonCoachPanel from "./LiveLessonCoachPanel";
 import TrainingPlansPanel from "./TrainingPlansPanel";
+import XPModerationPanel from "./XPModerationPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -122,6 +123,7 @@ export default function WillCockpit() {
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [showLivePanel, setShowLivePanel] = useState(false);
   const [showTrainingPlans, setShowTrainingPlans] = useState(false);
+  const [showXPModeration, setShowXPModeration] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -174,6 +176,7 @@ export default function WillCockpit() {
     showCreateLesson ||
     showLivePanel ||
     showTrainingPlans ||
+    showXPModeration ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -765,6 +768,18 @@ export default function WillCockpit() {
           >
             <Dumbbell className="h-5 w-5 text-emerald-400" />
             Planos de Treino
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowXPModeration(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Revisar transações de XP bloqueadas"
+          >
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+            Moderar XP
           </button>
           </div>
         </AppSectionCard>
@@ -1810,6 +1825,14 @@ export default function WillCockpit() {
             onSelectPlan={(plan) => {
               setActionFeedback(`Plano de treino "${plan.title}" selecionado.`);
             }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showXPModeration ? (
+          <XPModerationPanel
+            onClose={() => setShowXPModeration(false)}
           />
         ) : null}
       </AnimatePresence>
