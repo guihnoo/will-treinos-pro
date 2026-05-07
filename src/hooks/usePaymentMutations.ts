@@ -11,6 +11,7 @@ import {
   submitStudentProofRemote,
   uploadPaymentProofToStorage,
 } from "@/lib/supabasePersistence";
+import { validateAndScanPaymentProof } from "@/lib/paymentProofValidator";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import { willUid } from "@/lib/willUid";
 
@@ -158,6 +159,11 @@ export function usePaymentMutations(options: {
           return submitStudentProofRemote(supabase, id, { note: payload.note, attachment: null });
         }
         if (payload.attachment?.file) {
+          // VALIDAÇÃO: Checar arquivo antes de fazer upload
+          const validation = await validateAndScanPaymentProof(payload.attachment.file);
+          if (!validation.valid) {
+            throw new Error(validation.message);
+          }
           const storagePath = await uploadPaymentProofToStorage(supabase, currentAuthId, payload.attachment.file);
           return submitStudentProofRemote(supabase, id, {
             note: payload.note,
@@ -182,7 +188,7 @@ export function usePaymentMutations(options: {
       };
       void submitRemote()
         .then((updated) => setPayments((p) => p.map((pay) => (pay.id === id ? updated : pay))))
-        .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar comprovante no Supabase."));
+        .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar comprovante: " + (error instanceof Error ? error.message : "erro desconhecido")));
     },
     [usingSupabaseSession, supabaseAuthUserRef, setPayments, setCriticalDataError],
   );
