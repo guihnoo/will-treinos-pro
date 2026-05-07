@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
@@ -8,9 +8,11 @@ import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { Turnstile } from "react-turnstile";
 import { cadastroInviteRequired, getStoredInviteToken } from "@/lib/enrollmentSession";
 import { verifyEnrollmentInviteWithServer } from "@/lib/verifyEnrollmentInvite";
 import { useEnrollmentInviteGate } from "@/hooks/useEnrollmentInviteGate";
+import { useTurnstile } from "@/hooks/useTurnstile";
 import { EnrollmentInviteBlocked } from "@/components/enrollment/EnrollmentInviteBlocked";
 
 export default function SignupPage() {
@@ -18,7 +20,10 @@ export default function SignupPage() {
   const { user, authResolved } = useAuth();
   const { addStudent } = useApp();
   const inviteGate = useEnrollmentInviteGate();
+  const turnstile = useTurnstile();
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
 
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: user?.name || "",
     phone: "",
@@ -66,6 +71,21 @@ export default function SignupPage() {
       }
       if (!formData.phone.trim()) {
         throw new Error("Telefone é obrigatório");
+      }
+
+      // CAPTCHA validation (Turnstile)
+      const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+      if (siteKey && !turnstileToken) {
+        setLoading(false);
+        throw new Error("Por favor, complete o CAPTCHA antes de enviar");
+      }
+
+      if (siteKey && turnstileToken) {
+        const verified = await turnstile.verify(turnstileToken);
+        if (!verified) {
+          setLoading(false);
+          throw new Error(turnstile.error || "Falha ao verificar CAPTCHA");
+        }
       }
 
       if (cadastroInviteRequired() && hasSupabaseEnv()) {
@@ -214,6 +234,32 @@ export default function SignupPage() {
           {/* Error */}
           {error && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">{error}</div>
+          )}
+
+          {/* Turnstile CAPTCHA (se configurado) */}
+          {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+            <div ref={turnstileContainerRef} className="flex justify-center">
+              <Turnstile
+                userRef={turnstileContainerRef}
+                sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                }}
+                onError={() => {
+                  setTurnstileToken(null);
+                  turnstile.reset();
+                }}
+                theme="dark"
+                size="normal"
+              />
+            </div>
+          )}
+
+          {/* Turnstile error */}
+          {turnstile.error && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">
+              {turnstile.error}
+            </div>
           )}
 
           <div className="flex-1" />

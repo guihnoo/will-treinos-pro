@@ -44,6 +44,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.5(react@19.2.5)
+      react-turnstile:
+        specifier: ^1.1.5
+        version: 1.1.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       web-push:
         specifier: ^3.6.7
         version: 3.6.7
@@ -2700,6 +2703,12 @@ packages:
     resolution: {integrity: sha512-J5bAZz+DXMMwW/wV3xzKke59Af6CHY7G4uYLN1OvBcKEsWOs4pQExj86BBKamxl/Ik5bx9whOrvBlSDfWzgSag==}
     peerDependencies:
       react: ^19.2.5
+
+  react-turnstile@1.1.5:
+    resolution: {integrity: sha512-VTL5OeHAatzCEVQxAZox70/TPmhKxEbNgtr++dg+8zm9QrWKuoU9E0+7gqmycOSCDZuJFzvMMLKQb5PVUPLV6w==}
+    peerDependencies:
+      react: '>= 16.13.1'
+      react-dom: '>= 16.13.1'
 
   react@19.2.5:
     resolution: {integrity: sha512-llUJLzz1zTUBrskt2pwZgLq59AemifIftw4aB7JxOqf1HY2FDaGDxgwpAPVzHU1kdWabH7FauP4i1oEeer2WCA==}
@@ -6056,6 +6065,11 @@ snapshots:
     dependencies:
       react: 19.2.5
       scheduler: 0.27.0
+
+  react-turnstile@1.1.5(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
+    dependencies:
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
 
   react@19.2.5: {}
 
