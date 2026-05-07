@@ -1276,6 +1276,32 @@ export default function StudentHome() {
           </motion.div>
         );})}
       </div>
+
+      {/* Ranking Button */}
+      <motion.button
+        variants={homeItem}
+        whileTap={{ scale: 0.95 }}
+        whileHover={{ y: -2, boxShadow: "0 0 0 1px rgba(234,179,8,0.2), 0 12px 44px rgba(0,0,0,0.5)" }}
+        onClick={() => {
+          haptic([22, 16, 22]);
+          setShowLeaderboard(true);
+        }}
+        className="mb-1 w-full rounded-2xl p-4 relative overflow-hidden cursor-pointer border border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all flex items-center justify-between"
+      >
+        <motion.div
+          aria-hidden
+          animate={{ opacity: [0.1, 0.25, 0.1] }}
+          transition={{ duration: 2.8, repeat: Infinity }}
+          className="absolute inset-0"
+          style={{ background: "radial-gradient(circle at 80% 0%, rgba(234,179,8,0.4), transparent 56%)" }}
+        />
+        <div className="relative z-10">
+          <p className="text-sm font-black uppercase tracking-[0.16em] text-yellow-400 mb-0.5">Ranking</p>
+          <p className="text-xs text-zinc-400">Veja sua posição entre atletas</p>
+        </div>
+        <Medal className="w-6 h-6 text-yellow-400 relative z-10" />
+      </motion.button>
+
       <motion.div variants={homeItem} className="mb-1 rounded-xl border border-zinc-800 bg-zinc-950/50 px-3 py-2">
         <p className="text-[10px] text-zinc-500">
           Métricas técnicas e conquistas usam prioridade de dados do <span className="text-[#EAB308] font-bold">prof/admin</span>; autoavaliação do aluno entra como referência complementar.
