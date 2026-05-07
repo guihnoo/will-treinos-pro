@@ -6,7 +6,7 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 import { updateLessonRemote } from "@/lib/supabasePersistence";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import { sendPushToRole, sendPushToUser } from "@/lib/pushRoleBroadcast";
-import { logXpEvent } from "@/lib/xpLogger";
+import { logCheckInXP } from "@/lib/xpIntegration";
 
 export function useCheckInActions(options: {
   usingSupabaseSession: boolean;
@@ -153,14 +153,8 @@ export function useCheckInActions(options: {
         });
       }
 
-      // Log XP event
-      void logXpEvent(supabase, {
-        studentId,
-        points: 50,
-        type: "checkin",
-        description: `Check-in aprovado`,
-        relatedId: lessonId,
-      });
+      // Log XP event via new anti-cheat pipeline (fire-and-forget)
+      void logCheckInXP(studentId, lessonId, approvedBy);
     },
     [usingSupabaseSession, students, setLessons, setCriticalDataError, addNotification],
   );

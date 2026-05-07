@@ -13,7 +13,7 @@ import {
   updateFeedPostModerationRemote,
 } from "@/lib/supabasePersistence";
 import { willUid } from "@/lib/willUid";
-import { logXpEvent } from "@/lib/xpLogger";
+import { logPostLikeXP, logPostCommentXP } from "@/lib/xpIntegration";
 
 export function useFeedMutations(options: {
   usingSupabaseSession: boolean;
@@ -87,13 +87,7 @@ export function useFeedMutations(options: {
         .then(() => {
           // Log XP only if we're adding a new like (not removing)
           if (!wasLiked) {
-            void logXpEvent(supabase, {
-              studentId: currentUserId,
-              points: 5,
-              type: "feed_like",
-              description: "Curtiu um post no feed",
-              relatedId: id,
-            });
+            void logPostLikeXP(currentUserId, id);
           }
           return fetchFeedPostsRemote(supabase, currentUserId);
         })
@@ -123,14 +117,8 @@ export function useFeedMutations(options: {
       }
       void addFeedCommentRemote(supabase, { postId: id, userId: currentUserId, userName, userAvatar: avatar, text })
         .then(() => {
-          // Log XP for commenting
-          void logXpEvent(supabase, {
-            studentId: currentUserId,
-            points: 10,
-            type: "feed_comment",
-            description: "Comentou em um post no feed",
-            relatedId: id,
-          });
+          // Log XP for commenting (fire-and-forget via anti-cheat pipeline)
+          void logPostCommentXP(currentUserId, id, text);
           return fetchFeedPostsRemote(supabase, currentUserId);
         })
         .then((livePosts) => setPosts(livePosts))

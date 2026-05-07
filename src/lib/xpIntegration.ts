@@ -79,7 +79,7 @@ export async function logPostCommentXP(
     type: "social_comment",
     sourceEntity: "post",
     relatedId: postId,
-    description: `Comentou: "${commentPreview?.substring(0, 50) || "...}"`,
+    description: `Comentou: "${commentPreview?.substring(0, 50) ?? "..."}"`,
   });
 }
 

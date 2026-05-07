@@ -21,6 +21,7 @@ import WeatherWidget from "@/components/WeatherWidget";
 import Link from "next/link";
 import LessonRatingSheet from "@/components/LessonRatingSheet";
 import Confetti from "@/components/Confetti";
+import { LeaderboardPanel } from "@/components/LeaderboardPanel";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
@@ -466,6 +467,7 @@ export default function StudentHome() {
   const [kpiCount, setKpiCount] = useState({ aulas: 0, streak: 0, nota: 0, freq: 0 });
   const [showDailyQuote, setShowDailyQuote] = useState(false);
   const [showXpModal, setShowXpModal] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
@@ -477,7 +479,8 @@ export default function StudentHome() {
       showAgendaPanel ||
       ratingLesson ||
       showDailyQuote ||
-      showXpModal,
+      showXpModal ||
+      showLeaderboard,
   );
   useBodyScrollLock(hasOverlayOpen);
   useEffect(() => {
@@ -2660,6 +2663,12 @@ export default function StudentHome() {
           );
         })()}
       </AnimatePresence>
+
+      <LeaderboardPanel
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        timeframe="all"
+      />
     </motion.div>
     </>
   );

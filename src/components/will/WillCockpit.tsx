@@ -8,6 +8,7 @@ import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowUpRight,
+  BarChart3,
   CalendarPlus,
   CalendarDays,
   CheckCircle2,
@@ -49,6 +50,7 @@ import LessonRatingsSheet from "./LessonRatingsSheet";
 import LiveLessonCoachPanel from "./LiveLessonCoachPanel";
 import TrainingPlansPanel from "./TrainingPlansPanel";
 import XPModerationPanel from "./XPModerationPanel";
+import { XPAnalyticsPanel } from "@/components/will/XPAnalyticsPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -124,6 +126,7 @@ export default function WillCockpit() {
   const [showLivePanel, setShowLivePanel] = useState(false);
   const [showTrainingPlans, setShowTrainingPlans] = useState(false);
   const [showXPModeration, setShowXPModeration] = useState(false);
+  const [showXPAnalytics, setShowXPAnalytics] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -177,6 +180,7 @@ export default function WillCockpit() {
     showLivePanel ||
     showTrainingPlans ||
     showXPModeration ||
+    showXPAnalytics ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -780,6 +784,18 @@ export default function WillCockpit() {
           >
             <AlertTriangle className="h-5 w-5 text-red-400" />
             Moderar XP
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowXPAnalytics(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver análise de XP distribuído"
+          >
+            <BarChart3 className="h-5 w-5 text-amber-400" />
+            Análise de XP
           </button>
           </div>
         </AppSectionCard>
@@ -1833,6 +1849,15 @@ export default function WillCockpit() {
         {showXPModeration ? (
           <XPModerationPanel
             onClose={() => setShowXPModeration(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showXPAnalytics ? (
+          <XPAnalyticsPanel
+            isOpen={showXPAnalytics}
+            onClose={() => setShowXPAnalytics(false)}
           />
         ) : null}
       </AnimatePresence>

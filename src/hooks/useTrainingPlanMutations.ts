@@ -2,6 +2,8 @@
 
 import { useCallback } from "react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { logXpEvent } from "@/lib/xpLogger";
+import { logTrainingCompletionXP } from "@/lib/xpIntegration";
 import type { TrainingPlan, TrainingExercise, WithoutId } from "@/context/types";
 
 export function useTrainingPlanMutations() {
@@ -70,6 +72,22 @@ export function useTrainingPlanMutations() {
       return true;
     },
     [],
+  );
+
+  const markPlanComplete = useCallback(
+    async (
+      planId: string,
+      studentId: string,
+      planTitle?: string,
+      createdBy?: string,
+    ): Promise<boolean> => {
+      const success = await updatePlan(planId, { status: "completed" });
+      if (success) {
+        void logTrainingCompletionXP(studentId, planId, planTitle, createdBy);
+      }
+      return success;
+    },
+    [updatePlan],
   );
 
   const deletePlan = useCallback(async (planId: string): Promise<boolean> => {
@@ -187,6 +205,7 @@ export function useTrainingPlanMutations() {
   return {
     createPlan,
     updatePlan,
+    markPlanComplete,
     deletePlan,
     addExercise,
     markExerciseComplete,
