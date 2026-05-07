@@ -18,6 +18,7 @@ import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersiste
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
 import WeatherWidget from "@/components/WeatherWidget";
+import { StudentGamificationDashboard } from "@/components/StudentGamificationDashboard";
 import Link from "next/link";
 import LessonRatingSheet from "@/components/LessonRatingSheet";
 import Confetti from "@/components/Confetti";
@@ -468,6 +469,7 @@ export default function StudentHome() {
   const [showDailyQuote, setShowDailyQuote] = useState(false);
   const [showXpModal, setShowXpModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
@@ -480,7 +482,8 @@ export default function StudentHome() {
       ratingLesson ||
       showDailyQuote ||
       showXpModal ||
-      showLeaderboard,
+      showLeaderboard ||
+      showGamificationDashboard,
   );
   useBodyScrollLock(hasOverlayOpen);
   useEffect(() => {
@@ -1659,11 +1662,11 @@ export default function StudentHome() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => { haptic([16, 12, 24]); setShowXpModal(true); }}
+                onClick={() => { haptic([16, 12, 24]); setShowGamificationDashboard(true); }}
                 className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${ctaClass}`}
                 style={{ color: equippedTier.color, borderColor: `${equippedTier.color}40`, background: `${equippedTier.color}12` }}
               >
-                Ver XP
+                Meu Progresso 🎯
               </button>
               <div className="text-right">
                 <p className="text-[10px] text-zinc-500">Meta competitiva</p>
@@ -2694,6 +2697,11 @@ export default function StudentHome() {
         isOpen={showLeaderboard}
         onClose={() => setShowLeaderboard(false)}
         timeframe="all"
+      />
+
+      <StudentGamificationDashboard
+        isOpen={showGamificationDashboard}
+        onClose={() => setShowGamificationDashboard(false)}
       />
     </motion.div>
     </>

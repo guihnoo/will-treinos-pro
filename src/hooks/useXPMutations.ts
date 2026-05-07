@@ -217,11 +217,129 @@ export function useXPMutations() {
     []
   );
 
+  // Get XP breakdown by volleyball fundamental
+  const getXPByFundamental = useCallback(
+    async (studentId: string): Promise<Record<VolleyballFundamental, number> | null> => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return null;
+
+      const { data, error } = await supabase
+        .from("xp_log")
+        .select("multiplier_type, points")
+        .eq("student_id", studentId)
+        .eq("validation_passed", true);
+
+      if (error) {
+        console.error("[useXPMutations] getXPByFundamental error:", error);
+        return null;
+      }
+
+      const breakdown: Record<VolleyballFundamental, number> = {
+        ataque: 0,
+        levantamento: 0,
+        bloqueio: 0,
+        saque: 0,
+        defesa: 0,
+        recepcao: 0,
+        posicionamento: 0,
+      };
+
+      data?.forEach((row) => {
+        const fundamental = (row.multiplier_type || "posicionamento") as VolleyballFundamental;
+        if (fundamental in breakdown) {
+          breakdown[fundamental] += row.points || 0;
+        }
+      });
+
+      return breakdown;
+    },
+    []
+  );
+
+  // Get XP velocity (earned in last N days)
+  const getXPVelocity = useCallback(
+    async (studentId: string, days: number = 7): Promise<number | null> => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return null;
+
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+
+      const { data, error } = await supabase
+        .from("xp_log")
+        .select("points")
+        .eq("student_id", studentId)
+        .eq("validation_passed", true)
+        .gte("created_at", since.toISOString());
+
+      if (error) {
+        console.error("[useXPMutations] getXPVelocity error:", error);
+        return null;
+      }
+
+      return data?.reduce((sum, row) => sum + (row.points || 0), 0) || 0;
+    },
+    []
+  );
+
+  // Get comprehensive tier progress data (for gamification dashboard)
+  const getTierProgressData = useCallback(
+    async (studentId: string) => {
+      const supabase = getSupabaseClient();
+      if (!supabase) return null;
+
+      const totalXP = await getStudentTotalXP(studentId);
+      const achievements = await getStudentAchievements(studentId);
+
+      if (totalXP === null) return null;
+
+      // Determine current tier
+      let currentTier: CardTier | null = null;
+      for (const tier of ["elite", "diamante", "ouro", "prata", "bronze"] as CardTier[]) {
+        if (totalXP >= CARD_TIER_THRESHOLDS[tier]) {
+          currentTier = tier;
+          break;
+        }
+      }
+
+      // Find next tier and XP needed
+      let nextTier: CardTier | null = null;
+      let xpToNextTier = 0;
+      const tiers: CardTier[] = ["bronze", "prata", "ouro", "diamante", "elite"];
+      const currentTierIndex = currentTier ? tiers.indexOf(currentTier) : -1;
+
+      if (currentTierIndex < tiers.length - 1) {
+        nextTier = tiers[currentTierIndex + 1];
+        xpToNextTier = Math.max(0, CARD_TIER_THRESHOLDS[nextTier] - totalXP);
+      }
+
+      // Get unlock dates
+      const unlockDates: Record<string, string> = {};
+      achievements?.forEach((ach) => {
+        unlockDates[ach.tier_id] = ach.unlocked_at;
+      });
+
+      return {
+        totalXP,
+        currentTier,
+        nextTier,
+        xpToNextTier,
+        achievements: achievements || [],
+        unlockedTiers: achievements?.map((a) => a.tier_id) || [],
+        unlockDates,
+      };
+    },
+    [getStudentTotalXP, getStudentAchievements]
+  );
+
   return {
     logXP,
     getStudentTotalXP,
     getXPHistory,
     checkAchievementUnlock,
     getStudentAchievements,
+    getXPByFundamental,
+    getXPVelocity,
+    getTierProgressData,
   };
 }
