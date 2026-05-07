@@ -40,3 +40,12 @@ if (SENTRY_DSN) {
     },
   });
 }
+
+// Required Next.js 15 App Router instrumentation hooks
+// These are called automatically by the framework — do NOT rename them.
+
+/** Tracks client-side navigation for performance monitoring */
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+
+/** Captures server-side request errors (API routes, Server Actions) */
+export const onRequestError = Sentry.captureRequestError;
