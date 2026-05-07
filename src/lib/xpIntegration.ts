@@ -98,7 +98,7 @@ export async function logTrainingCompletionXP(
     type: "training_completed",
     sourceEntity: "training_plan",
     relatedId: trainingPlanId,
-    description: `Completou treino: ${planTitle || "Sem título"}`,
+    description: `Completou treino: ${planTitle || "Sem titulo"}`,
     createdBy,
   });
 }
@@ -118,11 +118,11 @@ export const XP_VALUES = {
  */
 export const XP_MESSAGES = {
   checkin: (amount: number = XP_VALUES.checkin) =>
-    `✅ Check-in aprovado! +${amount} XP`,
+    `[OK] Check-in aprovado! +${amount} XP`,
   socialLike: (amount: number = XP_VALUES.socialLike) =>
-    `❤️ Curtida! +${amount} XP`,
+    `[LIKE] Curtida! +${amount} XP`,
   socialComment: (amount: number = XP_VALUES.socialComment) =>
-    `💬 Comentário! +${amount} XP`,
+    ` Comentario! +${amount} XP`,
   trainingCompleted: (planTitle: string, amount: number = XP_VALUES.trainingCompleted) =>
-    `🏆 Treino "${planTitle}" completo! +${amount} XP`,
+    ` Treino "${planTitle}" completo! +${amount} XP`,
 };
