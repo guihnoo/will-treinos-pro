@@ -508,12 +508,49 @@ O Claude Code detecta automaticamente quando você pede algo relacionado a:
 
 ---
 
+---
+
+## 16. LOG DE ATUALIZAÇÕES — SESSÃO 08/05/2026
+
+### ✅ PHASE 7 — TRAINING SYSTEM CRUD
+**Status:** COMPLETO | **Commit:** 36925e4
+
+#### O que foi implementado:
+1. **Migration `20260507000000_training_complete_crud.sql`**
+   - Tables: `training_sessions`, `training_exercises`, `training_logs`
+   - RLS policies: alunos veem só seus treinos; coaches veem todos
+   - Indexes: `(student_id, session_date)`, `(exercise_id)`, `(completed_at)`
+   - Status: `pending|in_progress|completed|skipped`
+
+2. **useTrainingContext Hook**
+   - CRUD completo: `createSession`, `addExercise`, `logExercise`, `startSession`, `completeSession`
+   - Estado global: `sessions`, `logs`, `loading`, `error`
+   - Supabase Realtime ready (subscriptions futuras)
+
+3. **Integração com AppContext**
+   - TrainingProvider encadeado no layout.tsx (logo após CheckInProvider)
+   - Acessível via `useTraining()` em qualquer client component
+
+4. **Dependências**
+   - Instalado: `uuid` (v14.0.0) para geração de IDs
+
+#### Build Status:
+✅ Verde (exit 0) | Tempo: ~2.6min | Bundle: 185 kB shared
+
+#### Security:
+- RLS policies protegem acesso a dados sensíveis (XP, histórico)
+- Alunos NÃO podem ver treinos de outros
+- Coaches têm visibilidade total (necessário para coaching)
+
+#### Próximo Passo:
+Integrar `useTraining()` com a página existente `/(student)/treinos/page.tsx` para persistência em Supabase (atualmente usa localStorage).
+
+---
+
 ### 📋 CHECKLIST DE PRÓXIMA SESSÃO
 
-Quando voltarmos:
-- [ ] Rodar `pnpm run build` e verificar WeeklyCalendarGrid.tsx fix
-- [ ] Testar Phase 5 (Live Lesson) com Playwright
-- [ ] Dar start em Phase 6 (Real-Time Coach Cockpit)
-- [ ] Executar suite de testes E2E
-- [ ] Deploy em staging (Vercel)
-- [ ] Validar PWA no mobile (iOS + Android)
+- [ ] **Phase 8:** Gamification - XP Log auditável (tabela `xp_log`, multiplicadores por fundamento)
+- [ ] **Phase 9:** Integração TrainingContext com UI existente em treinos/page.tsx
+- [ ] **Testing:** Testar fluxo completo training_sessions → student marques como completo → logs persistem
+- [ ] **Deploy:** Staging em Vercel
+- [ ] **Mobile:** Validar PWA em iOS/Android
