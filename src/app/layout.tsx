@@ -14,6 +14,7 @@ import { FeedProvider } from "@/context/FeedContext";
 import { CheckInProvider } from "@/context/CheckInContext";
 import { LessonRatingsProvider } from "@/context/LessonRatingsContext";
 import { TrainingProvider } from "@/context/TrainingContext";
+import { GamificationProvider } from "@/context/GamificationContext";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ToastProvider } from "@/components/Toast";
 
@@ -56,11 +57,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                               <FeedProvider>
                                 <CheckInProvider>
                                   <TrainingProvider>
-                                    <LessonRatingsProvider>
-                                      <ToastProvider>
-                                        <AuthWrapper>{children}</AuthWrapper>
-                                      </ToastProvider>
-                                    </LessonRatingsProvider>
+                                    <GamificationProvider>
+                                      <LessonRatingsProvider>
+                                        <ToastProvider>
+                                          <AuthWrapper>{children}</AuthWrapper>
+                                        </ToastProvider>
+                                      </LessonRatingsProvider>
+                                    </GamificationProvider>
                                   </TrainingProvider>
                                 </CheckInProvider>
                               </FeedProvider>
