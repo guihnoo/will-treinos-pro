@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Videos/Gravações de Tela"
+		},
+		{
+			"path": "../../OneDrive/Documentos/will-treinos-pro-cockpit"
+		},
+		{
+			"path": "logos e imagens"
+		},
+		{
+			"path": "design"
+		}
+	],
+	"settings": {
+		"claudeCode.useTerminal": true
+	},
+	"extensions": {
+		"recommendations": [
+			"es6kr.claude-sessions"
+		]
+	}
+}
