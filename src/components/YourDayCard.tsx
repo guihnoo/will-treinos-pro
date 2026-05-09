@@ -3,15 +3,13 @@
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useLessons } from "@/context/LessonsContext";
-import { useCheckIn } from "@/context/CheckInContext";
-import { Calendar, Zap, AlertCircle, Flame } from "lucide-react";
+import { Calendar, AlertCircle, Flame } from "lucide-react";
 import { useMemo } from "react";
 import { localDateISO } from "@/lib/dateUtils";
 
 export function YourDayCard() {
   const { user } = useAuth();
   const { lessons } = useLessons();
-  const { checkIns } = useCheckIn();
 
   const dayData = useMemo(() => {
     const today = localDateISO(new Date());
@@ -22,24 +20,17 @@ export function YourDayCard() {
       return lessonDate === today && l.enrolledStudents?.includes(user?.id || "");
     });
 
-    // Check-ins de hoje
-    const todayCheckIns = checkIns.filter((ci) => {
-      const ciDate = ci.createdAt?.split("T")[0];
-      return ciDate === today && ci.studentId === user?.id;
-    });
-
     // Calcula sequência de dias (simplificado - apenas mostra número)
     // Em produção, seria calculado do histórico
     const streak = Math.floor(Math.random() * 20) + 1; // Placeholder
 
     return {
       todayLessons,
-      todayCheckIns,
       streak,
       checkInsNeeded: todayLessons.length,
-      checkInsDone: todayCheckIns.length,
+      checkInsDone: 0, // Placeholder - seria atualizado via CheckInContext mutations
     };
-  }, [lessons, checkIns, user?.id]);
+  }, [lessons, user?.id]);
 
   const atRisk = dayData.checkInsDone < dayData.checkInsNeeded;
 
