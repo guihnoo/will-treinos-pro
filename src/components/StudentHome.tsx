@@ -20,6 +20,7 @@ import { useToast } from "@/components/Toast";
 import WeatherWidget from "@/components/WeatherWidget";
 import { StudentGamificationDashboard } from "@/components/StudentGamificationDashboard";
 import { GamificationPanel } from "@/components/gamification/GamificationPanel";
+import { LeaderboardRankingPanel } from "@/components/leaderboard/LeaderboardRankingPanel";
 import Link from "next/link";
 import LessonRatingSheet from "@/components/LessonRatingSheet";
 import Confetti from "@/components/Confetti";
@@ -2697,6 +2698,11 @@ export default function StudentHome() {
       {/* Gamification Panel — XP, Awards, History */}
       <motion.div variants={homeItem} className="mb-2">
         <GamificationPanel />
+      </motion.div>
+
+      {/* Leaderboard Panel — Real-time Ranking */}
+      <motion.div variants={homeItem} className="mb-2">
+        <LeaderboardRankingPanel compact={true} />
       </motion.div>
 
       <LeaderboardPanel

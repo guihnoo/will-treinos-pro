@@ -146,6 +146,36 @@ export function GamificationProvider({
     refreshXPData();
   }, [user?.id, refreshXPData]);
 
+  // Real-time subscription to xp_log changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    try {
+      const channel = supabase
+        .channel(`xp_log_${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "xp_log",
+            filter: `student_id=eq.${user.id}`,
+          },
+          () => {
+            // Refresh XP data when new entry is logged
+            refreshXPData();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (err) {
+      console.error("[GamificationContext] Realtime subscription failed:", err);
+    }
+  }, [user?.id, supabase, refreshXPData]);
+
   const logXP = useCallback(
     async (
       source: XPLog["source"],
