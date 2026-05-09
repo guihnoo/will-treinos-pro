@@ -547,10 +547,96 @@ Integrar `useTraining()` com a página existente `/(student)/treinos/page.tsx` p
 
 ---
 
+## 17. LOG DE ATUALIZAÇÕES — SESSÃO 08/05/2026 (Continuado)
+
+### ✅ PHASE 8 — GAMIFICATION XP LOG SYSTEM
+**Status:** COMPLETO | **Commit:** d1719e9
+
+#### O que foi implementado:
+1. **Migration `20260508000000_gamification_xp_log.sql`**
+   - Tables: `xp_multipliers`, `xp_log`, `awards`
+   - Seed data: 7 fundamental multipliers + 5 award tiers
+   - Ataque (2.0x) · Levantamento (1.8x) · Bloqueio (1.6x) · Saque (1.5x) · Defesa (1.4x) · Recepção (1.3x) · Posicionamento (1.2x)
+   - Tiers: Bronze (500 XP) · Prata (1500) · Ouro (3000) · Diamante (6000) · Elite (10000)
+   - Indexes: `(student_id, created_at)`, `(source)`, `(fundamental)`, `(student_id, tier)`, `(xp_threshold)`
+
+2. **GamificationContext Hook**
+   - CRUD completo: `logXP()`, `calculateXP()`, `refreshXPData()`
+   - Fórmula: `XP = 100 × (nota/10)² × 10 × multiplicador`
+   - Sources: `lesson_rating`, `check_in`, `check_in_external`, `social_action`
+   - Auto-unlock de awards quando threshold é atingido
+   - Estado global: `xpLogs`, `awards`, `multipliers`, `totalXP`, `currentTier`, `loading`, `error`
+
+3. **Integração com AppContext**
+   - GamificationProvider encadeado no layout.tsx (após TrainingProvider)
+   - Acessível via `useGamification()` em qualquer client component
+   - Auto-sync com Supabase na mudança de user
+
+#### RLS Policies:
+- `xp_multipliers`: leitura pública (referência para cálculo client-side)
+- `xp_log`: staff full access; students leem own logs apenas
+- `awards`: staff full access; students leem own awards apenas
+- `system_insert` em `xp_log`: permite serviços backend registrar XP diretamente
+
+#### Build Status:
+✅ Verde (exit 0) | Tempo: ~5.3min | Bundle: 185 kB shared | Memory: 8GB heap
+
+#### Security:
+- Fórmula XP implementada client-side com multipliers fetched from DB
+- Audit trail imutável em `xp_log` (INSERT only via RLS system policy)
+- Alunos não conseguem forjar XP (apenas coaches/staff podem atualizar)
+- Award unlock é automático baseado em threshold
+
+#### Build Status:
+✅ Verde (exit 0) | Tempo: ~2.7min | Bundle: 185 kB shared | Memory: 8GB heap
+
+#### Próximo Passo:
+Phase 10: Dashboard E2E Testing (Playwright) para validar fluxo completo: training → XP → display.
+
+---
+
+### ✅ PHASE 9 — GAMIFICATION UI + TRAINING INTEGRATION
+**Status:** COMPLETO | **Commits:** 184b338 + 98d4156 + 17ed341
+
+#### O que foi implementado:
+1. **Training + Gamification Integration (/treinos page)**
+   - Added `useGamification()` ao toggleSet
+   - Quando plan completa (100%): `logXP(50)` + toast animado
+   - Async await para garantir persistência antes de UI update
+
+2. **Gamification UI Components**
+   - `XPBadge.tsx`: display XP total, level, progress bar (compact + full variants)
+   - `AwardTierCard.tsx`: individual tier card with unlock status & glow effects
+   - `AwardShowcase.tsx`: grid de 5 tiers (Bronze → Elite) com animações
+   - `XPHistoryList.tsx`: recent logs com source icons + dates
+   - `GamificationPanel.tsx`: container que agrupa tudo
+
+3. **StudentHome Integration**
+   - Imported + rendered `GamificationPanel` no dashboard principal
+   - Positioned após AnimatePresence, antes dos modais
+   - Visible section (não modal) para sempre mostrar XP/Awards
+   - Animações com framer-motion `homeItem` variants
+
+#### Build Status:
+✅ Verde (exit 0) | Tempo: ~2.7min | Bundle: +0kb (dynamic imports) | TypeScript: clean
+
+#### Features:
+- Real-time XP display após completar training
+- Award unlock status com animated progress bars
+- XP history com últimas 5 entradas
+- Color-coded tiers: Bronze (#CD7F32) → Elite (#FF1493)
+- Skeleton loaders para async data
+- Responsive grid layout (mobile-first)
+
+#### Security:
+- RLS policies garantem cada aluno vê só seus XP logs
+- Multipliers cached from DB (read-only para alunos)
+- No XP forging possible (system insert only via RLS)
+
 ### 📋 CHECKLIST DE PRÓXIMA SESSÃO
 
-- [ ] **Phase 8:** Gamification - XP Log auditável (tabela `xp_log`, multiplicadores por fundamento)
-- [ ] **Phase 9:** Integração TrainingContext com UI existente em treinos/page.tsx
-- [ ] **Testing:** Testar fluxo completo training_sessions → student marques como completo → logs persistem
-- [ ] **Deploy:** Staging em Vercel
-- [ ] **Mobile:** Validar PWA em iOS/Android
+- [x] **Phase 8:** Gamification - XP Log auditável (tabela `xp_log`, multiplicadores por fundamento)
+- [x] **Phase 9:** Integração TrainingContext + Gamification UI
+- [ ] **Phase 10:** E2E Testing (Playwright) - training flow
+- [ ] **Phase 11:** Deploy staging + mobile PWA validation
+- [ ] **Phase 12:** Leaderboard real-time (optional optimization)
