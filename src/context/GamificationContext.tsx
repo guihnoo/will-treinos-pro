@@ -10,6 +10,7 @@ import {
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useAuth } from "./AuthContext";
 import { v4 as uuid } from "uuid";
+import type { XPFloatEvent } from "@/components/XPFloatNotification";
 
 export interface XPLog {
   id: string;
@@ -48,6 +49,7 @@ interface GamificationContextType {
   currentTier: Award | null;
   loading: boolean;
   error: string | null;
+  xpFloatEvents: XPFloatEvent[];
 
   // XP calculation formula: XP = 100 × (nota/10)² × 10 × multiplicador
   calculateXP: (nota: number, fundamental?: string) => number;
@@ -60,6 +62,8 @@ interface GamificationContextType {
     note?: string
   ) => Promise<XPLog | null>;
   refreshXPData: () => Promise<void>;
+  triggerXPFloat: (amount: number, x?: number, y?: number) => void;
+  removeXPFloat: (id: string) => void;
 }
 
 const GamificationContext = createContext<GamificationContextType | undefined>(
@@ -77,6 +81,7 @@ export function GamificationProvider({
   const [multipliers, setMultipliers] = useState<XPMultiplier[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [xpFloatEvents, setXpFloatEvents] = useState<XPFloatEvent[]>([]);
 
   const supabase = getSupabaseClient();
 
@@ -176,6 +181,22 @@ export function GamificationProvider({
     }
   }, [user?.id, supabase, refreshXPData]);
 
+  const triggerXPFloat = useCallback((amount: number, x?: number, y?: number) => {
+    const floatId = uuid();
+    const newEvent: XPFloatEvent = {
+      id: floatId,
+      amount,
+      timestamp: Date.now(),
+      x,
+      y,
+    };
+    setXpFloatEvents((prev) => [...prev, newEvent]);
+  }, []);
+
+  const removeXPFloat = useCallback((id: string) => {
+    setXpFloatEvents((prev) => prev.filter((e) => e.id !== id));
+  }, []);
+
   const logXP = useCallback(
     async (
       source: XPLog["source"],
@@ -211,6 +232,9 @@ export function GamificationProvider({
 
         setXpLogs((prev) => [data, ...prev]);
 
+        // Trigger XP float animation
+        triggerXPFloat(totalXP);
+
         // Check if any award should be unlocked
         const newTotal = totalXP + totalXP;
         const newUnlockedAwards = awards.filter(
@@ -234,7 +258,7 @@ export function GamificationProvider({
         return null;
       }
     },
-    [user?.id, supabase, awards, refreshXPData]
+    [user?.id, supabase, awards, refreshXPData, triggerXPFloat]
   );
 
   return (
@@ -247,9 +271,12 @@ export function GamificationProvider({
         currentTier,
         loading,
         error,
+        xpFloatEvents,
         calculateXP,
         logXP,
         refreshXPData,
+        triggerXPFloat,
+        removeXPFloat,
       }}
     >
       {children}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { motion } from "framer-motion";
+import { ApprovalQueueIndicator } from "@/components/ApprovalQueueIndicator";
 
 export const dynamic = "force-dynamic";
 
@@ -62,8 +63,13 @@ export default function AguardandoPage() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md text-center"
+        className="w-full max-w-md"
       >
+        {/* Queue Indicator */}
+        <ApprovalQueueIndicator />
+
+        {/* Main Content */}
+        <div className="text-center">
         {/* Loading animation */}
         <div className="mb-8 flex justify-center">
           <motion.div
@@ -111,6 +117,7 @@ export default function AguardandoPage() {
         >
           Sair
         </button>
+        </div>
       </motion.div>
     </div>
   );

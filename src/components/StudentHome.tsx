@@ -32,6 +32,8 @@ import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
+import { FloatingActionMenu } from "@/components/FloatingActionMenu";
+import { YourDayCard } from "@/components/YourDayCard";
 
 const SPORTS_QUOTES = [
   { text: "Eu posso aceitar o fracasso — todos falham em alguma coisa. Mas não consigo aceitar não tentar.", author: "Michael Jordan", role: "Basketball" },
@@ -970,6 +972,11 @@ export default function StudentHome() {
             {periodPill}
           </span>
         </div>
+      </motion.div>
+
+      {/* Your Day Card */}
+      <motion.div variants={homeItem} className="mb-4">
+        <YourDayCard />
       </motion.div>
 
       {/* Header */}
@@ -2714,6 +2721,13 @@ export default function StudentHome() {
       <StudentGamificationDashboard
         isOpen={showGamificationDashboard}
         onClose={() => setShowGamificationDashboard(false)}
+      />
+
+      {/* Floating Action Menu */}
+      <FloatingActionMenu
+        onCheckIn={() => requestCheckIn()}
+        onViewLessons={() => setShowAgendaPanel(true)}
+        onReportAbsence={() => toast("Comunicar falta: em desenvolvimento", "info")}
       />
     </motion.div>
     </>
