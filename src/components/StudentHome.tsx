@@ -2725,9 +2725,9 @@ export default function StudentHome() {
 
       {/* Floating Action Menu */}
       <FloatingActionMenu
-        onCheckIn={() => requestCheckIn()}
+        onCheckIn={() => toast("💚 Check-in: vá para a aula e pressione o botão de check-in da turma", "info")}
         onViewLessons={() => setShowAgendaPanel(true)}
-        onReportAbsence={() => toast("Comunicar falta: em desenvolvimento", "info")}
+        onReportAbsence={() => toast("⚠️ Comunicar falta: em desenvolvimento", "info")}
       />
     </motion.div>
     </>
