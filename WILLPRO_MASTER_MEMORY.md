@@ -723,10 +723,52 @@ pnpm exec playwright test --debug      # Debugger
 
 ---
 
+---
+
+## 📋 SESSION 2026-05-09 — TESTING + DEPLOYMENT
+
+**Status:** ✅ DEPLOYED TO VERCEL | Commit: 8d50832
+
+### Work Completed:
+1. ✅ **Email Cleanup:** monteiroo.tec@gmail.com removed from public.students + auth.users
+2. ✅ **Auditoria dos 3 fluxos críticos:**
+   - Enrollment (remove invite gate) — ✓ Funcionando
+   - Check-in + XP (GamificationContext + CheckInContext) — ✓ Registrado
+   - Login + OAuth (loginWithOAuth) — ✓ Implementado
+3. ✅ **Build Status:** Verde | TypeScript: Clean
+4. ✅ **Commit + Push:** 8d50832 → main
+5. ✅ **Vercel Deploy:** Iniciado automaticamente
+
+### Issues Found:
+⚠️ **Admin Approval UI Bug:**
+- New students reach "awaiting approval" screen ✓
+- Admin receives notification ✓
+- BUT: No list of pending students renders in KPIDetailModal
+- Root cause: `students.filter(s => s.status === "pending")` returns 0
+- Likely: New users get `status: "active"` instead of `status: "pending"`
+- Location: Signup flow or RLS policy (check: `src/app/cadastro/page.tsx` + Supabase RLS)
+
+### Next Session (Phase 11B):
+1. **Fix Admin Approval:**
+   - Check new student status in Supabase (should be "pending")
+   - Review signup flow: where status is set
+   - Fix: Set `status: "pending"` for new users until admin approves
+   - Test full approval workflow (new user → notification → admin approves → active)
+
+2. **Stability Improvements:**
+   - Monitor Vercel deployment (should be live now)
+   - Test on production URL
+   - Profile app performance (if slow)
+
+3. **Resume Development:**
+   - Phase 12: Leaderboard real-time (optional)
+   - Or focus 100% on stabilization before new features
+
 ### 📋 CHECKLIST DE PRÓXIMA SESSÃO
 
 - [x] **Phase 8:** Gamification - XP Log auditável
 - [x] **Phase 9:** Integração TrainingContext + Gamification UI
 - [x] **Phase 10:** E2E Testing (Playwright)
-- [ ] **Phase 11:** Deploy staging + mobile PWA validation
+- [x] **Phase 11:** Deploy staging + mobile PWA validation
+- [ ] **Phase 11B:** Fix admin approval + stabilization
 - [ ] **Phase 12:** Leaderboard real-time (optional optimization)
