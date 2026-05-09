@@ -27,15 +27,19 @@ const CatalogContext = createContext<CatalogContextValue | undefined>(undefined)
 
 export function CatalogProvider({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [categories, setCategories] = useState<LessonCategory[]>([]);
-  const [venues, setVenues] = useState<Venue[]>([]);
+  const [categories, setCategories] = useState<LessonCategory[]>(LEGACY_BRIDGE.DEFAULT_CATEGORIES);
+  const [venues, setVenues] = useState<Venue[]>(LEGACY_BRIDGE.DEFAULT_VENUES);
   const [workHours, setWorkHoursState] = useState<WorkHours>(LEGACY_BRIDGE.DEFAULT_WORK_HOURS);
 
   useEffect(() => {
     setIsMounted(true);
-    setCategories(wtLs.get("categories", LEGACY_BRIDGE.DEFAULT_CATEGORIES));
-    setVenues(wtLs.get("venues", LEGACY_BRIDGE.DEFAULT_VENUES));
-    setWorkHoursState(wtLs.get("workHours", LEGACY_BRIDGE.DEFAULT_WORK_HOURS));
+    const savedCategories = wtLs.get("categories", LEGACY_BRIDGE.DEFAULT_CATEGORIES);
+    const savedVenues = wtLs.get("venues", LEGACY_BRIDGE.DEFAULT_VENUES);
+    const savedWorkHours = wtLs.get("workHours", LEGACY_BRIDGE.DEFAULT_WORK_HOURS);
+
+    setCategories(savedCategories);
+    setVenues(savedVenues);
+    setWorkHoursState(savedWorkHours);
   }, []);
 
   useEffect(() => { if (isMounted) wtLs.set("categories", categories); }, [categories, isMounted]);
