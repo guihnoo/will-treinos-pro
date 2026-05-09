@@ -10,7 +10,7 @@ import { fetchStaffAccessRole } from "@/lib/supabasePersistence";
 
 /**
  * Papel efetivo após JWT (`user_metadata`) + `staff_access` + vínculo opcional com catálogo `students`.
- * Quando `catalogStudents` é `undefined`, não força matrícula (bootstrap antes do fetch).
+ * Se catalogStudents for undefined mas effectiveRole for null/aluno, carrega students do DB.
  */
 export async function resolveEffectiveSupabaseRole(
   authUser: SupabaseAuthUser,
@@ -30,6 +30,31 @@ export async function resolveEffectiveSupabaseRole(
       } catch {
         // Mantém fluxo sem staff table (não bloqueia login).
       }
+    }
+  }
+
+  // Se ainda é aluno/null e não temos catálogo, carrega students do DB
+  if (!isDevRootEmail(authUser.email) && (effectiveRole === "aluno" || effectiveRole === null) && catalogStudents === undefined && supabase) {
+    try {
+      const { data: students, error } = await supabase
+        .from("students")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && students) {
+        catalogStudents = (students as any[]).map((row: any) => ({
+          id: row.id,
+          authUserId: row.auth_user_id || null,
+          email: row.email || "",
+          name: row.name || "",
+          phone: row.phone || "",
+          avatar: row.avatar || "",
+          status: row.status || "pending",
+          role: row.role || "aluno",
+        } as Student));
+      }
+    } catch {
+      // Falha silenciosa - continua com o effectiveRole atual
     }
   }
 
