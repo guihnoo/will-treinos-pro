@@ -110,17 +110,34 @@ export default function AuthCallbackPage() {
         }
 
         try {
-          const { data, error } = await sb
+          // Primeiro tenta por auth_user_id (para novos users)
+          const { data: byAuth, error: errAuth } = await sb
             .from("students")
-            .select("id")
+            .select("id, status")
             .eq("auth_user_id", authUser.id)
             .maybeSingle();
 
-          if (error) {
-            console.error("Erro ao verificar student:", error);
-            return false;
+          if (!errAuth && byAuth) {
+            // Encontrou por auth_user_id
+            return byAuth.status === "pending";  // Só precisa signup se ainda pendente
           }
-          return !data;
+
+          // Se não encontrou por auth_user_id, tenta por email
+          if (authUser.email) {
+            const { data: byEmail, error: errEmail } = await sb
+              .from("students")
+              .select("id, status")
+              .eq("email", authUser.email.trim().toLowerCase())
+              .maybeSingle();
+
+            if (!errEmail && byEmail) {
+              // Encontrou por email - aluno aprovado não precisa de signup
+              return byEmail.status === "pending";
+            }
+          }
+
+          // Não encontrou em nenhum lugar = precisa fazer signup
+          return true;
         } catch (e) {
           console.error("Erro ao verificar novo usuário:", e);
           return false;
