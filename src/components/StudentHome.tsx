@@ -19,6 +19,7 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
 import WeatherWidget from "@/components/WeatherWidget";
 import { StudentGamificationDashboard } from "@/components/StudentGamificationDashboard";
+import { GamificationPanel } from "@/components/gamification/GamificationPanel";
 import Link from "next/link";
 import LessonRatingSheet from "@/components/LessonRatingSheet";
 import Confetti from "@/components/Confetti";
@@ -2692,6 +2693,11 @@ export default function StudentHome() {
           );
         })()}
       </AnimatePresence>
+
+      {/* Gamification Panel — XP, Awards, History */}
+      <motion.div variants={homeItem} className="mb-2">
+        <GamificationPanel />
+      </motion.div>
 
       <LeaderboardPanel
         isOpen={showLeaderboard}
