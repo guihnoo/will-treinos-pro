@@ -753,19 +753,37 @@ pnpm exec playwright test --debug      # Debugger
   
 - Fix commit: f2fffb7
 
-### Next Session (Phase 11B):
-1. **Fix Admin Approval:**
-   - Check new student status in Supabase (should be "pending")
-   - Review signup flow: where status is set
-   - Fix: Set `status: "pending"` for new users until admin approves
-   - Test full approval workflow (new user → notification → admin approves → active)
+### ✅ Bug Fixes Applied (Session 2026-05-09 Continued):
 
-2. **Stability Improvements:**
-   - Monitor Vercel deployment (should be live now)
-   - Test on production URL
-   - Profile app performance (if slow)
+#### Bug 1: Admin RLS Access Blocked
+**Status:** ✅ FIXED (Commit: f2fffb7, 4a7ff14)
+- Problem: Admin couldn't see pending students (RLS blocked)
+- Cause: Admin JWT missing role metadata
+- Fix: Added role: "admin" to both admin user_metadata
+- Action: Admins must logout/login to refresh JWT
 
-3. **Resume Development:**
+#### Bug 2: Approved Student Redirected to /cadastro
+**Status:** ✅ FIXED (Commit: b4582be)
+- Problem: After admin approval, student still sent to /cadastro
+- Cause: resolveEffectiveSupabaseRole couldn't find student in catalogStudents (undefined)
+- Fix: Auto-load students from DB if catalogStudents undefined during login
+- Action: Re-test login flow now - should go directly to /dashboard
+
+### Next Session:
+1. **Final Testing (all workflows):**
+   - New student signup → pending ✓
+   - Admin sees pending list ✓
+   - Admin approves → student active ✓
+   - Student logs in → goes to /dashboard (not /cadastro)
+   - Verify XP system working
+   - Verify check-in flow
+
+2. **Stability & Performance:**
+   - Monitor Vercel deploy
+   - Profile slow areas if any
+   - Test mobile/PWA
+
+3. **Resume Feature Development:**
    - Phase 12: Leaderboard real-time (optional)
    - Or focus 100% on stabilization before new features
 
