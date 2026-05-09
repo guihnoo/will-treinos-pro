@@ -739,14 +739,19 @@ pnpm exec playwright test --debug      # Debugger
 4. ✅ **Commit + Push:** 8d50832 → main
 5. ✅ **Vercel Deploy:** Iniciado automaticamente
 
-### Issues Found:
-⚠️ **Admin Approval UI Bug:**
-- New students reach "awaiting approval" screen ✓
-- Admin receives notification ✓
-- BUT: No list of pending students renders in KPIDetailModal
-- Root cause: `students.filter(s => s.status === "pending")` returns 0
-- Likely: New users get `status: "active"` instead of `status: "pending"`
-- Location: Signup flow or RLS policy (check: `src/app/cadastro/page.tsx` + Supabase RLS)
+### Issues Found & Fixed:
+✅ **Admin Approval UI Bug — FIXED**
+- Problem: Pending students list was empty in KPIDetailModal
+- Root cause: **RLS policy blocked admin SELECT access**
+  - Reason: `wt_is_staff()` function checks JWT role
+  - Both admins missing `role: "admin"` in user_metadata
+  - Result: RLS policy 'students_staff_all' returned false, blocking access
+  
+- Solution: Updated both admin user_metadata:
+  - guihmonteiro.2014@gmail.com: ✅ role added
+  - cityvoleicampeonatos@gmail.com: ✅ role added
+  
+- Fix commit: f2fffb7
 
 ### Next Session (Phase 11B):
 1. **Fix Admin Approval:**
