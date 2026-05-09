@@ -15,10 +15,7 @@ import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { insertNotificationRemote } from "@/lib/supabasePersistence";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
-import { cadastroInviteRequired, getStoredInviteToken } from "@/lib/enrollmentSession";
-import { verifyEnrollmentInviteWithServer } from "@/lib/verifyEnrollmentInvite";
-import { useEnrollmentInviteGate } from "@/hooks/useEnrollmentInviteGate";
-import { EnrollmentInviteBlocked } from "@/components/enrollment/EnrollmentInviteBlocked";
+import { getStoredInviteToken } from "@/lib/enrollmentSession";
 
 const AVATAR_SEEDS = ["will1","beach2","volei3","sport4","ace5","spike6","block7","serve8","jump9","team10","coach11","pro12"];
 
@@ -77,7 +74,6 @@ function CadastroPageContent() {
   const [loading, setLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
-  const inviteGate = useEnrollmentInviteGate();
 
   // Update form if user auth resolves later
   useEffect(() => {
@@ -147,14 +143,6 @@ function CadastroPageContent() {
     if (!user) {
       toast("⚠️ Registre-se com o Google primeiro para continuar.", "error");
       return;
-    }
-    if (cadastroInviteRequired() && hasSupabaseEnv()) {
-      const tok = getStoredInviteToken();
-      if (!tok || !(await verifyEnrollmentInviteWithServer(tok))) {
-        toast("⚠️ Convite inválido ou desatualizado. Peça um novo link à equipe.", "error");
-        inviteGate.markInviteInvalid();
-        return;
-      }
     }
     setLoading(true);
     const studentEmail = form.email.trim().toLowerCase() || user?.email?.trim().toLowerCase() || "";
@@ -227,20 +215,6 @@ function CadastroPageContent() {
 
   const regenerateAvatar = () =>
     setForm(p => ({ ...p, avatarSeed: AVATAR_SEEDS[Math.floor(Math.random() * AVATAR_SEEDS.length)] }));
-
-  // ── Loading gate ──
-  if (!inviteGate.ready) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-zinc-800 border-t-[#EAB308] animate-spin" />
-      </div>
-    );
-  }
-
-  // ── Blocked (sem convite ou convite inválido no servidor) ──
-  if (inviteGate.blocked) {
-    return <EnrollmentInviteBlocked reason={inviteGate.reason} />;
-  }
 
   // ── Success ──
   if (submitted) {

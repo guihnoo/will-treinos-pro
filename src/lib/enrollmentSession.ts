@@ -50,15 +50,19 @@ export function clearStoredInviteToken(): void {
 }
 
 /**
- * Produção: gate de matrícula para `/cadastro` e `/signup`.
- * Qualquer um dos envs em `true` ativa o modo estrito (RPC `verify_enrollment_invite` quando há Supabase).
- * Preferido: `NEXT_PUBLIC_REQUIRE_ENROLLMENT_INVITE` — legado: `NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE`.
+ * DESATIVADO — Phase Enrollment Redesign (open enrollment sem invite gate).
+ * Mantém função para compatibilidade, mas sempre retorna false.
+ * Invite token é armazenado para analytics, mas não bloqueia acesso.
  */
 export function cadastroInviteRequired(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_REQUIRE_ENROLLMENT_INVITE === "true" ||
-    process.env.NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE === "true"
-  );
+  // Open enrollment — sem gate de convite necessário
+  return false;
+
+  // Legado (comentado para Phase Enrollment Redesign):
+  // return (
+  //   process.env.NEXT_PUBLIC_REQUIRE_ENROLLMENT_INVITE === "true" ||
+  //   process.env.NEXT_PUBLIC_REQUIRE_CADASTRO_INVITE === "true"
+  // );
 }
 
 /** Alias semântico — mesmo comportamento que `cadastroInviteRequired`. */
