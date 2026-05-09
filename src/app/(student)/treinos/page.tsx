@@ -10,6 +10,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useCriticalData } from "@/context/CriticalDataContext";
 import { useCoaching } from "@/context/CoachingContext";
+import { useTraining } from "@/context/TrainingContext";
+import { useGamification } from "@/context/GamificationContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppPageHeader from "@/components/ui/AppPageHeader";
@@ -106,7 +108,7 @@ function ExerciseModal({
 }: {
   ex: any; planId: string; exIdx: number;
   done: Record<string, boolean>;
-  onToggleSet: (key: string, restSec: number, planId: string) => void;
+  onToggleSet: (key: string, restSec: number, planId: string) => Promise<void>;
   onClose: () => void;
 }) {
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
@@ -176,7 +178,7 @@ function ExerciseModal({
             const isDone = !!done[key];
             return (
               <motion.button key={i} whileTap={{ scale: 0.97 }}
-                onClick={() => onToggleSet(key, restSec, planId)}
+                onClick={() => void onToggleSet(key, restSec, planId)}
                 className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
                   isDone
                     ? "bg-[#22C55E]/10 border-[#22C55E]/30 text-[#22C55E]"
@@ -210,6 +212,7 @@ export default function TreinosPage() {
   const { user, usingSupabaseSession } = useAuth();
   const { criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
+  const { logXP, calculateXP } = useGamification();
   const storageHydrated = useRef(false);
   /** Stable while CRM user.id switches from JWT id to students.id after Supabase link */
   const treinosStorageUserKey = user?.authSubjectId ?? user?.id;
@@ -298,7 +301,7 @@ export default function TreinosPage() {
     return { total, completed, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
   };
 
-  const toggleSet = (key: string, restSec: number, planId: string) => {
+  const toggleSet = async (key: string, restSec: number, planId: string) => {
     const next = !done[key];
     const nextDone = { ...done, [key]: next };
     setDone(nextDone);
@@ -313,7 +316,12 @@ export default function TreinosPage() {
         vibrate([30, 20, 45]);
       }
       if (before.pct < 100 && after.pct === 100 && after.total > 0) {
-        toast("🏆 Plano concluído! Você está em modo elite.");
+        // Plano concluído — registrar XP
+        const baseXP = 50; // Bônus por conclusão do plano
+        const multiplier = 1.0; // Sem multiplicador especial
+        await logXP("social_action", baseXP, multiplier, undefined, planId, `Plano completado: ${activePlan.title}`);
+
+        toast("🏆 Plano concluído! +50 XP ganho!");
         vibrate([70, 35, 110]);
       }
     }
