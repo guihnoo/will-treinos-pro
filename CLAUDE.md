@@ -42,6 +42,7 @@ Na primeira vez, o CLI pede login (conta Anthropic / plano). **Créditos** são 
 | **Skills** oficiais do Claude Code (pasta + `SKILL.md`, refs, scripts) | **`.claude/skills/<nome>/`** — **`will-treinos-core`** (nosso) + **pacote [anthropics/skills](https://github.com/anthropics/skills)** (ex.: `frontend-design`, `webapp-testing`, `pdf`, … — ver `.claude/skills/README.md`) | Claude Code — descoberta automática + `/nome-da-pasta` |
 | Agentes especializados (`@design-guardian`, `@volleyball-coach`, …) | **`.claude/agents/*.md`** | Claude Code — invoque com `@nome` |
 | Comandos tipo scaffold (`/sprint`, `/xp`, …) | **`.claude/commands/*.md`** | Claude Code — digite `/` no prompt |
+| **SSOT stack + checklist de ship** | **`docs/WILL_STACK_SSOT.md`** + **`/will-ship-checklist`** | Claude Code / Cursor — skills curadas por tipo de PR + antes de merge/deploy |
 | Hooks leves (lembrar build/memory após editar) | **`.claude/hooks.json`** | Claude Code — não bloqueiam ideias; só auditam fluxo |
 | Regras do editor neste repo | **`.cursor/rules/*.mdc`** | Cursor (Composer/Agent) |
 | Skills genéricas do Cursor (babysit PR, canvas, etc.) | Pasta de skills do **usuário** (`~/.cursor/skills-cursor` ou Catálogo) | Cursor — **não** são lidas automaticamente pelo Claude Code |
@@ -98,6 +99,8 @@ Fluxo típico:
 3. `supabase-skills` (core)
 4. `anthropic-official-skills` (quality)
 5. `levnik-complete-suite` (delivery)
+
+**Curadoria anti “skill zoo”:** ver **`docs/WILL_STACK_SSOT.md`** (tiers P/Q/S/R, checklists por tipo de PR, comandos `/plan` · `/security-review` · `/batch`). No terminal Claude Code: **`/will-ship-checklist`**.
 
 ---
 
