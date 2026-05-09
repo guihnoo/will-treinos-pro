@@ -22,6 +22,7 @@ import CreateLessonModal from "@/components/CreateLessonModal";
 import WeatherWidget from "@/components/WeatherWidget";
 import { CARD_HOVER_LIFT, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { avatarSrc } from "@/lib/avatarSrc";
+import { formatNotificationDisplayTime } from "@/lib/dateUtils";
 
 const MotionLink = motion(Link);
 const toKpiLayoutId = (label: string) =>
@@ -433,7 +434,7 @@ export default function AdminDashboardHome() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: typeColor }}>{typeLabel}</span>
-                          <span className="text-[10px] text-zinc-600">{n.time}</span>
+                          <span className="text-[10px] text-zinc-600">{formatNotificationDisplayTime(n.time)}</span>
                         </div>
                         <p className="text-xs text-zinc-300 font-medium mt-0.5 line-clamp-2">{n.message}</p>
                       </div>

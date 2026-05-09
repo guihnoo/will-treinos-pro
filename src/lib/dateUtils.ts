@@ -47,3 +47,33 @@ export function getMonday(d: Date | string): Date {
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(date.setDate(diff));
 }
+
+/**
+ * Label for `notifications.time` — supports legacy "agora", ISO strings,
+ * pt-BR clock-only ("14:35" from toLocaleTimeString), and mock values like "2h".
+ */
+export function formatNotificationDisplayTime(raw: string | undefined | null): string {
+  const t = (raw ?? "").trim();
+  if (!t || /^agora$/i.test(t)) return "Agora";
+  if (/^\d+h$/i.test(t)) return t.toUpperCase();
+
+  const parsed = new Date(t);
+  if (!Number.isNaN(parsed.getTime())) {
+    const today = new Date();
+    const isToday = parsed.toDateString() === today.toDateString();
+    return isToday
+      ? parsed.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      : parsed.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  const clockOnly = /^(\d{1,2}):(\d{2})$/.exec(t);
+  if (clockOnly) {
+    const hh = parseInt(clockOnly[1], 10);
+    const mm = parseInt(clockOnly[2], 10);
+    const now = new Date();
+    const pseudo = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+    return pseudo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  return t;
+}

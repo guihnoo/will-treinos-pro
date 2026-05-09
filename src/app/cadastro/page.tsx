@@ -12,7 +12,6 @@ import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
-import { insertNotificationRemote } from "@/lib/supabasePersistence";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { getStoredInviteToken } from "@/lib/enrollmentSession";
@@ -169,20 +168,8 @@ function CadastroPageContent() {
           authUserId: authUid ?? null,
         });
 
-        const supabase = getSupabaseClient();
-        if (supabase) {
-          // Garante que uma notificação global seja criada remotamente também
-          try {
-            await insertNotificationRemote(supabase, {
-              type: "new_student",
-              title: "Novo Aluno na Fila",
-              message: `${form.name} fez o cadastro público e aguarda aprovação!`,
-              time: "agora", read: false, isGlobal: true,
-            });
-          } catch (notifErr) {
-            console.warn("Nao foi possivel notificar os admins remotamente", notifErr);
-          }
-        }
+        // Notificação para staff: trigger Postgres `wt_notify_staff_new_pending_student`
+        // (evita duplicar a mesma linha com insertNotificationRemote no cliente).
       } else {
         // Fallback local se supabase falhar
         await addStudent({

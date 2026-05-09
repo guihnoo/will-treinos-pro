@@ -204,7 +204,7 @@ export async function insertNotificationRemote(
       type: payload.type,
       title: payload.title,
       message: payload.message,
-      time: payload.time || "agora",
+      time: payload.time || new Date().toISOString(),
       is_read: payload.read,
       student_id: payload.studentId ?? null,
       recipient_id: payload.recipientId ?? null,

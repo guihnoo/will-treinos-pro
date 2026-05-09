@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import type { Notification } from "@/context/types";
-import { localDateISO } from "@/lib/dateUtils";
+import { formatNotificationDisplayTime } from "@/lib/dateUtils";
 
 interface Props {
   notification: Notification | null;
@@ -50,13 +50,7 @@ export default function NotificationDetailModal({ notification, open, onClose }:
   const cfg = iconMap[notification.type] || iconMap.message;
   const Icon = cfg.icon;
 
-  // Parse timestamp
-  const notifDate = new Date(notification.time);
-  const today = new Date();
-  const isToday = notifDate.toDateString() === today.toDateString();
-  const timeStr = isToday
-    ? notifDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-    : notifDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  const timeStr = formatNotificationDisplayTime(notification.time);
 
   // Find related student if any
   const student = notification.studentId ? students.find(s => s.id === notification.studentId) : null;

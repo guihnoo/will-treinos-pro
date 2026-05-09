@@ -55,3 +55,7 @@ public/worker-*.js
 
 # Claude Code — permissões/caminhos locais da máquina
 .claude/settings.local.json
+
+# Prints temporários para debug com IA (mantém só o README no Git)
+.agent-arsenal/debug-screenshots/*
+!.agent-arsenal/debug-screenshots/README.md

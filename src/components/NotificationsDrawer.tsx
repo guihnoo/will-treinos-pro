@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
+import { formatNotificationDisplayTime } from "@/lib/dateUtils";
 import NotificationDetailModal from "@/components/NotificationDetailModal";
 import type { Notification } from "@/context/types";
 
@@ -132,7 +133,7 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
                           {notif.title}
                         </span>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          <span className="text-[10px] text-zinc-600">{notif.time}</span>
+                          <span className="text-[10px] text-zinc-600">{formatNotificationDisplayTime(notif.time)}</span>
                           <ChevronRight className="w-4 h-4 text-zinc-600" />
                         </div>
                       </div>
