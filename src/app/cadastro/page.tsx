@@ -50,7 +50,7 @@ function InputField({
 
 function CadastroPageContent() {
   const { user, authResolved, usingSupabaseSession, loginWithOAuth } = useAuth();
-  const { addStudent } = useStudents();
+  const { addStudent, students } = useStudents();
   const { addNotification } = useNotifications();
   const router = useRouter();
   void router;
@@ -60,12 +60,12 @@ function CadastroPageContent() {
   const cameraRef = useRef<HTMLInputElement>(null);
 
   // Se o usuário logou com Google, preenche automaticamente
-  const [form, setForm] = useState({ 
-    name: user?.name || "", 
-    email: user?.email || "", 
-    phone: "", 
-    instagram: "", 
-    avatarSeed: AVATAR_SEEDS[0] 
+  const [form, setForm] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: "",
+    instagram: "",
+    avatarSeed: AVATAR_SEEDS[0]
   });
   const [photoMode, setPhotoMode] = useState<PhotoMode>(user?.avatar ? "photo" : "avatar");
   const [customPhoto, setCustomPhoto] = useState<string | null>(user?.avatar || null);
@@ -73,6 +73,14 @@ function CadastroPageContent() {
   const [loading, setLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+
+  // Redirecionar aluno já aprovado para dashboard
+  useEffect(() => {
+    if (user && authResolved && usingSupabaseSession && user.role === "aluno") {
+      // Se é aluno (role confirmado), vai para dashboard
+      router.replace("/dashboard");
+    }
+  }, [user, authResolved, usingSupabaseSession, router]);
 
   // Update form if user auth resolves later
   useEffect(() => {
