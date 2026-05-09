@@ -13,10 +13,12 @@ import { useCheckIn } from "@/context/CheckInContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCoaching } from "@/context/CoachingContext";
+import { useGamification } from "@/context/GamificationContext";
 import FeedbackModal from "@/components/FeedbackModal";
 import LessonDetailModal from "@/components/LessonDetailModal";
 import PerformanceEvalModal from "@/components/PerformanceEvalModal";
 import TrainingPlanEditor from "@/components/TrainingPlanEditor";
+import InlineEvalPanel from "@/components/InlineEvalPanel";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
@@ -34,15 +36,17 @@ export default function CoachHome() {
   const { todayLessons, todayEnrolledCount, todayPresentCount, todayAbsentCount } = useLessons();
   const { getStudent, students } = useStudents();
   const { checkInStudent } = useCheckIn();
-  const { trainingPlans } = useCoaching();
+  const { trainingPlans, addFeedback } = useCoaching();
+  const { logXP, calculateXP } = useGamification();
   const { toast } = useToast();
   const [lessonModal, setLessonModal] = useState<string | null>(null);
   const [feedbackTarget, setFeedbackTarget] = useState<{ lessonId: string; studentId: string } | null>(null);
   const [evalTarget, setEvalTarget] = useState<{ lessonId: string; lessonTitle: string; studentId: string } | null>(null);
+  const [expandedPanel, setExpandedPanel] = useState<{ lessonId: string; studentId: string } | null>(null);
   const [showCreateLesson, setShowCreateLesson] = useState(false);
   const [trainingEditorStudent, setTrainingEditorStudent] = useState<string | null>(null);
   const [editingTrainingPlanId, setEditingTrainingPlanId] = useState<string | null>(null);
-  const hasModalOpen = Boolean(lessonModal || feedbackTarget || evalTarget || showCreateLesson || trainingEditorStudent);
+  const hasModalOpen = Boolean(lessonModal || feedbackTarget || evalTarget || showCreateLesson || trainingEditorStudent || expandedPanel);
   useBodyScrollLock(hasModalOpen);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
 
@@ -255,32 +259,75 @@ export default function CoachHome() {
                   const isPresent = lesson.presentStudents.includes(sid);
                   const isAbsent = lesson.absentStudents.includes(sid);
                   return (
-                    <div key={sid} className="flex items-center justify-between px-4 py-2.5">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <img src={avatarSrc(st.avatar, st.name)}
-                          className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
-                        <span className="text-sm text-zinc-300 truncate">{st.name}</span>
-                        {isPresent && <span className="text-[10px] font-bold text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded-full flex-shrink-0">✓</span>}
-                        {isAbsent && <span className="text-[10px] font-bold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full flex-shrink-0">✗</span>}
+                    <>
+                      <div key={sid} className="flex items-center justify-between px-4 py-2.5">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <img src={avatarSrc(st.avatar, st.name)}
+                            className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
+                          <span className="text-sm text-zinc-300 truncate">{st.name}</span>
+                          {isPresent && <span className="text-[10px] font-bold text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded-full flex-shrink-0">✓</span>}
+                          {isAbsent && <span className="text-[10px] font-bold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded-full flex-shrink-0">✗</span>}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <motion.button whileTap={{ scale: 0.85 }}
+                            onClick={() => checkInStudent(lesson.id, sid, true)}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isPresent ? "bg-[#22C55E] text-white" : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-[#22C55E]"} ${FOCUS_RING_GOLD}`}>
+                            <Check className="w-3.5 h-3.5" />
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.85 }}
+                            onClick={() => checkInStudent(lesson.id, sid, false)}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isAbsent ? "bg-[#EF4444] text-white" : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-[#EF4444]"} ${FOCUS_RING_GOLD}`}>
+                            <X className="w-3.5 h-3.5" />
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.85 }}
+                            onClick={() => setExpandedPanel(expandedPanel?.studentId === sid ? null : { lessonId: lesson.id, studentId: sid })}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                              expandedPanel?.studentId === sid
+                                ? "bg-[#8B5CF6] text-white"
+                                : "bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/20"
+                            } ${FOCUS_RING_GOLD}`}>
+                            <Star className="w-3.5 h-3.5" />
+                          </motion.button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <motion.button whileTap={{ scale: 0.85 }}
-                          onClick={() => checkInStudent(lesson.id, sid, true)}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isPresent ? "bg-[#22C55E] text-white" : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-[#22C55E]"} ${FOCUS_RING_GOLD}`}>
-                          <Check className="w-3.5 h-3.5" />
-                        </motion.button>
-                        <motion.button whileTap={{ scale: 0.85 }}
-                          onClick={() => checkInStudent(lesson.id, sid, false)}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isAbsent ? "bg-[#EF4444] text-white" : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-[#EF4444]"} ${FOCUS_RING_GOLD}`}>
-                          <X className="w-3.5 h-3.5" />
-                        </motion.button>
-                        <motion.button whileTap={{ scale: 0.85 }}
-                          onClick={() => setEvalTarget({ lessonId: lesson.id, lessonTitle: lesson.title, studentId: sid })}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/20 transition-all ${FOCUS_RING_GOLD}`}>
-                          <Star className="w-3.5 h-3.5" />
-                        </motion.button>
-                      </div>
-                    </div>
+
+                      {/* Inline Eval Panel */}
+                      <AnimatePresence>
+                        {expandedPanel?.studentId === sid && expandedPanel?.lessonId === lesson.id && (
+                          <InlineEvalPanel
+                            studentId={sid}
+                            studentName={st.name}
+                            lessonId={lesson.id}
+                            onSave={async (evaluations) => {
+                              // Log XP for each fundamental
+                              const fundamentals = ["saque", "passe", "levantamento", "ataque", "bloqueio"] as const;
+                              for (const fund of fundamentals) {
+                                const score = evaluations[fund];
+                                if (score !== undefined) {
+                                  const baseXP = calculateXP(score, fund);
+                                  await logXP("lesson_rating", 100, 1.0, fund, lesson.id, `Avaliação: ${fund}`);
+                                }
+                              }
+                              // Add feedback to coaching context
+                              addFeedback({
+                                lessonId: lesson.id,
+                                studentId: sid,
+                                rating: Math.max(...Object.values(evaluations)),
+                                trainingTime: 60,
+                                trainingType: "group",
+                                strengths: [],
+                                improvements: [],
+                                professorNote: "",
+                                date: new Date().toISOString(),
+                              });
+                              toast("✓ Avaliação salva com sucesso!", "success");
+                              setExpandedPanel(null);
+                            }}
+                            onClose={() => setExpandedPanel(null)}
+                          />
+                        )}
+                      </AnimatePresence>
+                    </>
                   );
                 })}
               </div>

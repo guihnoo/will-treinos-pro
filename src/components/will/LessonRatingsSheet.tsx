@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquarePlus, Users, User, Trophy, Save, Activity, Target, Shield, ArrowUpRight, Crosshair } from "lucide-react";
+import { MessageSquarePlus, Users, User, Trophy, Save, Activity, Target, Shield, ArrowUpRight, Crosshair, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { useStudents } from "@/context/StudentsContext";
+import { useLessons } from "@/context/LessonsContext";
+import { useGamification } from "@/context/GamificationContext";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { useAbsenceStreak } from "@/lib/useAbsenceStreak";
 
 interface LessonRatingsSheetProps {
   lesson: any;
@@ -21,6 +24,8 @@ const FUNDAMENTALS = [
 
 export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsSheetProps) {
   const { students } = useStudents();
+  const { lessons } = useLessons();
+  const { xpLogs } = useGamification();
   const [tab, setTab] = useState<"squad" | "athlete">("squad");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(lesson.enrolledStudents[0] || null);
 
@@ -28,8 +33,21 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
   const [evaluations, setEvaluations] = useState<Record<string, any>>({});
   // State to toggle hidden feedback inputs
   const [activeFeedbackInput, setActiveFeedbackInput] = useState<string | null>(null);
-  
+
   const [squadFeedback, setSquadFeedback] = useState("");
+
+  const absenceStreak = selectedStudentId ? useAbsenceStreak(lessons, selectedStudentId) : 0;
+
+  // Helper: get last 3 XP logs for a student in a specific fundamental
+  const getFundamentalHistory = useMemo(() => {
+    return (studentId: string, fundamental: string) => {
+      return xpLogs
+        .filter((log) => log.student_id === studentId && log.fundamental === fundamental)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 3)
+        .reverse(); // Most recent last
+    };
+  }, [xpLogs]);
 
   const enrolledAthletes = lesson.enrolledStudents
     .map((id: string) => students.find((s) => s.id === id))
@@ -163,6 +181,19 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
                       <p className="text-[10px] text-zinc-500">Avaliação individual ativa</p>
                     </div>
                   </div>
+
+                  {absenceStreak >= 3 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/10"
+                    >
+                      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                      <span className="text-[11px] font-bold text-red-400">
+                        ⚠️ {absenceStreak} faltas consecutivas
+                      </span>
+                    </motion.div>
+                  )}
                   <div className="bg-[#050505] border border-white/5 rounded-2xl p-4">
                     <p className="text-[10px] uppercase tracking-widest text-[#EAB308] font-bold mb-4">Motor de XP (5 Fundamentos)</p>
                     
@@ -183,7 +214,43 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
                               </div>
                               <span className="text-[14px] font-black tabular-nums text-white">{score.toFixed(1)}</span>
                             </div>
-                            
+
+                            {/* Mini Historical Context */}
+                            {selectedStudentId && (() => {
+                              const history = getFundamentalHistory(selectedStudentId, fund.id);
+                              if (history.length === 0) {
+                                return (
+                                  <div className="text-[10px] text-zinc-600 mb-2 italic">
+                                    Primeira avaliação
+                                  </div>
+                                );
+                              }
+                              const trend = history.length > 1
+                                ? history[history.length - 1].total_xp > history[0].total_xp ? "up" : history[history.length - 1].total_xp < history[0].total_xp ? "down" : "flat"
+                                : "flat";
+                              return (
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-[10px] text-zinc-600">Últimas notas:</span>
+                                  <div className="flex items-center gap-1">
+                                    {history.map((log, idx) => (
+                                      <span
+                                        key={log.id}
+                                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#EAB308]/20 text-[#EAB308]"
+                                      >
+                                        {(log.total_xp / 10).toFixed(1)}
+                                      </span>
+                                    ))}
+                                    {trend === "up" && (
+                                      <TrendingUp className="w-3 h-3 text-emerald-400 ml-1" />
+                                    )}
+                                    {trend === "down" && (
+                                      <TrendingDown className="w-3 h-3 text-red-400 ml-1" />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
                             <input
                               type="range"
                               min={0}

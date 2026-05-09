@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   WifiOff,
+  BarChart3,
 } from "lucide-react";
 import type { Lesson, Student } from "@/context/types";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
@@ -42,6 +43,7 @@ export default function LiveLessonCoachPanel({
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [totalMinutes, setTotalMinutes] = useState(60); // Default 60 min
+  const [showSummary, setShowSummary] = useState(false);
 
   // Auto-increment elapsed time when running
   useEffect(() => {
@@ -51,6 +53,15 @@ export default function LiveLessonCoachPanel({
     }, 1000);
     return () => clearInterval(timer);
   }, [isRunning]);
+
+  const handleEndClass = () => {
+    setShowSummary(true);
+  };
+
+  const handleConfirmEnd = () => {
+    setShowSummary(false);
+    onEndClass?.();
+  };
 
   const enrolledStudents = useMemo(
     () =>
@@ -282,13 +293,85 @@ export default function LiveLessonCoachPanel({
           {/* Action Buttons */}
           {onEndClass && (
             <button
-              onClick={onEndClass}
+              onClick={handleEndClass}
               className="w-full py-2 px-4 rounded-lg bg-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider hover:bg-red-500/30 transition border border-red-500/30"
             >
               Encerrar Aula
             </button>
           )}
         </div>
+
+        {/* Summary Overlay */}
+        <AnimatePresence>
+          {showSummary && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex items-center justify-center"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-black border border-[#EAB308]/25 rounded-2xl p-6 w-[90%] max-w-sm"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <BarChart3 className="w-5 h-5 text-[#EAB308]" />
+                  <h3 className="text-base font-black text-white">Resumo da Aula</h3>
+                </div>
+
+                <div className="space-y-3 mb-5">
+                  {/* Duration */}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/40 border border-white/5">
+                    <span className="text-[12px] font-bold text-zinc-400 uppercase">Duração</span>
+                    <span className="text-base font-black text-[#EAB308]">
+                      {formatTime(elapsedSeconds)}
+                    </span>
+                  </div>
+
+                  {/* Attendance */}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/40 border border-white/5">
+                    <span className="text-[12px] font-bold text-zinc-400 uppercase">Presença</span>
+                    <span className="text-base font-black text-emerald-400">
+                      {presentStudents.length}/{enrolledStudents.length} alunos
+                      {enrolledStudents.length > 0 && (
+                        <span className="text-xs text-zinc-500 ml-2">
+                          ({Math.round((presentStudents.length / enrolledStudents.length) * 100)}%)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Absent Students */}
+                  {absentStudents.length > 0 && (
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <p className="text-[11px] font-bold text-red-400 uppercase mb-2">Ausentes</p>
+                      <div className="flex flex-wrap gap-2">
+                        {absentStudents.map((student) => (
+                          <span
+                            key={student.id}
+                            className="text-[10px] px-2 py-1 rounded-full bg-red-500/20 text-red-300 font-semibold"
+                          >
+                            {student.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Button */}
+                <button
+                  onClick={handleConfirmEnd}
+                  className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-[#EAB308] to-amber-600 text-black text-sm font-black uppercase tracking-wide hover:shadow-[0_10px_25px_rgba(234,179,8,0.3)] transition-shadow"
+                >
+                  Finalizar Aula →
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
