@@ -762,12 +762,17 @@ pnpm exec playwright test --debug      # Debugger
 - Fix: Added role: "admin" to both admin user_metadata
 - Action: Admins must logout/login to refresh JWT
 
-#### Bug 2: Approved Student Redirected to /cadastro
-**Status:** ✅ FIXED (Commit: b4582be)
-- Problem: After admin approval, student still sent to /cadastro
-- Cause: resolveEffectiveSupabaseRole couldn't find student in catalogStudents (undefined)
-- Fix: Auto-load students from DB if catalogStudents undefined during login
-- Action: Re-test login flow now - should go directly to /dashboard
+#### Bug 2: Approved Student Redirected to /cadastro - REAL CAUSE FOUND
+**Status:** ✅ FIXED (Commits: b4582be, a0409bb, b3f1cb7)
+- Problem: After admin approval, student login redirects back to /cadastro
+- Root Cause: `/auth/callback` searches for existing student by `auth_user_id` ONLY
+  - First signup: `auth_user_id = <session-1-uuid>`
+  - New login after approval: `auth_user_id = <session-2-uuid>` (DIFFERENT!)
+  - Query doesn't find student → thinks is new user → redirects to /cadastro
+- Solution: Search by BOTH `auth_user_id` (new signups) AND `email` (approved students)
+  - Queries now check: by auth_user_id first, then by email if not found
+  - If found by email with status="active" → skip signup, go to dashboard
+- Action: Test now - should go directly to /dashboard after approval
 
 ### Next Session:
 1. **Final Testing (all workflows):**
