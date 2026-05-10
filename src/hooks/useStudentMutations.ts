@@ -119,7 +119,7 @@ export function useStudentMutations(options: {
             url: "/dashboard",
           });
 
-          void logDevEvent("student_approved", "student", id, { name: updated.name, role: updated.role });
+          void logDevEvent("student_approved", "student", id, { name: updated.name, studentRole: updated.studentRole });
         })
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao aprovar aluno."));
     },

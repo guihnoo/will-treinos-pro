@@ -1,5 +1,5 @@
 export type Role = "admin" | "coach" | "aluno" | "visitor" | null;
-export type StudentRole = "admin" | "professor" | "aluno" | "visitor";
+export type StudentRole = "aluno" | "observador" | "professor";
 export type StudentStatus = "active" | "pending" | "suspended" | "trial";
 export type PaymentStatus = "paid" | "pending" | "late";
 export type LessonStatus = "scheduled" | "in-progress" | "completed" | "cancelled";
@@ -33,7 +33,9 @@ export interface Student {
   /** When set, ties this row to Supabase Auth (auth.users.id). */
   authUserId?: string | null;
   name: string; phone: string; email: string; avatar: string; instagram: string;
-  status: StudentStatus; role?: StudentRole;
+  status: StudentStatus;
+  /** Categoriza acesso: 'aluno' (treina, XP), 'observador' (feed-only), 'professor' (admin access) */
+  studentRole?: StudentRole;
   plan: string; monthlyValue: number; paymentDay: number;
   categories: string[]; joinedAt: string; frequency: number; totalClasses: number; notes: string;
   professorNotes?: string;   // renamed from medicalNotes — set by admin/professor only, student reads only

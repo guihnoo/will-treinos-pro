@@ -50,20 +50,20 @@ export async function resolveEffectiveSupabaseRole(
           phone: row.phone || "",
           avatar: row.avatar || "",
           status: row.status || "pending",
-          role: row.role || "aluno",
+          studentRole: row.student_role || "aluno",
+          instagram: row.instagram || "",
+          plan: row.plan || "",
+          monthlyValue: row.monthly_value || 0,
+          paymentDay: row.payment_day || 1,
+          categories: row.categories || [],
+          joinedAt: row.joined_at || "",
+          frequency: row.frequency || 0,
+          totalClasses: row.total_classes || 0,
+          notes: row.notes || "",
         } as Student));
       }
     } catch {
       // Falha silenciosa - continua com o effectiveRole atual
-    }
-  }
-
-  if (!isDevRootEmail(authUser.email) && effectiveRole === "aluno" && catalogStudents !== undefined) {
-    const linked = findLinkedStudentForAuth(authUser.id, authUser.email || "", catalogStudents);
-    if (!linked) {
-      effectiveRole = null;
-    } else if (linked.role === "visitor") {
-      effectiveRole = "visitor";
     }
   }
 

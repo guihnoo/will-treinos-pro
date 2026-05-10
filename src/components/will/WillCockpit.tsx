@@ -1097,7 +1097,7 @@ export default function WillCockpit() {
                         <div className="mt-3 space-y-2">
                           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">Escolher papel</p>
                           <div className="flex gap-2">
-                            {(['aluno', 'professor', 'visitor'] as const).map((role) => (
+                            {(['aluno', 'professor', 'observador'] as const).map((role) => (
                               <button
                                 key={role}
                                 type="button"
@@ -1112,11 +1112,11 @@ export default function WillCockpit() {
                                       ? 'border-[#EAB308]/50 bg-[#EAB308]/20 text-[#EAB308]'
                                       : role === 'professor'
                                       ? 'border-blue-500/50 bg-blue-500/20 text-blue-300'
-                                      : 'border-zinc-500/50 bg-zinc-500/20 text-zinc-200'
+                                      : 'border-purple-500/50 bg-purple-500/20 text-purple-300'
                                     : 'border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:border-zinc-700'
                                 } border`}
                               >
-                                {role === 'aluno' ? '🎯 Aluno' : role === 'professor' ? '🎓 Professor' : '👁️ Visitante'}
+                                {role === 'aluno' ? '🎯 Aluno' : role === 'professor' ? '🎓 Professor' : '👀 Observador'}
                               </button>
                             ))}
                           </div>
