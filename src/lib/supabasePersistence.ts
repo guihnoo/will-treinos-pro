@@ -54,6 +54,7 @@ function mapStudent(row: DbRow): Student {
     attendanceHistory: Array.isArray(row.attendance_history ?? row.attendanceHistory)
       ? (row.attendance_history ?? row.attendanceHistory) as Student["attendanceHistory"]
       : [],
+    studentRole: ((row.student_role as string) || "aluno") as import("@/context/types").StudentRole,
   };
 }
 
@@ -94,6 +95,7 @@ function serializeStudentPatch(patch: Partial<Student>) {
   if (patch.professorNotes !== undefined) payload.professor_notes = patch.professorNotes;
   if (patch.attendanceHistory !== undefined) payload.attendance_history = patch.attendanceHistory;
   if (patch.authUserId !== undefined) payload.auth_user_id = patch.authUserId;
+  if (patch.studentRole !== undefined) payload.student_role = patch.studentRole;
   return payload;
 }
 
@@ -373,6 +375,7 @@ export async function createStudentRemote(supabase: SupabaseClient, student: Stu
       professor_notes: student.professorNotes || "",
       attendance_history: student.attendanceHistory || [],
       auth_user_id: student.authUserId ?? null,
+      student_role: student.studentRole || "aluno",
     })
     .select("*")
     .single();

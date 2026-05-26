@@ -943,7 +943,8 @@ export default function WillCockpit() {
                   onClick={() => {
                     selectedApprovalIds.forEach((id) => {
                       if (approvalChecklistMap.get(id)?.isComplete) {
-                        approveStudent(id);
+                        const student = approvalQueue.find((s) => s.id === id);
+                        approveStudent(id, selectedApprovalRole.get(id) ?? student?.studentRole ?? "aluno");
                       }
                     });
                     setSelectedApprovalIds([]);

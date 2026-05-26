@@ -95,9 +95,9 @@ export function useStudentMutations(options: {
   );
 
   const approveStudent = useCallback(
-    (id: string, role?: StudentRole) => {
-      const updates: { status: StudentStatus; role?: StudentRole } = { status: "active" };
-      if (role) updates.role = role;
+    (id: string, studentRole?: StudentRole) => {
+      const updates: { status: StudentStatus; studentRole?: StudentRole } = { status: "active" };
+      if (studentRole) updates.studentRole = studentRole;
 
       if (!usingSupabaseSession) {
         setStudents((p) => p.map((st) => (st.id === id ? { ...st, ...updates } : st)));
