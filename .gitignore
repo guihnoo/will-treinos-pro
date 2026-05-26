@@ -63,3 +63,5 @@ public/worker-*.js.map
 # Prints temporários para debug com IA (mantém só o README no Git)
 .agent-arsenal/debug-screenshots/*
 !.agent-arsenal/debug-screenshots/README.md
+
+.vercel
