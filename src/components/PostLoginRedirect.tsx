@@ -13,13 +13,13 @@ import { useAuth } from "@/context/AuthContext";
  */
 export default function PostLoginRedirect() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, authResolved } = useAuth();
   const studentRole = useStudentRole();
   const targetRoute = usePostLoginRoute();
 
   useEffect(() => {
     // Aguarda autenticação + contexto carregarem
-    if (isLoading) return;
+    if (!authResolved) return;
 
     // Se não há usuário, não redireciona (deixa AuthWrapper lidar)
     if (!user) return;
@@ -33,7 +33,7 @@ export default function PostLoginRedirect() {
       console.log(`[PostLoginRedirect] Redirecting to ${targetRoute} (role: ${studentRole})`);
       router.replace(targetRoute);
     }
-  }, [user, isLoading, studentRole, targetRoute, router]);
+  }, [user, authResolved, studentRole, targetRoute, router]);
 
   // Componente não renderiza nada
   return null;
