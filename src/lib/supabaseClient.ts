@@ -29,6 +29,7 @@ export function getSupabaseClient(): SupabaseClient | null {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        storageKey: "wt-auth-session",
       },
     },
   );

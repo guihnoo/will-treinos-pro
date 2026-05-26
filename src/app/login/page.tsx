@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useMemo } from "react";
-import Link from "next/link";
+import React, { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -43,7 +42,7 @@ type Stage = "roles" | "staff-auth" | "athlete-gate";
 type StaffRole = "admin" | "coach";
 
 function LoginPageContent() {
-  const { login, loginWithPassword, loginWithOAuth } = useAuth();
+  const { login, loginWithPassword, loginWithOAuth, user, authResolved } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -53,6 +52,7 @@ function LoginPageContent() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<"email" | "password" | null>(null);
+  const [awaitingRedirect, setAwaitingRedirect] = useState(false);
 
   const supabaseReady = hasSupabaseEnv();
   const nextPath = sanitizeNextPath(searchParams.get("next"));
@@ -66,6 +66,17 @@ function LoginPageContent() {
     toast(decodeURIComponent(err), "error");
     window.history.replaceState(null, "", "/login");
   }, [toast]);
+
+  useEffect(() => {
+    if (!awaitingRedirect || !authResolved || !user) return;
+    const dest =
+      user.role === "visitor"
+        ? "/feed"
+        : user.role === "aluno"
+          ? "/treinos"
+          : "/dashboard";
+    router.replace(nextPath ?? dest);
+  }, [awaitingRedirect, authResolved, user, router, nextPath]);
 
   // Staff/dev click → unlock OAuth gate immediately
   const handleStaffCardClick = (role: StaffRole) => {
@@ -98,7 +109,7 @@ function LoginPageContent() {
     if (result.ok === false) { toast(result.message, "error"); return; }
     toast("✅ Sessão autenticada.");
     clearStaffOAuthGate();
-    router.push(nextPath ?? "/dashboard");
+    setAwaitingRedirect(true); // aguarda role resolver via useEffect
   };
 
   const handleOAuthLogin = async (provider: "google" | "facebook") => {
@@ -116,6 +127,17 @@ function LoginPageContent() {
       toast(`${result.message} Confira Redirect URLs no Supabase.`, "error");
     }
   };
+
+  if (awaitingRedirect && !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#EAB308]/30 border-t-[#EAB308]" />
+          <p className="text-xs text-zinc-500">Validando acesso…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#050505] text-[#e5e2e1]"
@@ -467,73 +489,41 @@ function LoginPageContent() {
                   ← Voltar
                 </button>
                 <span className="mb-4 block text-5xl">🏆</span>
-                <h2 className="mb-3 text-xl font-bold text-white">Atleta VIP</h2>
-                {inviteStrict ? (
-                  <>
-                    <p className="mb-5 text-sm leading-relaxed text-white/50">
-                      Novas contas só são aceitas com o <strong className="text-yellow-400">link oficial</strong> enviado pela equipe Will Treinos (código validado no servidor). Abra esse link primeiro — ou a página de matrícula abaixo — e siga com Google a partir dali.
-                    </p>
-                    <Link
-                      href="/cadastro"
-                      className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-bold text-black transition-opacity hover:opacity-95"
-                      style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", fontFamily: "'Space Grotesk', sans-serif" }}
-                    >
-                      Abrir matrícula oficial
-                    </Link>
-                    <p className="mb-3 text-[10px] uppercase tracking-widest text-white/35">
-                      Já abriu o convite neste navegador nesta sessão?
-                    </p>
-                    {supabaseReady && (
-                      <motion.button
-                        type="button"
-                        whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
-                        whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 8px 16px rgba(234,179,8,0.2)" }}
-                        onClick={() => void handleOAuthLogin("google")}
-                        disabled={isSubmitting}
-                        transition={springPhysics.snappy}
-                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white/5 py-3 text-sm font-semibold text-white disabled:opacity-40"
-                      >
-                        {isSubmitting ? "Conectando…" : "Continuar com Google"}
-                      </motion.button>
+                <h2 className="mb-2 text-xl font-bold text-white">Atleta VIP</h2>
+                <p className="mb-6 text-sm leading-relaxed text-white/50">
+                  Crie sua conta com Google, preencha seus dados e aguarde a aprovação do treinador.
+                </p>
+                {supabaseReady && (
+                  <motion.button
+                    type="button"
+                    whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
+                    whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 12px 24px rgba(234,179,8,0.4)" }}
+                    onClick={() => void handleOAuthLogin("google")}
+                    disabled={isSubmitting}
+                    transition={springPhysics.snappy}
+                    className="flex w-full items-center justify-center gap-3 rounded-lg py-3.5 text-sm font-bold disabled:opacity-40"
+                    style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
+                  >
+                    {isSubmitting ? (
+                      <motion.span className="h-4 w-4 rounded-full border-2 border-black/30 border-t-black"
+                        animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+                    ) : (
+                      <svg className="h-4 w-4" viewBox="0 0 24 24">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                      </svg>
                     )}
-                  </>
-                ) : (
-                  <>
-                    <p className="mb-6 text-sm leading-relaxed text-white/50">
-                      Você pode <strong className="text-yellow-400">criar sua conta com Google</strong>, preencher seus dados e aguardar a aprovação do administrador — sem precisar de link de convite.
-                    </p>
-                    {supabaseReady && (
-                      <motion.button
-                        type="button"
-                        whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
-                        whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 12px 24px rgba(234,179,8,0.4)" }}
-                        onClick={() => void handleOAuthLogin("google")}
-                        disabled={isSubmitting}
-                        transition={springPhysics.snappy}
-                        className="mb-4 flex w-full items-center justify-center gap-3 rounded-lg py-3 text-sm font-semibold disabled:opacity-40"
-                        style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
-                      >
-                        {isSubmitting ? "Conectando…" : "Criar conta com Google"}
-                      </motion.button>
-                    )}
-                    <p className="mb-4 text-[11px] text-white/35">
-                      Preferir o formulário completo de matrícula? Use o cadastro oficial abaixo quando disponível.
-                    </p>
-                    <div className="mb-4 rounded-lg p-4"
-                      style={{ background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.15)" }}>
-                      <p className="text-xs text-yellow-400/80">
-                        Se o seu treinador enviou um link de convite, abra-o neste navegador antes de cadastrar.
-                      </p>
-                    </div>
-                    {process.env.NEXT_PUBLIC_SHOW_PUBLIC_CADASTRO_LINK === "true" && (
-                      <Link href="/cadastro"
-                        className="inline-block rounded-full px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all"
-                        style={{ background: "linear-gradient(135deg, #EAB308, #CA8A04)", color: "#000", fontFamily: "'Space Grotesk', sans-serif" }}>
-                        Acessar Matrícula
-                      </Link>
-                    )}
-                  </>
+                    {isSubmitting ? "Conectando…" : "Criar conta com Google"}
+                  </motion.button>
                 )}
+                <p className="mt-4 text-[11px] text-white/30">
+                  Já tem uma conta?{" "}
+                  <button type="button" onClick={() => setStage("roles")} className="text-[#EAB308]/70 underline-offset-2 hover:text-[#EAB308] hover:underline">
+                    Faça login acima.
+                  </button>
+                </p>
               </div>
             </motion.div>
           )}

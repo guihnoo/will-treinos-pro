@@ -119,6 +119,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const needsMatriculaGate =
     !isPublic &&
     usingSupabaseSession &&
+    !criticalDataLoading &&
     user &&
     user.role === null &&
     pathname &&
@@ -178,7 +179,11 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-black">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-800 border-t-[#EAB308]" aria-hidden />
+      </div>
+    );
   }
 
   return (
