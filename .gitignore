@@ -46,9 +46,13 @@ supabase/.temp/
 
 # next-pwa (gerados em `next build` — a Vercel recria no deploy)
 public/sw.js
+public/sw.js.map
 public/workbox-*.js
+public/workbox-*.js.map
 public/fallback-*.js
+public/fallback-*.js.map
 public/worker-*.js
+public/worker-*.js.map
 
 # Design reference (material local de referência — não vai para o GitHub)
 /DESIGN_REFERENCE
