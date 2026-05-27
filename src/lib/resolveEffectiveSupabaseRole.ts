@@ -72,10 +72,10 @@ export async function resolveEffectiveSupabaseRole(
     const myStudent = catalogStudents.find(
       (s) => s.authUserId === authUser.id || s.email === authUser.email?.toLowerCase()
     );
-    if (myStudent && myStudent.status === "active") {
+    if (myStudent && (myStudent.status === "approved" || myStudent.status === "active")) {
       if (myStudent.studentRole === "observador") effectiveRole = "visitor";
       else if (myStudent.studentRole === "professor") effectiveRole = "coach";
-      else if (myStudent.studentRole === "aluno") effectiveRole = "aluno";
+      else effectiveRole = "aluno";
     }
   }
 

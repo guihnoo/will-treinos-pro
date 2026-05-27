@@ -1,6 +1,6 @@
 export type Role = "admin" | "coach" | "aluno" | "visitor" | null;
 export type StudentRole = "aluno" | "observador" | "professor";
-export type StudentStatus = "active" | "pending" | "suspended" | "trial";
+export type StudentStatus = "active" | "approved" | "pending" | "suspended" | "trial";
 export type PaymentStatus = "paid" | "pending" | "late";
 export type LessonStatus = "scheduled" | "in-progress" | "completed" | "cancelled";
 export type LessonType = "Individual" | "Dupla" | "Trio" | "Grupo";

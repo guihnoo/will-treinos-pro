@@ -31,7 +31,7 @@ export function StudentsProvider({ children }: { children: React.ReactNode }) {
           acc[student.status] += 1;
           return acc;
         },
-        { active: 0, pending: 0, suspended: 0, trial: 0 },
+        { active: 0, approved: 0, pending: 0, suspended: 0, trial: 0 },
       ),
     [app.students],
   );

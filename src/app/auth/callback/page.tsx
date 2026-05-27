@@ -29,6 +29,43 @@ function sanitizeNextPath(raw: string | null | undefined): string | null {
 }
 
 /**
+ * Quando o JWT não tem role (Google OAuth padrão), consulta a tabela students
+ * para determinar a rota correta do aluno aprovado.
+ */
+async function resolveApprovedStudentRoute(
+  supabase: NonNullable<ReturnType<typeof getSupabaseClient>>,
+  user: SupabaseAuthUser,
+): Promise<"/treinos" | "/feed" | "/dashboard" | "/cadastro"> {
+  try {
+    let student: { status: string; student_role: string } | null = null;
+
+    const { data: byAuth } = await supabase
+      .from("students")
+      .select("status, student_role")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+
+    if (byAuth) {
+      student = byAuth;
+    } else if (user.email) {
+      const { data: byEmail } = await supabase
+        .from("students")
+        .select("status, student_role")
+        .eq("email", user.email.trim().toLowerCase())
+        .maybeSingle();
+      student = byEmail ?? null;
+    }
+
+    if (!student || (student.status !== "approved" && student.status !== "active")) return "/cadastro";
+    if (student.student_role === "observador") return "/feed";
+    if (student.student_role === "professor") return "/dashboard";
+    return "/treinos";
+  } catch {
+    return "/cadastro";
+  }
+}
+
+/**
  * OAuth PKCE return (?code=...). Troca o código por sessão antes de rotear.
  */
 export default function AuthCallbackPage() {
@@ -85,7 +122,13 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        router.replace(preferredNext ?? postLoginRouteFromAuthUser(user));
+        // JWT não carrega role para alunos OAuth — verificar students table para roteamento correto.
+        let dest = postLoginRouteFromAuthUser(user);
+        if (dest === "/cadastro") {
+          dest = await resolveApprovedStudentRoute(supabase, user);
+        }
+
+        router.replace(preferredNext ?? dest);
       };
 
       /** Contas Google sem papel staff nem linha em `students` completam cadastro em /signup. */
