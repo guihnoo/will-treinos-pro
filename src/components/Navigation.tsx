@@ -15,7 +15,6 @@ import { useNotifications } from "@/context/NotificationsContext";
 import NotificationsDrawer from "@/components/NotificationsDrawer";
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
 import UserAvatar from "@/components/ui/UserAvatar";
-import DevRoleImpersonationToggle from "@/components/DevRoleImpersonationToggle";
 import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
 
 // Rotas permitidas por role
@@ -230,7 +229,6 @@ export function Navigation() {
       {/* Notifications Drawer */}
       <NotificationsDrawer open={showNotifs} onClose={() => setShowNotifs(false)} />
 
-      <DevRoleImpersonationToggle />
     </>
   );
 }

@@ -1,5 +1,5 @@
-import LoginPremium from "@/components/Login";
+import { redirect } from "next/navigation";
 
 export default function PreviewPage() {
-  return <LoginPremium />;
+  redirect("/dashboard");
 }
