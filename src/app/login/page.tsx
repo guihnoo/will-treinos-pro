@@ -88,7 +88,7 @@ function LoginPageContent() {
     setStage("staff-auth");
   };
 
-  // Athlete click → show invite gate message
+  // Athlete click → show login form (also handles returning athletes)
   const handleAthleteClick = () => {
     if (typeof window !== "undefined") {
       wtSessionSet(WT_SESSION_DEV_IMPERSONATION_KEY, "aluno");
@@ -481,49 +481,117 @@ function LoginPageContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={prefersReducedMotion() ? { duration: 0 } : { ...springPhysics.smooth, duration: 0.5 }}
-              className="w-full max-w-sm text-center"
+              className="w-full max-w-sm"
             >
-              <div className="rounded-xl p-7"
+              <div className="relative rounded-xl overflow-hidden"
                 style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                <button type="button" onClick={() => setStage("roles")} className="mx-auto mb-5 flex items-center gap-2 text-xs text-white/40 transition-colors hover:text-white/70">
-                  ← Voltar
-                </button>
-                <span className="mb-4 block text-5xl">🏆</span>
-                <h2 className="mb-2 text-xl font-bold text-white">Atleta VIP</h2>
-                <p className="mb-6 text-sm leading-relaxed text-white/50">
-                  Crie sua conta com Google, preencha seus dados e aguarde a aprovação do treinador.
-                </p>
-                {supabaseReady && (
-                  <motion.button
-                    type="button"
-                    whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
-                    whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 12px 24px rgba(234,179,8,0.4)" }}
-                    onClick={() => void handleOAuthLogin("google")}
-                    disabled={isSubmitting}
-                    transition={springPhysics.snappy}
-                    className="flex w-full items-center justify-center gap-3 rounded-lg py-3.5 text-sm font-bold disabled:opacity-40"
-                    style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
-                  >
-                    {isSubmitting ? (
-                      <motion.span className="h-4 w-4 rounded-full border-2 border-black/30 border-t-black"
-                        animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
-                    ) : (
-                      <svg className="h-4 w-4" viewBox="0 0 24 24">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                      </svg>
-                    )}
-                    {isSubmitting ? "Conectando…" : "Criar conta com Google"}
-                  </motion.button>
-                )}
-                <p className="mt-4 text-[11px] text-white/30">
-                  Já tem uma conta?{" "}
-                  <button type="button" onClick={() => setStage("roles")} className="text-[#EAB308]/70 underline-offset-2 hover:text-[#EAB308] hover:underline">
-                    Faça login acima.
+
+                {/* Gold top border */}
+                <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, #EAB308, transparent)" }} />
+
+                <div className="p-7">
+                  <button type="button" onClick={() => setStage("roles")} className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 mb-5 transition-colors">
+                    ← Voltar
                   </button>
-                </p>
+
+                  <p className="text-[11px] font-bold uppercase tracking-widest mb-1"
+                    style={{ color: "#eab308", fontFamily: "'Space Grotesk', sans-serif" }}>
+                    🏆 Atleta VIP
+                  </p>
+                  <h2 className="text-xl font-bold text-white mb-1">Entrar na Arena</h2>
+                  <p className="text-xs text-white/40 mb-6">Use sua conta Google ou e-mail e senha.</p>
+
+                  {/* Google OAuth */}
+                  {supabaseReady && (
+                    <motion.button
+                      type="button"
+                      whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
+                      whileHover={prefersReducedMotion() ? {} : { scale: 1.02, boxShadow: "0 12px 24px rgba(234,179,8,0.4)" }}
+                      onClick={() => void handleOAuthLogin("google")}
+                      disabled={isSubmitting}
+                      transition={springPhysics.snappy}
+                      className="w-full flex items-center justify-center gap-3 py-3 rounded-lg font-semibold text-sm mb-4 disabled:opacity-40"
+                      style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)", color: "#000" }}
+                    >
+                      {isSubmitting ? (
+                        <motion.span className="h-4 w-4 rounded-full border-2 border-black/30 border-t-black"
+                          animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+                      ) : (
+                        <svg className="h-4 w-4" viewBox="0 0 24 24">
+                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                        </svg>
+                      )}
+                      {isSubmitting ? "Conectando…" : "Entrar com Google"}
+                    </motion.button>
+                  )}
+
+                  {/* Separator */}
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-[10px] uppercase tracking-widest text-white/30">ou senha</span>
+                    <div className="h-px flex-1 bg-white/10" />
+                  </div>
+
+                  {/* Email + password */}
+                  <div className="space-y-2.5">
+                    <motion.input
+                      type="email"
+                      autoComplete="email"
+                      placeholder="E-mail"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      onFocus={() => setFocusedField("email")}
+                      onBlur={() => setFocusedField(null)}
+                      onKeyDown={e => e.key === "Enter" && void handleRealLogin()}
+                      animate={!prefersReducedMotion() && focusedField === "email" ? { scale: 1.01 } : {}}
+                      transition={springPhysics.snappy}
+                      className="w-full rounded-lg py-2.5 px-4 text-sm text-white bg-black/40 outline-none placeholder:text-white/30"
+                      style={{
+                        border: `1px solid ${focusedField === "email" ? "rgba(234,179,8,0.6)" : "rgba(255,255,255,0.08)"}`,
+                        boxShadow: focusedField === "email" ? "0 0 0 3px rgba(234,179,8,0.15)" : "none",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
+                      }}
+                    />
+                    <motion.input
+                      type="password"
+                      autoComplete="current-password"
+                      placeholder="Senha"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onFocus={() => setFocusedField("password")}
+                      onBlur={() => setFocusedField(null)}
+                      onKeyDown={e => e.key === "Enter" && void handleRealLogin()}
+                      animate={!prefersReducedMotion() && focusedField === "password" ? { scale: 1.01 } : {}}
+                      transition={springPhysics.snappy}
+                      className="w-full rounded-lg py-2.5 px-4 text-sm text-white bg-black/40 outline-none placeholder:text-white/30"
+                      style={{
+                        border: `1px solid ${focusedField === "password" ? "rgba(234,179,8,0.6)" : "rgba(255,255,255,0.08)"}`,
+                        boxShadow: focusedField === "password" ? "0 0 0 3px rgba(234,179,8,0.15)" : "none",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
+                      }}
+                    />
+                    <motion.button
+                      whileTap={prefersReducedMotion() ? {} : { scale: 0.94 }}
+                      whileHover={prefersReducedMotion() ? {} : { scale: 1.01 }}
+                      onClick={() => void handleRealLogin()}
+                      disabled={!supabaseReady || isSubmitting}
+                      transition={springPhysics.snappy}
+                      className="w-full py-2.5 rounded-lg text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={{ background: "rgba(234,179,8,0.15)", color: "#ffd165", border: "1px solid rgba(234,179,8,0.2)" }}
+                    >
+                      {isSubmitting ? "Entrando…" : "Entrar"}
+                    </motion.button>
+                  </div>
+
+                  {/* New athlete hint */}
+                  <p className="mt-5 text-center text-[11px] leading-relaxed text-white/25">
+                    Primeiro acesso?{" "}
+                    <span className="text-[#EAB308]/50">Peça o link de convite ao seu treinador.</span>
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
