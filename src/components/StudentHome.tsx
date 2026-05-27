@@ -1029,312 +1029,188 @@ export default function StudentHome() {
         </div>
       </motion.div>
 
-      {/* Minha Semana (prioridade no topo) */}
-      <motion.div variants={homeItem} className="mb-2 rounded-2xl border border-[#EAB308]/25 bg-zinc-950/55 backdrop-blur-xl p-3.5">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <h2 className="text-sm font-black uppercase tracking-[0.16em] text-[#EAB308]">Minha Semana</h2>
+      {/* BLOCO 1: Próxima Aula + Check-in */}
+      {nextLesson ? (
+        <motion.div variants={homeItem}>
+          <div
+            onClick={() => setLessonModal(nextLesson)}
+            className="rounded-2xl border border-[#EAB308]/30 bg-zinc-950/60 backdrop-blur-xl p-4 cursor-pointer hover:border-[#EAB308]/50 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#EAB308]">Próxima aula</span>
+                  {countdown && (
+                    <span className="flex items-center gap-1 rounded-full border border-[#EAB308]/25 bg-[#EAB308]/10 px-2 py-0.5 text-[10px] font-bold text-[#EAB308]">
+                      <Clock className="h-3 w-3" />{countdown}
+                    </span>
+                  )}
+                  {nextLesson.status === "in-progress" && (
+                    <span className="flex animate-pulse items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[9px] font-black text-red-400">
+                      <Radio className="h-2.5 w-2.5" />Ao vivo
+                    </span>
+                  )}
+                </div>
+                <p className="truncate text-base font-bold text-white">{nextLesson.title}</p>
+                <p className="mt-0.5 text-[11px] text-zinc-500">{nextLesson.startTime}–{nextLesson.endTime} · {nextLesson.enrolledStudents.length} alunos</p>
+              </div>
+              {(() => {
+                const gate = checkInGate(nextLesson);
+                if (nextLesson.presentStudents.includes(user?.id || "")) {
+                  return (
+                    <div className="flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl border border-[#22C55E]/35 bg-[#22C55E]/10 px-3 py-2 text-[#22C55E]">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="text-[10px] font-bold">Confirmado</span>
+                    </div>
+                  );
+                }
+                if (nextLesson.checkInRequests?.find(r => r.studentId === user?.id)?.status === "pending") {
+                  return (
+                    <div className="flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 px-3 py-2">
+                      <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                        <Clock className="h-5 w-5 text-[#EAB308]" />
+                      </motion.div>
+                      <span className="text-[10px] font-bold text-[#EAB308]">Aguardando</span>
+                    </div>
+                  );
+                }
+                if (gate.locked) {
+                  return (
+                    <div className="flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl border border-zinc-700 bg-zinc-900/80 px-3 py-2 text-center">
+                      <Lock className="h-5 w-5 text-zinc-500" />
+                      <span className="text-[10px] font-bold text-zinc-500">Bloqueado</span>
+                      <span className="max-w-[64px] text-[9px] text-zinc-600">{gate.unlockLabel}</span>
+                    </div>
+                  );
+                }
+                return (
+                  <motion.button
+                    whileTap={{ scale: 0.92 }}
+                    onClick={e => {
+                      e.stopPropagation();
+                      haptic([18, 12, 20]);
+                      requestCheckIn(nextLesson.id, user!.id);
+                      toast("Chegada registrada! Aguardando confirmação do professor.");
+                    }}
+                    className={`flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl bg-[#EAB308] px-3 py-2 font-bold text-black shadow-[0_0_16px_rgba(234,179,8,0.3)] ${ctaClass}`}
+                  >
+                    <MapPin className="h-5 w-5" />
+                    <span className="text-[10px]">Check-in</span>
+                  </motion.button>
+                );
+              })()}
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div variants={homeItem} className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 p-5 text-center">
+          <CalendarIcon className="mx-auto mb-2 h-8 w-8 text-zinc-700" />
+          <p className="text-sm text-zinc-500">Nenhum treino agendado no momento.</p>
+          <button
+            onClick={() => { setSelectedDay(week7[0] ?? null); setShowAgendaPanel(true); }}
+            className={`mt-2 text-[11px] font-bold text-[#EAB308] ${ctaClass}`}
+          >
+            Ver agenda completa
+          </button>
+        </motion.div>
+      )}
+
+      {/* BLOCO 2: XP + Progresso */}
+      <motion.div variants={homeItem} className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => { haptic([22, 16, 22]); setShowXpModal(true); }}
+          className={`rounded-2xl border border-white/[0.07] bg-zinc-950/50 p-4 text-left flex items-center gap-3 ${ctaClass}`}
+        >
+          <div className="relative h-14 w-14 flex-shrink-0">
+            <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#27272a" strokeWidth="2.4" />
+              <motion.circle
+                cx="18" cy="18" r="15.9"
+                fill="none"
+                stroke={equippedTier.color}
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeDasharray="100"
+                strokeDashoffset={100 - meritScore}
+                initial={{ strokeDashoffset: 100 }}
+                animate={{ strokeDashoffset: 100 - meritScore }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <p className="text-sm font-black leading-none" style={{ color: equippedTier.color }}>{meritScore}</p>
+              <span className="text-[8px] text-zinc-500">pts</span>
+            </div>
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500">Score</p>
+            <p className="truncate text-sm font-bold" style={{ color: equippedTier.color }}>{equippedTier.label}</p>
+            {nextTier && <p className="truncate text-[10px] text-zinc-600">{Math.max(0, nextTier.min - meritScore)}pts → {nextTier.label}</p>}
+          </div>
+        </button>
+
+        <div className="rounded-2xl border border-white/[0.07] bg-zinc-950/50 p-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-zinc-500">Sequência</p>
+              <p className="text-xl font-black text-[#EAB308]">{streak}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-zinc-500">Nota média</p>
+              <p className="text-xl font-black" style={{ color: avgRating ? scoreColor(avgRating) : "#52525b" }}>
+                {avgRating ? avgRating.toFixed(1) : "—"}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            {streakTrail.slice(-5).map((active, idx) => (
+              <div key={idx} className={`h-1 flex-1 rounded-full ${active ? "bg-[#EAB308]" : "bg-zinc-800"}`} />
+            ))}
+          </div>
+          <button
+            onClick={() => { haptic(16); setEvolModal(true); }}
+            className={`w-full text-[10px] font-bold text-zinc-500 hover:text-[#EAB308] transition-colors ${ctaClass}`}
+          >
+            Ver evolução completa →
+          </button>
+        </div>
+      </motion.div>
+
+      {/* BLOCO 3: Agenda da Semana + Ranking */}
+      <motion.div variants={homeItem} className="rounded-2xl border border-[#EAB308]/20 bg-zinc-950/50 backdrop-blur-xl p-3.5">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="text-sm font-black uppercase tracking-[0.15em] text-[#EAB308]">Minha Semana</h2>
           <button
             onClick={() => { setSelectedDay(week7[0] ?? null); setShowAgendaPanel(true); }}
             className={`text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg ${ctaClass}`}
           >
-            Abrir agenda
+            Ver agenda
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-2">
+        <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
             <p className="text-[9px] text-zinc-500">Planejados</p>
-            <p className="text-[12px] font-black text-white">{weekScheduledCount}</p>
+            <p className="text-sm font-black text-white">{weekScheduledCount}</p>
           </div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
             <p className="text-[9px] text-zinc-500">Concluídos</p>
-            <p className="text-[12px] font-black text-[#22C55E]">{weekCompletedCount}</p>
+            <p className="text-sm font-black text-[#22C55E]">{weekCompletedCount}</p>
           </div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
             <p className="text-[9px] text-zinc-500">Execução</p>
-            <p className="text-[12px] font-black text-[#EAB308]">{executionRate}%</p>
+            <p className="text-sm font-black text-[#EAB308]">{executionRate}%</p>
           </div>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-2.5">
-          <p className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold mb-0.5">Próxima aula</p>
-          {nextLesson ? (
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold text-white truncate">{nextLesson.title}</p>
-                <p className="text-[10px] text-zinc-500">{nextLesson.startTime} - {nextLesson.endTime} · {countdown || "agendada"}</p>
-              </div>
-              <button
-                onClick={() => setLessonModal(nextLesson)}
-                className={`flex-shrink-0 text-[10px] font-bold text-black bg-[#EAB308] px-2.5 py-1 rounded-lg ${ctaClass}`}
-              >
-                Ver aula
-              </button>
-            </div>
-          ) : (
-            <p className="text-[10px] text-zinc-500">Sem aula agendada para os próximos dias.</p>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Missão do dia (compacta) */}
-      <motion.div variants={homeItem} className="mb-2 rounded-2xl border border-[#EAB308]/25 bg-zinc-950/55 backdrop-blur-xl p-3.5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#EAB308]">{missionOfDay.title}</p>
-            <p className="text-sm font-bold text-white mt-1">{missionOfDay.decision}</p>
-            <p className="text-[11px] text-zinc-400 mt-0.5">{missionOfDay.action}</p>
-            <p className="text-[10px] text-zinc-500 mt-1">Definida por prof/admin e confirmada pelo aluno após a sessão.</p>
+        <button
+          onClick={() => { haptic([22, 16, 22]); setShowLeaderboard(true); }}
+          className={`mt-3 w-full rounded-xl border border-yellow-500/20 bg-yellow-500/8 p-2.5 flex items-center justify-between ${ctaClass}`}
+        >
+          <div className="flex items-center gap-2">
+            <Medal className="h-4 w-4 text-yellow-400" />
+            <span className="text-[11px] font-bold text-yellow-400">Ranking — ver minha posição</span>
           </div>
-          <button
-            onClick={() => (nextLesson ? setLessonModal(nextLesson) : setEvolModal(true))}
-            className={`flex-shrink-0 text-[10px] font-bold text-black bg-[#EAB308] px-2.5 py-1 rounded-lg ${ctaClass}`}
-          >
-            Executar
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-1">
-        {[
-          {
-            label: "Carga Confirmada",
-            value: `${kpiCount.aulas}`,
-            color: "#EAB308",
-            icon: Trophy,
-            kind: "aulas" as const,
-            pillar: "Volume",
-            diagnosis: `${attendanceDiagnostics.rate}% presença nos 8 últimos treinos`,
-            impact: attendanceDiagnostics.impact,
-            nextStep: attendanceDiagnostics.action,
-          },
-          {
-            label: "Ritmo Competitivo",
-            value: `${kpiCount.streak}`,
-            color: "#EAB308",
-            icon: Radio,
-            kind: "streak" as const,
-            ring: Math.min(100, (Math.max(streak, 1) / 10) * 100),
-            sub: "sessões seguidas",
-            pillar: "Constância",
-            diagnosis: `Recorde pessoal: ${bestStreak} sessões`,
-            impact: streak >= 5 ? "Adaptação técnica mais estável sob pressão." : "Oscilação técnica por janelas longas sem estímulo.",
-            nextStep: sessionsToBeatRecord === 0 ? "Defender recorde atual na próxima semana." : `Completar +${sessionsToBeatRecord} sessões para novo recorde.`,
-          },
-          {
-            label: "Score Técnico Oficial",
-            value: avgRating ? `${kpiCount.nota.toFixed(1)}` : "—",
-            color: avgRating ? scoreColor(avgRating) : "#52525b",
-            icon: Target,
-            kind: "nota" as const,
-            ring: Math.min(100, (Math.max(avgRating, 0) / 10) * 100),
-            sub: "média oficial",
-            pillar: "Qualidade",
-            diagnosis: "Fonte principal: avaliação do prof/admin.",
-            impact: "Define foco técnico da próxima sessão e prioridade de fundamento.",
-            nextStep: "Revisar plano técnico antes do próximo treino.",
-          },
-          {
-            label: "Confiabilidade de Presença",
-            value: `${kpiCount.freq}%`,
-            color: freqColor,
-            icon: CheckCircle2,
-            kind: "freq" as const,
-            pillar: "Disciplina",
-            diagnosis: `${executionRate}% de execução semanal`,
-            impact: frequency >= 80 ? "Ritmo previsível para evolução contínua." : "Menor consistência para consolidar correções técnicas.",
-            nextStep: "Fechar confirmação dos próximos treinos com antecedência.",
-          },
-        ].map((s,i)=>{ const Icon=s.icon; return (
-          <motion.div key={i} variants={homeItem}
-            whileTap={{scale:0.95}}
-            whileHover={{
-              y: -3,
-              borderColor: "rgba(234, 179, 8, 0.4)",
-              boxShadow: "0 0 0 1px rgba(234,179,8,0.15), 0 12px 44px rgba(0,0,0,0.5), 0 0 22px rgba(234,179,8,0.16)",
-            }}
-            onClick={()=>{
-              haptic([22,16,22]);
-              if(s.kind==="nota") setEvolModal(true);
-              else setStatsModal(s.kind);
-            }}
-            className="rounded-2xl p-3 sm:p-4 relative overflow-hidden cursor-pointer border border-white/[0.07] bg-zinc-950/45 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all min-w-0">
-            <motion.div
-              aria-hidden
-              animate={{ opacity: [0.14, 0.3, 0.14] }}
-              transition={{ duration: 2.8, repeat: Infinity, delay: i * 0.14 }}
-              className="absolute inset-0"
-              style={{ background: `radial-gradient(circle at 80% 0%, ${s.color}2A, transparent 56%)` }}
-            />
-            <div className="absolute -top-4 -right-4 w-14 h-14 rounded-full blur-xl opacity-25" style={{background:s.color}}/>
-            {s.kind === "streak" ? (
-              <div className="space-y-2 mb-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Icon className="w-4 h-4" style={{ color: s.color }} />
-                    <p className="text-lg sm:text-xl font-bold leading-none" style={{ color: s.color }}>{s.value}</p>
-                  </div>
-                  <span className="text-[9px] text-zinc-500">sequência</span>
-                </div>
-                <svg viewBox="0 0 240 40" className="w-full h-10" aria-hidden>
-                  <defs>
-                    <linearGradient id="streakLine" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="rgba(234,179,8,0.15)" />
-                      <stop offset="50%" stopColor="rgba(234,179,8,0.85)" />
-                      <stop offset="100%" stopColor="rgba(234,179,8,0.15)" />
-                    </linearGradient>
-                    <filter id="streakGlow" x="-30%" y="-30%" width="160%" height="160%">
-                      <feGaussianBlur stdDeviation="1.2" result="b" />
-                      <feMerge>
-                        <feMergeNode in="b" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <motion.path
-                    d="M 16 22 C 56 10, 96 34, 120 22 C 144 10, 184 34, 224 22"
-                    fill="none"
-                    stroke="url(#streakLine)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    filter="url(#streakGlow)"
-                    initial={{ pathLength: 0.55, opacity: 0.55 }}
-                    animate={{ pathLength: [0.45, 1, 0.55], opacity: [0.45, 1, 0.55] }}
-                    transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  {streakTrail.map((active, idx) => {
-                    const x = 16 + (208 * idx) / Math.max(1, streakTrail.length - 1);
-                    const y = 22;
-                    return (
-                      <g key={idx}>
-                        <circle
-                          cx={x}
-                          cy={y}
-                          r={active ? 5.2 : 4.2}
-                          fill={active ? "rgba(234,179,8,0.12)" : "rgba(24,24,27,0.9)"}
-                          stroke={active ? "rgba(234,179,8,0.85)" : "rgba(113,113,122,0.9)"}
-                          strokeWidth="1.6"
-                        />
-                        {active ? (
-                          <path
-                            d={`M ${x - 2.2} ${y} L ${x - 0.6} ${y + 1.7} L ${x + 2.6} ${y - 1.6}`}
-                            fill="none"
-                            stroke="rgba(234,179,8,0.95)"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        ) : (
-                          <circle cx={x} cy={y} r="1.1" fill="rgba(113,113,122,0.9)" />
-                        )}
-                      </g>
-                    );
-                  })}
-                </svg>
-                <p className="text-[9px] text-zinc-500">
-                  {sessionsToBeatRecord === 0 ? "Recorde pessoal ativo" : `Faltam ${sessionsToBeatRecord} sessões para bater seu recorde`}
-                </p>
-              </div>
-            ) : s.kind === "nota" ? (
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="relative w-14 h-14 flex-shrink-0">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#27272a" strokeWidth="2.4" />
-                    <motion.circle
-                      cx="18"
-                      cy="18"
-                      r="15.9"
-                      fill="none"
-                      stroke={s.color}
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeDasharray="100"
-                      strokeDashoffset={100 - (s.ring ?? 0)}
-                      initial={{ strokeDashoffset: 100 }}
-                      animate={{ strokeDashoffset: 100 - (s.ring ?? 0) }}
-                      transition={{ duration: 0.9, ease: "easeOut" }}
-                    />
-                  </svg>
-                  <motion.div
-                    animate={{ scale: [1, 1.06, 1] }}
-                    transition={{ duration: 1.8, repeat: Infinity }}
-                    className="absolute inset-0 flex flex-col items-center justify-center"
-                  >
-                    <p className="text-sm font-black leading-none" style={{ color: s.color }}>{s.value}</p>
-                    <span className="text-[8px] text-zinc-500 uppercase tracking-wider">média</span>
-                  </motion.div>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] text-zinc-500">desempenho geral</p>
-                  <p className="text-[10px] font-bold text-zinc-300">média dos feedbacks</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Icon className="w-4 h-4 mb-2" style={{color:s.color}}/>
-                <p className="text-xl sm:text-2xl font-bold truncate relative z-10" style={{color:s.color}}>{s.value}</p>
-              </>
-            )}
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider relative z-10">{s.label}</p>
-              <span className="text-[8px] font-bold uppercase tracking-wider text-zinc-600 border border-zinc-700 rounded-full px-1.5 py-[1px]">{s.pillar}</span>
-            </div>
-            <p className="text-[9px] text-zinc-500 mt-0.5 line-clamp-2">{s.diagnosis}</p>
-            <div className="mt-1.5">
-              <p className="text-[9px] text-zinc-400 line-clamp-2">{s.impact}</p>
-              <span className="mt-1 inline-flex rounded-md border border-zinc-700/80 bg-zinc-900/55 px-2 py-0.5 text-[9px] font-bold text-zinc-300">
-                {s.nextStep}
-              </span>
-            </div>
-          </motion.div>
-        );})}
-      </div>
-
-      {/* Ranking Button */}
-      <motion.button
-        variants={homeItem}
-        whileTap={{ scale: 0.95 }}
-        whileHover={{ y: -2, boxShadow: "0 0 0 1px rgba(234,179,8,0.2), 0 12px 44px rgba(0,0,0,0.5)" }}
-        onClick={() => {
-          haptic([22, 16, 22]);
-          setShowLeaderboard(true);
-        }}
-        className="mb-1 w-full rounded-2xl p-4 relative overflow-hidden cursor-pointer border border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.4)] transition-all flex items-center justify-between"
-      >
-        <motion.div
-          aria-hidden
-          animate={{ opacity: [0.1, 0.25, 0.1] }}
-          transition={{ duration: 2.8, repeat: Infinity }}
-          className="absolute inset-0"
-          style={{ background: "radial-gradient(circle at 80% 0%, rgba(234,179,8,0.4), transparent 56%)" }}
-        />
-        <div className="relative z-10">
-          <p className="text-sm font-black uppercase tracking-[0.16em] text-yellow-400 mb-0.5">Ranking</p>
-          <p className="text-xs text-zinc-400">Veja sua posição entre atletas</p>
-        </div>
-        <Medal className="w-6 h-6 text-yellow-400 relative z-10" />
-      </motion.button>
-
-      <motion.div variants={homeItem} className="mb-1 rounded-xl border border-zinc-800 bg-zinc-950/50 px-3 py-2">
-        <p className="text-[10px] text-zinc-500">
-          Métricas técnicas e conquistas usam prioridade de dados do <span className="text-[#EAB308] font-bold">prof/admin</span>; autoavaliação do aluno entra como referência complementar.
-        </p>
-      </motion.div>
-      <motion.div variants={homeItem} className="mb-1 rounded-2xl border border-white/[0.07] bg-zinc-950/45 p-3 backdrop-blur-xl">
-        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2">Painel rápido de ação</p>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { title: "Check-in da próxima aula", value: nextLesson ? `${nextLesson.startTime} · ${countdown || "agendada"}` : "Sem próxima aula", color: "#EAB308", action: () => nextLesson ? setLessonModal(nextLesson) : null, cta: "Abrir aula" },
-            { title: "Plano técnico da sessão", value: nextSessionPlan[0] ?? "Definir foco técnico", color: "#60A5FA", action: () => setEvolModal(true), cta: "Ver plano" },
-            { title: "Conquista prioritária", value: nextTier ? `${nextTier.label} em ${Math.max(0, nextTier.min - meritScore)} pts` : "Tier máximo", color: "#A78BFA", action: () => setTrackModalId("competitive"), cta: "Abrir trilha" },
-            { title: "Autoavaliação do aluno", value: selfSessionAvg > 0 ? `${selfSessionAvg.toFixed(1)}/10 nas últimas sessões` : "Ainda sem autoavaliações", color: "#22C55E", action: () => setEvolModal(true), cta: "Comparar com coach" },
-          ].map((item) => (
-            <button key={item.title} onClick={() => { haptic(16); item.action(); }} className={`text-left rounded-xl border border-zinc-800 bg-zinc-900/55 p-2.5 hover:border-zinc-700 transition-colors ${ctaClass}`}>
-              <p className="text-[9px] text-zinc-500">{item.title}</p>
-              <p className="text-[11px] font-bold mt-0.5 line-clamp-2" style={{ color: item.color }}>{item.value}</p>
-              <p className="text-[9px] text-zinc-400 mt-1">{item.cta}</p>
-            </button>
-          ))}
-        </div>
+          <ChevronRight className="h-4 w-4 text-yellow-600" />
+        </button>
       </motion.div>
 
       <AnimatePresence>
