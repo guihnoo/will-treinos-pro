@@ -7,7 +7,7 @@ import { getSupabaseClient } from "@/lib/supabaseClient";
 import { createStudentRemote, updateStudentRemote } from "@/lib/supabasePersistence";
 import { logDevEvent } from "@/lib/devEventsLogger";
 import { syncWtRoleCookie } from "@/lib/appSessionHelpers";
-import { sendPushToRole } from "@/lib/pushRoleBroadcast";
+import { sendPushToRole, sendPushToUser } from "@/lib/pushRoleBroadcast";
 import { willUid } from "@/lib/willUid";
 import { wtLegacyRoleSet, wtLs as ls } from "@/lib/willLocalStorage";
 
@@ -112,12 +112,14 @@ export function useStudentMutations(options: {
         .then((updated) => {
           setStudents((p) => p.map((st) => (st.id === id ? updated : st)));
 
-          // Notificar aluno que foi aprovado
-          void sendPushToRole("aluno", {
-            title: "🎉 Bem-vindo!",
-            body: `Sua inscrição foi aprovada. Acesse o app para começar.`,
-            url: "/dashboard",
-          });
+          // Notificar o aluno específico que foi aprovado (não todos os alunos)
+          if (updated.authUserId) {
+            void sendPushToUser(updated.authUserId, {
+              title: "🎉 Bem-vindo!",
+              body: `Olá ${updated.name}! Sua inscrição foi aprovada. Acesse o app para começar.`,
+              url: "/treinos",
+            });
+          }
 
           void logDevEvent("student_approved", "student", id, { name: updated.name, studentRole: updated.studentRole });
         })

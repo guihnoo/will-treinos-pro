@@ -54,12 +54,26 @@ export function buildSessionUser(
     if (!linkedStudent && custom?.id) {
       linkedStudent = cat.find((s) => s.id === custom.id) ?? null;
     }
-    // Conta Supabase sem matrícula: não herdar o mock s1 por acidente.
-    if (!linkedStudent && authSid) {
+    // Catálogo ainda não carregado (timing) — mas role já foi verificada pelo DB (resolveEffectiveSupabaseRole).
+    // Retornamos role:"aluno" confiando na resolução — o perfil completo chega quando o catálogo sincronizar.
+    // Conta sem matrícula real seria bloqueada antes de chegar aqui pelo oauthUserNeedsStudentSignupFlow.
+    if (!linkedStudent && authSid && catalogStudents !== undefined) {
+      // Catálogo carregado mas student não encontrado = sem matrícula real
       return {
         id: authSid,
         name: custom?.name || "Aluno",
         role: null,
+        avatar: custom?.avatar || "user",
+        email: custom?.email,
+        authSubjectId: authSid,
+      };
+    }
+    if (!linkedStudent && authSid) {
+      // Catálogo não disponível — trusts role resolved from DB
+      return {
+        id: authSid,
+        name: custom?.name || "Aluno",
+        role: "aluno" as const,
         avatar: custom?.avatar || "user",
         email: custom?.email,
         authSubjectId: authSid,
