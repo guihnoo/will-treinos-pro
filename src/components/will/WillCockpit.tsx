@@ -456,6 +456,341 @@ export default function WillCockpit() {
         onResolver={handleCockpitResolver}
       />
 
+      {/* BLOCO 1: Aulas de Hoje — hero de operação */}
+      <motion.div variants={itemV}>
+        <AppSectionCard
+          title="Aulas de Hoje"
+          subtitle={
+            lessonsDay.length > 0
+              ? `${lessonsDay.length} aula${lessonsDay.length > 1 ? "s" : ""} agendada${lessonsDay.length > 1 ? "s" : ""}`
+              : "Nenhuma aula programada para hoje"
+          }
+          rightSlot={
+            <button
+              type="button"
+              onClick={() => { haptic(12); setShowCreateLesson(true); }}
+              className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
+            >
+              + Nova aula
+            </button>
+          }
+          className="relative overflow-hidden border-[#EAB308]/25 bg-[#050505]/85 backdrop-blur-2xl"
+          contentClassName="pt-3"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_100%_at_0%_100%,rgba(234,179,8,0.10),transparent_55%)]" />
+          {lessonsDay.length === 0 ? (
+            <div className="relative flex flex-col items-center gap-2 py-6 text-center">
+              <CalendarDays className="h-8 w-8 text-zinc-700" />
+              <p className="text-sm text-zinc-500">
+                Sem aulas hoje. Toque em{" "}
+                <span className="font-bold text-[#EAB308]">+ Nova aula</span> para criar.
+              </p>
+            </div>
+          ) : (
+            <div className="relative flex flex-col gap-2">
+              {lessonsDay.map(({ lesson, date }) => {
+                const cat = getCategory(lesson.categoryId);
+                const startMs = date.getTime();
+                const endMs = lesson.endTime
+                  ? new Date(`${lesson.date}T${lesson.endTime}:00`).getTime()
+                  : startMs + 60 * 60 * 1000;
+                const isNow = now.getTime() >= startMs && now.getTime() <= endMs;
+                const isPast = now.getTime() > endMs;
+                return (
+                  <button
+                    key={lesson.id}
+                    type="button"
+                    onClick={() => {
+                      haptic(15);
+                      setSelectedLessonId(lesson.id);
+                      setSelectedLessonLayoutId(`lesson-${lesson.id}`);
+                      setShowLessonModal(true);
+                    }}
+                    className={`relative flex items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all ${
+                      isNow
+                        ? "border-[#EAB308]/50 bg-[#EAB308]/8 shadow-[0_0_20px_rgba(234,179,8,0.12)]"
+                        : "border-zinc-800/80 bg-zinc-950/60 hover:border-zinc-700/80"
+                    } ${INTERACTIVE_FOCUS_RING}`}
+                  >
+                    <div
+                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: cat?.color ?? "#EAB308" }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`truncate text-sm font-bold ${isPast ? "text-zinc-500" : "text-white"}`}>
+                          {cat?.name ?? "Aula"}
+                        </span>
+                        {isNow && (
+                          <span className="flex animate-pulse items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-red-400">
+                            <Radio className="h-2.5 w-2.5" />
+                            Ao vivo
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <Clock3 className="h-3 w-3 flex-shrink-0 text-zinc-500" />
+                        <span className="text-[11px] text-zinc-500">
+                          {lesson.startTime}{lesson.endTime ? ` – ${lesson.endTime}` : ""}
+                        </span>
+                        <span className="text-[11px] text-zinc-700">·</span>
+                        <Users className="h-3 w-3 flex-shrink-0 text-zinc-500" />
+                        <span className="text-[11px] text-zinc-500">
+                          {lesson.enrolledStudents.length}{lesson.maxStudents ? `/${lesson.maxStudents}` : ""}
+                        </span>
+                      </div>
+                    </div>
+                    {isNow ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          haptic(20);
+                          router.push("/will/court");
+                        }}
+                        className="flex-shrink-0 rounded-lg border border-[#EAB308]/50 bg-[#EAB308]/15 px-3 py-1.5 text-[10px] font-black text-[#EAB308] transition hover:bg-[#EAB308]/25"
+                      >
+                        Entrar
+                      </button>
+                    ) : (
+                      <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-zinc-600" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </AppSectionCard>
+      </motion.div>
+
+      {/* BLOCO 2: Financeiro + Aprovações — gestão crítica */}
+      <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">
+        <KpiActionCard
+          accent="emerald"
+          title="Saúde Financeira - Mês Atual"
+          icon={WalletCards}
+          onClick={() => setShowFinancialModal(true)}
+          aria-label="Abrir painel financeiro e cobrança por WhatsApp"
+        >
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5">
+              <p className="text-[10px] text-zinc-300">Recebido</p>
+              <p className="text-lg font-black text-emerald-300 tabular-nums">{currencyBRL(currentMonthBuckets.paid)}</p>
+            </div>
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
+              <p className="text-[10px] text-zinc-300">A receber</p>
+              <p className="text-lg font-black text-amber-300 tabular-nums">{currencyBRL(currentMonthBuckets.pending)}</p>
+            </div>
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-2.5">
+              <p className="text-[10px] text-zinc-300">Inadimplentes</p>
+              <p className="text-lg font-black text-red-300 tabular-nums">{currencyBRL(currentMonthBuckets.late)}</p>
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-[11px] text-zinc-500">Toque para abrir cobrança tática por WhatsApp.</p>
+            <span className="text-[10px] font-bold text-zinc-400">{currentMonthReference}</span>
+          </div>
+          <KpiSparkline points={revenueSparkPoints} accent="emerald" label="últimos 6 meses" animated />
+        </KpiActionCard>
+
+        <KpiActionCard
+          accent="gold"
+          title="Fila de Aprovação"
+          icon={ShieldAlert}
+          onClick={() => {
+            setApprovalFilter("all");
+            setSelectedApprovalIds([]);
+            setApprovalSearch("");
+            setShowApprovalModal(true);
+          }}
+          aria-label="Abrir fila de aprovação de cadastros"
+        >
+          <p className="text-[11px] text-zinc-500">Pendências de entrada para resolver agora</p>
+          <p className="text-4xl font-black text-white tabular-nums">{awaitingApproval}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#EAB308]/30 bg-[#EAB308]/10 px-2.5 py-1 text-[10px] font-bold text-[#EAB308]">
+              <Users className="h-3 w-3" /> {statusCounts.trial} em experimental
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold text-red-300">
+              <CreditCard className="h-3 w-3" /> {pendingPaymentsCount} pagamentos pendentes
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setApprovalFilter("trial");
+                setSelectedApprovalIds([]);
+                setApprovalSearch("");
+                setShowApprovalModal(true);
+              }}
+              className="min-h-11 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-zinc-200 transition hover:border-[#EAB308]/45 hover:text-[#EAB308]"
+            >
+              Abrir fila de trial
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <KpiSparkline points={activeStudentsSparkPoints} accent="gold" label="atletas ativos 6 semanas" animated />
+        </KpiActionCard>
+      </motion.div>
+
+      {/* BLOCO 3: Ações rápidas */}
+      <motion.div variants={itemV}>
+        <AppSectionCard
+          title="Ações rápidas"
+          subtitle="Atalhos operacionais para acelerar o dia."
+          rightSlot={<Coins className="h-4 w-4 text-[#EAB308]" />}
+          className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
+          contentClassName="pt-3"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(234,179,8,0.12),transparent_65%)]" />
+          <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href={cadastroPath}
+            onClick={() => {
+              haptic(20);
+              setActionFeedback("Fluxo de cadastro de novo aluno aberto.");
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/40 bg-gradient-to-r from-[#EAB308]/15 to-[#EAB308]/5 px-4 py-3 text-sm font-black text-[#EAB308] transition-all hover:border-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir fluxo rápido de cadastro de aluno"
+          >
+            <UserPlus className="h-5 w-5" />
+            Novo Aluno
+          </Link>
+          <Link
+            href="/agenda?newLesson=1"
+            onClick={() => {
+              haptic(20);
+              setActionFeedback("Fluxo de criação de aula aberto.");
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition-all hover:border-white/30 hover:bg-white/10 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir fluxo rápido de nova aula"
+          >
+            <PlusCircle className="h-5 w-5 text-[#EAB308]" />
+            Nova Aula
+          </Link>
+          <Link
+            href="/feed"
+            onClick={() => {
+              haptic(20);
+              setActionFeedback("A Rede aberta com moderação do dono.");
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-yellow-500/35 bg-yellow-500/10 px-4 py-3 text-sm font-black text-yellow-200 transition-all hover:border-yellow-400/60 hover:bg-yellow-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir A Rede com moderação ativa"
+          >
+            <Newspaper className="h-5 w-5 text-[#EAB308]" />
+            A Rede (Moderação Ativa)
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowTrainingPlans(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir planos de treino"
+          >
+            <Dumbbell className="h-5 w-5 text-emerald-400" />
+            Planos de Treino
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowXPModeration(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Revisar transações de XP bloqueadas"
+          >
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+            Moderar XP
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowXPAnalytics(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver análise de XP distribuído"
+          >
+            <BarChart3 className="h-5 w-5 text-amber-400" />
+            Análise de XP
+          </button>
+          </div>
+        </AppSectionCard>
+      </motion.div>
+
+      {/* BLOCO 4: Grade semanal */}
+      <motion.div variants={itemV}>
+        <AppSectionCard
+          title="Grade semanal"
+          subtitle="Navegue semana a semana e veja todas as aulas agendadas."
+          rightSlot={
+            <button
+              type="button"
+              onClick={() => {
+                haptic(12);
+                router.push("/agenda");
+              }}
+              className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
+              aria-label="Abrir calendário completo na agenda"
+            >
+              Agenda completa
+            </button>
+          }
+          className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
+          contentClassName="pt-3"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(59,130,246,0.14),transparent_65%)]" />
+          <WeeklyCalendarGrid
+            weekStart={calendarWeekStart}
+            lessons={lessons}
+            selectedDate={selectedCalendarDate}
+            onSelectDate={(iso) => {
+              haptic(12);
+              setSelectedCalendarDate(iso);
+            }}
+            onSelectLesson={(lessonId) => {
+              haptic(15);
+              setSelectedLessonId(lessonId);
+              setSelectedLessonLayoutId(`lesson-${lessonId}`);
+              setShowLessonModal(true);
+            }}
+            onCreateLesson={() => {
+              haptic(10);
+              setShowCreateLesson(true);
+            }}
+            theme="admin"
+          />
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+          <button
+            type="button"
+            onClick={() => {
+              haptic(12);
+              setShowCourtModal(true);
+            }}
+            className={`min-h-11 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-zinc-200 transition hover:border-[#EAB308]/45 hover:text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir escalação de hoje com avatares"
+          >
+            Escalação com avatares
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(12);
+              router.push("/agenda");
+            }}
+            className={`min-h-11 inline-flex items-center gap-1 rounded-full border border-[#EAB308]/35 bg-[#EAB308]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#EAB308] transition hover:bg-[#EAB308]/18 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ir para agenda"
+          >
+            Agenda
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </button>
+          </div>
+        </AppSectionCard>
+      </motion.div>
+
+      {/* BLOCO 5: Oráculo + A Rede + Cadastro — contexto e gestão */}
       <motion.div variants={itemV}>
         <div className="rounded-2xl border border-white/[0.06] bg-[#050505]/70 px-4 py-4 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <OracleInsights ctx={oracleCtx} />
@@ -570,233 +905,6 @@ export default function WillCockpit() {
                 Ver agenda no calendário
               </button>
             </div>
-          </div>
-        </AppSectionCard>
-      </motion.div>
-
-      {/* Bloco 2: agenda semanal com grid interativo */}
-      <motion.div variants={itemV}>
-        <AppSectionCard
-          title="Grade semanal"
-          subtitle="Navegue semana a semana e veja todas as aulas agendadas."
-          rightSlot={
-            <button
-              type="button"
-              onClick={() => {
-                haptic(12);
-                router.push("/agenda");
-              }}
-              className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
-              aria-label="Abrir calendário completo na agenda"
-            >
-              Agenda completa
-            </button>
-          }
-          className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
-          contentClassName="pt-3"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(59,130,246,0.14),transparent_65%)]" />
-          <WeeklyCalendarGrid
-            weekStart={calendarWeekStart}
-            lessons={lessons}
-            selectedDate={selectedCalendarDate}
-            onSelectDate={(iso) => {
-              haptic(12);
-              setSelectedCalendarDate(iso);
-            }}
-            onSelectLesson={(lessonId) => {
-              haptic(15);
-              setSelectedLessonId(lessonId);
-              setSelectedLessonLayoutId(`lesson-${lessonId}`);
-              setShowLessonModal(true);
-            }}
-            onCreateLesson={() => {
-              haptic(10);
-              setShowCreateLesson(true);
-            }}
-            theme="admin"
-          />
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
-          <button
-            type="button"
-            onClick={() => {
-              haptic(12);
-              setShowCourtModal(true);
-            }}
-            className={`min-h-11 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-zinc-200 transition hover:border-[#EAB308]/45 hover:text-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir escalação de hoje com avatares"
-          >
-            Escalação com avatares
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(12);
-              router.push("/agenda");
-            }}
-            className={`min-h-11 inline-flex items-center gap-1 rounded-full border border-[#EAB308]/35 bg-[#EAB308]/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#EAB308] transition hover:bg-[#EAB308]/18 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Ir para agenda"
-          >
-            Agenda
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </button>
-          </div>
-        </AppSectionCard>
-      </motion.div>
-
-      {/* Bloco 3: financeiro + aprovações */}
-      <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">
-        <KpiActionCard
-          accent="emerald"
-          title="Saúde Financeira - Mês Atual"
-          icon={WalletCards}
-          onClick={() => setShowFinancialModal(true)}
-          aria-label="Abrir painel financeiro e cobrança por WhatsApp"
-        >
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5">
-              <p className="text-[10px] text-zinc-300">Recebido</p>
-              <p className="text-lg font-black text-emerald-300 tabular-nums">{currencyBRL(currentMonthBuckets.paid)}</p>
-            </div>
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5">
-              <p className="text-[10px] text-zinc-300">A receber</p>
-              <p className="text-lg font-black text-amber-300 tabular-nums">{currencyBRL(currentMonthBuckets.pending)}</p>
-            </div>
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-2.5">
-              <p className="text-[10px] text-zinc-300">Inadimplentes</p>
-              <p className="text-lg font-black text-red-300 tabular-nums">{currencyBRL(currentMonthBuckets.late)}</p>
-            </div>
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-[11px] text-zinc-500">Toque para abrir cobrança tática por WhatsApp.</p>
-            <span className="text-[10px] font-bold text-zinc-400">{currentMonthReference}</span>
-          </div>
-          <KpiSparkline points={revenueSparkPoints} accent="emerald" label="últimos 6 meses" animated />
-        </KpiActionCard>
-
-        <KpiActionCard
-          accent="gold"
-          title="Fila de Aprovação"
-          icon={ShieldAlert}
-          onClick={() => {
-            setApprovalFilter("all");
-            setSelectedApprovalIds([]);
-            setApprovalSearch("");
-            setShowApprovalModal(true);
-          }}
-          aria-label="Abrir fila de aprovação de cadastros"
-        >
-          <p className="text-[11px] text-zinc-500">Pendências de entrada para resolver agora</p>
-          <p className="text-4xl font-black text-white tabular-nums">{awaitingApproval}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-[#EAB308]/30 bg-[#EAB308]/10 px-2.5 py-1 text-[10px] font-bold text-[#EAB308]">
-              <Users className="h-3 w-3" /> {statusCounts.trial} em experimental
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-bold text-red-300">
-              <CreditCard className="h-3 w-3" /> {pendingPaymentsCount} pagamentos pendentes
-            </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setApprovalFilter("trial");
-                setSelectedApprovalIds([]);
-                setApprovalSearch("");
-                setShowApprovalModal(true);
-              }}
-              className="min-h-11 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-zinc-200 transition hover:border-[#EAB308]/45 hover:text-[#EAB308]"
-            >
-              Abrir fila de trial
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <KpiSparkline points={activeStudentsSparkPoints} accent="gold" label="atletas ativos 6 semanas" animated />
-        </KpiActionCard>
-      </motion.div>
-
-      {/* Bloco 4: ações rápidas */}
-      <motion.div variants={itemV}>
-        <AppSectionCard
-          title="Ações rápidas"
-          subtitle="Atalhos operacionais para acelerar o dia."
-          rightSlot={<Coins className="h-4 w-4 text-[#EAB308]" />}
-          className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
-          contentClassName="pt-3"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(234,179,8,0.12),transparent_65%)]" />
-          <div className="grid gap-3 sm:grid-cols-2">
-          <Link
-            href={cadastroPath}
-            onClick={() => {
-              haptic(20);
-              setActionFeedback("Fluxo de cadastro de novo aluno aberto.");
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/40 bg-gradient-to-r from-[#EAB308]/15 to-[#EAB308]/5 px-4 py-3 text-sm font-black text-[#EAB308] transition-all hover:border-[#EAB308] ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir fluxo rápido de cadastro de aluno"
-          >
-            <UserPlus className="h-5 w-5" />
-            Novo Aluno
-          </Link>
-          <Link
-            href="/agenda?newLesson=1"
-            onClick={() => {
-              haptic(20);
-              setActionFeedback("Fluxo de criação de aula aberto.");
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition-all hover:border-white/30 hover:bg-white/10 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir fluxo rápido de nova aula"
-          >
-            <PlusCircle className="h-5 w-5 text-[#EAB308]" />
-            Nova Aula
-          </Link>
-          <Link
-            href="/feed"
-            onClick={() => {
-              haptic(20);
-              setActionFeedback("A Rede aberta com moderação do dono.");
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-yellow-500/35 bg-yellow-500/10 px-4 py-3 text-sm font-black text-yellow-200 transition-all hover:border-yellow-400/60 hover:bg-yellow-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir A Rede com moderação ativa"
-          >
-            <Newspaper className="h-5 w-5 text-[#EAB308]" />
-            A Rede (Moderação Ativa)
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(20);
-              setShowTrainingPlans(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir planos de treino"
-          >
-            <Dumbbell className="h-5 w-5 text-emerald-400" />
-            Planos de Treino
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(20);
-              setShowXPModeration(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Revisar transações de XP bloqueadas"
-          >
-            <AlertTriangle className="h-5 w-5 text-red-400" />
-            Moderar XP
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(20);
-              setShowXPAnalytics(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Ver análise de XP distribuído"
-          >
-            <BarChart3 className="h-5 w-5 text-amber-400" />
-            Análise de XP
-          </button>
           </div>
         </AppSectionCard>
       </motion.div>
