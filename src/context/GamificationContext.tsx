@@ -66,6 +66,28 @@ interface GamificationContextType {
   removeXPFloat: (id: string) => void;
 }
 
+function dbTypeToSource(type: string): XPLog["source"] {
+  switch (type) {
+    case "evaluation": return "lesson_rating";
+    case "checkin": return "check_in";
+    case "social_like":
+    case "social_comment":
+    case "training_completed":
+    case "achievement_unlock": return "social_action";
+    default: return "social_action";
+  }
+}
+
+function sourceToDbType(source: XPLog["source"]): string {
+  switch (source) {
+    case "lesson_rating": return "evaluation";
+    case "check_in": return "checkin";
+    case "check_in_external": return "checkin";
+    case "social_action": return "social_comment";
+    default: return "social_comment";
+  }
+}
+
 const GamificationContext = createContext<GamificationContextType | undefined>(
   undefined
 );
@@ -117,15 +139,27 @@ export function GamificationProvider({
       if (multErr) throw multErr;
       setMultipliers(multData || []);
 
-      // Fetch XP logs
+      // Fetch XP logs (DB uses v1 column names — map to local interface)
       const { data: logData, error: logErr } = await supabase
         .from("xp_log")
-        .select("*")
+        .select("id, student_id, type, points, base_points, multiplier_value, description, related_id, created_at")
         .eq("student_id", user.id)
         .order("created_at", { ascending: false });
 
       if (logErr) throw logErr;
-      setXpLogs(logData || []);
+      const mapped = (logData || []).map((row) => ({
+        id: row.id,
+        student_id: row.student_id,
+        source: dbTypeToSource(row.type),
+        fundamental: null,
+        base_xp: row.base_points ?? row.points ?? 0,
+        multiplier: row.multiplier_value ?? 1.0,
+        total_xp: row.points ?? 0,
+        lesson_id: row.related_id ?? null,
+        note: row.description ?? null,
+        created_at: row.created_at,
+      }));
+      setXpLogs(mapped);
 
       // Fetch awards
       const { data: awardData, error: awardErr } = await supabase
@@ -217,26 +251,39 @@ export function GamificationProvider({
           .insert({
             id: logId,
             student_id: user.id,
-            source,
-            fundamental,
-            base_xp: baseXP,
-            multiplier,
-            total_xp: totalXP,
-            lesson_id: lessonId || null,
-            note: note || null,
+            type: sourceToDbType(source),
+            base_points: baseXP,
+            points: totalXP,
+            multiplier_type: fundamental ?? "none",
+            multiplier_value: multiplier,
+            related_id: lessonId || null,
+            description: [fundamental, note].filter(Boolean).join(" — ") || null,
+            validation_passed: true,
           })
-          .select()
+          .select("id, student_id, type, points, base_points, multiplier_value, description, related_id, created_at")
           .single();
 
         if (err) throw err;
 
-        setXpLogs((prev) => [data, ...prev]);
+        const mapped: XPLog = {
+          id: data.id,
+          student_id: data.student_id,
+          source,
+          fundamental: fundamental ?? null,
+          base_xp: data.base_points ?? baseXP,
+          multiplier,
+          total_xp: data.points ?? totalXP,
+          lesson_id: data.related_id ?? null,
+          note: data.description ?? null,
+          created_at: data.created_at,
+        };
+        setXpLogs((prev) => [mapped, ...prev]);
 
         // Trigger XP float animation
         triggerXPFloat(totalXP);
 
         // Check if any award should be unlocked
-        const newTotal = totalXP + totalXP;
+        const newTotal = xpLogs.reduce((s, l) => s + l.total_xp, 0) + totalXP;
         const newUnlockedAwards = awards.filter(
           (a) => !a.unlocked_at && a.xp_threshold <= newTotal
         );
@@ -249,7 +296,7 @@ export function GamificationProvider({
         }
 
         await refreshXPData();
-        return data;
+        return mapped;
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Erro ao registrar XP";
