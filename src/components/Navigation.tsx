@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, ImageIcon, CalendarRange, Wallet, Users,
-  Settings, LogOut, Dumbbell, Bell, User, Zap
+  LayoutDashboard, CalendarRange, Wallet, Users,
+  LogOut, Bell, User, Zap, Trophy, Home
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -20,9 +20,10 @@ import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
 
 // Rotas permitidas por role
 const ALLOWED_ROUTES: Record<string, string[]> = {
-  admin:  ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
-  coach:  ["/dashboard", "/agenda", "/feed", "/alunos", "/perfil"],
-  aluno:  ["/dashboard", "/agenda", "/feed", "/financeiro", "/treinos", "/perfil", "/configuracoes"],
+  admin:   ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
+  coach:   ["/dashboard", "/agenda", "/alunos", "/perfil", "/will"],
+  aluno:   ["/dashboard", "/agenda", "/ranking", "/perfil", "/configuracoes"],
+  visitor: ["/agenda", "/feed", "/perfil"],
   /** Conta Google/e-mail sem linha de aluno: só cadastro público + login. */
   pending_student: ["/cadastro", "/login", "/auth"],
 };
@@ -30,7 +31,7 @@ const ALLOWED_ROUTES: Record<string, string[]> = {
 export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, adminMode, setAdminMode, usingSupabaseSession } = useAuth();
+  const { user, logout, usingSupabaseSession } = useAuth();
   const { pendingStudents } = useStudents();
   const { unreadNotifications } = useNotifications();
   const { latePayments } = usePayments();
@@ -53,28 +54,27 @@ export function Navigation() {
     switch (user.role) {
       case "admin":
         return [
-          { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
-          { name: "Engine", href: "/will/court", icon: Zap, badge: 0 },
+          { name: "Hoje", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
+          { name: "Turma", href: "/alunos", icon: Users, badge: pendingStudents },
           { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
-          { name: "Alunos", href: "/alunos", icon: Users, badge: pendingStudents },
-          { name: "Financeiro", href: "/financeiro", icon: Wallet, badge: latePayments },
-          { name: "Rede", href: "/feed", icon: ImageIcon, badge: 0 },
-          { name: "Config", href: "/configuracoes", icon: Settings, badge: 0 },
+          { name: "Gestão", href: "/financeiro", icon: Wallet, badge: latePayments },
         ];
       case "coach":
         return [
-          { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
+          { name: "Hoje", href: "/will/court", icon: Zap, badge: 0 },
+          { name: "Turma", href: "/alunos", icon: Users, badge: 0 },
           { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
-          { name: "Alunos", href: "/alunos", icon: Users, badge: 0 },
-          { name: "Rede", href: "/feed", icon: ImageIcon, badge: 0 },
         ];
       case "aluno":
         return [
-          { name: "Home", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
-          { name: "Treinos", href: "/treinos", icon: Dumbbell, badge: 0 },
-          { name: "Rede", href: "/feed", icon: ImageIcon, badge: 0 },
-          { name: "Financeiro", href: "/financeiro", icon: Wallet, badge: 0 },
-          { name: "Perfil", href: "/perfil", icon: User, badge: 0 },
+          { name: "Início", href: "/dashboard", icon: Home, badge: 0 },
+          { name: "Minhas Aulas", href: "/agenda", icon: CalendarRange, badge: 0 },
+          { name: "Performance", href: "/ranking", icon: Trophy, badge: 0 },
+        ];
+      case "visitor":
+        return [
+          { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
+          { name: "Feed", href: "/feed", icon: Bell, badge: 0 },
         ];
       default:
         return [];
@@ -82,15 +82,8 @@ export function Navigation() {
   };
 
   const navItems = getNavItems();
-  /** Itens da barra inferior: evita duplicar «Perfil» (já existe atalho dedicado ao lado do sino). */
-  const mobilePrimaryNavItems = navItems.filter((item) => item.href !== "/perfil");
-  /** Dono no mobile: só cabem 5 slots — priorizar Rede (moderação) e omitir Engine/Config da barra (continuam na sidebar desktop). */
-  const mobileBottomItems =
-    user.role === "admin"
-      ? (["/dashboard", "/feed", "/agenda", "/alunos", "/financeiro"] as const)
-          .map((href) => mobilePrimaryNavItems.find((item) => item.href === href))
-          .filter((item): item is NonNullable<typeof item> => Boolean(item))
-      : mobilePrimaryNavItems.slice(0, 5);
+  /** Itens da barra inferior: todos os itens de nav (sem Perfil duplicado — já há atalho dedicado). */
+  const mobileBottomItems = navItems.filter((item) => item.href !== "/perfil").slice(0, 4);
   const showOfflineBanner = !pathname.startsWith("/will");
 
   return (
@@ -122,25 +115,6 @@ export function Navigation() {
           </motion.button>
         </div>
 
-        {/* Admin Mode Toggle */}
-        {user.role === "admin" && (
-          <div className="px-4 pt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="flex bg-black rounded-lg p-1 border border-zinc-800">
-              <button
-                onClick={() => setAdminMode("dashboard")}
-                className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all ${FOCUS_RING_GOLD} ${adminMode === "dashboard" ? "bg-[#EAB308] text-black" : "text-zinc-500 hover:text-zinc-300"}`}
-              >
-                Admin
-              </button>
-              <button
-                onClick={() => setAdminMode("coach")}
-                className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 rounded-md transition-all ${FOCUS_RING_GOLD} ${adminMode === "coach" ? "bg-[#EAB308] text-black" : "text-zinc-500 hover:text-zinc-300"}`}
-              >
-                Professor
-              </button>
-            </div>
-          </div>
-        )}
 
         <nav className="flex flex-col gap-1.5 p-4 flex-grow overflow-hidden">
           {navItems.map((item) => {
@@ -188,7 +162,7 @@ export function Navigation() {
             <div className="flex flex-col">
               <span className="text-white font-bold text-sm leading-tight">{user.name}</span>
               <span className="text-[#EAB308] text-[10px] uppercase font-bold tracking-widest">
-                {user.role === "admin" ? (adminMode === "coach" ? "Admin + Prof" : "Administrador") : user.role}
+                {user.role === "admin" ? "Administrador" : user.role}
               </span>
             </div>
           </Link>
