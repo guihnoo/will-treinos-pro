@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Lesson,
+  LessonCategory,
   LessonStatus,
   Notification,
   Payment,
@@ -12,6 +13,7 @@ import type {
   Student,
   StudentStatus,
   TrainingPlan,
+  Venue,
   WithoutId,
 } from "@/context/types";
 import { paymentReferenceForDate } from "@/lib/dateUtils";
@@ -835,6 +837,107 @@ export async function deleteTrainingPlanRemote(supabase: SupabaseClient, id: str
   if (error) {
     throw new Error(`Falha ao remover plano de treino: ${error.message}`);
   }
+}
+
+// ─── Catalog (Categories + Venues) ─────────────────────────────────────────
+
+function mapCategory(row: DbRow): LessonCategory {
+  return {
+    id: asString(row.id),
+    name: asString(row.name),
+    color: asString(row.color, "#EAB308"),
+    emoji: asString(row.emoji, "🏐"),
+    maxStudents: asNumber(row.max_students ?? row.maxStudents, 12),
+    defaultPrice: asNumber(row.default_price ?? row.defaultPrice),
+    isCustom: Boolean(row.is_custom ?? row.isCustom),
+  };
+}
+
+function mapVenue(row: DbRow): Venue {
+  return {
+    id: asString(row.id),
+    name: asString(row.name),
+    photo: asString(row.photo),
+    address: asString(row.address),
+    lat: asNumber(row.lat),
+    lng: asNumber(row.lng),
+  };
+}
+
+export async function fetchCatalogRemote(
+  supabase: SupabaseClient,
+): Promise<{ categories: LessonCategory[]; venues: Venue[] }> {
+  const [catRes, venueRes] = await Promise.all([
+    supabase.from("lesson_categories").select("*").order("name", { ascending: true }),
+    supabase.from("venues").select("*").order("name", { ascending: true }),
+  ]);
+
+  if (catRes.error) throw new Error(`Falha ao carregar categorias: ${catRes.error.message}`);
+  if (venueRes.error) throw new Error(`Falha ao carregar locais: ${venueRes.error.message}`);
+
+  return {
+    categories: (catRes.data || []).map((r) => mapCategory(r as DbRow)),
+    venues: (venueRes.data || []).map((r) => mapVenue(r as DbRow)),
+  };
+}
+
+export async function upsertCategoryRemote(
+  supabase: SupabaseClient,
+  cat: LessonCategory,
+): Promise<LessonCategory> {
+  const { data, error } = await supabase
+    .from("lesson_categories")
+    .upsert(
+      {
+        id: cat.id,
+        name: cat.name,
+        color: cat.color,
+        emoji: cat.emoji,
+        max_students: cat.maxStudents,
+        default_price: cat.defaultPrice,
+        is_custom: cat.isCustom,
+      },
+      { onConflict: "id" },
+    )
+    .select("*")
+    .single();
+
+  if (error) throw new Error(`Falha ao salvar categoria: ${error.message}`);
+  return mapCategory((data || {}) as DbRow);
+}
+
+export async function deleteCategoryRemote(supabase: SupabaseClient, id: string): Promise<void> {
+  const { error } = await supabase.from("lesson_categories").delete().eq("id", id);
+  if (error) throw new Error(`Falha ao remover categoria: ${error.message}`);
+}
+
+export async function upsertVenueRemote(
+  supabase: SupabaseClient,
+  venue: Venue,
+): Promise<Venue> {
+  const { data, error } = await supabase
+    .from("venues")
+    .upsert(
+      {
+        id: venue.id,
+        name: venue.name,
+        photo: venue.photo,
+        address: venue.address,
+        lat: venue.lat,
+        lng: venue.lng,
+      },
+      { onConflict: "id" },
+    )
+    .select("*")
+    .single();
+
+  if (error) throw new Error(`Falha ao salvar local: ${error.message}`);
+  return mapVenue((data || {}) as DbRow);
+}
+
+export async function deleteVenueRemote(supabase: SupabaseClient, id: string): Promise<void> {
+  const { error } = await supabase.from("venues").delete().eq("id", id);
+  if (error) throw new Error(`Falha ao remover local: ${error.message}`);
 }
 
 // ─── XP Log ────────────────────────────────────────────────────────────────

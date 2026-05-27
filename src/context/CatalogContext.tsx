@@ -3,6 +3,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { LEGACY_BRIDGE } from "@/domain/v1/mockOrm";
 import { wtLs } from "@/lib/willLocalStorage";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import {
+  fetchCatalogRemote,
+  upsertCategoryRemote,
+  deleteCategoryRemote,
+  upsertVenueRemote,
+  deleteVenueRemote,
+} from "@/lib/supabasePersistence";
+import { useAuth } from "@/context/AuthContext";
 import type { LessonCategory, Venue, WorkHours, WithoutId } from "@/context/types";
 
 const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -26,39 +35,98 @@ type CatalogContextValue = {
 const CatalogContext = createContext<CatalogContextValue | undefined>(undefined);
 
 export function CatalogProvider({ children }: { children: React.ReactNode }) {
+  const { usingSupabaseSession } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
   const [categories, setCategories] = useState<LessonCategory[]>(LEGACY_BRIDGE.DEFAULT_CATEGORIES);
   const [venues, setVenues] = useState<Venue[]>(LEGACY_BRIDGE.DEFAULT_VENUES);
   const [workHours, setWorkHoursState] = useState<WorkHours>(LEGACY_BRIDGE.DEFAULT_WORK_HOURS);
 
+  // On mount: load from Supabase if session exists, else fall back to localStorage
   useEffect(() => {
     setIsMounted(true);
-    const savedCategories = wtLs.get("categories", LEGACY_BRIDGE.DEFAULT_CATEGORIES);
-    const savedVenues = wtLs.get("venues", LEGACY_BRIDGE.DEFAULT_VENUES);
-    const savedWorkHours = wtLs.get("workHours", LEGACY_BRIDGE.DEFAULT_WORK_HOURS);
 
-    setCategories(savedCategories);
-    setVenues(savedVenues);
-    setWorkHoursState(savedWorkHours);
-  }, []);
+    if (usingSupabaseSession) {
+      const supabase = getSupabaseClient();
+      fetchCatalogRemote(supabase)
+        .then(({ categories: remoteCats, venues: remoteVenues }) => {
+          if (remoteCats.length > 0) {
+            setCategories(remoteCats);
+          } else {
+            // Seed Supabase with defaults on first run
+            const defaults = LEGACY_BRIDGE.DEFAULT_CATEGORIES;
+            setCategories(defaults);
+            Promise.all(defaults.map((c) => upsertCategoryRemote(supabase, c))).catch(console.error);
+          }
+          if (remoteVenues.length > 0) {
+            setVenues(remoteVenues);
+          } else {
+            const defaults = LEGACY_BRIDGE.DEFAULT_VENUES;
+            setVenues(defaults);
+            Promise.all(defaults.map((v) => upsertVenueRemote(supabase, v))).catch(console.error);
+          }
+        })
+        .catch(console.error);
+    } else {
+      setCategories(wtLs.get("categories", LEGACY_BRIDGE.DEFAULT_CATEGORIES));
+      setVenues(wtLs.get("venues", LEGACY_BRIDGE.DEFAULT_VENUES));
+      setWorkHoursState(wtLs.get("workHours", LEGACY_BRIDGE.DEFAULT_WORK_HOURS));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usingSupabaseSession]);
 
-  useEffect(() => { if (isMounted) wtLs.set("categories", categories); }, [categories, isMounted]);
-  useEffect(() => { if (isMounted) wtLs.set("venues", venues); }, [venues, isMounted]);
+  // Persist to localStorage only in offline/demo mode
+  useEffect(() => { if (isMounted && !usingSupabaseSession) wtLs.set("categories", categories); }, [categories, isMounted, usingSupabaseSession]);
+  useEffect(() => { if (isMounted && !usingSupabaseSession) wtLs.set("venues", venues); }, [venues, isMounted, usingSupabaseSession]);
   useEffect(() => { if (isMounted) wtLs.set("workHours", workHours); }, [workHours, isMounted]);
 
-  const addCategory = useCallback(
-    (c: WithoutId<LessonCategory>) => setCategories(p => [...p, { ...c, id: `cat_${uid()}` }]), []);
-  const updateCategory = useCallback(
-    (id: string, u: Partial<LessonCategory>) => setCategories(p => p.map(c => c.id === id ? { ...c, ...u } : c)), []);
-  const deleteCategory = useCallback(
-    (id: string) => setCategories(p => p.filter(c => c.id !== id)), []);
+  const addCategory = useCallback((c: WithoutId<LessonCategory>) => {
+    const newCat: LessonCategory = { ...c, id: `cat_${uid()}` };
+    setCategories(p => [...p, newCat]);
+    if (usingSupabaseSession) {
+      upsertCategoryRemote(getSupabaseClient(), newCat).catch(console.error);
+    }
+  }, [usingSupabaseSession]);
 
-  const addVenue = useCallback(
-    (v: WithoutId<Venue>) => setVenues(p => [...p, { ...v, id: `v_${uid()}` }]), []);
-  const updateVenue = useCallback(
-    (id: string, u: Partial<Venue>) => setVenues(p => p.map(v => v.id === id ? { ...v, ...u } : v)), []);
-  const deleteVenue = useCallback(
-    (id: string) => setVenues(p => p.filter(v => v.id !== id)), []);
+  const updateCategory = useCallback((id: string, u: Partial<LessonCategory>) => {
+    setCategories(p => p.map(c => {
+      if (c.id !== id) return c;
+      const updated = { ...c, ...u };
+      if (usingSupabaseSession) upsertCategoryRemote(getSupabaseClient(), updated).catch(console.error);
+      return updated;
+    }));
+  }, [usingSupabaseSession]);
+
+  const deleteCategory = useCallback((id: string) => {
+    setCategories(p => p.filter(c => c.id !== id));
+    if (usingSupabaseSession) {
+      deleteCategoryRemote(getSupabaseClient(), id).catch(console.error);
+    }
+  }, [usingSupabaseSession]);
+
+  const addVenue = useCallback((v: WithoutId<Venue>) => {
+    const newVenue: Venue = { ...v, id: `v_${uid()}` };
+    setVenues(p => [...p, newVenue]);
+    if (usingSupabaseSession) {
+      upsertVenueRemote(getSupabaseClient(), newVenue).catch(console.error);
+    }
+  }, [usingSupabaseSession]);
+
+  const updateVenue = useCallback((id: string, u: Partial<Venue>) => {
+    setVenues(p => p.map(v => {
+      if (v.id !== id) return v;
+      const updated = { ...v, ...u };
+      if (usingSupabaseSession) upsertVenueRemote(getSupabaseClient(), updated).catch(console.error);
+      return updated;
+    }));
+  }, [usingSupabaseSession]);
+
+  const deleteVenue = useCallback((id: string) => {
+    setVenues(p => p.filter(v => v.id !== id));
+    if (usingSupabaseSession) {
+      deleteVenueRemote(getSupabaseClient(), id).catch(console.error);
+    }
+  }, [usingSupabaseSession]);
+
   const setWorkHours = useCallback((wh: WorkHours) => setWorkHoursState(wh), []);
 
   const getCategory = useCallback((id: string) => categories.find(c => c.id === id), [categories]);
