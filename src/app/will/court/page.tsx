@@ -10,8 +10,8 @@ import { useStudents } from "@/context/StudentsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useAuth } from "@/context/AuthContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
+import { logXPEvent } from "@/lib/xpEventLogger";
 import type { EvaluationCriterionV1, EvaluationTemplateV1 } from "@/domain/v1/contracts";
 import { EVALUATION_CRITERIA_V1, EVALUATION_TEMPLATES_V1 } from "@/domain/v1/mockOrm";
 
@@ -35,6 +35,7 @@ export default function WillCourtPage() {
   const { getStudent, updateStudent } = useStudents();
   const { getCategory, getVenue } = useCatalog();
   const { user } = useAuth();
+  void user;
   const { toast } = useToast();
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(todayLessons[0]?.id ?? null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
@@ -119,8 +120,6 @@ export default function WillCourtPage() {
       const student = getStudent(activeStudentId);
       const studentAuthId = student?.authUserId ?? null;
 
-      const supabase = getSupabaseClient();
-
       // Grava nota como professorNotes no aluno
       if (student) {
         const noteEntry = `[${new Date().toLocaleDateString("pt-BR")} — ${selectedLesson.title}] Nota: ${roundedScore}/10. ${draft.notes || ""}`.trim();
@@ -128,20 +127,16 @@ export default function WillCourtPage() {
         updateStudent(activeStudentId, { professorNotes: `${existing}${noteEntry}` });
       }
 
-      // Grava XP no banco para o aluno (staff pode inserir para qualquer student_id)
-      if (supabase && studentAuthId) {
+      // Grava XP no banco usando o pipeline v1 (mesmo schema do check-in)
+      if (studentAuthId) {
         const baseXP = Math.round(100 * Math.pow(roundedScore / 10, 2) * 10);
-        await supabase.from("xp_log").insert({
-          id: crypto.randomUUID(),
-          student_id: studentAuthId,
-          source: "lesson_rating",
-          fundamental: null,
-          base_xp: baseXP,
-          multiplier: 1.0,
-          total_xp: baseXP,
-          validation_passed: true,
-          lesson_id: selectedLesson.id,
-          note: `Avaliação CEM — ${selectedTemplate.name} — nota ${roundedScore}/10`,
+        await logXPEvent({
+          studentId: studentAuthId,
+          type: "evaluation",
+          sourceEntity: "lesson",
+          relatedId: selectedLesson.id,
+          description: `CEM — ${selectedTemplate.name} — nota ${roundedScore}/10${draft.notes ? ` — ${draft.notes.slice(0, 80)}` : ""}`,
+          basePointsOverride: baseXP,
         });
       }
 

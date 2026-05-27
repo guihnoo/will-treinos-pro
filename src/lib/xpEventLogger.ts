@@ -8,6 +8,8 @@ interface XPEventPayload {
   relatedId?: string;
   description?: string;
   createdBy?: string;
+  /** Sobrepõe o valor fixo — usado por avaliações CEM com fórmula própria. */
+  basePointsOverride?: number;
 }
 
 /**
@@ -36,7 +38,7 @@ export async function logXPEvent(
     return null;
   }
 
-  const basePoints = FIXED_XP_VALUES[payload.type];
+  const basePoints = payload.basePointsOverride ?? FIXED_XP_VALUES[payload.type];
   if (basePoints === undefined) {
     console.error(`[logXPEvent] Unknown XP type: ${payload.type}`);
     return null;
