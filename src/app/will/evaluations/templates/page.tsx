@@ -17,6 +17,8 @@ import type { CriterionDimension, EvaluationCriterionV1, EvaluationScope, Evalua
 import { OFFICIAL_TENANT_V1, EVALUATION_TEMPLATES_V1, EVALUATION_CRITERIA_V1 } from "@/domain/v1/mockOrm";
 import { useAuth } from "@/context/AuthContext";
 import { wtLsSet, wtLsTryParse } from "@/lib/willLocalStorage";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import { useToast } from "@/components/Toast";
 
 const EVAL_ENGINE_LS_KEY = "will_eval_engine_v1";
 
@@ -60,47 +62,92 @@ function normalizeWeights(criteria: EvaluationCriterionV1[], templateId: string)
   );
 }
 
+async function loadEngineFromSupabase(): Promise<{ templates: EvaluationTemplateV1[]; criteria: EvaluationCriterionV1[] } | null> {
+  try {
+    const sb = getSupabaseClient();
+    if (!sb) return null;
+    const { data } = await sb
+      .from("app_settings")
+      .select("evaluation_engine")
+      .eq("id", "singleton")
+      .single();
+    if (data?.evaluation_engine && Array.isArray((data.evaluation_engine as { templates?: unknown }).templates)) {
+      return data.evaluation_engine as { templates: EvaluationTemplateV1[]; criteria: EvaluationCriterionV1[] };
+    }
+  } catch { /* fall through */ }
+  return null;
+}
+
+async function saveEngineToSupabase(payload: { templates: EvaluationTemplateV1[]; criteria: EvaluationCriterionV1[] }) {
+  try {
+    const sb = getSupabaseClient();
+    if (!sb) return;
+    await sb
+      .from("app_settings")
+      .update({ evaluation_engine: payload })
+      .eq("id", "singleton");
+  } catch { /* silent — localStorage is the fallback */ }
+}
+
 export default function WillEvaluationTemplatesPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const ownerId = user?.id ?? "admin1";
 
   const [hydrated, setHydrated] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [templates, setTemplates] = useState<EvaluationTemplateV1[]>([]);
   const [criteria, setCriteria] = useState<EvaluationCriterionV1[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const { templates: t, criteria: c } = cloneDefaults();
-    try {
-      const parsed =
-        typeof window !== "undefined"
-          ? wtLsTryParse<{ templates: EvaluationTemplateV1[]; criteria: EvaluationCriterionV1[] }>(EVAL_ENGINE_LS_KEY)
-          : null;
-      if (
-        parsed &&
-        Array.isArray(parsed.templates) &&
-        parsed.templates.length &&
-        Array.isArray(parsed.criteria)
-      ) {
-        setTemplates(parsed.templates);
-        setCriteria(parsed.criteria);
-        setSelectedId(parsed.templates[0]?.id ?? null);
+    (async () => {
+      const { templates: t, criteria: c } = cloneDefaults();
+
+      // 1. Tenta Supabase primeiro
+      const remote = await loadEngineFromSupabase();
+      if (remote) {
+        setTemplates(remote.templates);
+        setCriteria(remote.criteria);
+        setSelectedId(remote.templates[0]?.id ?? null);
         setHydrated(true);
         return;
       }
-    } catch {
-      /* fall through */
-    }
-    setTemplates(t);
-    setCriteria(c);
-    setSelectedId(t[0]?.id ?? null);
-    setHydrated(true);
+
+      // 2. Fallback: localStorage
+      try {
+        const parsed = typeof window !== "undefined"
+          ? wtLsTryParse<{ templates: EvaluationTemplateV1[]; criteria: EvaluationCriterionV1[] }>(EVAL_ENGINE_LS_KEY)
+          : null;
+        if (parsed && Array.isArray(parsed.templates) && parsed.templates.length) {
+          setTemplates(parsed.templates);
+          setCriteria(parsed.criteria);
+          setSelectedId(parsed.templates[0]?.id ?? null);
+          setHydrated(true);
+          return;
+        }
+      } catch { /* fall through */ }
+
+      // 3. Defaults
+      setTemplates(t);
+      setCriteria(c);
+      setSelectedId(t[0]?.id ?? null);
+      setHydrated(true);
+    })();
   }, []);
 
+  // Salva localStorage sempre (offline fallback)
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
     wtLsSet(EVAL_ENGINE_LS_KEY, { templates, criteria });
   }, [templates, criteria, hydrated]);
+
+  const handleSaveToCloud = useCallback(async () => {
+    setIsSaving(true);
+    await saveEngineToSupabase({ templates, criteria });
+    setIsSaving(false);
+    toast("✅ Templates salvos no banco!");
+  }, [templates, criteria, toast]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -260,16 +307,27 @@ export default function WillEvaluationTemplatesPage() {
               <span className="font-mono text-[11px] text-[#EAB308]">EvaluationCriterionV1</span>.
             </p>
           </div>
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={addTemplate}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#EAB308] px-4 py-3 text-sm font-black text-black shadow-[0_0_24px_rgba(234,179,8,0.25)]"
-          >
-            <Plus className="h-4 w-4" />
-            Novo template
-          </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSaveToCloud}
+              disabled={isSaving}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm font-black text-green-400 disabled:opacity-60"
+            >
+              {isSaving ? "Salvando…" : "💾 Salvar no banco"}
+            </motion.button>
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={addTemplate}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#EAB308] px-4 py-3 text-sm font-black text-black shadow-[0_0_24px_rgba(234,179,8,0.25)]"
+            >
+              <Plus className="h-4 w-4" />
+              Novo template
+            </motion.button>
+          </div>
         </div>
       </motion.div>
 

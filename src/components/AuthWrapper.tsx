@@ -123,6 +123,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     user &&
     user.role === null &&
     pathname &&
+    !pathname.startsWith("/signup") &&
     !pathname.startsWith("/cadastro");
 
   if (needsMatriculaGate) {
@@ -135,7 +136,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
             Peça ao dono o <strong className="text-[#EAB308]">link de matrícula</strong>, abra neste navegador, preencha o cadastro e depois entre de novo.
           </p>
           <Link
-            href="/cadastro?matricula=1"
+            href="/signup"
             className="block w-full rounded-xl border border-[#EAB308]/50 bg-[#EAB308]/15 py-3 text-center text-sm font-black text-[#EAB308] hover:bg-[#EAB308]/25"
           >
             Ir para o cadastro oficial

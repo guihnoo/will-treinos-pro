@@ -1,14 +1,17 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, ClipboardList, Users, X, Zap } from "lucide-react";
+import { ArrowUpRight, ClipboardList, Users, X, Zap, Save, CheckCircle2 } from "lucide-react";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useCatalog } from "@/context/CatalogContext";
+import { useAuth } from "@/context/AuthContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import { useToast } from "@/components/Toast";
 import type { EvaluationCriterionV1, EvaluationTemplateV1 } from "@/domain/v1/contracts";
 import { EVALUATION_CRITERIA_V1, EVALUATION_TEMPLATES_V1 } from "@/domain/v1/mockOrm";
 
@@ -29,14 +32,18 @@ type EvalDraft = {
 
 export default function WillCourtPage() {
   const { todayLessons } = useLessons();
-  const { getStudent } = useStudents();
+  const { getStudent, updateStudent } = useStudents();
   const { getCategory, getVenue } = useCatalog();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(todayLessons[0]?.id ?? null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
     EVALUATION_TEMPLATES_V1.find((t) => t.isDefault)?.id ?? EVALUATION_TEMPLATES_V1[0]?.id ?? "",
   );
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, EvalDraft>>({});
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
   const [clipboardImgError, setClipboardImgError] = useState(false);
   useBodyScrollLock(Boolean(activeStudentId));
 
@@ -90,6 +97,63 @@ export default function WillCourtPage() {
       },
     }));
   };
+
+  const saveEvaluation = useCallback(async () => {
+    if (!sheetKey || !activeStudentId || !selectedLesson || !selectedTemplate) return;
+    const draft = drafts[sheetKey];
+    if (!draft) { toast("Preencha pelo menos um critério antes de salvar.", "error"); return; }
+
+    setIsSaving(true);
+    try {
+      // Calcula nota ponderada (0–10)
+      const totalWeight = selectedCriteria.reduce((s, c) => s + c.weight, 0);
+      const weightedScore = totalWeight > 0
+        ? selectedCriteria.reduce((s, c) => {
+            const score = draft.criterionScores[c.id] ?? c.scaleMin;
+            const normalized = (score - c.scaleMin) / (c.scaleMax - c.scaleMin || 1);
+            return s + normalized * c.weight;
+          }, 0) / totalWeight * 10
+        : 5;
+      const roundedScore = Number(weightedScore.toFixed(1));
+
+      const student = getStudent(activeStudentId);
+      const studentAuthId = student?.authUserId ?? null;
+
+      const supabase = getSupabaseClient();
+
+      // Grava nota como professorNotes no aluno
+      if (student) {
+        const noteEntry = `[${new Date().toLocaleDateString("pt-BR")} — ${selectedLesson.title}] Nota: ${roundedScore}/10. ${draft.notes || ""}`.trim();
+        const existing = student.professorNotes ? `${student.professorNotes}\n` : "";
+        updateStudent(activeStudentId, { professorNotes: `${existing}${noteEntry}` });
+      }
+
+      // Grava XP no banco para o aluno (staff pode inserir para qualquer student_id)
+      if (supabase && studentAuthId) {
+        const baseXP = Math.round(100 * Math.pow(roundedScore / 10, 2) * 10);
+        await supabase.from("xp_log").insert({
+          id: crypto.randomUUID(),
+          student_id: studentAuthId,
+          source: "lesson_rating",
+          fundamental: null,
+          base_xp: baseXP,
+          multiplier: 1.0,
+          total_xp: baseXP,
+          validation_passed: true,
+          lesson_id: selectedLesson.id,
+          note: `Avaliação CEM — ${selectedTemplate.name} — nota ${roundedScore}/10`,
+        });
+      }
+
+      setSavedKeys((prev) => new Set(prev).add(sheetKey));
+      toast(`✅ Avaliação de ${student?.name ?? "aluno"} salva — nota ${roundedScore}/10`);
+      setActiveStudentId(null);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Erro ao salvar avaliação.", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [sheetKey, activeStudentId, selectedLesson, selectedTemplate, drafts, selectedCriteria, getStudent, updateStudent, toast]);
 
   return (
     <div className="space-y-5 pb-10">
@@ -203,22 +267,32 @@ export default function WillCourtPage() {
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {roster.map((student) =>
-                  student ? (
+                {roster.map((student) => {
+                  if (!student) return null;
+                  const key = selectedLesson ? `${selectedLesson.id}:${student.id}` : null;
+                  const isSaved = key ? savedKeys.has(key) : false;
+                  return (
                     <button
                       key={student.id}
                       onClick={() => setActiveStudentId(student.id)}
-                      className="rounded-xl border border-zinc-800 bg-black/30 p-3 text-left transition-colors hover:border-[#EAB308]/35 hover:bg-[#EAB308]/5"
+                      className={`rounded-xl border p-3 text-left transition-colors ${
+                        isSaved
+                          ? "border-green-500/35 bg-green-500/5"
+                          : "border-zinc-800 bg-black/30 hover:border-[#EAB308]/35 hover:bg-[#EAB308]/5"
+                      }`}
                     >
                       <p className="text-sm font-bold text-white">{student.name}</p>
                       <p className="mt-0.5 text-[11px] text-zinc-500">{student.plan}</p>
-                      <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/60 px-2 py-0.5 text-[10px] text-zinc-400">
-                        <Users className="h-3 w-3" />
-                        Abrir CEM
+                      <div className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${
+                        isSaved
+                          ? "border-green-500/40 bg-green-500/10 text-green-400"
+                          : "border-zinc-700 bg-zinc-900/60 text-zinc-400"
+                      }`}>
+                        {isSaved ? <><CheckCircle2 className="h-3 w-3" /> Avaliado</> : <><Users className="h-3 w-3" /> Abrir CEM</>}
                       </div>
                     </button>
-                  ) : null,
-                )}
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -300,6 +374,31 @@ export default function WillCourtPage() {
                     className="mt-1 w-full rounded-lg border border-zinc-800 bg-black/40 px-2.5 py-2 text-[12px] text-white focus:border-[#EAB308]/40"
                   />
                 </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
+                <button
+                  onClick={() => setActiveStudentId(null)}
+                  className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-zinc-300 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                {sheetKey && savedKeys.has(sheetKey) ? (
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-green-500/40 bg-green-500/10 px-4 py-2.5 text-sm font-bold text-green-400">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Salvo
+                  </div>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={saveEvaluation}
+                    disabled={isSaving}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#EAB308] px-5 py-2.5 text-sm font-black text-black shadow-[0_0_20px_rgba(234,179,8,0.25)] disabled:opacity-60"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? "Salvando…" : "Salvar Avaliação"}
+                  </motion.button>
+                )}
               </div>
             </motion.div>
           </motion.div>
