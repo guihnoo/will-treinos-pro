@@ -95,6 +95,7 @@ export function useCheckInActions(options: {
         time: "agora",
         read: false,
         studentId,
+        actionUrl: "/will/court",
       });
 
       void sendPushToRole("admin", {
@@ -141,6 +142,7 @@ export function useCheckInActions(options: {
         time: "agora",
         read: false,
         recipientId: studentId,
+        actionUrl: "/dashboard",
       });
 
       // Send targeted push to the specific student

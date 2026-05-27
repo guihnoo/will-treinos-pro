@@ -9,7 +9,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-import { studentSeesNotification } from "@/lib/notificationVisibility";
+import { filterNotificationsForUser } from "@/lib/notificationVisibility";
 import { formatNotificationDisplayTime } from "@/lib/dateUtils";
 import NotificationDetailModal from "@/components/NotificationDetailModal";
 import type { Notification } from "@/context/types";
@@ -32,17 +32,10 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
   const [detailOpen, setDetailOpen] = useState(false);
   useBodyScrollLock(open);
 
-  // ─── SECURITY: Role-based notification filtering ───────────────────────────
-  // Admin/Coach: see ALL notifications
-  // Aluno: ONLY own (recipientId) + global broadcasts (isGlobal)
-  // NEVER leaks admin-only notifications (studentId without recipientId) to students
-  const visibleNotifications = React.useMemo(() => {
-    if (!user || user.role === null) return [];
-    if (user.role === "admin" || user.role === "coach") {
-      return notifications;
-    }
-    return notifications.filter((n) => studentSeesNotification(n, user.id));
-  }, [notifications, user]);
+  const visibleNotifications = React.useMemo(
+    () => filterNotificationsForUser(notifications, user),
+    [notifications, user],
+  );
 
   const unread = visibleNotifications.filter(n => !n.read).length;
 

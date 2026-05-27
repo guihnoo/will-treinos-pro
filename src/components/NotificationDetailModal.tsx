@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, UserPlus, AlertTriangle, Clock, TrendingUp, MessageSquare, CheckCircle2, Megaphone, Star, Check, Archive } from "lucide-react";
+import { X, UserPlus, AlertTriangle, Clock, TrendingUp, MessageSquare, CheckCircle2, Megaphone, Star, Check, Archive, ExternalLink } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
+import { useRouter } from "next/navigation";
 import type { Notification } from "@/context/types";
 import { formatNotificationDisplayTime } from "@/lib/dateUtils";
 
@@ -34,6 +35,7 @@ export default function NotificationDetailModal({ notification, open, onClose }:
   const { user } = useAuth();
   const { students, approveStudent } = useStudents();
   const { markNotificationRead, markAllNotificationsRead } = useNotifications();
+  const router = useRouter();
   const [actionLoading, setActionLoading] = useState(false);
   const [approvalStep, setApprovalStep] = useState<ApprovalStep | null>(null);
   const [notesText, setNotesText] = useState("");
@@ -54,6 +56,12 @@ export default function NotificationDetailModal({ notification, open, onClose }:
 
   // Find related student if any
   const student = notification.studentId ? students.find(s => s.id === notification.studentId) : null;
+
+  const handleNavigate = () => {
+    if (!notification?.actionUrl) return;
+    onClose();
+    router.push(notification.actionUrl);
+  };
 
   const handleStartApproval = () => {
     if (!student) return;
@@ -296,23 +304,33 @@ export default function NotificationDetailModal({ notification, open, onClose }:
                       className="flex-1 bg-gradient-to-r from-[#EAB308] to-[#F97316] text-black font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity text-sm"
                     >
                       <Check className="w-4 h-4" />
-                      Revisar Aluno
+                      Aprovar Agora
                     </motion.button>
                     <motion.button
                       whileTap={{ scale: 0.95 }}
-                      onClick={onClose}
+                      onClick={() => { onClose(); router.push("/alunos"); }}
                       className="flex-1 border border-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-zinc-900/50 transition-colors text-sm"
                     >
-                      Depois
+                      Ver na Lista
                     </motion.button>
                   </>
                 )}
 
+                {notification.type !== "new_student" && notification.actionUrl && (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleNavigate}
+                    className="flex-1 bg-gradient-to-r from-[#EAB308] to-[#CA8A04] text-black font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity text-sm"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Abrir
+                  </motion.button>
+                )}
                 {notification.type !== "new_student" && (
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={onClose}
-                    className="w-full border border-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-zinc-900/50 transition-colors text-sm"
+                    className="flex-1 border border-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-zinc-900/50 transition-colors text-sm"
                   >
                     Fechar
                   </motion.button>

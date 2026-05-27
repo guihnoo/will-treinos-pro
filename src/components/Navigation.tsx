@@ -23,7 +23,7 @@ const ALLOWED_ROUTES: Record<string, string[]> = {
   admin:   ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
   coach:   ["/dashboard", "/agenda", "/alunos", "/perfil", "/will"],
   aluno:   ["/dashboard", "/agenda", "/ranking", "/perfil", "/configuracoes"],
-  visitor: ["/agenda", "/feed", "/perfil"],
+  visitor: ["/feed", "/perfil"],
   /** Conta Google/e-mail sem linha de aluno: só cadastro público + login. */
   pending_student: ["/cadastro", "/login", "/auth"],
 };
@@ -73,8 +73,7 @@ export function Navigation() {
         ];
       case "visitor":
         return [
-          { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
-          { name: "Feed", href: "/feed", icon: Bell, badge: 0 },
+          { name: "Rede", href: "/feed", icon: Bell, badge: 0 },
         ];
       default:
         return [];

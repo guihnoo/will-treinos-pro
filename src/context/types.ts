@@ -87,6 +87,7 @@ export interface Notification {
   studentId?: string;    // sobre quem é (admin)
   recipientId?: string;  // quem deve ver (aluno específico)
   isGlobal?: boolean;    // broadcast para todos
+  actionUrl?: string;    // rota para navegar ao clicar na notificação
 }
 
 export interface PillarScores {

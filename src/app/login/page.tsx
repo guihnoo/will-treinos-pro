@@ -49,6 +49,7 @@ function LoginContent() {
   const [submitting, setSubmitting] = useState<"google" | "password" | null>(null);
   const [focusedField, setFocusedField] = useState<"email" | "password" | null>(null);
   const [awaitingRedirect, setAwaitingRedirect] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const supabaseReady = hasSupabaseEnv();
   const nextPath = sanitizeNextPath(searchParams.get("next"));
@@ -68,10 +69,22 @@ function LoginContent() {
     if (!awaitingRedirect || !authResolved || !user) return;
     const dest =
       user.role === "visitor" ? "/feed" :
-      user.role === "aluno"   ? "/treinos" :
+      user.role === "aluno"   ? "/agenda" :
       "/dashboard";
     router.replace(nextPath ?? dest);
   }, [awaitingRedirect, authResolved, user, router, nextPath]);
+
+  // When "rememberMe" is off, sign out when user closes the tab
+  useEffect(() => {
+    if (rememberMe) return;
+    const handleUnload = () => {
+      const supabase = (window as unknown as { __wt_supabase?: { auth: { signOut: () => void } } }).__wt_supabase;
+      if (supabase) supabase.auth.signOut();
+      else localStorage.removeItem("wt-auth-session");
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [rememberMe]);
 
   const handleGoogleLogin = async () => {
     if (!supabaseReady) {
@@ -233,6 +246,22 @@ function LoginContent() {
                 transition: "border-color 0.15s, box-shadow 0.15s",
               }}
             />
+            {/* Remember me */}
+            <button
+              type="button"
+              onClick={() => setRememberMe(v => !v)}
+              className="flex items-center gap-2.5 py-1 w-full"
+            >
+              <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all ${rememberMe ? "bg-[#EAB308]" : "border border-zinc-600"}`}>
+                {rememberMe && (
+                  <svg className="w-2.5 h-2.5 text-black" viewBox="0 0 10 10" fill="none">
+                    <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <span className="text-xs text-zinc-500 select-none">Manter conectado neste dispositivo</span>
+            </button>
+
             <motion.button
               type="button"
               whileTap={{ scale: 0.97 }}

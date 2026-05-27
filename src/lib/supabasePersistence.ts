@@ -211,6 +211,7 @@ export async function insertNotificationRemote(
       student_id: payload.studentId ?? null,
       recipient_id: payload.recipientId ?? null,
       is_global: payload.isGlobal ?? false,
+      action_url: payload.actionUrl ?? null,
     })
     .select("*")
     .single();
@@ -238,6 +239,7 @@ function mapNotification(row: DbRow): Notification {
     studentId: asString(row.student_id ?? row.studentId) || undefined,
     recipientId: asString(row.recipient_id ?? row.recipientId) || undefined,
     isGlobal: Boolean(row.is_global ?? row.isGlobal),
+    actionUrl: asString(row.action_url ?? row.actionUrl) || undefined,
   };
 }
 
