@@ -12,8 +12,11 @@ import { useLessonRatings } from "@/context/LessonRatingsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCoaching } from "@/context/CoachingContext";
+import { usePayments } from "@/context/PaymentsContext";
+import { useAppConfig } from "@/context/AppConfigContext";
 import type { Lesson } from "@/context/types";
-import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award, CreditCard, AlertTriangle as AlertIcon } from "lucide-react";
+import { StudentPaymentSheet } from "@/components/student/StudentPaymentSheet";
 import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersistence";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
@@ -446,6 +449,7 @@ function StudentHomeSkeleton() {
 export default function StudentHome() {
   const { getCategory } = useCatalog();
   const { feedbacks } = useCoaching();
+  const { payments, getStudentCurrentPayment, currentMonthReference } = usePayments();
   const { requestCheckIn } = useCheckIn();
   const { lessonRatings, addLessonRating, getLessonRating } = useLessonRatings();
   const { user, usingSupabaseSession } = useAuth();
@@ -475,6 +479,7 @@ export default function StudentHome() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
+  const [showPayments, setShowPayments] = useState(false);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
     showNotif ||
@@ -487,7 +492,8 @@ export default function StudentHome() {
       showDailyQuote ||
       showXpModal ||
       showLeaderboard ||
-      showGamificationDashboard,
+      showGamificationDashboard ||
+      showPayments,
   );
   useBodyScrollLock(hasOverlayOpen);
   useEffect(() => {
@@ -1213,6 +1219,60 @@ export default function StudentHome() {
         </button>
       </motion.div>
 
+      {/* BLOCO 4: Meus Pagamentos */}
+      {(() => {
+        const currentPay = getStudentCurrentPayment(user?.id ?? "");
+        const hasLate = payments.some((p) => p.studentId === user?.id && p.status === "late");
+        const isLate = currentPay?.status === "late";
+        const isPending = currentPay?.status === "pending";
+        const isPaid = currentPay?.status === "paid";
+        const proofSent = Boolean(currentPay?.studentProofSubmittedAt) && !isPaid;
+        return (
+          <motion.div variants={homeItem}>
+            <button
+              onClick={() => { haptic(16); setShowPayments(true); }}
+              className={`w-full rounded-2xl border p-4 flex items-center gap-3 text-left transition-all ${
+                isLate || hasLate
+                  ? "border-red-500/35 bg-red-500/8 hover:border-red-500/55"
+                  : proofSent
+                  ? "border-amber-500/30 bg-amber-500/8 hover:border-amber-500/50"
+                  : isPaid
+                  ? "border-emerald-500/25 bg-emerald-500/6 hover:border-emerald-500/45"
+                  : "border-zinc-800/80 bg-zinc-950/60 hover:border-zinc-700"
+              } ${ctaClass}`}
+            >
+              <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border ${
+                isLate || hasLate ? "border-red-500/40 bg-red-500/15" :
+                isPaid ? "border-emerald-500/35 bg-emerald-500/12" :
+                "border-[#EAB308]/35 bg-[#EAB308]/10"
+              }`}>
+                {isLate || hasLate
+                  ? <AlertIcon className="h-5 w-5 text-red-400" />
+                  : isPaid
+                  ? <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  : <CreditCard className="h-5 w-5 text-[#EAB308]" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-[10px] font-black uppercase tracking-[0.15em] ${
+                  isLate || hasLate ? "text-red-400" : isPaid ? "text-emerald-400" : "text-[#EAB308]"
+                }`}>
+                  {isLate || hasLate ? "Pagamento em atraso" : isPaid ? "Em dia" : proofSent ? "Aguardando confirmação" : "Meus Pagamentos"}
+                </p>
+                <p className="text-sm font-bold text-white">
+                  {currentPay
+                    ? `${currentPay.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · ${currentMonthReference}`
+                    : "Ver histórico e pagar"}
+                </p>
+                {proofSent && (
+                  <p className="text-[10px] text-amber-400 mt-0.5">Comprovante enviado — aguardando confirmação do Will</p>
+                )}
+              </div>
+              <ChevronRight className="h-4 w-4 flex-shrink-0 text-zinc-600" />
+            </button>
+          </motion.div>
+        );
+      })()}
+
       <AnimatePresence>
         {showAgendaPanel && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
@@ -1583,6 +1643,9 @@ export default function StudentHome() {
       </motion.div>
 
       {/* Neural removido por prioridade de produto */}
+
+      {/* Payment Sheet */}
+      <StudentPaymentSheet open={showPayments} onClose={() => setShowPayments(false)} />
 
       {/* Notifications Drawer */}
       <AnimatePresence>
