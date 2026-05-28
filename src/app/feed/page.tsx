@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
+import { sendPushToRole } from "@/lib/pushRoleBroadcast";
 import { useCriticalData } from "@/context/CriticalDataContext";
 import { useFeed } from "@/context/FeedContext";
 import { useToast } from "@/components/Toast";
@@ -334,6 +335,14 @@ export default function FeedPage() {
       isOfficial: options?.isOfficial ?? false,
       targetRole: options?.targetRole ?? "all",
     });
+    if (options?.isOfficial) {
+      const preview = text.trim().slice(0, 100) + (text.length > 100 ? "…" : "");
+      void sendPushToRole("aluno", {
+        title: "📢 Comunicado Oficial — Will Treinos",
+        body: preview || "Nova mensagem da equipe.",
+        url: "/feed",
+      });
+    }
     setShowComposer(false);
     toast("🏐 Post publicado na Rede!");
   };

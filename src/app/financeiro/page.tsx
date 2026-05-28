@@ -12,6 +12,7 @@ import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { getPaymentProofSignedUrl } from "@/lib/supabasePersistence";
+import { sendPushToUser } from "@/lib/pushRoleBroadcast";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import StatCard from "@/components/ui/StatCard";
 import { avatarSrc } from "@/lib/avatarSrc";
@@ -623,6 +624,15 @@ function AdminFinanceiro() {
     setBusyPayId(payId);
     markPayment(payId);
     if (studentName) toast(`✅ ${studentName.split(" ")[0]} confirmado!`);
+    const pay = payments.find(p => p.id === payId);
+    const student = pay ? students.find(s => s.id === pay.studentId) : undefined;
+    if (student?.authUserId) {
+      void sendPushToUser(student.authUserId, {
+        title: "✅ Pagamento confirmado!",
+        body: `Sua mensalidade foi confirmada pelo Will Treinos. Tudo certo por aqui! 🏐`,
+        url: "/dashboard",
+      });
+    }
     window.setTimeout(() => setBusyPayId((current) => (current === payId ? null : current)), 700);
   };
   if (usingSupabaseSession && criticalDataLoading) {
