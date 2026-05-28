@@ -2,11 +2,11 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Brain, RefreshCw, TrendingDown, TrendingUp, Users, Zap } from "lucide-react";
+import { Brain, RefreshCw, RotateCcw, TrendingDown, TrendingUp, Users, Zap } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { PRESS_SCALE } from "@/components/ui/motionTokens";
 
-type InsightType = "churn" | "revenue" | "performance" | "attendance";
+type InsightType = "churn" | "revenue" | "performance" | "attendance" | "reposition";
 type Severity = "ok" | "warning" | "critical";
 
 type Insight = {
@@ -27,6 +27,10 @@ type OracleContext = {
   weekLessons: number;
   awaitingApproval: number;
   avgRating: number | null;
+  atRiskStudents?: { name: string; daysSince: number }[];
+  overduePayments?: { name: string; amount: number; daysLate: number }[];
+  pendingRepositions?: number;
+  revenueGrowth?: number;
 };
 
 const ICON_MAP: Record<InsightType, React.ReactNode> = {
@@ -34,6 +38,7 @@ const ICON_MAP: Record<InsightType, React.ReactNode> = {
   revenue: <TrendingUp className="h-4 w-4" />,
   performance: <Zap className="h-4 w-4" />,
   attendance: <TrendingDown className="h-4 w-4" />,
+  reposition: <RotateCcw className="h-4 w-4" />,
 };
 
 const SEVERITY_STYLE: Record<Severity, { border: string; bg: string; icon: string; badge: string }> = {

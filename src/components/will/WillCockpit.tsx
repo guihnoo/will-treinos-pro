@@ -194,12 +194,35 @@ export default function WillCockpit() {
     const activeStudents = students.filter((s) => s.status === "active");
     const now2 = new Date();
     const fourteenDaysAgo = new Date(now2.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const recentStudentIds = new Set(
-      lessons
-        .filter((l) => l.status !== "cancelled" && new Date(`${l.date}T00:00:00`) >= fourteenDaysAgo)
-        .flatMap((l) => l.enrolledStudents),
-    );
-    const inactiveStudents = activeStudents.filter((s) => !recentStudentIds.has(s.id)).length;
+
+    // Map each student → their most recent lesson date
+    const lastLessonDate = new Map<string, Date>();
+    lessons
+      .filter((l) => l.status !== "cancelled")
+      .forEach((l) => {
+        const d = new Date(`${l.date}T00:00:00`);
+        l.enrolledStudents.forEach((sid) => {
+          const prev = lastLessonDate.get(sid);
+          if (!prev || d > prev) lastLessonDate.set(sid, d);
+        });
+      });
+
+    const inactiveList = activeStudents
+      .filter((s) => {
+        const last = lastLessonDate.get(s.id);
+        return !last || last < fourteenDaysAgo;
+      })
+      .map((s) => {
+        const last = lastLessonDate.get(s.id);
+        const daysSince = last
+          ? Math.floor((now2.getTime() - last.getTime()) / 86400000)
+          : 999;
+        return { name: s.name, daysSince };
+      })
+      .sort((a, b) => b.daysSince - a.daysSince);
+
+    const atRiskStudents = inactiveList.slice(0, 3);
+
     const lastMonthRef = (() => {
       const d = new Date();
       d.setMonth(d.getMonth() - 1);
@@ -208,6 +231,13 @@ export default function WillCockpit() {
     const lastMonthRevenue = payments
       .filter((p) => p.status === "paid" && p.reference === lastMonthRef)
       .reduce((sum, p) => sum + p.amount, 0);
+
+    const monthRevenue = currentMonthBuckets.paid;
+    const revenueGrowth =
+      lastMonthRevenue > 0
+        ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        : undefined;
+
     const weekStart = new Date(now2);
     weekStart.setDate(now2.getDate() - now2.getDay());
     weekStart.setHours(0, 0, 0, 0);
@@ -215,15 +245,35 @@ export default function WillCockpit() {
       if (l.status === "cancelled") return false;
       return new Date(`${l.date}T${l.startTime}:00`) >= weekStart;
     }).length;
+
+    // Top 3 overdue payments with student name
+    const overduePayments = payments
+      .filter((p) => p.status === "late" || (p.status === "pending" && p.dueDate < now2.toISOString().slice(0, 10)))
+      .map((p) => {
+        const student = students.find((s) => s.id === p.studentId);
+        const due = new Date(`${p.dueDate}T00:00:00`);
+        const daysLate = Math.max(0, Math.floor((now2.getTime() - due.getTime()) / 86400000));
+        return { name: student?.name ?? "Aluno", amount: p.amount, daysLate };
+      })
+      .sort((a, b) => b.daysLate - a.daysLate)
+      .slice(0, 3);
+
     return {
       totalStudents: activeStudents.length,
-      inactiveStudents,
+      inactiveStudents: inactiveList.length,
       pendingPayments: pendingPaymentsCount,
-      monthRevenue: currentMonthBuckets.paid,
+      monthRevenue,
       lastMonthRevenue,
       weekLessons,
       awaitingApproval,
       avgRating: null,
+      atRiskStudents,
+      overduePayments,
+      pendingRepositions: lessons.reduce(
+        (sum, l) => sum + (l.repositionRequests || []).filter((r) => r.status === "pending").length,
+        0,
+      ),
+      revenueGrowth,
     };
   }, [students, payments, lessons, pendingPaymentsCount, currentMonthBuckets.paid, awaitingApproval]);
 
