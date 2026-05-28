@@ -245,7 +245,28 @@ export default function FeedPage() {
   const [alertPostId, setAlertPostId] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState("");
   const tapRef = useRef<Record<string, number>>({});
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [reactionPicker, setReactionPicker] = useState<string | null>(null);
+  const [postReactions, setPostReactions] = useState<Record<string, string>>({});
   const isAdmin = user?.role === "admin";
+
+  const REACTIONS = ["❤️", "🔥", "💪", "🏐", "👏"] as const;
+
+  const startLongPress = (postId: string) => {
+    longPressRef.current = setTimeout(() => {
+      setReactionPicker(postId);
+      if (navigator.vibrate) navigator.vibrate(25);
+    }, 420);
+  };
+  const cancelLongPress = () => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
+  };
+  const handleReactionSelect = (postId: string, emoji: string) => {
+    setPostReactions(p => ({ ...p, [postId]: emoji }));
+    setReactionPicker(null);
+    togglePostLike(postId);
+    if (navigator.vibrate) navigator.vibrate([12, 8, 18]);
+  };
   const visiblePosts = useMemo(() => {
     if (!user) return posts;
     return posts.filter((post) => {
@@ -349,7 +370,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto border-x border-zinc-900 min-h-screen relative pb-28">
+    <div className="max-w-2xl mx-auto border-x border-zinc-900 min-h-screen relative pb-28" onClick={() => reactionPicker && setReactionPicker(null)}>
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-xl border-b border-zinc-900 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between">
@@ -534,15 +555,54 @@ export default function FeedPage() {
             {/* Actions */}
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-5">
-                {/* Like */}
-                <motion.button whileTap={{ scale: 0.75 }}
-                  onClick={() => { togglePostLike(post.id); if(navigator.vibrate) navigator.vibrate(post.isLiked?20:40); }}
-                  className={`flex items-center gap-1.5 group ${FOCUS_RING_GOLD}`}>
-                  <motion.div animate={post.isLiked ? { scale: [1, 1.5, 1] } : {}} transition={{ duration: 0.3 }}>
-                    <Heart className={`w-6 h-6 transition-colors ${post.isLiked ? "text-[#EAB308] fill-[#EAB308]" : "text-zinc-400 group-hover:text-zinc-200"}`} />
-                  </motion.div>
-                  <span className={`text-sm font-medium ${post.isLiked ? "text-[#EAB308]" : "text-zinc-400"}`}>{post.likes}</span>
-                </motion.button>
+                {/* Like + Reaction picker */}
+                <div className="relative">
+                  <AnimatePresence>
+                    {reactionPicker === post.id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.7, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.7, y: 8 }}
+                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                        className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-full border border-zinc-700/80 bg-zinc-900/95 px-2 py-1.5 shadow-2xl backdrop-blur-sm"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        {REACTIONS.map(emoji => (
+                          <motion.button
+                            key={emoji}
+                            whileHover={{ scale: 1.35 }}
+                            whileTap={{ scale: 0.85 }}
+                            onClick={() => handleReactionSelect(post.id, emoji)}
+                            className="text-xl leading-none focus:outline-none"
+                          >
+                            {emoji}
+                          </motion.button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <motion.button
+                    whileTap={{ scale: 0.75 }}
+                    onPointerDown={() => startLongPress(post.id)}
+                    onPointerUp={() => {
+                      if (longPressRef.current) {
+                        cancelLongPress();
+                        togglePostLike(post.id);
+                        if (navigator.vibrate) navigator.vibrate(post.isLiked ? 20 : 40);
+                      }
+                    }}
+                    onPointerLeave={cancelLongPress}
+                    className={`flex items-center gap-1.5 group select-none ${FOCUS_RING_GOLD}`}>
+                    <motion.div animate={post.isLiked ? { scale: [1, 1.4, 1] } : {}} transition={{ duration: 0.3 }}>
+                      {postReactions[post.id] && post.isLiked ? (
+                        <span className="text-xl leading-none">{postReactions[post.id]}</span>
+                      ) : (
+                        <Heart className={`w-6 h-6 transition-colors ${post.isLiked ? "text-[#EAB308] fill-[#EAB308]" : "text-zinc-400 group-hover:text-zinc-200"}`} />
+                      )}
+                    </motion.div>
+                    <span className={`text-sm font-medium ${post.isLiked ? "text-[#EAB308]" : "text-zinc-400"}`}>{post.likes}</span>
+                  </motion.button>
+                </div>
 
                 {/* Comment toggle */}
                 <motion.button whileTap={{ scale: 0.9 }}

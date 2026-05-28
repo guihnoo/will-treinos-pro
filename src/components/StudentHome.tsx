@@ -14,7 +14,10 @@ import { useCatalog } from "@/context/CatalogContext";
 import { useCoaching } from "@/context/CoachingContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
-import type { Lesson } from "@/context/types";
+import type { Lesson, CardTier } from "@/context/types";
+import { CARD_TIER_THRESHOLDS } from "@/context/types";
+import { useGamification } from "@/context/GamificationContext";
+import { useFeed } from "@/context/FeedContext";
 import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award, CreditCard, AlertTriangle as AlertIcon } from "lucide-react";
 import { StudentPaymentSheet } from "@/components/student/StudentPaymentSheet";
 import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersistence";
@@ -446,6 +449,14 @@ function StudentHomeSkeleton() {
   );
 }
 
+const TIER_META: Record<CardTier, { emoji: string; label: string; color: string; gradient: string }> = {
+  bronze:   { emoji: "🥉", label: "Bronze",   color: "#CD7F32", gradient: "from-amber-700 to-amber-600" },
+  prata:    { emoji: "🥈", label: "Prata",    color: "#C0C0C0", gradient: "from-gray-400 to-gray-300" },
+  ouro:     { emoji: "🥇", label: "Ouro",     color: "#FFD700", gradient: "from-yellow-400 to-yellow-300" },
+  diamante: { emoji: "💎", label: "Diamante", color: "#00CED1", gradient: "from-cyan-400 to-blue-400" },
+  elite:    { emoji: "👑", label: "Elite",    color: "#FF1493", gradient: "from-purple-500 to-pink-500" },
+};
+
 export default function StudentHome() {
   const { getCategory } = useCatalog();
   const { feedbacks } = useCoaching();
@@ -453,6 +464,8 @@ export default function StudentHome() {
   const { requestCheckIn } = useCheckIn();
   const { lessonRatings, addLessonRating, getLessonRating } = useLessonRatings();
   const { user, usingSupabaseSession } = useAuth();
+  const { totalXP } = useGamification();
+  const { addPost } = useFeed();
   const { lessons } = useLessons();
   const { students } = useStudents();
   const { criticalDataError, retryCriticalDataSync } = useCriticalData();
@@ -462,6 +475,29 @@ export default function StudentHome() {
   const { toast } = useToast();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
+
+  // Detect card tier unlock
+  useEffect(() => {
+    if (!hydrated || totalXP === 0) return;
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      prevXPRef.current = totalXP;
+      return;
+    }
+    const prev = prevXPRef.current ?? 0;
+    if (totalXP <= prev) { prevXPRef.current = totalXP; return; }
+    const tiers: CardTier[] = ["bronze", "prata", "ouro", "diamante", "elite"];
+    for (const tier of tiers) {
+      const threshold = CARD_TIER_THRESHOLDS[tier];
+      if (prev < threshold && totalXP >= threshold) {
+        const meta = TIER_META[tier];
+        setJustUnlockedTier(tier);
+        setShareText(`Acabei de desbloquear o Card ${meta.label} ${meta.emoji} no Will Treinos PRO! ${totalXP} XP conquistados na quadra. Quem tá chegando no mesmo nível? 🏐🔥`);
+        break;
+      }
+    }
+    prevXPRef.current = totalXP;
+  }, [totalXP, hydrated]);
   const [showNotif, setShowNotif] = useState(false);
   const [lessonModal, setLessonModal] = useState<Lesson | null>(null);
   const [evolModal, setEvolModal] = useState(false);
@@ -480,6 +516,10 @@ export default function StudentHome() {
   const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
+  const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
+  const [shareText, setShareText] = useState("");
+  const prevXPRef = useRef<number | null>(null);
+  const hasInitializedRef = useRef(false);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
     showNotif ||
@@ -493,7 +533,8 @@ export default function StudentHome() {
       showXpModal ||
       showLeaderboard ||
       showGamificationDashboard ||
-      showPayments,
+      showPayments ||
+      justUnlockedTier,
   );
   useBodyScrollLock(hasOverlayOpen);
   useEffect(() => {
@@ -2668,6 +2709,102 @@ export default function StudentHome() {
         onViewLessons={() => setShowAgendaPanel(true)}
         onReportAbsence={() => toast("⚠️ Comunicar falta: em desenvolvimento", "info")}
       />
+
+      {/* Achievement Share Sheet */}
+      <AnimatePresence>
+        {justUnlockedTier && (() => {
+          const meta = TIER_META[justUnlockedTier];
+          const profile = students.find(s => s.authUserId === user?.id || s.id === user?.id);
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[260] flex flex-col justify-end bg-black/85 backdrop-blur-md"
+              onClick={() => setJustUnlockedTier(null)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                onClick={e => e.stopPropagation()}
+                className="w-full rounded-t-3xl border-t border-zinc-800 bg-[#08080A] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+              >
+                {/* Handle */}
+                <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mt-3 mb-4" />
+
+                {/* Card unlock visual */}
+                <div className="px-5 pb-4 flex flex-col items-center text-center">
+                  <motion.div
+                    initial={{ scale: 0.4, rotate: -10 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.1 }}
+                    className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-4xl shadow-[0_0_40px_rgba(234,179,8,0.3)] mb-3`}
+                  >
+                    {meta.emoji}
+                  </motion.div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-zinc-500 mb-1">Conquista desbloqueada</p>
+                  <h2 className="text-2xl font-black text-white">Card <span style={{ color: meta.color }}>{meta.label}</span></h2>
+                  <p className="text-sm text-zinc-400 mt-1">{totalXP.toLocaleString("pt-BR")} XP acumulados na quadra</p>
+                </div>
+
+                {/* Share composer */}
+                <div className="px-5">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Compartilhar na Rede</p>
+                  <textarea
+                    value={shareText}
+                    onChange={e => setShareText(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900/80 px-3 py-2.5 text-sm text-white outline-none placeholder-zinc-600 focus:border-zinc-500 transition-colors resize-none"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="px-5 mt-4 flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setJustUnlockedTier(null)}
+                    className={`flex-1 rounded-xl border border-zinc-700 py-3 text-sm font-bold text-zinc-400 hover:bg-zinc-900 transition-colors ${ctaClass}`}
+                  >
+                    Agora não
+                  </button>
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.96 }}
+                    disabled={!shareText.trim()}
+                    onClick={() => {
+                      if (!shareText.trim()) return;
+                      addPost({
+                        user: {
+                          name: user?.name || "Atleta",
+                          avatar: profile?.avatar || user?.avatar || "user",
+                          isPro: false,
+                        },
+                        time: "agora",
+                        content: shareText,
+                        media: null,
+                        likes: 0,
+                        comments: [],
+                        isLiked: false,
+                        isSaved: false,
+                        pinned: false,
+                        isOfficial: false,
+                        targetRole: "all",
+                      });
+                      setJustUnlockedTier(null);
+                      toast(`${meta.emoji} Conquista publicada na Rede!`);
+                    }}
+                    className={`flex-1 rounded-xl bg-[#EAB308] py-3 text-sm font-black text-black shadow-[0_0_20px_rgba(234,179,8,0.25)] disabled:opacity-40 ${ctaClass}`}
+                  >
+                    Postar na Rede
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </motion.div>
     </>
   );
