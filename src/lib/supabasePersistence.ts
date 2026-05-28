@@ -121,6 +121,7 @@ function serializeLesson(lesson: Lesson) {
     notes: lesson.notes ?? "",
     is_trial: lesson.isTrial ?? false,
     check_in_requests: lesson.checkInRequests ?? [],
+    reposition_requests: lesson.repositionRequests ?? [],
   };
 }
 
@@ -143,6 +144,7 @@ function serializeLessonPatch(patch: Partial<Lesson>) {
   if (patch.notes !== undefined) payload.notes = patch.notes;
   if (patch.isTrial !== undefined) payload.is_trial = patch.isTrial;
   if (patch.checkInRequests !== undefined) payload.check_in_requests = patch.checkInRequests;
+  if (patch.repositionRequests !== undefined) payload.reposition_requests = patch.repositionRequests;
   return payload;
 }
 
@@ -177,6 +179,9 @@ function mapLesson(row: DbRow): Lesson {
     isTrial: Boolean(row.is_trial ?? row.isTrial),
     checkInRequests: Array.isArray(row.check_in_requests ?? row.checkInRequests)
       ? (row.check_in_requests ?? row.checkInRequests) as Lesson["checkInRequests"]
+      : [],
+    repositionRequests: Array.isArray(row.reposition_requests ?? row.repositionRequests)
+      ? (row.reposition_requests ?? row.repositionRequests) as Lesson["repositionRequests"]
       : [],
   };
 }

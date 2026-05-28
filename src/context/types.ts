@@ -42,6 +42,19 @@ export interface Student {
   attendanceHistory?: { date: string; status: 'present' | 'absent' }[];
 }
 
+// ─── Reposition System ──────────────────────────────────────────────────────
+// Flow: student misses lesson → requestReposition on future slot → admin approves → enrolled
+export type RepositionStatus = "pending" | "approved" | "declined";
+
+export interface RepositionRequest {
+  studentId: string;
+  fromLessonId: string;   // lesson that was missed
+  requestedAt: string;    // ISO timestamp
+  status: RepositionStatus;
+  respondedAt?: string;
+  respondedBy?: string;
+}
+
 // ─── Check-in System ────────────────────────────────────────────────────────
 // Flow: student arrives → requestCheckIn → professor approves → class ends
 export type CheckInStatus = "pending" | "approved" | "rejected";
@@ -67,6 +80,8 @@ export interface Lesson {
   isTrial?: boolean;
   // Professional check-in system
   checkInRequests?: CheckInRequest[];
+  // Reposition system
+  repositionRequests?: RepositionRequest[];
 }
 
 export interface Payment {

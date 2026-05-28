@@ -35,6 +35,7 @@ import { useStudentMutations } from "@/hooks/useStudentMutations";
 import { usePaymentMutations } from "@/hooks/usePaymentMutations";
 import { useNotificationMutations } from "@/hooks/useNotificationMutations";
 import { useCheckInActions } from "@/hooks/useCheckInActions";
+import { useRepositionActions } from "@/hooks/useRepositionActions";
 import { syncWtRoleCookie } from "@/lib/appSessionHelpers";
 import { buildSessionUser } from "@/lib/buildSessionUser";
 import type { Provider, User as SupabaseAuthUser } from "@supabase/supabase-js";
@@ -109,6 +110,10 @@ export interface AppContextType {
   approveCheckIn: (lessonId: string, studentId: string, approvedBy: string) => void;
   rejectCheckIn: (lessonId: string, studentId: string) => void;
   endClassCheckIn: (lessonId: string, studentId: string) => void;
+  // Reposition system
+  requestReposition: (targetLessonId: string, studentId: string, fromLessonId: string) => void;
+  approveReposition: (targetLessonId: string, studentId: string, approvedBy: string) => void;
+  declineReposition: (targetLessonId: string, studentId: string, declinedBy: string) => void;
   // App config (admin editable — PIX, WhatsApp, etc.)
   appConfig: AppConfig;
   updateAppConfig: (patch: Partial<AppConfig>) => void;
@@ -375,6 +380,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addNotification,
   });
 
+  const { requestReposition, approveReposition, declineReposition } = useRepositionActions({
+    usingSupabaseSession,
+    students,
+    setLessons,
+    setCriticalDataError,
+  });
+
   // ─── APP CONFIG (PIX) ───
   const updateAppConfig = useCallback((patch: Partial<AppConfig>) => {
     setAppConfig(prev => ({ ...prev, ...patch }));
@@ -391,6 +403,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       markPayment, submitStudentPaymentProof, addNotification, markNotificationRead, markAllNotificationsRead,
       checkInStudent,
       requestCheckIn, approveCheckIn, rejectCheckIn, endClassCheckIn,
+      requestReposition, approveReposition, declineReposition,
       appConfig, updateAppConfig,
       posts, addPost, togglePostLike, addPostComment, moderatePost, softDeletePost,
       updateUser,

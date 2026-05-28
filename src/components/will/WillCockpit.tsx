@@ -35,6 +35,7 @@ import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
+import { useApp } from "@/context/AppContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useCatalog } from "@/context/CatalogContext";
@@ -110,6 +111,7 @@ export default function WillCockpit() {
   const { categories, venues, getCategory } = useCatalog();
   const { user, isLive } = useAuth();
   const { lessons, todayLessons, todayEnrolledCount, updateLesson } = useLessons();
+  const { approveReposition, declineReposition } = useApp();
   const {
     students,
     statusCounts,
@@ -326,6 +328,13 @@ export default function WillCockpit() {
 
   const lessonsDay = useMemo(() => upcomingLessons.filter((item) => item.date >= dayStart && item.date <= dayEnd), [dayEnd, dayStart, upcomingLessons]);
   const lessonsDayTop3 = useMemo(() => lessonsDay.slice(0, 3), [lessonsDay]);
+
+  const pendingRepositions = useMemo(() =>
+    lessons.flatMap(l =>
+      (l.repositionRequests || [])
+        .filter(r => r.status === "pending")
+        .map(r => ({ ...r, lesson: l })),
+    ), [lessons]);
   const currentHour = now.getHours();
   const timeGreeting =
     currentHour >= 5 && currentHour < 12 ? "Bom dia" : currentHour >= 12 && currentHour < 18 ? "Boa tarde" : "Boa noite";
@@ -562,6 +571,63 @@ export default function WillCockpit() {
           )}
         </AppSectionCard>
       </motion.div>
+
+      {/* BLOCO 1.5: Reposições Pendentes */}
+      {pendingRepositions.length > 0 && (
+        <motion.div variants={itemV}>
+          <AppSectionCard
+            title={`Reposições Pendentes (${pendingRepositions.length})`}
+            subtitle="Alunos aguardando aprovação para repor aula faltada."
+            contentClassName="pt-3 space-y-2"
+          >
+            {pendingRepositions.map(({ studentId, fromLessonId, requestedAt, lesson }) => {
+              const student = getStudent(studentId);
+              const fromLesson = lessons.find(l => l.id === fromLessonId);
+              const slotCat = getCategory(lesson.categoryId);
+              if (!student) return null;
+              return (
+                <div key={`${studentId}-${lesson.id}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-3 py-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: slotCat?.color ?? "#EAB308" }} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{student.name}</p>
+                      <p className="text-[10px] text-zinc-500">
+                        Faltou: {fromLesson?.date ?? "—"} · Quer repor: {lesson.date} {lesson.startTime}
+                      </p>
+                      <p className="text-[10px] text-zinc-600">
+                        Solicitado: {new Date(requestedAt).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => {
+                        approveReposition(lesson.id, studentId, user?.id ?? "admin");
+                        toast(`✅ Reposição de ${student.name.split(" ")[0]} aprovada!`);
+                      }}
+                      className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] font-black text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      Aprovar
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => {
+                        declineReposition(lesson.id, studentId, user?.id ?? "admin");
+                        toast(`Reposição de ${student.name.split(" ")[0]} recusada.`);
+                      }}
+                      className="rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-[10px] font-black text-zinc-400 hover:bg-zinc-800 transition-colors"
+                    >
+                      Recusar
+                    </motion.button>
+                  </div>
+                </div>
+              );
+            })}
+          </AppSectionCard>
+        </motion.div>
+      )}
 
       {/* BLOCO 2: Financeiro + Aprovações — gestão crítica */}
       <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">

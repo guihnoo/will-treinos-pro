@@ -18,6 +18,7 @@ import type { Lesson, CardTier } from "@/context/types";
 import { CARD_TIER_THRESHOLDS } from "@/context/types";
 import { useGamification } from "@/context/GamificationContext";
 import { useFeed } from "@/context/FeedContext";
+import { useApp } from "@/context/AppContext";
 import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award, CreditCard, AlertTriangle as AlertIcon } from "lucide-react";
 import { StudentPaymentSheet } from "@/components/student/StudentPaymentSheet";
 import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersistence";
@@ -466,6 +467,7 @@ export default function StudentHome() {
   const { user, usingSupabaseSession } = useAuth();
   const { totalXP } = useGamification();
   const { addPost } = useFeed();
+  const { requestReposition } = useApp();
   const { lessons } = useLessons();
   const { students } = useStudents();
   const { criticalDataError, retryCriticalDataSync } = useCriticalData();
@@ -1310,6 +1312,114 @@ export default function StudentHome() {
               </div>
               <ChevronRight className="h-4 w-4 flex-shrink-0 text-zinc-600" />
             </button>
+          </motion.div>
+        );
+      })()}
+
+      {/* BLOCO 5: Reposição de Aulas */}
+      {(() => {
+        const studentId = user?.id ?? "";
+        const today = localDateISO();
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+        const twoWeeksAgoStr = twoWeeksAgo.toISOString().slice(0, 10);
+
+        const missedLessons = lessons.filter(l =>
+          l.status === "completed" &&
+          l.enrolledStudents.includes(studentId) &&
+          !l.presentStudents.includes(studentId) &&
+          l.date >= twoWeeksAgoStr,
+        );
+
+        if (missedLessons.length === 0) return null;
+
+        const availableSlots = lessons.filter(l =>
+          l.status === "scheduled" &&
+          l.date >= today &&
+          !l.enrolledStudents.includes(studentId) &&
+          l.enrolledStudents.length < l.maxStudents &&
+          !(l.repositionRequests || []).some(
+            r => r.studentId === studentId && r.status !== "declined",
+          ),
+        ).slice(0, 3);
+
+        const pendingMyRequests = lessons.filter(l =>
+          (l.repositionRequests || []).some(r => r.studentId === studentId && r.status === "pending"),
+        );
+        const approvedMyRequests = lessons.filter(l =>
+          (l.repositionRequests || []).some(r => r.studentId === studentId && r.status === "approved"),
+        );
+
+        const fromLessonId = missedLessons[0]?.id ?? "";
+        const cat = missedLessons[0] ? getCategory(missedLessons[0].categoryId) : undefined;
+
+        return (
+          <motion.div variants={homeItem}>
+            <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-500/35 bg-amber-500/10 flex-shrink-0">
+                  <Radio className="h-4 w-4 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-400">Reposição</p>
+                  <p className="text-sm font-bold text-white">
+                    {missedLessons.length} aula{missedLessons.length > 1 ? "s" : ""} faltada{missedLessons.length > 1 ? "s" : ""} nos últimos 14 dias
+                  </p>
+                </div>
+              </div>
+
+              {approvedMyRequests.length > 0 && (
+                <div className="mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                  <p className="text-xs text-emerald-300 font-bold">Reposição aprovada! Você já está matriculado na aula.</p>
+                </div>
+              )}
+
+              {pendingMyRequests.length > 0 && (
+                <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                  <p className="text-xs text-amber-300 font-bold">Solicitação enviada — aguardando aprovação do Will.</p>
+                </div>
+              )}
+
+              {pendingMyRequests.length === 0 && approvedMyRequests.length === 0 && availableSlots.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-zinc-500 font-bold mb-1.5">Escolha uma aula para repor:</p>
+                  {availableSlots.map(slot => {
+                    const slotCat = getCategory(slot.categoryId);
+                    const vagasLivres = slot.maxStudents - slot.enrolledStudents.length;
+                    return (
+                      <motion.button
+                        key={slot.id}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          haptic(18);
+                          requestReposition(slot.id, studentId, fromLessonId);
+                          toast("🔄 Solicitação de reposição enviada!");
+                        }}
+                        className={`w-full flex items-center justify-between gap-3 rounded-xl border border-zinc-700/60 bg-zinc-900/60 px-3 py-2.5 text-left hover:border-amber-500/40 hover:bg-amber-500/5 transition-all ${ctaClass}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: slotCat?.color ?? "#EAB308" }} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-white truncate">{slot.title || slotCat?.name || "Aula"}</p>
+                            <p className="text-[10px] text-zinc-500">{slot.date} · {slot.startTime}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-[10px] text-zinc-500">{vagasLivres} vaga{vagasLivres !== 1 ? "s" : ""}</span>
+                          <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-0.5">Repor</span>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {pendingMyRequests.length === 0 && approvedMyRequests.length === 0 && availableSlots.length === 0 && (
+                <p className="text-xs text-zinc-500 text-center py-2">Nenhuma vaga disponível no momento. Fale com o Will pelo WhatsApp.</p>
+              )}
+            </div>
           </motion.div>
         );
       })()}
