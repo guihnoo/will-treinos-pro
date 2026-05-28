@@ -28,6 +28,8 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const { students } = useStudents();
   const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
   const [showSlowSyncHint, setShowSlowSyncHint] = useState(false);
+  // Safety escape: se authResolved não virar true em 10s, libera o gate e redireciona para login
+  const [authEscapeTriggered, setAuthEscapeTriggered] = useState(false);
   const isPublic = isPublicRoute(pathname);
 
   useEffect(() => {
@@ -44,6 +46,21 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     const id = window.setTimeout(() => setShowSlowSyncHint(true), 12_000);
     return () => window.clearTimeout(id);
   }, [usingSupabaseSession, criticalDataLoading]);
+
+  // Escape de emergência: se authResolved nunca virar true em 10s, redireciona para login
+  useEffect(() => {
+    if (isPublic || authResolved) return;
+    const id = window.setTimeout(() => {
+      setAuthEscapeTriggered(true);
+    }, 10_000);
+    return () => window.clearTimeout(id);
+  }, [isPublic, authResolved]);
+
+  useEffect(() => {
+    if (authEscapeTriggered && !authResolved) {
+      router.replace("/login");
+    }
+  }, [authEscapeTriggered, authResolved, router]);
 
   if (isPublic) {
     return (

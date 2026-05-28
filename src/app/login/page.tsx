@@ -69,7 +69,7 @@ function LoginContent() {
     if (!awaitingRedirect || !authResolved || !user) return;
     const dest =
       user.role === "visitor" ? "/feed" :
-      user.role === "aluno"   ? "/agenda" :
+      user.role === "aluno"   ? "/treinos" :
       "/dashboard";
     router.replace(nextPath ?? dest);
   }, [awaitingRedirect, authResolved, user, router, nextPath]);
@@ -222,12 +222,12 @@ function LoginContent() {
               onBlur={() => setFocusedField(null)}
               onKeyDown={e => e.key === "Enter" && void handlePasswordLogin()}
               disabled={isSubmitting}
-              className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 disabled:opacity-50"
-              style={{
-                border: `1px solid ${focusedField === "email" ? "rgba(234,179,8,0.5)" : "rgba(255,255,255,0.07)"}`,
-                boxShadow: focusedField === "email" ? "0 0 0 3px rgba(234,179,8,0.1)" : "none",
-                transition: "border-color 0.15s, box-shadow 0.15s",
-              }}
+              className={[
+                "w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 disabled:opacity-50 transition-all duration-150",
+                focusedField === "email"
+                  ? "border border-[#EAB308]/50 shadow-[0_0_0_3px_rgba(234,179,8,0.1)]"
+                  : "border border-white/[0.07]",
+              ].join(" ")}
             />
             <input
               type="password"
@@ -239,12 +239,12 @@ function LoginContent() {
               onBlur={() => setFocusedField(null)}
               onKeyDown={e => e.key === "Enter" && void handlePasswordLogin()}
               disabled={isSubmitting}
-              className="w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 disabled:opacity-50"
-              style={{
-                border: `1px solid ${focusedField === "password" ? "rgba(234,179,8,0.5)" : "rgba(255,255,255,0.07)"}`,
-                boxShadow: focusedField === "password" ? "0 0 0 3px rgba(234,179,8,0.1)" : "none",
-                transition: "border-color 0.15s, box-shadow 0.15s",
-              }}
+              className={[
+                "w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 disabled:opacity-50 transition-all duration-150",
+                focusedField === "password"
+                  ? "border border-[#EAB308]/50 shadow-[0_0_0_3px_rgba(234,179,8,0.1)]"
+                  : "border border-white/[0.07]",
+              ].join(" ")}
             />
             {/* Remember me */}
             <button
