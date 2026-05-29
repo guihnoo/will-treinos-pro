@@ -38,6 +38,7 @@ import DailyChallengesPanel from "@/components/gamification/DailyChallengesPanel
 import StudentTwinCard from "@/components/gamification/StudentTwinCard";
 import AthleteTwinPanel from "@/components/will/AthleteTwinPanel";
 import OnboardingWidget, { markTwinViewed } from "@/components/gamification/OnboardingWidget";
+import TurmaLeaderboardCard from "@/components/leaderboard/TurmaLeaderboardCard";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -2839,7 +2840,14 @@ export default function StudentHome() {
         <GamificationPanel />
       </motion.div>
 
-      {/* Leaderboard Panel — Real-time Ranking */}
+      {/* Ranking da Turma — semanal por categoria */}
+      {user?.id && (
+        <motion.div variants={homeItem} className="mb-2">
+          <TurmaLeaderboardCard studentId={user.id} />
+        </motion.div>
+      )}
+
+      {/* Leaderboard Global */}
       <motion.div variants={homeItem} className="mb-2">
         <LeaderboardRankingPanel compact={true} />
       </motion.div>
