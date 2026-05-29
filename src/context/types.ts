@@ -206,6 +206,13 @@ export interface StudentProfileEditPolicy {
   avatar: boolean;
 }
 
+export type CourtLocation = {
+  lat: number;
+  lng: number;
+  radiusM: number;
+  label: string;
+};
+
 export interface AppConfig {
   pixKey: string;           // admin PIX key (email, CPF, phone, random)
   pixKeyType: "email" | "cpf" | "telefone" | "aleatoria";
@@ -214,6 +221,7 @@ export interface AppConfig {
   /** Slug em `/cadastro?invite=` — gerado automaticamente no cliente se vazio. */
   enrollmentInviteCode?: string;
   studentProfilePolicy?: Partial<StudentProfileEditPolicy>;
+  courtLocation?: CourtLocation | null;
 }
 
 // ─── Phase 8: Gamification XP System ──────────────────────────────────────────

@@ -39,6 +39,7 @@ import StudentTwinCard from "@/components/gamification/StudentTwinCard";
 import AthleteTwinPanel from "@/components/will/AthleteTwinPanel";
 import OnboardingWidget, { markTwinViewed } from "@/components/gamification/OnboardingWidget";
 import TurmaLeaderboardCard from "@/components/leaderboard/TurmaLeaderboardCard";
+import GeoCheckInButton from "@/components/student/GeoCheckInButton";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -468,6 +469,7 @@ export default function StudentHome() {
   const { feedbacks } = useCoaching();
   const { payments, getStudentCurrentPayment, currentMonthReference } = usePayments();
   const { requestCheckIn } = useCheckIn();
+  const { appConfig } = useAppConfig();
   const { lessonRatings, addLessonRating, getLessonRating } = useLessonRatings();
   const { user, usingSupabaseSession } = useAuth();
   const { totalXP } = useGamification();
@@ -1610,13 +1612,21 @@ export default function StudentHome() {
                 <span className="text-[9px] text-zinc-500">{gate.reason}</span>
               </div>
             ) : (
-              <motion.button whileTap={{scale:0.93}}
-                onClick={e=>{e.stopPropagation();requestCheckIn(nextLesson.id,user!.id);toast("📍 Chegada registrada! Aguardando confirmação do professor.");}}
-                className="flex-shrink-0 flex flex-col items-center gap-1.5 bg-[#EAB308] text-black px-4 py-3 rounded-2xl font-bold text-xs shadow-[0_0_15px_rgba(234,179,8,0.25)] text-center">
+              <GeoCheckInButton
+                courtLocation={appConfig.courtLocation}
+                onCheckIn={(isAtCourt) => {
+                  requestCheckIn(nextLesson.id, user!.id);
+                  toast(isAtCourt
+                    ? "📍 Check-in na quadra confirmado! +50 XP aguardando professor."
+                    : "🏠 Treino externo registrado! +10 XP anti-cheat."
+                  );
+                }}
+                className="flex-shrink-0 flex flex-col items-center gap-1.5 bg-[#EAB308] text-black px-4 py-3 rounded-2xl font-bold text-xs shadow-[0_0_15px_rgba(234,179,8,0.25)] text-center"
+              >
                 <MapPin className="w-5 h-5"/>
                 <span>Registrar</span>
                 <span className="opacity-70 font-normal">Chegada</span>
-              </motion.button>
+              </GeoCheckInButton>
             )}
           </div>
         </motion.div>

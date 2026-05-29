@@ -19,6 +19,7 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { useRouter } from "next/navigation";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import AppSectionCard from "@/components/ui/AppSectionCard";
+import CourtLocationSettings from "@/components/will/CourtLocationSettings";
 
 type Tab = "categorias" | "locais" | "jornada" | "recebimentos" | "perfilAluno";
 
@@ -403,6 +404,12 @@ export default function ConfigPage() {
       {/* ─── LOCAIS ─── */}
       {tab === "locais" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+          {/* Geolocalização da quadra */}
+          <CourtLocationSettings
+            current={appConfig.courtLocation}
+            onSave={(loc) => updateAppConfig({ courtLocation: loc })}
+          />
+
           <AppSectionCard
             title="Locais de Treino"
             subtitle="Gerencie quadras e endereços oficiais da operação."
