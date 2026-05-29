@@ -58,6 +58,7 @@ import CoachCopilotPanel from "./CoachCopilotPanel";
 import AthleteTwinPanel from "./AthleteTwinPanel";
 import FinancialForecastPanel from "./FinancialForecastPanel";
 import EvaluationHistoryPanel from "./EvaluationHistoryPanel";
+import MonthlyReportPanel from "./MonthlyReportPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -141,6 +142,7 @@ export default function WillCockpit() {
   const [showFinancialForecast, setShowFinancialForecast] = useState(false);
   const [showEvalHistory, setShowEvalHistory] = useState(false);
   const [evalHistoryStudentId, setEvalHistoryStudentId] = useState<string | null>(null);
+  const [showMonthlyReport, setShowMonthlyReport] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -199,6 +201,7 @@ export default function WillCockpit() {
     showAthleteTwin ||
     showFinancialForecast ||
     showEvalHistory ||
+    showMonthlyReport ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -873,6 +876,18 @@ export default function WillCockpit() {
           >
             <Coins className="h-5 w-5 text-emerald-400" />
             Previsão IA
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowMonthlyReport(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-[#EAB308]/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver relatório mensal com IA"
+          >
+            <BarChart3 className="h-5 w-5 text-[#EAB308]" />
+            Relatório Mensal
           </button>
           </div>
         </AppSectionCard>
@@ -2180,6 +2195,12 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showFinancialForecast ? (
           <FinancialForecastPanel onClose={() => setShowFinancialForecast(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMonthlyReport ? (
+          <MonthlyReportPanel onClose={() => setShowMonthlyReport(false)} />
         ) : null}
       </AnimatePresence>
 
