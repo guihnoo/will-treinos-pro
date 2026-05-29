@@ -55,6 +55,7 @@ import XPModerationPanel from "./XPModerationPanel";
 import { XPAnalyticsPanel } from "@/components/will/XPAnalyticsPanel";
 import CoachCopilotPanel from "./CoachCopilotPanel";
 import AthleteTwinPanel from "./AthleteTwinPanel";
+import FinancialForecastPanel from "./FinancialForecastPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -135,6 +136,7 @@ export default function WillCockpit() {
   const [showCoachCopilot, setShowCoachCopilot] = useState(false);
   const [showAthleteTwin, setShowAthleteTwin] = useState(false);
   const [twinStudentId, setTwinStudentId] = useState<string | null>(null);
+  const [showFinancialForecast, setShowFinancialForecast] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -191,6 +193,7 @@ export default function WillCockpit() {
     showXPAnalytics ||
     showCoachCopilot ||
     showAthleteTwin ||
+    showFinancialForecast ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -852,6 +855,18 @@ export default function WillCockpit() {
           >
             <Cpu className="h-5 w-5 text-cyan-400" />
             Copiloto IA
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowFinancialForecast(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir previsão financeira com IA"
+          >
+            <Coins className="h-5 w-5 text-emerald-400" />
+            Previsão IA
           </button>
           </div>
         </AppSectionCard>
@@ -2140,6 +2155,12 @@ export default function WillCockpit() {
               setTwinStudentId(null);
             }}
           />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showFinancialForecast ? (
+          <FinancialForecastPanel onClose={() => setShowFinancialForecast(false)} />
         ) : null}
       </AnimatePresence>
     </div>
