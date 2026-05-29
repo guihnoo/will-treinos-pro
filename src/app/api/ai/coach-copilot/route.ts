@@ -9,7 +9,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type CopilotMode = "training" | "alerts" | "lineup";
+type CopilotMode = "training" | "alerts" | "lineup" | "fadiga";
 
 type TrainingExercise = {
   name: string;
@@ -43,10 +43,21 @@ type LineupGroup = {
   rationale: string;
 };
 
+export type FatigueAlert = {
+  studentName: string;
+  signal: "overtraining" | "technical_decline" | "burnout_risk" | "recovery_needed";
+  severity: "warning" | "critical";
+  affectedPillars: string[];
+  xpTrend: "high" | "normal" | "low";
+  reason: string;
+  recommendation: string;
+};
+
 type CopilotResult =
   | { mode: "training"; plan: TrainingPlanResult }
   | { mode: "alerts"; alerts: AlertItem[] }
-  | { mode: "lineup"; groups: LineupGroup[]; tip?: string };
+  | { mode: "lineup"; groups: LineupGroup[]; tip?: string }
+  | { mode: "fadiga"; fatigueAlerts: FatigueAlert[] };
 
 type FundamentalBreakdown = {
   name: string;
@@ -58,6 +69,18 @@ type StudentXpSummary = {
   recentXP: number;
   prevXP: number;
   lastActivity: string | null;
+};
+
+// ─── Fatigue data types ───────────────────────────────────────────────────────
+
+type StudentFatigueData = {
+  name: string;
+  recentXP7d: number;
+  prevXP7d: number;
+  evalCount: number;
+  pillarTrends: Record<string, number>; // pillar → delta (last - first of last 4 evals)
+  avgTrend: number; // avg score delta
+  lastEvalDaysAgo: number | null;
 };
 
 // ─── Auth helper ──────────────────────────────────────────────────────────────
@@ -301,6 +324,143 @@ REGRAS:
 - Máximo 5 atletas por grupo`;
 }
 
+// ─── Fatigue data fetcher ─────────────────────────────────────────────────────
+
+async function fetchFatigueData(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any
+): Promise<StudentFatigueData[]> {
+  const now = Date.now();
+  const d7 = new Date(now - 7 * 86400000).toISOString();
+  const d14 = new Date(now - 14 * 86400000).toISOString();
+
+  const { data: students } = await supabase
+    .from("students")
+    .select("id, name")
+    .eq("status", "active");
+
+  if (!students || students.length === 0) return [];
+
+  const ids = (students as { id: string; name: string }[]).map((s) => s.id);
+  const nameMap = new Map((students as { id: string; name: string }[]).map((s) => [s.id, s.name]));
+
+  // XP velocity (7d vs previous 7d)
+  const { data: xpLogs } = await supabase
+    .from("xp_log")
+    .select("student_id, points, created_at")
+    .in("student_id", ids)
+    .eq("validation_passed", true)
+    .gte("created_at", d14);
+
+  const xpMap = new Map<string, { recent: number; prev: number }>();
+  for (const id of ids) xpMap.set(id, { recent: 0, prev: 0 });
+  for (const log of (xpLogs ?? []) as { student_id: string; points: number; created_at: string }[]) {
+    const entry = xpMap.get(log.student_id) ?? { recent: 0, prev: 0 };
+    if (log.created_at >= d7) entry.recent += log.points;
+    else entry.prev += log.points;
+    xpMap.set(log.student_id, entry);
+  }
+
+  // Last 4 evaluations per student from evaluations table
+  const { data: evalRows } = await supabase
+    .from("evaluations")
+    .select("student_id, scores, avg_score, created_at")
+    .in("student_id", ids)
+    .order("created_at", { ascending: false })
+    .limit(ids.length * 4);
+
+  type EvalRow = { student_id: string; scores: Record<string, number>; avg_score: number; created_at: string };
+  const evalByStudent = new Map<string, EvalRow[]>();
+  for (const row of (evalRows ?? []) as EvalRow[]) {
+    const arr = evalByStudent.get(row.student_id) ?? [];
+    if (arr.length < 4) arr.push(row);
+    evalByStudent.set(row.student_id, arr);
+  }
+
+  return ids.map((id) => {
+    const xp = xpMap.get(id) ?? { recent: 0, prev: 0 };
+    const evals = evalByStudent.get(id) ?? [];
+
+    // Pillar trends: delta between most recent and oldest in window
+    const PILLARS = ["fisico", "tecnico", "tatico", "atitude", "evolucao"];
+    const pillarTrends: Record<string, number> = {};
+    let avgTrend = 0;
+    let lastEvalDaysAgo: number | null = null;
+
+    if (evals.length >= 2) {
+      const newest = evals[0];
+      const oldest = evals[evals.length - 1];
+      for (const p of PILLARS) {
+        const n = (newest.scores[p] ?? 7);
+        const o = (oldest.scores[p] ?? 7);
+        pillarTrends[p] = n - o;
+      }
+      avgTrend = newest.avg_score - oldest.avg_score;
+      lastEvalDaysAgo = Math.floor((now - new Date(newest.created_at).getTime()) / 86400000);
+    }
+
+    return {
+      name: nameMap.get(id) ?? "Atleta",
+      recentXP7d: xp.recent,
+      prevXP7d: xp.prev,
+      evalCount: evals.length,
+      pillarTrends,
+      avgTrend,
+      lastEvalDaysAgo,
+    };
+  }).filter((s) => s.evalCount >= 2); // only students with enough eval history
+}
+
+function buildFatiguePrompt(students: StudentFatigueData[]): string {
+  if (students.length === 0) return "";
+
+  const PILLAR_NAMES: Record<string, string> = {
+    fisico: "Físico", tecnico: "Técnico", tatico: "Tático",
+    atitude: "Atitude", evolucao: "Evolução",
+  };
+
+  const summaries = students.map((s) => {
+    const xpTrend = s.prevXP7d > 0
+      ? `${((s.recentXP7d - s.prevXP7d) / Math.max(s.prevXP7d, 1) * 100).toFixed(0)}% vs semana anterior`
+      : `${s.recentXP7d} XP (sem base anterior)`;
+    const drops = Object.entries(s.pillarTrends)
+      .filter(([, d]) => d < -0.5)
+      .map(([k, d]) => `${PILLAR_NAMES[k] ?? k}: ${d.toFixed(1)}`).join(", ");
+    const gains = Object.entries(s.pillarTrends)
+      .filter(([, d]) => d > 0.5)
+      .map(([k, d]) => `${PILLAR_NAMES[k] ?? k}: +${d.toFixed(1)}`).join(", ");
+    return `- ${s.name}: XP esta semana=${s.recentXP7d} (${xpTrend}), nota média delta=${s.avgTrend.toFixed(1)}, últimas ${s.evalCount} avals — quedas: [${drops || "nenhuma"}], ganhos: [${gains || "nenhum"}], última aval=${s.lastEvalDaysAgo !== null ? `${s.lastEvalDaysAgo}d atrás` : "?"}`;
+  }).join("\n");
+
+  return `Você é o analista de fadiga e prevenção de lesões do Will Treinos PRO, especialista em vôlei de alta performance.
+
+DADOS DOS ATLETAS (cruzamento de avaliações técnicas + atividade de XP):
+${summaries}
+
+Identifique apenas atletas com sinais REAIS de fadiga, sobrecarga ou risco de lesão. Retorne array vazio se todos estiverem bem.
+Responda APENAS com JSON válido:
+{
+  "fatigueAlerts": [
+    {
+      "studentName": "nome",
+      "signal": "overtraining|technical_decline|burnout_risk|recovery_needed",
+      "severity": "warning|critical",
+      "affectedPillars": ["Físico", "Técnico"],
+      "xpTrend": "high|normal|low",
+      "reason": "explicação específica do sinal detectado nos dados (≤130 chars)",
+      "recommendation": "ação concreta para o coach (≤90 chars)"
+    }
+  ]
+}
+
+CRITÉRIOS:
+- overtraining: XP alto (+50% vs semana anterior) E nota físico caindo > 1 ponto
+- technical_decline: 2+ pilares caindo > 1 ponto nas últimas avaliações
+- burnout_risk: XP baixo (<50% semana anterior) E nota atitude caindo
+- recovery_needed: qualquer pillar com queda > 2 pontos entre avaliações
+- Seja específico — cite os pilares afetados e a magnitude da queda`;
+}
+
 // ─── AI caller ────────────────────────────────────────────────────────────────
 
 async function callClaude(prompt: string): Promise<string | null> {
@@ -412,10 +572,25 @@ export async function POST(req: NextRequest): Promise<NextResponse<CopilotResult
       return NextResponse.json({ mode: "lineup", groups: parsed.groups ?? [], tip: parsed.tip });
     }
 
+    if (mode === "fadiga") {
+      const fatigueStudents = await fetchFatigueData(supabase);
+      if (fatigueStudents.length === 0) {
+        return NextResponse.json({ mode: "fadiga", fatigueAlerts: [] });
+      }
+      const prompt = buildFatiguePrompt(fatigueStudents);
+      const text = await callClaude(prompt);
+      if (!text) return NextResponse.json({ mode: "fadiga", fatigueAlerts: [] });
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return NextResponse.json({ mode: "fadiga", fatigueAlerts: [] });
+      const parsed = JSON.parse(jsonMatch[0]) as { fatigueAlerts: FatigueAlert[] };
+      return NextResponse.json({ mode: "fadiga", fatigueAlerts: parsed.fatigueAlerts ?? [] });
+    }
+
     return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
   } catch {
     if (mode === "training") return NextResponse.json({ mode: "training", plan: trainingFallback() });
     if (mode === "alerts") return NextResponse.json({ mode: "alerts", alerts: [] });
+    if (mode === "fadiga") return NextResponse.json({ mode: "fadiga", fatigueAlerts: [] });
     return NextResponse.json({ mode: "lineup", groups: [] });
   }
 }

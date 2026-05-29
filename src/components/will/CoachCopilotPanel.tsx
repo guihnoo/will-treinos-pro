@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Activity,
   AlertTriangle,
   Bot,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
   Cpu,
   Dumbbell,
   Flame,
+  HeartPulse,
   Layers,
   Loader2,
   RefreshCw,
@@ -19,6 +21,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import type { FatigueAlert } from "@/app/api/ai/coach-copilot/route";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, PRESS_SCALE } from "@/components/ui/motionTokens";
@@ -27,7 +30,7 @@ import { useLessons } from "@/context/LessonsContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = "training" | "alerts" | "lineup";
+type Tab = "training" | "alerts" | "lineup" | "fadiga";
 
 type TrainingExercise = {
   name: string;
@@ -91,10 +94,18 @@ const FOCUS_COLORS: Record<string, string> = {
   posicionamento: "bg-zinc-500/20 text-zinc-300",
 };
 
+const FATIGUE_SIGNAL_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  overtraining:      { label: "Sobrecarga",        color: "text-red-400",    icon: <Flame className="h-3.5 w-3.5" /> },
+  technical_decline: { label: "Queda técnica",     color: "text-amber-400",  icon: <ChevronDown className="h-3.5 w-3.5" /> },
+  burnout_risk:      { label: "Risco de burnout",  color: "text-orange-400", icon: <Activity className="h-3.5 w-3.5" /> },
+  recovery_needed:   { label: "Precisa descanso",  color: "text-blue-400",   icon: <HeartPulse className="h-3.5 w-3.5" /> },
+};
+
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "training", label: "Treino", icon: <Dumbbell className="h-3.5 w-3.5" /> },
-  { id: "alerts", label: "Alertas", icon: <AlertTriangle className="h-3.5 w-3.5" /> },
-  { id: "lineup", label: "Escalação", icon: <Users className="h-3.5 w-3.5" /> },
+  { id: "training", label: "Treino",  icon: <Dumbbell className="h-3.5 w-3.5" /> },
+  { id: "alerts",   label: "Alertas", icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+  { id: "fadiga",   label: "Fadiga",  icon: <HeartPulse className="h-3.5 w-3.5" /> },
+  { id: "lineup",   label: "Escalação", icon: <Users className="h-3.5 w-3.5" /> },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -196,6 +207,8 @@ export default function CoachCopilotPanel({ onClose }: { onClose: () => void }) 
   const [loading, setLoading] = useState(false);
   const [trainingPlan, setTrainingPlan] = useState<TrainingPlan | null>(null);
   const [alerts, setAlerts] = useState<AlertItem[] | null>(null);
+  const [fatigueAlerts, setFatigueAlerts] = useState<FatigueAlert[] | null>(null);
+  const [fatigueLoaded, setFatigueLoaded] = useState(false);
   const [lineup, setLineup] = useState<LineupResult | null>(null);
   const [alertsLoaded, setAlertsLoaded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -226,6 +239,7 @@ export default function CoachCopilotPanel({ onClose }: { onClose: () => void }) 
 
       if (mode === "training") setTrainingPlan((data as { plan: TrainingPlan }).plan ?? null);
       if (mode === "alerts") { setAlerts((data as { alerts: AlertItem[] }).alerts ?? []); setAlertsLoaded(true); }
+      if (mode === "fadiga") { setFatigueAlerts((data as { fatigueAlerts: FatigueAlert[] }).fatigueAlerts ?? []); setFatigueLoaded(true); }
       if (mode === "lineup") setLineup({ groups: (data as { groups: LineupGroup[] }).groups ?? [], tip: (data as { groups: LineupGroup[]; tip?: string }).tip });
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "AbortError") return;
@@ -239,7 +253,10 @@ export default function CoachCopilotPanel({ onClose }: { onClose: () => void }) 
     if (tab === "alerts" && !alertsLoaded && !loading) {
       void call("alerts", [], "");
     }
-  }, [tab, alertsLoaded, loading, call]);
+    if (tab === "fadiga" && !fatigueLoaded && !loading) {
+      void call("fadiga", [], "");
+    }
+  }, [tab, alertsLoaded, fatigueLoaded, loading, call]);
 
   // Cleanup on unmount
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -444,6 +461,89 @@ export default function CoachCopilotPanel({ onClose }: { onClose: () => void }) 
                       {alerts.map((item, i) => (
                         <AlertCard key={i} item={item} idx={i} />
                       ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* ── FADIGA TAB ───────────────────────────────────────── */}
+              {tab === "fadiga" && (
+                <motion.div key="fadiga" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                      Análise de fadiga — baseada em avaliações reais
+                    </p>
+                    <motion.button
+                      type="button"
+                      whileTap={PRESS_SCALE}
+                      onClick={() => { setFatigueAlerts(null); setFatigueLoaded(false); void call("fadiga", [], ""); }}
+                      disabled={loading}
+                      className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-zinc-500 hover:text-white disabled:opacity-40"
+                      aria-label="Recarregar análise de fadiga"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+                    </motion.button>
+                  </div>
+
+                  {loading && (
+                    <div className="space-y-2">
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} className="h-16 animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.03]" style={{ animationDelay: `${i * 100}ms` }} />
+                      ))}
+                    </div>
+                  )}
+
+                  {!loading && fatigueAlerts !== null && fatigueAlerts.length === 0 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                      className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] px-4 py-6 text-center">
+                      <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-emerald-400" />
+                      <p className="text-[12px] font-black text-emerald-300">Nenhum sinal de fadiga detectado</p>
+                      <p className="text-[11px] text-zinc-500 mt-1">Todos os atletas com avaliações em curva saudável.</p>
+                    </motion.div>
+                  )}
+
+                  {!loading && fatigueAlerts === null && !fatigueLoaded && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                      className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-5 text-center">
+                      <p className="text-[11px] text-zinc-500">Requer pelo menos 2 avaliações salvas por atleta.</p>
+                    </motion.div>
+                  )}
+
+                  {!loading && fatigueAlerts !== null && fatigueAlerts.length > 0 && (
+                    <div className="space-y-2">
+                      {fatigueAlerts.map((alert, i) => {
+                        const meta = FATIGUE_SIGNAL_META[alert.signal] ?? FATIGUE_SIGNAL_META.technical_decline;
+                        const severityBorder = alert.severity === "critical" ? "border-red-500/35" : "border-amber-500/25";
+                        const severityBg = alert.severity === "critical" ? "bg-red-500/[0.08]" : "bg-amber-500/[0.06]";
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.07 }}
+                            className={`rounded-xl border ${severityBorder} ${severityBg} px-3.5 py-3`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={meta.color}>{meta.icon}</span>
+                              <p className="text-[12px] font-black text-white">{alert.studentName}</p>
+                              <span className={`ml-auto rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider ${
+                                alert.severity === "critical" ? "bg-red-500/20 text-red-300" : "bg-amber-500/20 text-amber-300"
+                              }`}>
+                                {meta.label}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-zinc-400 leading-snug">{alert.reason}</p>
+                            {alert.affectedPillars.length > 0 && (
+                              <div className="flex gap-1 mt-1.5 flex-wrap">
+                                {alert.affectedPillars.map((p) => (
+                                  <span key={p} className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-bold text-zinc-400">{p}</span>
+                                ))}
+                              </div>
+                            )}
+                            <p className="mt-2 text-[10px] font-bold text-[#EAB308]/80">{alert.recommendation} →</p>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   )}
                 </motion.div>
