@@ -40,14 +40,32 @@ const TIER_LABELS: Record<string, string> = {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-async function verifyStaff(jwt: string) {
+// Returns { sb, studentId, forStudent } or null if unauthorized
+async function verifyAndResolve(jwt: string, requestedStudentId: string): Promise<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sb: any;
+  studentId: string;
+  forStudent: boolean;
+} | null> {
   const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const { data: { user }, error } = await sb.auth.getUser(jwt);
   if (error || !user) return null;
-  const { data: row } = await sb.from("staff_access").select("role")
+
+  // Staff: access any student
+  const { data: staffRow } = await sb.from("staff_access").select("role")
     .eq("email", user.email).eq("is_active", true).maybeSingle();
-  if (!row || !["admin", "coach"].includes(row.role)) return null;
-  return sb;
+  if (staffRow && ["admin", "coach"].includes((staffRow as { role: string }).role)) {
+    return { sb, studentId: requestedStudentId, forStudent: false };
+  }
+
+  // Student: can only view their own twin
+  const { data: studentRow } = await sb.from("students").select("id")
+    .eq("auth_user_id", user.id).maybeSingle();
+  if (studentRow && (studentRow as { id: string }).id === requestedStudentId) {
+    return { sb, studentId: requestedStudentId, forStudent: true };
+  }
+
+  return null;
 }
 
 // ─── Data fetch ───────────────────────────────────────────────────────────────
@@ -56,7 +74,8 @@ async function fetchAthleteData(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sb: any,
   studentId: string,
-  studentName: string
+  studentName: string,
+  forStudent = false
 ) {
   const now = Date.now();
   const d7 = new Date(now - 7 * 86400000).toISOString();
@@ -124,7 +143,8 @@ async function fetchAthleteData(
   // AI profile
   const profile = await buildAIProfile(
     studentName, totalXP, fundamentals, recentXP7d, recentXP30d,
-    lastActivityDaysAgo, evaluationCount, checkinCount, tierUnlocks.length, nextTierETA
+    lastActivityDaysAgo, evaluationCount, checkinCount, tierUnlocks.length, nextTierETA,
+    forStudent
   );
 
   return {
@@ -152,7 +172,8 @@ async function buildAIProfile(
   evalCount: number,
   checkinCount: number,
   tiersUnlocked: number,
-  nextETA: string | null
+  nextETA: string | null,
+  forStudent = false
 ): Promise<AthleteProfile> {
   const fallback = buildFallbackProfile(totalXP, lastActivity, xp7d);
 
@@ -162,7 +183,16 @@ async function buildAIProfile(
     .sort((a, b) => b[1] - a[1])
     .map(([f, xp]) => `${f}: ${xp} XP`).join(", ");
 
-  const prompt = `Você é o psicólogo esportivo do Will Treinos PRO, especialista em perfis de atletas de vôlei.
+  const audience = forStudent
+    ? `Você é o coach digital pessoal do atleta "${name}" no Will Treinos PRO.
+O atleta está lendo isso diretamente — escreva na segunda pessoa, de forma motivacional e direta.
+O campo "motivationalNote" deve ser uma mensagem PARA o atleta (ex: "Você é um Guerreiro..."), não para o coach.
+O campo "insight" deve ser uma dica de evolução para o próprio atleta, não uma instrução ao coach.`
+    : `Você é o psicólogo esportivo do Will Treinos PRO, especialista em perfis de atletas de vôlei.
+O campo "motivationalNote" deve ser uma nota para o coach sobre como trabalhar com este atleta.
+O campo "insight" é a coisa mais importante que o coach precisa saber ou fazer agora.`;
+
+  const prompt = `${audience}
 
 DADOS DO ATLETA "${name}":
 - XP total acumulado: ${totalXP}
@@ -239,9 +269,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const sb = await verifyStaff(authHeader.slice(7));
-  if (!sb) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
   let body: { studentId: string; studentName?: string } = { studentId: "" };
   try { body = await req.json(); } catch { /* no body */ }
 
@@ -249,8 +276,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "studentId required" }, { status: 400 });
   }
 
+  const resolved = await verifyAndResolve(authHeader.slice(7), body.studentId);
+  if (!resolved) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
-    const data = await fetchAthleteData(sb, body.studentId, body.studentName ?? "Atleta");
+    const data = await fetchAthleteData(
+      resolved.sb, resolved.studentId, body.studentName ?? "Atleta", resolved.forStudent
+    );
     return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: "internal_error" }, { status: 500 });

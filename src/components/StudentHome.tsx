@@ -35,6 +35,8 @@ import { LeaderboardPanel } from "@/components/LeaderboardPanel";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 import DailyChallengesPanel from "@/components/gamification/DailyChallengesPanel";
+import StudentTwinCard from "@/components/gamification/StudentTwinCard";
+import AthleteTwinPanel from "@/components/will/AthleteTwinPanel";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -518,6 +520,7 @@ export default function StudentHome() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
+  const [showStudentTwin, setShowStudentTwin] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -538,6 +541,7 @@ export default function StudentHome() {
       showLeaderboard ||
       showGamificationDashboard ||
       showDailyChallenges ||
+      showStudentTwin ||
       showPayments ||
       justUnlockedTier,
   );
@@ -1793,6 +1797,17 @@ export default function StudentHome() {
             />
           </div>
           <p className="mt-1 text-[10px] text-zinc-600">Conquistas por trilha: consistência, técnica, fundamentos e execução competitiva.</p>
+
+          {/* Student Digital Twin Card */}
+          {user?.id && (
+            <div className="mt-3">
+              <StudentTwinCard
+                studentId={user.id}
+                studentName={user.name ?? "Atleta"}
+                onOpenFull={() => setShowStudentTwin(true)}
+              />
+            </div>
+          )}
         </div>
         <button
           onClick={() => setTrackModalId("competitive")}
@@ -2829,6 +2844,15 @@ export default function StudentHome() {
           <DailyChallengesPanel
             studentId={user.id}
             onClose={() => setShowDailyChallenges(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showStudentTwin && profile && (
+          <AthleteTwinPanel
+            student={profile}
+            onClose={() => setShowStudentTwin(false)}
           />
         )}
       </AnimatePresence>
