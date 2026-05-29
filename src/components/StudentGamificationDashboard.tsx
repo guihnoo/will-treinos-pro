@@ -12,6 +12,7 @@ import AchievementPathGrid from "./gamification/AchievementPathGrid";
 import FundamentalBreakdown from "./gamification/FundamentalBreakdown";
 import XPMomentumIndicator from "./gamification/XPMomentumIndicator";
 import DailyChallengeCTACard from "./gamification/DailyChallengeCTACard";
+import DailyChallengesPanel from "./gamification/DailyChallengesPanel";
 
 interface StudentGamificationDashboardProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function StudentGamificationDashboard({
   };
 
   const [loading, setLoading] = useState(false);
+  const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [tierData, setTierData] = useState<TierProgressData | null>(null);
   const [xpByFundamental, setXPByFundamental] = useState<Record<VolleyballFundamental, number> | null>(null);
   const [xpVelocity7d, setXPVelocity7d] = useState(0);
@@ -71,6 +73,7 @@ export function StudentGamificationDashboard({
   const allTiers: CardTier[] = useMemo(() => ["bronze", "prata", "ouro", "diamante", "elite"], []);
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -142,9 +145,7 @@ export function StudentGamificationDashboard({
 
                   {/* Daily Challenges CTA */}
                   <DailyChallengeCTACard
-                    onViewChallenges={() => {
-                      // TODO: Phase 11C — navigate to challenges view
-                    }}
+                    onViewChallenges={() => setShowDailyChallenges(true)}
                   />
                 </>
               ) : null}
@@ -159,5 +160,15 @@ export function StudentGamificationDashboard({
         </motion.div>
       )}
     </AnimatePresence>
+
+    <AnimatePresence>
+      {showDailyChallenges && user?.id && (
+        <DailyChallengesPanel
+          studentId={user.id}
+          onClose={() => setShowDailyChallenges(false)}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }

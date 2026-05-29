@@ -34,6 +34,7 @@ import Confetti from "@/components/Confetti";
 import { LeaderboardPanel } from "@/components/LeaderboardPanel";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
+import DailyChallengesPanel from "@/components/gamification/DailyChallengesPanel";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -516,6 +517,7 @@ export default function StudentHome() {
   const [showXpModal, setShowXpModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
+  const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -535,6 +537,7 @@ export default function StudentHome() {
       showXpModal ||
       showLeaderboard ||
       showGamificationDashboard ||
+      showDailyChallenges ||
       showPayments ||
       justUnlockedTier,
   );
@@ -1757,13 +1760,21 @@ export default function StudentHome() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => { haptic([16, 12, 24]); setShowGamificationDashboard(true); }}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${ctaClass}`}
-                style={{ color: equippedTier.color, borderColor: `${equippedTier.color}40`, background: `${equippedTier.color}12` }}
-              >
-                Meu Progresso 🎯
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => { haptic([16, 12, 24]); setShowDailyChallenges(true); }}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-violet-500/40 bg-violet-500/12 text-violet-300 transition-colors hover:bg-violet-500/20 ${ctaClass}`}
+                >
+                  Desafios ⚡
+                </button>
+                <button
+                  onClick={() => { haptic([16, 12, 24]); setShowGamificationDashboard(true); }}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${ctaClass}`}
+                  style={{ color: equippedTier.color, borderColor: `${equippedTier.color}40`, background: `${equippedTier.color}12` }}
+                >
+                  Progresso 🎯
+                </button>
+              </div>
               <div className="text-right">
                 <p className="text-[10px] text-zinc-500">Meta competitiva</p>
                 <p className="text-[11px] font-bold text-zinc-300">
@@ -2812,6 +2823,15 @@ export default function StudentHome() {
         isOpen={showGamificationDashboard}
         onClose={() => setShowGamificationDashboard(false)}
       />
+
+      <AnimatePresence>
+        {showDailyChallenges && user?.id && (
+          <DailyChallengesPanel
+            studentId={user.id}
+            onClose={() => setShowDailyChallenges(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Floating Action Menu */}
       <FloatingActionMenu
