@@ -54,6 +54,7 @@ import TrainingPlansPanel from "./TrainingPlansPanel";
 import XPModerationPanel from "./XPModerationPanel";
 import { XPAnalyticsPanel } from "@/components/will/XPAnalyticsPanel";
 import CoachCopilotPanel from "./CoachCopilotPanel";
+import AthleteTwinPanel from "./AthleteTwinPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -132,6 +133,8 @@ export default function WillCockpit() {
   const [showXPModeration, setShowXPModeration] = useState(false);
   const [showXPAnalytics, setShowXPAnalytics] = useState(false);
   const [showCoachCopilot, setShowCoachCopilot] = useState(false);
+  const [showAthleteTwin, setShowAthleteTwin] = useState(false);
+  const [twinStudentId, setTwinStudentId] = useState<string | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -187,6 +190,7 @@ export default function WillCockpit() {
     showXPModeration ||
     showXPAnalytics ||
     showCoachCopilot ||
+    showAthleteTwin ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -313,6 +317,7 @@ export default function WillCockpit() {
   const selectedApprovalBlockedCount = selectedApprovalIds.length - selectedApprovalReadyCount;
   const selectedLesson = useMemo(() => lessons.find((lesson) => lesson.id === selectedLessonId) ?? null, [lessons, selectedLessonId]);
   const selectedStudent = useMemo(() => students.find((student) => student.id === selectedStudentId) ?? null, [selectedStudentId, students]);
+  const twinStudent = useMemo(() => students.find((s) => s.id === twinStudentId) ?? null, [twinStudentId, students]);
   const billingWhatsappTemplates = useMemo(() => {
     const phoneRaw = appConfig.whatsappNumber || "";
     const phone = phoneRaw.replace(/\D/g, "");
@@ -1996,6 +2001,21 @@ export default function WillCockpit() {
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3">Contato: {selectedStudent.phone} · {selectedStudent.email}</div>
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3">Observacoes: {selectedStudent.notes || "Sem observacoes"}</div>
               </div>
+              <div className="shrink-0 pt-4">
+                <motion.button
+                  type="button"
+                  whileTap={PRESS_SCALE}
+                  onClick={() => {
+                    setTwinStudentId(selectedStudent.id);
+                    setShowStudentModal(false);
+                    setShowAthleteTwin(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 py-3 text-[12px] font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15"
+                >
+                  <Cpu className="h-4 w-4 text-violet-400" />
+                  Ver Gêmeo Digital com IA
+                </motion.button>
+              </div>
             </motion.section>
             </div>
           </motion.div>
@@ -2107,6 +2127,18 @@ export default function WillCockpit() {
         {showCoachCopilot ? (
           <CoachCopilotPanel
             onClose={() => setShowCoachCopilot(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAthleteTwin && twinStudent ? (
+          <AthleteTwinPanel
+            student={twinStudent}
+            onClose={() => {
+              setShowAthleteTwin(false);
+              setTwinStudentId(null);
+            }}
           />
         ) : null}
       </AnimatePresence>
