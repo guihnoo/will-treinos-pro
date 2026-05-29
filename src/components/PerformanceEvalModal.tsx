@@ -12,6 +12,7 @@ import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { avatarSrc } from "@/lib/avatarSrc";
 import { useXPMutations } from "@/hooks/useXPMutations";
+import { useEvaluations } from "@/hooks/useEvaluations";
 
 interface Props {
   student: Student;
@@ -31,6 +32,7 @@ const PILLARS = [
 export default function PerformanceEvalModal({ student, lessonId, lessonTitle, onClose }: Props) {
   const { addFeedback } = useCoaching();
   const { logXP, checkAchievementUnlock, getStudentTotalXP } = useXPMutations();
+  const { saveEvaluation } = useEvaluations();
   const { toast } = useToast();
   useBodyScrollLock(true);
 
@@ -94,6 +96,21 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
         atitude:  scores.atitude,
         evolucao: scores.evolucao,
       },
+    });
+
+    // Persist evaluation to Supabase (fire and forget)
+    void saveEvaluation({
+      studentId: student.id,
+      lessonId,
+      lessonTitle,
+      scores: {
+        fisico:   scores.fisico,
+        tecnico:  scores.tecnico,
+        tatico:   scores.tatico,
+        atitude:  scores.atitude,
+        evolucao: scores.evolucao,
+      },
+      notes: generalNote || undefined,
     });
 
     // Check for achievement unlock (async, fire and forget)

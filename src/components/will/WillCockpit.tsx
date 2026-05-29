@@ -16,6 +16,7 @@ import {
   Coins,
   Copy,
   Cpu,
+  Zap,
   CreditCard,
   Dumbbell,
   MapPin,
@@ -56,6 +57,7 @@ import { XPAnalyticsPanel } from "@/components/will/XPAnalyticsPanel";
 import CoachCopilotPanel from "./CoachCopilotPanel";
 import AthleteTwinPanel from "./AthleteTwinPanel";
 import FinancialForecastPanel from "./FinancialForecastPanel";
+import EvaluationHistoryPanel from "./EvaluationHistoryPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -137,6 +139,8 @@ export default function WillCockpit() {
   const [showAthleteTwin, setShowAthleteTwin] = useState(false);
   const [twinStudentId, setTwinStudentId] = useState<string | null>(null);
   const [showFinancialForecast, setShowFinancialForecast] = useState(false);
+  const [showEvalHistory, setShowEvalHistory] = useState(false);
+  const [evalHistoryStudentId, setEvalHistoryStudentId] = useState<string | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -194,6 +198,7 @@ export default function WillCockpit() {
     showCoachCopilot ||
     showAthleteTwin ||
     showFinancialForecast ||
+    showEvalHistory ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -321,6 +326,7 @@ export default function WillCockpit() {
   const selectedLesson = useMemo(() => lessons.find((lesson) => lesson.id === selectedLessonId) ?? null, [lessons, selectedLessonId]);
   const selectedStudent = useMemo(() => students.find((student) => student.id === selectedStudentId) ?? null, [selectedStudentId, students]);
   const twinStudent = useMemo(() => students.find((s) => s.id === twinStudentId) ?? null, [twinStudentId, students]);
+  const evalHistoryStudent = useMemo(() => students.find((s) => s.id === evalHistoryStudentId) ?? null, [evalHistoryStudentId, students]);
   const billingWhatsappTemplates = useMemo(() => {
     const phoneRaw = appConfig.whatsappNumber || "";
     const phone = phoneRaw.replace(/\D/g, "");
@@ -2016,7 +2022,7 @@ export default function WillCockpit() {
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3">Contato: {selectedStudent.phone} · {selectedStudent.email}</div>
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3">Observacoes: {selectedStudent.notes || "Sem observacoes"}</div>
               </div>
-              <div className="shrink-0 pt-4">
+              <div className="shrink-0 pt-4 space-y-2">
                 <motion.button
                   type="button"
                   whileTap={PRESS_SCALE}
@@ -2029,6 +2035,19 @@ export default function WillCockpit() {
                 >
                   <Cpu className="h-4 w-4 text-violet-400" />
                   Ver Gêmeo Digital com IA
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileTap={PRESS_SCALE}
+                  onClick={() => {
+                    setEvalHistoryStudentId(selectedStudent.id);
+                    setShowStudentModal(false);
+                    setShowEvalHistory(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 py-3 text-[12px] font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15"
+                >
+                  <Zap className="h-4 w-4 text-amber-400" />
+                  Ver Histórico de Avaliações
                 </motion.button>
               </div>
             </motion.section>
@@ -2161,6 +2180,16 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showFinancialForecast ? (
           <FinancialForecastPanel onClose={() => setShowFinancialForecast(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showEvalHistory && evalHistoryStudent ? (
+          <EvaluationHistoryPanel
+            studentId={evalHistoryStudent.id}
+            studentName={evalHistoryStudent.name}
+            onClose={() => { setShowEvalHistory(false); setEvalHistoryStudentId(null); }}
+          />
         ) : null}
       </AnimatePresence>
     </div>
