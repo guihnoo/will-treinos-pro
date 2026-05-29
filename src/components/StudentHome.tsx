@@ -37,6 +37,7 @@ import PushPermissionBanner from "@/components/PushPermissionBanner";
 import DailyChallengesPanel from "@/components/gamification/DailyChallengesPanel";
 import StudentTwinCard from "@/components/gamification/StudentTwinCard";
 import AthleteTwinPanel from "@/components/will/AthleteTwinPanel";
+import OnboardingWidget, { markTwinViewed } from "@/components/gamification/OnboardingWidget";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -1752,6 +1753,21 @@ export default function StudentHome() {
         </div>
       </motion.div>
 
+      {/* Onboarding Widget — visible para novos atletas */}
+      {user?.id && (
+        <motion.div variants={homeItem} className="mb-4">
+          <OnboardingWidget
+            studentId={user.id}
+            totalXP={totalXP}
+            hasAvatar={!!(profile?.avatar && !profile.avatar.includes("dicebear"))}
+            onOpenChallenges={() => setShowDailyChallenges(true)}
+            onOpenTwin={() => { markTwinViewed(user.id); setShowStudentTwin(true); }}
+            onOpenFeed={() => { /* navigate to feed */ }}
+            onOpenProfile={() => { /* navigate to perfil */ }}
+          />
+        </motion.div>
+      )}
+
       {/* Conquistas — CLICÁVEIS */}
       <motion.div variants={homeItem} className="mb-6">
         <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-3"><Trophy className="w-5 h-5 text-[#EAB308]"/> Conquistas</h2>
@@ -2852,7 +2868,7 @@ export default function StudentHome() {
         {showStudentTwin && profile && (
           <AthleteTwinPanel
             student={profile}
-            onClose={() => setShowStudentTwin(false)}
+            onClose={() => { setShowStudentTwin(false); if (user?.id) markTwinViewed(user.id); }}
           />
         )}
       </AnimatePresence>
