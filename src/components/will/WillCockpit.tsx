@@ -15,6 +15,7 @@ import {
   Clock3,
   Coins,
   Copy,
+  Cpu,
   CreditCard,
   Dumbbell,
   MapPin,
@@ -52,6 +53,7 @@ import LiveLessonCoachPanel from "./LiveLessonCoachPanel";
 import TrainingPlansPanel from "./TrainingPlansPanel";
 import XPModerationPanel from "./XPModerationPanel";
 import { XPAnalyticsPanel } from "@/components/will/XPAnalyticsPanel";
+import CoachCopilotPanel from "./CoachCopilotPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -129,6 +131,7 @@ export default function WillCockpit() {
   const [showTrainingPlans, setShowTrainingPlans] = useState(false);
   const [showXPModeration, setShowXPModeration] = useState(false);
   const [showXPAnalytics, setShowXPAnalytics] = useState(false);
+  const [showCoachCopilot, setShowCoachCopilot] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -183,6 +186,7 @@ export default function WillCockpit() {
     showTrainingPlans ||
     showXPModeration ||
     showXPAnalytics ||
+    showCoachCopilot ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -831,6 +835,18 @@ export default function WillCockpit() {
           >
             <BarChart3 className="h-5 w-5 text-amber-400" />
             Análise de XP
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowCoachCopilot(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir copiloto do coach com IA"
+          >
+            <Cpu className="h-5 w-5 text-cyan-400" />
+            Copiloto IA
           </button>
           </div>
         </AppSectionCard>
@@ -2083,6 +2099,14 @@ export default function WillCockpit() {
           <XPAnalyticsPanel
             isOpen={showXPAnalytics}
             onClose={() => setShowXPAnalytics(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCoachCopilot ? (
+          <CoachCopilotPanel
+            onClose={() => setShowCoachCopilot(false)}
           />
         ) : null}
       </AnimatePresence>
