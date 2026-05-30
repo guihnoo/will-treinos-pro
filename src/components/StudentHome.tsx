@@ -46,6 +46,7 @@ import WeeklyHighlightBanner from "@/components/student/WeeklyHighlightBanner";
 import LessonCountdownCard from "@/components/student/LessonCountdownCard";
 import AbsenceRequestSheet from "@/components/student/AbsenceRequestSheet";
 import AttendanceCalendarPanel from "@/components/student/AttendanceCalendarPanel";
+import WeeklySummaryBanner from "@/components/student/WeeklySummaryBanner";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -1807,6 +1808,19 @@ export default function StudentHome() {
           <WeeklyHighlightBanner
             studentCrmId={profile.id}
             firstName={profile.name?.split(" ")[0] ?? "Atleta"}
+          />
+        </motion.div>
+      )}
+
+      {/* Resumo Semanal — aparece sexta e sábado */}
+      {user?.id && profile?.id && (
+        <motion.div variants={homeItem} className="mb-4">
+          <WeeklySummaryBanner
+            lessons={lessons}
+            studentId={user.id}
+            totalXP={totalXP}
+            streak={streak}
+            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
           />
         </motion.div>
       )}
