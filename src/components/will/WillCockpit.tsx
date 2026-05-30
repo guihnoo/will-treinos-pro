@@ -11,6 +11,7 @@ import {
   BarChart3,
   CalendarPlus,
   CalendarDays,
+  CalendarX,
   CheckCircle2,
   Clock3,
   Coins,
@@ -59,6 +60,8 @@ import AthleteTwinPanel from "./AthleteTwinPanel";
 import FinancialForecastPanel from "./FinancialForecastPanel";
 import EvaluationHistoryPanel from "./EvaluationHistoryPanel";
 import MonthlyReportPanel from "./MonthlyReportPanel";
+import CourtWeatherPanel from "./CourtWeatherPanel";
+import AbsenceTrackerPanel from "./AbsenceTrackerPanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -143,6 +146,7 @@ export default function WillCockpit() {
   const [showEvalHistory, setShowEvalHistory] = useState(false);
   const [evalHistoryStudentId, setEvalHistoryStudentId] = useState<string | null>(null);
   const [showMonthlyReport, setShowMonthlyReport] = useState(false);
+  const [showAbsenceTracker, setShowAbsenceTracker] = useState(false);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -202,6 +206,7 @@ export default function WillCockpit() {
     showFinancialForecast ||
     showEvalHistory ||
     showMonthlyReport ||
+    showAbsenceTracker ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -535,6 +540,13 @@ export default function WillCockpit() {
         resolverHint={resolverHint}
         onResolver={handleCockpitResolver}
       />
+
+      {/* BLOCO 0: Clima da Quadra — alerta inteligente */}
+      {appConfig.courtLocation && (
+        <motion.div variants={itemV}>
+          <CourtWeatherPanel />
+        </motion.div>
+      )}
 
       {/* BLOCO 1: Aulas de Hoje — hero de operação */}
       <motion.div variants={itemV}>
@@ -888,6 +900,18 @@ export default function WillCockpit() {
           >
             <BarChart3 className="h-5 w-5 text-[#EAB308]" />
             Relatório Mensal
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowAbsenceTracker(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-orange-500/35 bg-orange-500/10 px-4 py-3 text-sm font-black text-orange-200 transition-all hover:border-orange-400/60 hover:bg-orange-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver ausências e notificar alunos para reposição"
+          >
+            <CalendarX className="h-5 w-5 text-orange-400" />
+            Ausências
           </button>
           </div>
         </AppSectionCard>
@@ -2211,6 +2235,12 @@ export default function WillCockpit() {
             studentName={evalHistoryStudent.name}
             onClose={() => { setShowEvalHistory(false); setEvalHistoryStudentId(null); }}
           />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAbsenceTracker ? (
+          <AbsenceTrackerPanel onClose={() => setShowAbsenceTracker(false)} />
         ) : null}
       </AnimatePresence>
     </div>
