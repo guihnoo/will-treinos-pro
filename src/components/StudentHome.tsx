@@ -43,6 +43,7 @@ import GeoCheckInButton from "@/components/student/GeoCheckInButton";
 import StudentPillarPanel from "@/components/student/StudentPillarPanel";
 import StudentMessagesPanel, { useCoachMessagesUnread } from "@/components/student/StudentMessagesPanel";
 import WeeklyHighlightBanner from "@/components/student/WeeklyHighlightBanner";
+import LessonCountdownCard from "@/components/student/LessonCountdownCard";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -1041,6 +1042,18 @@ export default function StudentHome() {
           </span>
         </div>
       </motion.div>
+
+      {/* Countdown da próxima aula */}
+      {user?.id && (
+        <motion.div variants={homeItem} className="mb-3 px-1">
+          <LessonCountdownCard
+            lessons={lessons}
+            studentId={user.id}
+            getCategoryFn={getCategory}
+            onCheckIn={() => toast("Vá até a quadra e pressione o botão de check-in da turma 🏐", "info")}
+          />
+        </motion.div>
+      )}
 
       {/* Your Day Card */}
       <motion.div variants={homeItem} className="mb-4">
