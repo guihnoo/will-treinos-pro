@@ -45,6 +45,7 @@ import StudentMessagesPanel, { useCoachMessagesUnread } from "@/components/stude
 import WeeklyHighlightBanner from "@/components/student/WeeklyHighlightBanner";
 import LessonCountdownCard from "@/components/student/LessonCountdownCard";
 import AbsenceRequestSheet from "@/components/student/AbsenceRequestSheet";
+import AttendanceCalendarPanel from "@/components/student/AttendanceCalendarPanel";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -533,6 +534,7 @@ export default function StudentHome() {
   const [showPillarPanel, setShowPillarPanel] = useState(false);
   const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
+  const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -557,6 +559,7 @@ export default function StudentHome() {
       showPillarPanel ||
       showMessagesPanel ||
       showAbsenceSheet ||
+      showAttendanceCalendar ||
       showPayments ||
       justUnlockedTier,
   );
@@ -1672,6 +1675,10 @@ export default function StudentHome() {
               <motion.button whileTap={{scale:0.9}} onClick={()=>setShowPillarPanel(true)}
                 className={`text-[10px] font-bold text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-colors ${ctaClass}`}>
                 Notas do Coach
+              </motion.button>
+              <motion.button whileTap={{scale:0.9}} onClick={()=>setShowAttendanceCalendar(true)}
+                className={`text-[10px] font-bold text-zinc-300 bg-zinc-800/60 px-3 py-1.5 rounded-lg border border-zinc-700/40 hover:bg-zinc-700/60 transition-colors ${ctaClass}`}>
+                📅 Histórico
               </motion.button>
               <motion.button whileTap={{scale:0.9}} onClick={()=>setEvolModal(true)}
                 className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
@@ -2964,6 +2971,19 @@ export default function StudentHome() {
         onViewLessons={() => setShowAgendaPanel(true)}
         onReportAbsence={() => setShowAbsenceSheet(true)}
       />
+
+      <AnimatePresence>
+        {showAttendanceCalendar && user?.id && (
+          <AttendanceCalendarPanel
+            lessons={lessons}
+            studentId={user.id}
+            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
+            streak={streak}
+            bestStreak={bestStreak}
+            onClose={() => setShowAttendanceCalendar(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showAbsenceSheet && user?.id && (
