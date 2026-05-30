@@ -42,6 +42,7 @@ import TurmaLeaderboardCard from "@/components/leaderboard/TurmaLeaderboardCard"
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
 import StudentPillarPanel from "@/components/student/StudentPillarPanel";
 import StudentMessagesPanel, { useCoachMessagesUnread } from "@/components/student/StudentMessagesPanel";
+import WeeklyHighlightBanner from "@/components/student/WeeklyHighlightBanner";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -1776,6 +1777,16 @@ export default function StudentHome() {
           </div>
         </div>
       </motion.div>
+
+      {/* Destaque da Semana — banner dourado quando atleta é o destaque */}
+      {profile?.id && (
+        <motion.div variants={homeItem} className="mb-4">
+          <WeeklyHighlightBanner
+            studentCrmId={profile.id}
+            firstName={profile.name?.split(" ")[0] ?? "Atleta"}
+          />
+        </motion.div>
+      )}
 
       {/* Onboarding Widget — visible para novos atletas */}
       {user?.id && (

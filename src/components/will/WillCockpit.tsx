@@ -152,6 +152,10 @@ export default function WillCockpit() {
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
   const [messageSentId, setMessageSentId] = useState<string | null>(null);
+  const [highlightNote, setHighlightNote] = useState("");
+  const [highlightSending, setHighlightSending] = useState(false);
+  const [highlightSentId, setHighlightSentId] = useState<string | null>(null);
+  const [currentHighlightStudentId, setCurrentHighlightStudentId] = useState<string | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -176,6 +180,22 @@ export default function WillCockpit() {
   });
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(localDateISO(new Date()));
   const [calendarWeekStart] = useState<Date>(getMonday(new Date()));
+
+  // Fetch current week's highlight when athlete profile opens
+  useEffect(() => {
+    if (!showStudentModal || !user) return;
+    const sb = import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
+      const supabase = getSupabaseClient();
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const mon = new Date(now); mon.setDate(diff);
+      const weekStart = mon.toISOString().slice(0, 10);
+      supabase.from("weekly_highlights").select("student_id").eq("week_start", weekStart).maybeSingle()
+        .then(({ data }) => setCurrentHighlightStudentId(data?.student_id ?? null));
+    });
+    void sb;
+  }, [showStudentModal, user]);
 
   useEffect(() => {
     if (!onboardingStudentId) return;
@@ -2093,6 +2113,61 @@ export default function WillCockpit() {
                   <Zap className="h-4 w-4 text-amber-400" />
                   Ver Histórico de Avaliações
                 </motion.button>
+              </div>
+
+              {/* Destaque da Semana */}
+              <div className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-400/70 mb-2 flex items-center gap-1.5">
+                  ⭐ Destaque da Semana
+                  {currentHighlightStudentId && currentHighlightStudentId !== selectedStudent.id && (
+                    <span className="text-[9px] text-zinc-500 normal-case font-normal">(outro atleta esta semana)</span>
+                  )}
+                </p>
+                {highlightSentId === selectedStudent.id || currentHighlightStudentId === selectedStudent.id ? (
+                  <div className="flex items-center gap-2 py-1">
+                    <span className="text-lg">⭐</span>
+                    <p className="text-xs font-black text-amber-300">{selectedStudent.name.split(" ")[0]} é o Destaque desta semana!</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <input
+                      value={highlightNote}
+                      onChange={(e) => setHighlightNote(e.target.value)}
+                      placeholder="Recado especial (opcional)…"
+                      maxLength={200}
+                      className="w-full rounded-xl border border-zinc-700/60 bg-zinc-900/80 px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500/40 transition-colors"
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      disabled={highlightSending}
+                      onClick={async () => {
+                        setHighlightSending(true);
+                        try {
+                          const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                          const sb = getSupabaseClient();
+                          const { data: { session } } = await sb.auth.getSession();
+                          if (!session?.access_token) throw new Error("Sem sessão");
+                          const res = await fetch("/api/coach/weekly-highlight", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                            body: JSON.stringify({ studentId: selectedStudent.id, note: highlightNote.trim() || undefined }),
+                          });
+                          if (res.ok) {
+                            setHighlightSentId(selectedStudent.id);
+                            setCurrentHighlightStudentId(selectedStudent.id);
+                            setHighlightNote("");
+                            toast(`⭐ ${selectedStudent.name.split(" ")[0]} é o Destaque da Semana! +150 XP`);
+                          }
+                        } catch { toast("Erro ao marcar destaque."); }
+                        finally { setHighlightSending(false); }
+                      }}
+                      className="self-end flex items-center gap-1.5 rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-1.5 text-[11px] font-black text-amber-200 hover:bg-amber-500/20 transition-colors disabled:opacity-40"
+                    >
+                      {highlightSending ? <Circle size={11} className="animate-spin" /> : <span>⭐</span>}
+                      Marcar como Destaque (+150 XP)
+                    </motion.button>
+                  </div>
+                )}
               </div>
 
               {/* Recado direto */}
