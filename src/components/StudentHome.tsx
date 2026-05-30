@@ -41,6 +41,7 @@ import OnboardingWidget, { markTwinViewed } from "@/components/gamification/Onbo
 import TurmaLeaderboardCard from "@/components/leaderboard/TurmaLeaderboardCard";
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
 import StudentPillarPanel from "@/components/student/StudentPillarPanel";
+import StudentMessagesPanel, { useCoachMessagesUnread } from "@/components/student/StudentMessagesPanel";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -527,6 +528,7 @@ export default function StudentHome() {
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [showStudentTwin, setShowStudentTwin] = useState(false);
   const [showPillarPanel, setShowPillarPanel] = useState(false);
+  const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -549,6 +551,7 @@ export default function StudentHome() {
       showDailyChallenges ||
       showStudentTwin ||
       showPillarPanel ||
+      showMessagesPanel ||
       showPayments ||
       justUnlockedTier,
   );
@@ -588,6 +591,7 @@ export default function StudentHome() {
   }, [showXpModal, user?.id]);
 
   const profile = students.find(s => s.id === user?.id);
+  const { count: messagesUnread, setCount: setMessagesUnread } = useCoachMessagesUnread(profile?.id ?? null);
   const myLessons = lessons.filter(l => l.enrolledStudents.includes(user?.id || ""));
   // Real count: completed lessons with presence + historical record from profile
   const completedFromLessons = myLessons.filter(l => l.presentStudents.includes(user?.id || "")).length;
@@ -1807,6 +1811,17 @@ export default function StudentHome() {
                 >
                   Desafios ⚡
                 </button>
+                {messagesUnread > 0 && (
+                  <button
+                    onClick={() => { haptic(18); setShowMessagesPanel(true); }}
+                    className={`relative text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#EAB308]/40 bg-[#EAB308]/10 text-amber-300 transition-colors hover:bg-[#EAB308]/20 ${ctaClass}`}
+                  >
+                    💬 Recados
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#EAB308] text-[8px] font-black text-black">
+                      {messagesUnread}
+                    </span>
+                  </button>
+                )}
                 <button
                   onClick={() => { haptic([16, 12, 24]); setShowGamificationDashboard(true); }}
                   className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${ctaClass}`}
@@ -2903,6 +2918,16 @@ export default function StudentHome() {
       <AnimatePresence>
         {showPillarPanel && (
           <StudentPillarPanel onClose={() => setShowPillarPanel(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMessagesPanel && profile?.id && (
+          <StudentMessagesPanel
+            studentCrmId={profile.id}
+            onClose={() => setShowMessagesPanel(false)}
+            onUnreadCountChange={(c) => setMessagesUnread(c)}
+          />
         )}
       </AnimatePresence>
 

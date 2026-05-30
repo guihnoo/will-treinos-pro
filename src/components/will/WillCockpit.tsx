@@ -21,9 +21,11 @@ import {
   CreditCard,
   Dumbbell,
   MapPin,
+  MessageCircle,
   PlusCircle,
   Radio,
   RefreshCw,
+  Send,
   UserPlus,
   UserCheck,
   ShieldAlert,
@@ -147,6 +149,9 @@ export default function WillCockpit() {
   const [evalHistoryStudentId, setEvalHistoryStudentId] = useState<string | null>(null);
   const [showMonthlyReport, setShowMonthlyReport] = useState(false);
   const [showAbsenceTracker, setShowAbsenceTracker] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [messageSending, setMessageSending] = useState(false);
+  const [messageSentId, setMessageSentId] = useState<string | null>(null);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -2088,6 +2093,75 @@ export default function WillCockpit() {
                   <Zap className="h-4 w-4 text-amber-400" />
                   Ver Histórico de Avaliações
                 </motion.button>
+              </div>
+
+              {/* Recado direto */}
+              <div className="mt-4 rounded-2xl border border-[#EAB308]/20 bg-[#EAB308]/5 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#EAB308]/70 mb-2 flex items-center gap-1.5">
+                  <MessageCircle size={11} />
+                  Recado para {selectedStudent.name.split(" ")[0]}
+                </p>
+                {messageSentId === selectedStudent.id ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <CheckCircle2 size={14} className="text-emerald-400" />
+                    <p className="text-xs font-bold text-emerald-300">Recado enviado! Push notificado.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      placeholder="Escreva um recado pessoal…"
+                      maxLength={500}
+                      rows={2}
+                      className="w-full rounded-xl border border-zinc-700/60 bg-zinc-900/80 px-3 py-2 text-xs text-white placeholder-zinc-600 resize-none focus:outline-none focus:border-[#EAB308]/40 transition-colors"
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      disabled={!messageText.trim() || messageSending}
+                      onClick={async () => {
+                        if (!messageText.trim() || !user) return;
+                        setMessageSending(true);
+                        try {
+                          const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                          const sb = getSupabaseClient();
+                          const { data: { session } } = await sb.auth.getSession();
+                          if (!session?.access_token) throw new Error("Sem sessão");
+                          const res = await fetch("/api/messages/coach", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${session.access_token}`,
+                            },
+                            body: JSON.stringify({
+                              studentId: selectedStudent.id,
+                              message: messageText.trim(),
+                              fromName: user.name ?? "Coach",
+                            }),
+                          });
+                          if (res.ok) {
+                            setMessageText("");
+                            setMessageSentId(selectedStudent.id);
+                            toast(`💬 Recado enviado para ${selectedStudent.name.split(" ")[0]}!`);
+                            setTimeout(() => setMessageSentId(null), 4000);
+                          }
+                        } catch {
+                          toast("Erro ao enviar recado.");
+                        } finally {
+                          setMessageSending(false);
+                        }
+                      }}
+                      className="self-end flex items-center gap-1.5 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 px-3 py-1.5 text-[11px] font-black text-amber-200 hover:bg-[#EAB308]/20 transition-colors disabled:opacity-40"
+                    >
+                      {messageSending ? (
+                        <Circle size={11} className="animate-spin" />
+                      ) : (
+                        <Send size={11} />
+                      )}
+                      Enviar
+                    </motion.button>
+                  </div>
+                )}
               </div>
             </motion.section>
             </div>
