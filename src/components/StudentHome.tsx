@@ -40,6 +40,7 @@ import AthleteTwinPanel from "@/components/will/AthleteTwinPanel";
 import OnboardingWidget, { markTwinViewed } from "@/components/gamification/OnboardingWidget";
 import TurmaLeaderboardCard from "@/components/leaderboard/TurmaLeaderboardCard";
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
+import StudentPillarPanel from "@/components/student/StudentPillarPanel";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -525,6 +526,7 @@ export default function StudentHome() {
   const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [showStudentTwin, setShowStudentTwin] = useState(false);
+  const [showPillarPanel, setShowPillarPanel] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -546,6 +548,7 @@ export default function StudentHome() {
       showGamificationDashboard ||
       showDailyChallenges ||
       showStudentTwin ||
+      showPillarPanel ||
       showPayments ||
       justUnlockedTier,
   );
@@ -1644,10 +1647,16 @@ export default function StudentHome() {
         <motion.div variants={homeItem} className="mb-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-bold text-white flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#EAB308]"/> Checkpoint Técnico</h2>
-            <motion.button whileTap={{scale:0.9}} onClick={()=>setEvolModal(true)}
-              className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
-              Ver relatório
-            </motion.button>
+            <div className="flex items-center gap-2">
+              <motion.button whileTap={{scale:0.9}} onClick={()=>setShowPillarPanel(true)}
+                className={`text-[10px] font-bold text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-colors ${ctaClass}`}>
+                Notas do Coach
+              </motion.button>
+              <motion.button whileTap={{scale:0.9}} onClick={()=>setEvolModal(true)}
+                className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
+                Ver relatório
+              </motion.button>
+            </div>
           </div>
           <motion.div whileTap={{scale:0.98}} whileHover={{ y: -2, borderColor: "rgba(234,179,8,0.35)" }}
             className="rounded-2xl border border-white/[0.07] bg-zinc-950/45 backdrop-blur-xl p-4 cursor-pointer hover:border-[#EAB308]/25 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
@@ -2888,6 +2897,12 @@ export default function StudentHome() {
             student={profile}
             onClose={() => { setShowStudentTwin(false); if (user?.id) markTwinViewed(user.id); }}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPillarPanel && (
+          <StudentPillarPanel onClose={() => setShowPillarPanel(false)} />
         )}
       </AnimatePresence>
 
