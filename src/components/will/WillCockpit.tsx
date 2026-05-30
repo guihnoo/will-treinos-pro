@@ -12,6 +12,7 @@ import {
   CalendarPlus,
   CalendarDays,
   CalendarX,
+  Megaphone,
   CheckCircle2,
   Clock3,
   Coins,
@@ -64,6 +65,7 @@ import EvaluationHistoryPanel from "./EvaluationHistoryPanel";
 import MonthlyReportPanel from "./MonthlyReportPanel";
 import CourtWeatherPanel from "./CourtWeatherPanel";
 import AbsenceTrackerPanel from "./AbsenceTrackerPanel";
+import BroadcastMessagePanel from "./BroadcastMessagePanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -149,6 +151,7 @@ export default function WillCockpit() {
   const [evalHistoryStudentId, setEvalHistoryStudentId] = useState<string | null>(null);
   const [showMonthlyReport, setShowMonthlyReport] = useState(false);
   const [showAbsenceTracker, setShowAbsenceTracker] = useState(false);
+  const [showBroadcast, setShowBroadcast] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
   const [messageSentId, setMessageSentId] = useState<string | null>(null);
@@ -262,6 +265,7 @@ export default function WillCockpit() {
     showEvalHistory ||
     showMonthlyReport ||
     showAbsenceTracker ||
+    showBroadcast ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -1009,6 +1013,18 @@ export default function WillCockpit() {
           >
             <CalendarX className="h-5 w-5 text-orange-400" />
             Ausências
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowBroadcast(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Enviar anúncio para grupo de alunos"
+          >
+            <Megaphone className="h-5 w-5 text-violet-400" />
+            Anúncio
           </button>
           </div>
         </AppSectionCard>
@@ -2462,6 +2478,12 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showAbsenceTracker ? (
           <AbsenceTrackerPanel onClose={() => setShowAbsenceTracker(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBroadcast ? (
+          <BroadcastMessagePanel onClose={() => setShowBroadcast(false)} />
         ) : null}
       </AnimatePresence>
     </div>
