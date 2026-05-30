@@ -156,6 +156,7 @@ export default function WillCockpit() {
   const [highlightSending, setHighlightSending] = useState(false);
   const [highlightSentId, setHighlightSentId] = useState<string | null>(null);
   const [currentHighlightStudentId, setCurrentHighlightStudentId] = useState<string | null>(null);
+  const [absenceRequests, setAbsenceRequests] = useState<Array<{ id: string; studentName: string; lessonTitle: string; lessonDate: string; lessonTime: string | null; reason: string; notes: string | null }>>([]);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -180,6 +181,35 @@ export default function WillCockpit() {
   });
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(localDateISO(new Date()));
   const [calendarWeekStart] = useState<Date>(getMonday(new Date()));
+
+  // Load upcoming absence requests on mount
+  useEffect(() => {
+    if (!user) return;
+    import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
+      const sb = getSupabaseClient();
+      const today = new Date().toISOString().slice(0, 10);
+      sb.from("absence_requests")
+        .select("id, lesson_date, lesson_title, lesson_time, reason, notes, status, students(name)")
+        .gte("lesson_date", today)
+        .eq("status", "pending")
+        .order("lesson_date", { ascending: true })
+        .limit(20)
+        .then(({ data }) => {
+          if (!data) return;
+          setAbsenceRequests(
+            data.map((r: Record<string, unknown>) => ({
+              id: r.id as string,
+              studentName: (Array.isArray(r.students) ? (r.students[0] as { name: string })?.name : (r.students as { name: string } | null)?.name) ?? "Aluno",
+              lessonTitle: r.lesson_title as string,
+              lessonDate: r.lesson_date as string,
+              lessonTime: r.lesson_time as string | null,
+              reason: r.reason as string,
+              notes: r.notes as string | null,
+            }))
+          );
+        });
+    });
+  }, [user]);
 
   // Fetch current week's highlight when athlete profile opens
   useEffect(() => {
@@ -730,6 +760,48 @@ export default function WillCockpit() {
                       Recusar
                     </motion.button>
                   </div>
+                </div>
+              );
+            })}
+          </AppSectionCard>
+        </motion.div>
+      )}
+
+      {/* BLOCO 1.5: Faltas Comunicadas */}
+      {absenceRequests.length > 0 && (
+        <motion.div variants={itemV}>
+          <AppSectionCard
+            title={`Faltas Comunicadas (${absenceRequests.length})`}
+            subtitle="Alunos que avisaram que não comparecem."
+            contentClassName="pt-3 space-y-2"
+          >
+            {absenceRequests.map((req) => {
+              const dateStr = new Date(`${req.lessonDate}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+              const timeStr = req.lessonTime ? ` · ${req.lessonTime}` : "";
+              const REASON_EMOJI: Record<string, string> = { doenca: "🤒", trabalho: "💼", viagem: "✈️", emergencia: "🚨", pessoal: "🙏", outro: "💬" };
+              return (
+                <div key={req.id} className="flex items-start justify-between gap-3 rounded-xl border border-orange-500/20 bg-orange-500/5 px-3 py-2.5">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <span className="text-base mt-0.5">{REASON_EMOJI[req.reason] ?? "⚠️"}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{req.studentName}</p>
+                      <p className="text-[10px] text-zinc-500">{req.lessonTitle} · {dateStr}{timeStr}</p>
+                      {req.notes && <p className="text-[10px] text-zinc-600 italic mt-0.5">"{req.notes}"</p>}
+                    </div>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={async () => {
+                      const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                      const sb = getSupabaseClient();
+                      await sb.from("absence_requests").update({ status: "acknowledged", acknowledged_at: new Date().toISOString() }).eq("id", req.id);
+                      setAbsenceRequests((prev) => prev.filter((r) => r.id !== req.id));
+                      toast(`✅ Falta de ${req.studentName.split(" ")[0]} confirmada.`);
+                    }}
+                    className="flex-shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-[10px] font-black text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                  >
+                    Confirmar
+                  </motion.button>
                 </div>
               );
             })}

@@ -44,6 +44,7 @@ import StudentPillarPanel from "@/components/student/StudentPillarPanel";
 import StudentMessagesPanel, { useCoachMessagesUnread } from "@/components/student/StudentMessagesPanel";
 import WeeklyHighlightBanner from "@/components/student/WeeklyHighlightBanner";
 import LessonCountdownCard from "@/components/student/LessonCountdownCard";
+import AbsenceRequestSheet from "@/components/student/AbsenceRequestSheet";
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -531,6 +532,7 @@ export default function StudentHome() {
   const [showStudentTwin, setShowStudentTwin] = useState(false);
   const [showPillarPanel, setShowPillarPanel] = useState(false);
   const [showMessagesPanel, setShowMessagesPanel] = useState(false);
+  const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -554,6 +556,7 @@ export default function StudentHome() {
       showStudentTwin ||
       showPillarPanel ||
       showMessagesPanel ||
+      showAbsenceSheet ||
       showPayments ||
       justUnlockedTier,
   );
@@ -2957,10 +2960,21 @@ export default function StudentHome() {
 
       {/* Floating Action Menu */}
       <FloatingActionMenu
-        onCheckIn={() => toast("💚 Check-in: vá para a aula e pressione o botão de check-in da turma", "info")}
+        onCheckIn={() => toast("💚 Check-in: vá até a quadra e pressione o botão de check-in da turma", "info")}
         onViewLessons={() => setShowAgendaPanel(true)}
-        onReportAbsence={() => toast("⚠️ Comunicar falta: em desenvolvimento", "info")}
+        onReportAbsence={() => setShowAbsenceSheet(true)}
       />
+
+      <AnimatePresence>
+        {showAbsenceSheet && user?.id && (
+          <AbsenceRequestSheet
+            lessons={lessons}
+            studentId={user.id}
+            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
+            onClose={() => setShowAbsenceSheet(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Achievement Share Sheet */}
       <AnimatePresence>
