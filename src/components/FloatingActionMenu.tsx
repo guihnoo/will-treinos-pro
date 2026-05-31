@@ -74,7 +74,7 @@ export function FloatingActionMenu({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="fixed bottom-24 right-6 z-40 flex flex-col gap-3"
+            className="fixed bottom-[7rem] right-6 z-40 flex flex-col gap-3"
           >
             {actions.map((action, idx) => {
               const Icon = action.icon;
@@ -104,7 +104,7 @@ export function FloatingActionMenu({
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-[#EAB308] to-[#F97316] text-black shadow-lg shadow-[#EAB308]/50 flex items-center justify-center font-bold"
+        className="fixed bottom-[5.5rem] right-5 z-40 w-13 h-13 w-12 h-12 rounded-full bg-gradient-to-r from-[#EAB308] to-[#F97316] text-black shadow-lg shadow-[#EAB308]/50 flex items-center justify-center font-bold"
       >
         <motion.div
           animate={{ rotate: isOpen ? 45 : 0 }}

@@ -1836,43 +1836,50 @@ export default function StudentHome() {
         </div>
       </motion.div>
 
-      {/* Destaque da Semana — banner dourado quando atleta é o destaque */}
-      {profile?.id && (
-        <motion.div variants={homeItem} className="mb-4">
-          <WeeklyHighlightBanner
-            studentCrmId={profile.id}
-            firstName={profile.name?.split(" ")[0] ?? "Atleta"}
-          />
-        </motion.div>
-      )}
+      {/* ── Banners suplementares: prioridade única ──
+           Regra: máx 1 de cada vez.
+           Hierarquia: Destaque > Resumo Semanal > Onboarding
+           O countdown card e o push banner ficam fora desta prioridade. */}
+      {profile?.id && user?.id && (() => {
+        // WeeklyHighlightBanner controla internamente se mostra (via Supabase query).
+        // Ele dispara e mostra ou não. Para os outros verificamos via props antes de renderizar.
+        const isOnboardingCandidate = totalXP < 400;
+        const isSummaryDay = (() => { const d = new Date().getDay(); return d === 5 || d === 6; })();
 
-      {/* Resumo Semanal — aparece sexta e sábado */}
-      {user?.id && profile?.id && (
-        <motion.div variants={homeItem} className="mb-4">
-          <WeeklySummaryBanner
-            lessons={lessons}
-            studentId={user.id}
-            totalXP={totalXP}
-            streak={streak}
-            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
-          />
-        </motion.div>
-      )}
-
-      {/* Onboarding Widget — visible para novos atletas */}
-      {user?.id && (
-        <motion.div variants={homeItem} className="mb-4">
-          <OnboardingWidget
-            studentId={user.id}
-            totalXP={totalXP}
-            hasAvatar={!!(profile?.avatar && !profile.avatar.includes("dicebear"))}
-            onOpenChallenges={() => setShowDailyChallenges(true)}
-            onOpenTwin={() => { markTwinViewed(user.id); setShowStudentTwin(true); }}
-            onOpenFeed={() => { /* navigate to feed */ }}
-            onOpenProfile={() => { /* navigate to perfil */ }}
-          />
-        </motion.div>
-      )}
+        // Slot único: Destaque tem prioridade; se não estiver visível, vai para o próximo
+        // WeeklyHighlightBanner já gerencia dismiss internamente — renderizamos sempre e ele decide
+        return (
+          <motion.div variants={homeItem} className="mb-4">
+            {/* Priority 1: Destaque da Semana */}
+            <WeeklyHighlightBanner
+              studentCrmId={profile.id}
+              firstName={profile.name?.split(" ")[0] ?? "Atleta"}
+            />
+            {/* Priority 2: Resumo Semanal (só Sex/Sáb — WeeklySummaryBanner controla internamente) */}
+            {isSummaryDay && (
+              <WeeklySummaryBanner
+                lessons={lessons}
+                studentId={user.id}
+                totalXP={totalXP}
+                streak={streak}
+                getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
+              />
+            )}
+            {/* Priority 3: Onboarding (só novos atletas, não-Sex/Sáb para evitar stack) */}
+            {isOnboardingCandidate && !isSummaryDay && (
+              <OnboardingWidget
+                studentId={user.id}
+                totalXP={totalXP}
+                hasAvatar={!!(profile.avatar && !profile.avatar.includes("dicebear"))}
+                onOpenChallenges={() => setShowDailyChallenges(true)}
+                onOpenTwin={() => { markTwinViewed(user.id); setShowStudentTwin(true); }}
+                onOpenFeed={() => { }}
+                onOpenProfile={() => { }}
+              />
+            )}
+          </motion.div>
+        );
+      })()}
 
       {/* Conquistas — CLICÁVEIS */}
       <motion.div variants={homeItem} className="mb-6">

@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, CalendarRange, Wallet, Users,
-  LogOut, Bell, User, Zap, Trophy, Home
+  LogOut, Bell, User, Zap, Trophy, Home, Rss
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -21,7 +21,7 @@ import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
 const ALLOWED_ROUTES: Record<string, string[]> = {
   admin:   ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
   coach:   ["/dashboard", "/agenda", "/alunos", "/perfil", "/will"],
-  aluno:   ["/dashboard", "/agenda", "/ranking", "/perfil", "/configuracoes"],
+  aluno:   ["/dashboard", "/agenda", "/ranking", "/feed", "/perfil", "/configuracoes", "/treinos"],
   visitor: ["/feed", "/perfil"],
   /** Conta Google/e-mail sem linha de aluno: só cadastro público + login. */
   pending_student: ["/cadastro", "/login", "/auth"],
@@ -66,9 +66,10 @@ export function Navigation() {
         ];
       case "aluno":
         return [
-          { name: "Início", href: "/dashboard", icon: Home, badge: 0 },
-          { name: "Minhas Aulas", href: "/agenda", icon: CalendarRange, badge: 0 },
-          { name: "Performance", href: "/ranking", icon: Trophy, badge: 0 },
+          { name: "Início",   href: "/dashboard", icon: Home,         badge: 0 },
+          { name: "Agenda",   href: "/agenda",    icon: CalendarRange, badge: 0 },
+          { name: "Feed",     href: "/feed",      icon: Rss,           badge: 0 },
+          { name: "Ranking",  href: "/ranking",   icon: Trophy,        badge: 0 },
         ];
       case "visitor":
         return [
@@ -177,7 +178,7 @@ export function Navigation() {
       </motion.aside>
 
       {/* MOBILE BOTTOM BAR */}
-      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-[#0A0A0A]/95 backdrop-blur-xl border border-zinc-800 z-50 rounded-2xl flex justify-around items-center p-2.5 shadow-2xl">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0A0A0A]/97 backdrop-blur-2xl border-t border-zinc-800/80 z-50 flex justify-around items-center px-1 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_32px_rgba(0,0,0,0.5)]">
         {mobileBottomItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -185,43 +186,67 @@ export function Navigation() {
           const Icon = item.icon;
 
           return (
-            <Link key={item.name} href={item.href} className={`block outline-none ${FOCUS_RING_GOLD}`}>
+            <Link key={item.name} href={item.href} className={`flex-1 outline-none ${FOCUS_RING_GOLD}`}>
               <motion.div
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ y: -1 }}
-                className={`relative flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all duration-300 ${isActive ? "scale-110 shadow-[0_0_20px_rgba(234,179,8,0.2)]" : "opacity-60 hover:opacity-100"}`}
+                whileTap={{ scale: 0.92 }}
+                className="relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl"
               >
-                <div className="relative">
-                  <Icon className={`w-5 h-5 ${isActive ? "text-[#EAB308]" : "text-zinc-400"}`} />
+                {/* Active pill background */}
+                {isActive && (
+                  <motion.div
+                    layoutId="mobile-nav-active"
+                    className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-[#EAB308]/12 border border-[#EAB308]/20"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <div className="relative z-10">
+                  <Icon className={`w-5 h-5 transition-colors ${isActive ? "text-[#EAB308]" : "text-zinc-500"}`} />
                   {item.badge > 0 && (
                     <span className="absolute -top-1.5 -right-2 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
                       {item.badge}
                     </span>
                   )}
                 </div>
-                {isActive && <div className="w-1 h-1 rounded-full bg-[#EAB308] mt-0.5" />}
+                <span className={`text-[9px] font-bold transition-colors z-10 ${isActive ? "text-[#EAB308]" : "text-zinc-600"}`}>
+                  {item.name}
+                </span>
               </motion.div>
             </Link>
           );
         })}
-        <motion.button onClick={() => setShowNotifs(true)}
-          whileTap={{ scale: 0.95 }}
-          className={`relative flex flex-col items-center justify-center w-12 h-12 rounded-xl text-zinc-400 hover:text-[#EAB308] transition-colors ${FOCUS_RING_GOLD}`}>
-          <Bell className="w-5 h-5" />
-          {unreadNotifications > 0 && (
-            <span className="absolute top-1.5 right-1.5 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
-              {unreadNotifications}
-            </span>
-          )}
+
+        {/* Bell */}
+        <motion.button
+          onClick={() => setShowNotifs(true)}
+          whileTap={{ scale: 0.92 }}
+          className={`flex-1 relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl text-zinc-500 hover:text-[#EAB308] transition-colors ${FOCUS_RING_GOLD}`}
+        >
+          <div className="relative">
+            <Bell className="w-5 h-5" />
+            {unreadNotifications > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            )}
+          </div>
+          <span className="text-[9px] font-bold">Avisos</span>
         </motion.button>
-        <Link href="/perfil" className={`block outline-none ${FOCUS_RING_GOLD}`}>
+
+        {/* Profile */}
+        <Link href="/perfil" className={`flex-1 outline-none ${FOCUS_RING_GOLD}`}>
           <motion.div
-            whileTap={{ scale: 0.95 }}
-            whileHover={{ y: -1 }}
-            className={`relative flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 ${pathname === '/perfil' ? 'scale-110 text-[#EAB308] shadow-[0_0_20px_rgba(234,179,8,0.2)]' : 'text-zinc-500 hover:text-[#EAB308]'}`}
+            whileTap={{ scale: 0.92 }}
+            className="relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl"
           >
-            <User className="w-5 h-5" />
-            {pathname === '/perfil' && <div className="w-1 h-1 rounded-full bg-[#EAB308] mt-0.5" />}
+            {pathname === "/perfil" && (
+              <motion.div
+                layoutId="mobile-nav-active"
+                className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-[#EAB308]/12 border border-[#EAB308]/20"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            <User className={`w-5 h-5 z-10 transition-colors ${pathname === "/perfil" ? "text-[#EAB308]" : "text-zinc-500"}`} />
+            <span className={`text-[9px] font-bold z-10 ${pathname === "/perfil" ? "text-[#EAB308]" : "text-zinc-600"}`}>Perfil</span>
           </motion.div>
         </Link>
       </nav>
