@@ -80,6 +80,7 @@ const QRCheckInModal         = dynamic(() => import("./QRCheckInModal"),        
 const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),      { ssr: false, loading: () => null });
 const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),       { ssr: false, loading: () => null });
 const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),   { ssr: false, loading: () => null });
+const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),    { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -169,6 +170,7 @@ export default function WillCockpit() {
   const [showQRCheckin, setShowQRCheckin] = useState(false);
   const [showLessonRecap, setShowLessonRecap] = useState(false);
   const [showQuickAttendance, setShowQuickAttendance] = useState(false);
+  const [showBulkEval, setShowBulkEval] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -2284,6 +2286,51 @@ export default function WillCockpit() {
                   >
                     <Users className="mx-auto h-4 w-4 text-blue-400" />
                   </motion.button>
+                  <motion.button
+                    whileTap={PRESS_SCALE}
+                    type="button"
+                    onClick={() => setShowBulkEval(true)}
+                    className={`min-h-11 min-w-11 rounded-xl border border-[#EAB308]/30 bg-[#EAB308]/10 hover:border-[#EAB308]/50 hover:bg-[#EAB308]/20 transition ${INTERACTIVE_FOCUS_RING}`}
+                    title="Avaliar turma toda"
+                  >
+                    <BarChart3 className="mx-auto h-4 w-4 text-[#EAB308]" />
+                  </motion.button>
+                  {selectedLesson?.status === "scheduled" && (
+                    <motion.button
+                      whileTap={PRESS_SCALE}
+                      type="button"
+                      onClick={async () => {
+                        if (!selectedLesson) return;
+                        if (!window.confirm(`Cancelar "${selectedLesson.title}"? Todos os alunos serão notificados.`)) return;
+                        updateLesson(selectedLesson.id, { status: "cancelled" });
+                        setShowLessonModal(false);
+                        try {
+                          const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                          const sb = getSupabaseClient();
+                          const { data: { session } } = await sb.auth.getSession();
+                          if (!session?.access_token) return;
+                          const dateStr = new Date(`${selectedLesson.date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "short" });
+                          await fetch("/api/push/send", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                            body: JSON.stringify({
+                              targetRole: "aluno",
+                              payload: {
+                                title: "⚠️ Aula cancelada",
+                                body: `"${selectedLesson.title}" de ${dateStr} foi cancelada. Fale com o coach para reposição.`,
+                                url: "/dashboard",
+                              },
+                            }),
+                          });
+                          toast("✅ Aula cancelada. Alunos notificados.");
+                        } catch { /* silent */ }
+                      }}
+                      className={`min-h-11 min-w-11 rounded-xl border border-red-500/30 bg-red-500/10 hover:border-red-500/50 hover:bg-red-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
+                      title="Cancelar aula e notificar alunos"
+                    >
+                      <X className="mx-auto h-4 w-4 text-red-400" />
+                    </motion.button>
+                  )}
                   {selectedLesson?.status === "completed" && (
                     <motion.button
                       whileTap={PRESS_SCALE}
@@ -2778,6 +2825,16 @@ export default function WillCockpit() {
             lesson={selectedLesson}
             students={students}
             onClose={() => setShowQuickAttendance(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBulkEval && selectedLesson ? (
+          <BulkEvaluationModal
+            lesson={selectedLesson}
+            students={students}
+            onClose={() => setShowBulkEval(false)}
           />
         ) : null}
       </AnimatePresence>
