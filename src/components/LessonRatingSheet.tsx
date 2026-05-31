@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Star, Zap, Brain, TrendingUp, MessageSquare, CheckCircle2 } from "lucide-react";
 import type { LessonRating, LessonRatingDraft, TrainingMood } from "@/context/types";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 // ─── Mood options ─────────────────────────────────────────────────────────────
 const MOODS: { id: TrainingMood; emoji: string; label: string; color: string }[] = [
@@ -81,21 +82,50 @@ export default function LessonRatingSheet({
   const allRated = Object.values(ratings).every(v => v > 0);
   const avg = allRated ? (Object.values(ratings).reduce((s, v) => s + v, 0) / 4).toFixed(1) : "—";
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!allRated) return;
     setSubmitted(true);
+
+    const draft: LessonRatingDraft = {
+      lessonId,
+      studentId,
+      date: lessonDate,
+      intensidade: ratings.intensidade,
+      tecnica:     ratings.tecnica,
+      didatica:    ratings.didatica,
+      evolucao:    ratings.evolucao,
+      mood,
+      comment: comment.trim() || undefined,
+    };
+
+    // Persist to Supabase (fire-and-forget — don't block the UX)
+    try {
+      const sb = getSupabaseClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.access_token) {
+        fetch("/api/student/submit-rating", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            lessonId,
+            lessonDate,
+            lessonTitle,
+            mood,
+            intensidade: ratings.intensidade,
+            tecnica:     ratings.tecnica,
+            didatica:    ratings.didatica,
+            evolucao:    ratings.evolucao,
+            comment:     comment.trim() || undefined,
+          }),
+        }).catch(() => { /* silent — localStorage is the fallback */ });
+      }
+    } catch { /* silent */ }
+
     setTimeout(() => {
-      onSubmit({
-        lessonId,
-        studentId,
-        date: lessonDate,
-        intensidade: ratings.intensidade,
-        tecnica:     ratings.tecnica,
-        didatica:    ratings.didatica,
-        evolucao:    ratings.evolucao,
-        mood,
-        comment: comment.trim() || undefined,
-      });
+      onSubmit(draft);
       onClose();
     }, 1400);
   };

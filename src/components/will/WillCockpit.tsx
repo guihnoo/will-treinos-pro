@@ -169,6 +169,7 @@ export default function WillCockpit() {
   const [currentHighlightStudentId, setCurrentHighlightStudentId] = useState<string | null>(null);
   const [absenceRequests, setAbsenceRequests] = useState<Array<{ id: string; studentName: string; lessonTitle: string; lessonDate: string; lessonTime: string | null; reason: string; notes: string | null }>>([]);
   const [repositionRequests, setRepositionRequests] = useState<Array<{ id: string; studentName: string; targetLessonTitle: string; targetLessonDate: string; targetLessonTime: string | null; createdAt: string }>>([]);
+  const [lessonNps, setLessonNps] = useState<Array<{ lessonId: string; lessonTitle: string; lessonDate: string; count: number; avg: number; moods: string[] }>>([]);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -240,6 +241,19 @@ export default function WillCockpit() {
             }))
           );
         });
+
+      // Load NPS ratings for last 7 days
+      sb.auth.getSession().then(({ data: { session } }) => {
+        if (!session?.access_token) return;
+        fetch("/api/student/submit-rating?recent=7", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+          .then(r => r.json())
+          .then(({ byLesson }) => {
+            if (Array.isArray(byLesson)) setLessonNps(byLesson);
+          })
+          .catch(() => {});
+      });
     });
   }, [user]);
 
@@ -909,6 +923,44 @@ export default function WillCockpit() {
                   >
                     Confirmar
                   </motion.button>
+                </div>
+              );
+            })}
+          </AppSectionCard>
+        </motion.div>
+      )}
+
+      {/* BLOCO 1.7: NPS de Aulas — avaliações dos alunos */}
+      {activeTab === "hoje" && lessonNps.length > 0 && (
+        <motion.div variants={itemV}>
+          <AppSectionCard
+            title={`Avaliações dos Alunos (${lessonNps.length} aula${lessonNps.length !== 1 ? "s" : ""})`}
+            subtitle="Feedback dos últimos 7 dias — média por aula."
+            contentClassName="pt-3 space-y-2"
+          >
+            {lessonNps.map((entry) => {
+              const stars = Math.round(entry.avg);
+              const color = entry.avg >= 4 ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
+                : entry.avg >= 3 ? "text-amber-400 border-amber-500/20 bg-amber-500/5"
+                : "text-red-400 border-red-500/20 bg-red-500/5";
+              const dateStr = new Date(`${entry.lessonDate}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+              const moodCounts: Record<string, number> = {};
+              for (const m of entry.moods) moodCounts[m] = (moodCounts[m] ?? 0) + 1;
+              const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0];
+              const MOOD_EMOJI: Record<string, string> = { excelente: "⭐", bom: "💪", cansativo: "😮‍💨", dificil: "😤" };
+              return (
+                <div key={entry.lessonId} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${color}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{entry.lessonTitle}</p>
+                    <p className="text-[10px] text-zinc-500">{dateStr} · {entry.count} avaliação{entry.count !== 1 ? "ões" : ""}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {topMood && <span className="text-base">{MOOD_EMOJI[topMood[0]] ?? "⭐"}</span>}
+                    <div className="text-right">
+                      <p className="text-sm font-black">{entry.avg.toFixed(1)}</p>
+                      <p className="text-[9px] text-zinc-600">{"★".repeat(stars)}{"☆".repeat(5 - stars)}</p>
+                    </div>
+                  </div>
                 </div>
               );
             })}

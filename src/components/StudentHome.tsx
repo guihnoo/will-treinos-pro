@@ -652,6 +652,23 @@ export default function StudentHome() {
     () => lessonRatings.filter((r) => r.studentId === user?.id).sort((a, b) => b.date.localeCompare(a.date)),
     [lessonRatings, user],
   );
+
+  // Completed lessons in last 7 days where student was present and hasn't rated yet
+  const unratedLessons = useMemo(() => {
+    if (!user?.id) return [];
+    const since = new Date();
+    since.setDate(since.getDate() - 7);
+    const sinceStr = since.toISOString().slice(0, 10);
+    const ratedIds = new Set(myLessonRatings.map(r => r.lessonId));
+    return myLessons
+      .filter(l =>
+        l.status === "completed" &&
+        l.presentStudents.includes(user.id) &&
+        l.date >= sinceStr &&
+        !ratedIds.has(l.id)
+      )
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [myLessons, myLessonRatings, user]);
   const latest = myFeedbacks[0] ?? null;
   const avgRating = useMemo(() => {
     if (myFeedbacks.length === 0) return 0;
@@ -1096,6 +1113,30 @@ export default function StudentHome() {
             getCategoryFn={getCategory}
             onCheckIn={() => toast("Vá até a quadra e pressione o botão de check-in da turma 🏐", "info")}
           />
+        </motion.div>
+      )}
+
+      {/* Banner: aulas não avaliadas */}
+      {unratedLessons.length > 0 && (
+        <motion.div variants={homeItem} className="mb-3 px-1">
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setRatingLesson(unratedLessons[0])}
+            className="w-full flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-left hover:bg-amber-500/12 transition-all"
+          >
+            <span className="text-2xl flex-shrink-0">⭐</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-white">
+                {unratedLessons.length === 1
+                  ? "Avalie seu treino de hoje"
+                  : `${unratedLessons.length} treinos aguardando avaliação`}
+              </p>
+              <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+                {unratedLessons[0].title || getCategory(unratedLessons[0].categoryId)?.name || "Aula"} · {new Date(`${unratedLessons[0].date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })}
+              </p>
+            </div>
+            <span className="text-xs font-black text-amber-400 flex-shrink-0">Avaliar →</span>
+          </motion.button>
         </motion.div>
       )}
 
