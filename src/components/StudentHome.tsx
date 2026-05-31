@@ -76,6 +76,8 @@ const StudentMessagesPanel    = dynamic(() => import("@/components/student/Stude
 const AttendanceCalendarPanel = dynamic(() => import("@/components/student/AttendanceCalendarPanel"), { ssr: false, loading: () => null });
 const AbsenceRequestSheet     = dynamic(() => import("@/components/student/AbsenceRequestSheet"), { ssr: false, loading: () => null });
 const RepositionSheet         = dynamic(() => import("@/components/student/RepositionSheet"), { ssr: false, loading: () => null });
+const AthleteTimelinePanel    = dynamic(() => import("@/components/student/AthleteTimelinePanel"), { ssr: false, loading: () => null });
+const StudentGoalsCard        = dynamic(() => import("@/components/student/StudentGoalsCard"),       { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
@@ -571,6 +573,7 @@ export default function StudentHome() {
   const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
   const [showRepositionSheet, setShowRepositionSheet] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
@@ -597,6 +600,7 @@ export default function StudentHome() {
       showMessagesPanel ||
       showAbsenceSheet ||
       showRepositionSheet ||
+      showTimeline ||
       showAttendanceCalendar ||
       showPayments ||
       justUnlockedTier,
@@ -1112,6 +1116,17 @@ export default function StudentHome() {
             studentId={user.id}
             getCategoryFn={getCategory}
             onCheckIn={() => toast("Vá até a quadra e pressione o botão de check-in da turma 🏐", "info")}
+          />
+        </motion.div>
+      )}
+
+      {/* Metas do Coach */}
+      {profile?.id && (
+        <motion.div variants={homeItem} className="mb-3 px-1">
+          <StudentGoalsCard
+            studentCrmId={profile.id}
+            totalXP={totalXP}
+            checkinCount={myLessons.filter(l => l.presentStudents.includes(user?.id || "")).length}
           />
         </motion.div>
       )}
@@ -1972,6 +1987,14 @@ export default function StudentHome() {
                   >
                     🔗 Perfil
                   </a>
+                )}
+                {profile?.id && (
+                  <button
+                    onClick={() => { haptic(8); setShowTimeline(true); }}
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+                  >
+                    🕐 Jornada
+                  </button>
                 )}
               </div>
               <div className="text-right">
@@ -3081,6 +3104,7 @@ export default function StudentHome() {
         onViewLessons={() => setShowAgendaPanel(true)}
         onReportAbsence={() => setShowAbsenceSheet(true)}
         onRequestReposition={() => setShowRepositionSheet(true)}
+        onViewPayments={() => setShowPayments(true)}
       />
 
       <AnimatePresence>
@@ -3113,6 +3137,16 @@ export default function StudentHome() {
           <RepositionSheet
             getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
             onClose={() => setShowRepositionSheet(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTimeline && profile?.id && (
+          <AthleteTimelinePanel
+            studentCrmId={profile.id}
+            studentName={profile.name ?? user?.name ?? "Atleta"}
+            onClose={() => setShowTimeline(false)}
           />
         )}
       </AnimatePresence>

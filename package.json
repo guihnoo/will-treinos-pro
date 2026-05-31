@@ -23,6 +23,7 @@
     "posthog-js": "^1.372.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-qr-code": "^2.0.21",
     "react-turnstile": "^1.1.5",
     "uuid": "^14.0.0",
     "web-push": "^3.6.7"

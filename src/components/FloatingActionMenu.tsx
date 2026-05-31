@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, X } from "lucide-react";
+import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, CreditCard, X } from "lucide-react";
 import Link from "next/link";
 
 interface FloatingActionMenuProps {
@@ -10,6 +10,7 @@ interface FloatingActionMenuProps {
   onViewLessons?: () => void;
   onReportAbsence?: () => void;
   onRequestReposition?: () => void;
+  onViewPayments?: () => void;
 }
 
 export function FloatingActionMenu({
@@ -17,6 +18,7 @@ export function FloatingActionMenu({
   onViewLessons,
   onReportAbsence,
   onRequestReposition,
+  onViewPayments,
 }: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -58,6 +60,16 @@ export function FloatingActionMenu({
       color: "from-teal-500 to-cyan-600",
       action: () => {
         onRequestReposition?.();
+        setIsOpen(false);
+      },
+    },
+    {
+      id: "payments",
+      label: "Meus Pagamentos",
+      icon: CreditCard,
+      color: "from-emerald-500 to-green-600",
+      action: () => {
+        onViewPayments?.();
         setIsOpen(false);
       },
     },

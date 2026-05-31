@@ -3,8 +3,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, MapPin, Clock, Users, Check, Dumbbell, Star, MessageSquare, Send, BellRing, UserPlus, ArrowUpCircle, Globe
+  X, MapPin, Clock, Users, Check, Dumbbell, Star, MessageSquare, Send, BellRing, UserPlus, ArrowUpCircle, Globe,
+  Bot, CheckCircle2, ClipboardList, Copy, Loader2, Sparkles
 } from "lucide-react";
+import { getSupabaseClient } from "@/lib/supabaseClient";
+import type { LessonRecapResult } from "@/app/api/ai/lesson-recap/route";
 import type { Lesson } from "@/context/types";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -31,10 +34,42 @@ export default function LessonDetailModal({ lesson, onClose, layoutId }: Props) 
   const [trainingTarget, setTrainingTarget] = useState<string | null>(null);
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [studentToAdd, setStudentToAdd] = useState("");
+  const [recap, setRecap] = useState<LessonRecapResult | null>(null);
+  const [generatingRecap, setGeneratingRecap] = useState(false);
+  const [copiedPost, setCopiedPost] = useState(false);
   const [quickStart, setQuickStart] = useState(lesson.startTime);
   const [quickEnd, setQuickEnd] = useState(lesson.endTime);
   const [quickVenueId, setQuickVenueId] = useState(lesson.venueId);
   const [quickLocationUrl, setQuickLocationUrl] = useState(lesson.locationUrl || "");
+
+  const generateRecap = async () => {
+    setGeneratingRecap(true);
+    try {
+      const sb = getSupabaseClient();
+      const token = sb ? (await sb.auth.getSession()).data.session?.access_token ?? "" : "";
+      const presentNames = lesson.presentStudents
+        .map((id) => students.find((s) => s.id === id)?.name.split(" ")[0])
+        .filter(Boolean).slice(0, 8) as string[];
+      const res = await fetch("/api/ai/lesson-recap", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          lessonId: lesson.id,
+          lessonTitle: lesson.title,
+          date: lesson.date,
+          presentCount: lesson.presentStudents.length,
+          enrolledCount: lesson.enrolledStudents.length,
+          presentStudentNames: presentNames,
+        }),
+      });
+      if (!res.ok) throw new Error("api_error");
+      setRecap(await res.json() as LessonRecapResult);
+    } catch {
+      toast("Não foi possível gerar o resumo. Tente novamente.");
+    } finally {
+      setGeneratingRecap(false);
+    }
+  };
 
   const cat = getCategory(lesson.categoryId);
   const venue = getVenue(lesson.venueId);

@@ -40,6 +40,7 @@ import {
   X,
   Circle,
   TrendingUp,
+  QrCode,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -74,6 +75,8 @@ const MonthlyReportPanel   = dynamic(() => import("./MonthlyReportPanel"), { ssr
 const AbsenceTrackerPanel  = dynamic(() => import("./AbsenceTrackerPanel"), { ssr: false, loading: () => null });
 const BroadcastMessagePanel  = dynamic(() => import("./BroadcastMessagePanel"),  { ssr: false, loading: () => null });
 const TurmaAnalyticsPanel    = dynamic(() => import("./TurmaAnalyticsPanel"),    { ssr: false, loading: () => null });
+const QRCheckInModal         = dynamic(() => import("./QRCheckInModal"),         { ssr: false, loading: () => null });
+const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),      { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -160,6 +163,7 @@ export default function WillCockpit() {
   const [showAbsenceTracker, setShowAbsenceTracker] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showTurmaAnalytics, setShowTurmaAnalytics] = useState(false);
+  const [showQRCheckin, setShowQRCheckin] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -2260,6 +2264,15 @@ export default function WillCockpit() {
                   <motion.button
                     whileTap={PRESS_SCALE}
                     type="button"
+                    onClick={() => setShowQRCheckin(true)}
+                    className={`min-h-11 min-w-11 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500/50 hover:bg-emerald-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
+                    title="QR Code de check-in"
+                  >
+                    <QrCode className="mx-auto h-4 w-4 text-emerald-400" />
+                  </motion.button>
+                  <motion.button
+                    whileTap={PRESS_SCALE}
+                    type="button"
                     onClick={() => {
                       setShowLivePanel(true);
                       setShowLessonModal(false);
@@ -2420,6 +2433,9 @@ export default function WillCockpit() {
                   </motion.button>
                 )}
               </div>
+
+              {/* Metas do Coach */}
+              <StudentGoalEditor studentId={selectedStudent.id} studentName={selectedStudent.name} />
 
               {/* Destaque da Semana */}
               <div className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-3">
@@ -2708,6 +2724,16 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showTurmaAnalytics ? (
           <TurmaAnalyticsPanel onClose={() => setShowTurmaAnalytics(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showQRCheckin && selectedLesson ? (
+          <QRCheckInModal
+            lesson={selectedLesson}
+            lessonTitle={selectedLesson.title || "Aula"}
+            onClose={() => setShowQRCheckin(false)}
+          />
         ) : null}
       </AnimatePresence>
     </div>
