@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS public.absence_requests (
   id              uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id      uuid        NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  student_id      text        NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   lesson_id       text        NOT NULL,  -- UUID string (no strict FK — lessons may be local)
   lesson_date     date        NOT NULL,
   lesson_title    text        NOT NULL,

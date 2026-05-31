@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS public.weekly_highlights (
   id          uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id  uuid    NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  student_id  text    NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   week_start  date    NOT NULL,          -- ISO Monday of the week (YYYY-MM-DD)
   note        text,                       -- personal message from coach (optional)
   awarded_by  uuid,                       -- auth.users.id of staff who set it

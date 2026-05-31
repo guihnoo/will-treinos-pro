@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS public.reposition_requests (
   id                  uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id          uuid        NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  student_id          text        NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   absence_request_id  uuid        REFERENCES public.absence_requests(id) ON DELETE SET NULL,
   target_lesson_id    text        NOT NULL,
   target_lesson_date  date        NOT NULL,

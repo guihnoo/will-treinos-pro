@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS public.coach_messages (
   id          uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
   from_name   text        NOT NULL,  -- display name of sender (denormalized for simplicity)
-  to_student_id uuid      NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+  to_student_id text      NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
   message     text        NOT NULL CHECK (char_length(message) BETWEEN 1 AND 1000),
   created_at  timestamptz DEFAULT now(),
   read_at     timestamptz
