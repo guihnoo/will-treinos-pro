@@ -41,6 +41,7 @@ import {
   Circle,
   TrendingUp,
   QrCode,
+  Sparkles,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -77,6 +78,7 @@ const BroadcastMessagePanel  = dynamic(() => import("./BroadcastMessagePanel"), 
 const TurmaAnalyticsPanel    = dynamic(() => import("./TurmaAnalyticsPanel"),    { ssr: false, loading: () => null });
 const QRCheckInModal         = dynamic(() => import("./QRCheckInModal"),         { ssr: false, loading: () => null });
 const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),      { ssr: false, loading: () => null });
+const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),       { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -164,6 +166,7 @@ export default function WillCockpit() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showTurmaAnalytics, setShowTurmaAnalytics] = useState(false);
   const [showQRCheckin, setShowQRCheckin] = useState(false);
+  const [showLessonRecap, setShowLessonRecap] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -2270,6 +2273,17 @@ export default function WillCockpit() {
                   >
                     <QrCode className="mx-auto h-4 w-4 text-emerald-400" />
                   </motion.button>
+                  {selectedLesson?.status === "completed" && (
+                    <motion.button
+                      whileTap={PRESS_SCALE}
+                      type="button"
+                      onClick={() => setShowLessonRecap(true)}
+                      className={`min-h-11 min-w-11 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:border-violet-500/50 hover:bg-violet-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
+                      title="Recap da aula com IA"
+                    >
+                      <Sparkles className="mx-auto h-4 w-4 text-violet-400" />
+                    </motion.button>
+                  )}
                   <motion.button
                     whileTap={PRESS_SCALE}
                     type="button"
@@ -2733,6 +2747,16 @@ export default function WillCockpit() {
             lesson={selectedLesson}
             lessonTitle={selectedLesson.title || "Aula"}
             onClose={() => setShowQRCheckin(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showLessonRecap && selectedLesson ? (
+          <LessonRecapPanel
+            lesson={selectedLesson}
+            students={students}
+            onClose={() => setShowLessonRecap(false)}
           />
         ) : null}
       </AnimatePresence>

@@ -77,7 +77,9 @@ const AttendanceCalendarPanel = dynamic(() => import("@/components/student/Atten
 const AbsenceRequestSheet     = dynamic(() => import("@/components/student/AbsenceRequestSheet"), { ssr: false, loading: () => null });
 const RepositionSheet         = dynamic(() => import("@/components/student/RepositionSheet"), { ssr: false, loading: () => null });
 const AthleteTimelinePanel    = dynamic(() => import("@/components/student/AthleteTimelinePanel"), { ssr: false, loading: () => null });
-const StudentGoalsCard        = dynamic(() => import("@/components/student/StudentGoalsCard"),       { ssr: false, loading: () => null });
+const StudentGoalsCard          = dynamic(() => import("@/components/student/StudentGoalsCard"),           { ssr: false, loading: () => null });
+const NotificationCenterPanel  = dynamic(() => import("@/components/student/NotificationCenterPanel"),   { ssr: false, loading: () => null });
+const FrequencyAlertBanner      = dynamic(() => import("@/components/student/FrequencyAlertBanner"),      { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
@@ -574,6 +576,7 @@ export default function StudentHome() {
   const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
   const [showRepositionSheet, setShowRepositionSheet] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
@@ -601,6 +604,7 @@ export default function StudentHome() {
       showAbsenceSheet ||
       showRepositionSheet ||
       showTimeline ||
+      showNotificationCenter ||
       showAttendanceCalendar ||
       showPayments ||
       justUnlockedTier,
@@ -1116,6 +1120,18 @@ export default function StudentHome() {
             studentId={user.id}
             getCategoryFn={getCategory}
             onCheckIn={() => toast("Vá até a quadra e pressione o botão de check-in da turma 🏐", "info")}
+          />
+        </motion.div>
+      )}
+
+      {/* Alerta de Frequência */}
+      {user?.id && profile?.frequency && (
+        <motion.div variants={homeItem} className="mb-3 px-1">
+          <FrequencyAlertBanner
+            lessons={lessons}
+            studentId={user.id}
+            targetFrequency={profile.frequency}
+            onCheckIn={() => setShowAgendaPanel(true)}
           />
         </motion.div>
       )}
@@ -1996,6 +2012,12 @@ export default function StudentHome() {
                     🕐 Jornada
                   </button>
                 )}
+                <button
+                  onClick={() => { haptic(8); setShowNotificationCenter(true); }}
+                  className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+                >
+                  🔔 Notifs
+                </button>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-zinc-500">Meta competitiva</p>
@@ -3147,6 +3169,15 @@ export default function StudentHome() {
             studentCrmId={profile.id}
             studentName={profile.name ?? user?.name ?? "Atleta"}
             onClose={() => setShowTimeline(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showNotificationCenter && user?.id && (
+          <NotificationCenterPanel
+            studentId={user.id}
+            onClose={() => setShowNotificationCenter(false)}
           />
         )}
       </AnimatePresence>
