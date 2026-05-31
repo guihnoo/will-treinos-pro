@@ -26,22 +26,23 @@ const MESSAGES: Record<Role, { title: string; body: string }> = {
   },
 };
 
-const STORAGE_KEY = "push_banner_dismissed";
+const STORAGE_KEY = "push_banner_dismissed_v2";
 
 export default function PushPermissionBanner({ role }: Props) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!isPushSupported()) return;
-    if (Notification.permission !== "default") return;
-    if (sessionStorage.getItem(STORAGE_KEY)) return;
+    if (Notification.permission === "granted") return; // already subscribed
+    if (Notification.permission === "denied") return;  // blocked — no point asking
+    try { if (localStorage.getItem(STORAGE_KEY)) return; } catch { /* private mode */ }
 
-    const timer = setTimeout(() => setVisible(true), 3000);
+    const timer = setTimeout(() => setVisible(true), 4000);
     return () => clearTimeout(timer);
   }, []);
 
   function dismiss() {
-    sessionStorage.setItem(STORAGE_KEY, "1");
+    try { localStorage.setItem(STORAGE_KEY, "1"); } catch { /* private mode */ }
     setVisible(false);
   }
 

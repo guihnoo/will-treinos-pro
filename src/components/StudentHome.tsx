@@ -80,6 +80,7 @@ const AthleteTimelinePanel    = dynamic(() => import("@/components/student/Athle
 const StudentGoalsCard          = dynamic(() => import("@/components/student/StudentGoalsCard"),           { ssr: false, loading: () => null });
 const NotificationCenterPanel  = dynamic(() => import("@/components/student/NotificationCenterPanel"),   { ssr: false, loading: () => null });
 const FrequencyAlertBanner      = dynamic(() => import("@/components/student/FrequencyAlertBanner"),      { ssr: false, loading: () => null });
+const PushSettingsPanel         = dynamic(() => import("@/components/PushSettingsPanel"),                 { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
@@ -595,6 +596,7 @@ export default function StudentHome() {
   const [showRepositionSheet, setShowRepositionSheet] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+  const [showPushSettings, setShowPushSettings] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
@@ -623,6 +625,7 @@ export default function StudentHome() {
       showRepositionSheet ||
       showTimeline ||
       showNotificationCenter ||
+      showPushSettings ||
       showAttendanceCalendar ||
       showPayments ||
       justUnlockedTier,
@@ -2036,6 +2039,12 @@ export default function StudentHome() {
                 >
                   🔔 Notifs
                 </button>
+                <button
+                  onClick={() => { haptic(8); setShowPushSettings(true); }}
+                  className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+                >
+                  📲 Push
+                </button>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-zinc-500">Meta competitiva</p>
@@ -3196,6 +3205,15 @@ export default function StudentHome() {
           <NotificationCenterPanel
             studentId={user.id}
             onClose={() => setShowNotificationCenter(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPushSettings && (
+          <PushSettingsPanel
+            role="aluno"
+            onClose={() => setShowPushSettings(false)}
           />
         )}
       </AnimatePresence>
