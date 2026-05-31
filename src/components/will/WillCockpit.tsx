@@ -39,6 +39,7 @@ import {
   WalletCards,
   X,
   Circle,
+  TrendingUp,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -71,7 +72,8 @@ const FinancialForecastPanel = dynamic(() => import("./FinancialForecastPanel"),
 const EvaluationHistoryPanel = dynamic(() => import("./EvaluationHistoryPanel"), { ssr: false, loading: () => null });
 const MonthlyReportPanel   = dynamic(() => import("./MonthlyReportPanel"), { ssr: false, loading: () => null });
 const AbsenceTrackerPanel  = dynamic(() => import("./AbsenceTrackerPanel"), { ssr: false, loading: () => null });
-const BroadcastMessagePanel = dynamic(() => import("./BroadcastMessagePanel"), { ssr: false, loading: () => null });
+const BroadcastMessagePanel  = dynamic(() => import("./BroadcastMessagePanel"),  { ssr: false, loading: () => null });
+const TurmaAnalyticsPanel    = dynamic(() => import("./TurmaAnalyticsPanel"),    { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -157,6 +159,7 @@ export default function WillCockpit() {
   const [showMonthlyReport, setShowMonthlyReport] = useState(false);
   const [showAbsenceTracker, setShowAbsenceTracker] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [showTurmaAnalytics, setShowTurmaAnalytics] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -309,6 +312,7 @@ export default function WillCockpit() {
     showMonthlyReport ||
     showAbsenceTracker ||
     showBroadcast ||
+    showTurmaAnalytics ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -1180,6 +1184,18 @@ export default function WillCockpit() {
           >
             <Megaphone className="h-5 w-5 text-violet-400" />
             Anúncio
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowTurmaAnalytics(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 px-4 py-3 text-sm font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver evolução e analytics da turma"
+          >
+            <TrendingUp className="h-5 w-5 text-indigo-400" />
+            Evolução da Turma
           </button>
           </div>
         </AppSectionCard>
@@ -2686,6 +2702,12 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showBroadcast ? (
           <BroadcastMessagePanel onClose={() => setShowBroadcast(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTurmaAnalytics ? (
+          <TurmaAnalyticsPanel onClose={() => setShowTurmaAnalytics(false)} />
         ) : null}
       </AnimatePresence>
     </div>
