@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BarChart3,
+  Bot,
   CalendarPlus,
   CalendarDays,
   CalendarX,
@@ -155,6 +156,8 @@ export default function WillCockpit() {
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
   const [messageSentId, setMessageSentId] = useState<string | null>(null);
+  const [planGenerating, setPlanGenerating] = useState<string | null>(null);
+  const [planGeneratedId, setPlanGeneratedId] = useState<string | null>(null);
   const [highlightNote, setHighlightNote] = useState("");
   const [highlightSending, setHighlightSending] = useState(false);
   const [highlightSentId, setHighlightSentId] = useState<string | null>(null);
@@ -2201,6 +2204,51 @@ export default function WillCockpit() {
                   <Zap className="h-4 w-4 text-amber-400" />
                   Ver Histórico de Avaliações
                 </motion.button>
+
+                {/* AI Training Plan */}
+                {planGeneratedId === selectedStudent.id ? (
+                  <div className="flex items-center justify-center gap-2 py-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <p className="text-xs font-black text-emerald-300">Plano criado! Veja em Planos de Treino.</p>
+                  </div>
+                ) : (
+                  <motion.button
+                    type="button"
+                    whileTap={PRESS_SCALE}
+                    disabled={planGenerating === selectedStudent.id}
+                    onClick={async () => {
+                      setPlanGenerating(selectedStudent.id);
+                      try {
+                        const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                        const sb = getSupabaseClient();
+                        const { data: { session } } = await sb.auth.getSession();
+                        if (!session?.access_token) throw new Error("Sem sessão");
+                        const res = await fetch("/api/ai/generate-training-plan", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ studentId: selectedStudent.id }),
+                        });
+                        if (!res.ok) throw new Error("Falha na geração");
+                        const data = await res.json();
+                        setPlanGeneratedId(selectedStudent.id);
+                        toast(`🤖 Plano "${data.title}" criado com ${data.exerciseCount} exercícios!`);
+                        setTimeout(() => setPlanGeneratedId(null), 8000);
+                      } catch {
+                        toast("Erro ao gerar plano. Tente novamente.");
+                      } finally {
+                        setPlanGenerating(null);
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 py-3 text-[12px] font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 disabled:opacity-50"
+                  >
+                    {planGenerating === selectedStudent.id ? (
+                      <Circle className="h-4 w-4 text-emerald-400 animate-spin" />
+                    ) : (
+                      <Bot className="h-4 w-4 text-emerald-400" />
+                    )}
+                    {planGenerating === selectedStudent.id ? "Gerando plano…" : "Gerar Plano com IA"}
+                  </motion.button>
+                )}
               </div>
 
               {/* Destaque da Semana */}
