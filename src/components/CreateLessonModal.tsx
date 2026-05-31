@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Search } from "lucide-react";
+import { X, Check, Search, RefreshCw } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -30,6 +30,17 @@ const emptyLessonState = (categoryId: string, maxStudents: number, venueId: stri
   locationUrl: "",
 });
 
+// Helper — add N calendar days to a YYYY-MM-DD string
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function fmtDate(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
+}
+
 export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Props) {
   const { students } = useStudents();
   const { lessons, addLesson } = useLessons();
@@ -39,6 +50,8 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
   const prevIsOpen = useRef(false);
   const [lessonDate, setLessonDate] = useState(() => defaultDate || localDateISO());
   const [studentSearch, setStudentSearch] = useState("");
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [newLesson, setNewLesson] = useState<{
     categoryId: string; title: string; startTime: string; endTime: string;
     maxStudents: number; venueId: string; notes: string; enrolledStudents: string[];
@@ -67,6 +80,8 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
     if (becameOpen) {
       const d = defaultDate || localDateISO();
       setLessonDate(d);
+      setRepeatEnabled(false);
+      setRepeatWeeks(4);
       const cat = categories[0];
       const ven = venues[0];
       setNewLesson(emptyLessonState(cat?.id ?? "", cat?.maxStudents ?? 10, ven?.id ?? ""));
@@ -159,19 +174,29 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
       toast("Conflito de quadra detectado nesse horário/local.", "error");
       return;
     }
-    addLesson({
+    const weeksCount = repeatEnabled ? repeatWeeks : 0;
+    const lessonBase = {
       ...newLesson,
-      date: lessonDate,
       enrolledStudents: newLesson.enrolledStudents,
       presentStudents: [],
       absentStudents: [],
-      status: "scheduled",
+      status: "scheduled" as const,
       isTrial: newLesson.isTrial,
       lessonType: newLesson.lessonType,
       locationUrl: newLesson.locationUrl,
-      waitlist: []
-    });
-    toast("Aula criada com sucesso!");
+      waitlist: [],
+    };
+
+    for (let i = 0; i <= weeksCount; i++) {
+      addLesson({ ...lessonBase, date: addDays(lessonDate, i * 7) });
+    }
+
+    if (weeksCount > 0) {
+      const lastDate = addDays(lessonDate, weeksCount * 7);
+      toast(`✅ ${weeksCount + 1} aulas criadas até ${fmtDate(lastDate)}!`);
+    } else {
+      toast("Aula criada com sucesso!");
+    }
     onClose();
   };
 
@@ -207,6 +232,59 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
                 onChange={(e) => setLessonDate(e.target.value)}
                 className="w-full bg-black border border-zinc-800 rounded-xl py-3 px-4 text-white text-sm outline-none focus:border-[#EAB308]/50"
               />
+            </div>
+
+            {/* Recorrência */}
+            <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-3">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <RefreshCw size={13} className={repeatEnabled ? "text-[#EAB308]" : "text-zinc-500"} />
+                  <span className="text-xs font-bold text-zinc-300">Repetir semanalmente</span>
+                </div>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => setRepeatEnabled((v) => !v)}
+                  className={`relative h-5 w-9 rounded-full transition-colors ${repeatEnabled ? "bg-[#EAB308]" : "bg-zinc-700"}`}
+                >
+                  <motion.div
+                    animate={{ x: repeatEnabled ? 16 : 2 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow"
+                  />
+                </motion.button>
+              </div>
+
+              {repeatEnabled && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <p className="text-[10px] text-zinc-500 mb-2">Criar por quantas semanas?</p>
+                  <div className="flex gap-2">
+                    {[2, 4, 8, 12].map((w) => (
+                      <motion.button
+                        key={w}
+                        type="button"
+                        whileTap={{ scale: 0.93 }}
+                        onClick={() => setRepeatWeeks(w)}
+                        className={`flex-1 rounded-xl border py-2 text-[11px] font-black transition-all ${
+                          repeatWeeks === w
+                            ? "border-[#EAB308]/60 bg-[#EAB308]/15 text-[#EAB308]"
+                            : "border-zinc-800 bg-black/40 text-zinc-500 hover:border-zinc-700"
+                        }`}
+                      >
+                        {w}x
+                      </motion.button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-zinc-600 mt-2">
+                    Cria {repeatWeeks + 1} aulas · até {fmtDate(addDays(lessonDate, repeatWeeks * 7))}
+                  </p>
+                </motion.div>
+              )}
             </div>
 
             {/* Category */}
@@ -404,7 +482,9 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
                 hasInvalidTime || overbooked || conflictingLessons.length > 0 || !newLesson.categoryId || !newLesson.venueId
               }
             >
-              Criar Aula
+              {repeatEnabled
+                ? `🔄 Criar ${repeatWeeks + 1} aulas (${repeatWeeks} semanas)`
+                : "Criar Aula"}
             </motion.button>
           </div>
         </motion.div>
