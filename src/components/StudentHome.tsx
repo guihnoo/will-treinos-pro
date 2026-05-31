@@ -547,7 +547,25 @@ export default function StudentHome() {
       if (prev < threshold && totalXP >= threshold) {
         const meta = TIER_META[tier];
         setJustUnlockedTier(tier);
-        setShareText(`Acabei de desbloquear o Card ${meta.label} ${meta.emoji} no Will Treinos PRO! ${totalXP} XP conquistados na quadra. Quem tá chegando no mesmo nível? 🏐🔥`);
+        const autoShareText = `Acabei de desbloquear o Card ${meta.label} ${meta.emoji} no Will Treinos PRO! ${totalXP} XP conquistados na quadra. Quem tá chegando no mesmo nível? 🏐🔥`;
+        setShareText(autoShareText);
+        // Auto-post silencioso no feed (conquista oficial)
+        try {
+          const currentProfile = students.find(s => s.authUserId === user?.id || s.id === user?.id);
+          addPost({
+            user: { name: user?.name || "Atleta", avatar: currentProfile?.avatar || user?.avatar || "user", isPro: false },
+            time: "agora",
+            content: autoShareText,
+            media: null,
+            likes: 0,
+            comments: [],
+            isLiked: false,
+            isSaved: false,
+            pinned: false,
+            isOfficial: false,
+            targetRole: "all",
+          });
+        } catch { /* silent */ }
         break;
       }
     }
@@ -3241,6 +3259,26 @@ export default function StudentHome() {
                   >
                     Agora não
                   </button>
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.96 }}
+                    onClick={async () => {
+                      const sharePayload = {
+                        title: `Card ${meta.label} ${meta.emoji} desbloqueado!`,
+                        text: shareText,
+                        url: profile?.id ? `${window.location.origin}/atleta/${profile.id}` : window.location.origin,
+                      };
+                      if (navigator.share) {
+                        try { await navigator.share(sharePayload); } catch { /* dismissed */ }
+                      } else {
+                        await navigator.clipboard.writeText(`${shareText}\n${sharePayload.url}`).catch(() => {});
+                        toast("🔗 Link copiado para compartilhar!");
+                      }
+                    }}
+                    className={`flex-1 rounded-xl border border-zinc-700 py-3 text-sm font-black text-zinc-200 hover:bg-zinc-900 transition-colors ${ctaClass}`}
+                  >
+                    Compartilhar
+                  </motion.button>
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.96 }}

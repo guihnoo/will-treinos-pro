@@ -79,6 +79,7 @@ const TurmaAnalyticsPanel    = dynamic(() => import("./TurmaAnalyticsPanel"),   
 const QRCheckInModal         = dynamic(() => import("./QRCheckInModal"),         { ssr: false, loading: () => null });
 const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),      { ssr: false, loading: () => null });
 const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),       { ssr: false, loading: () => null });
+const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),   { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -167,6 +168,7 @@ export default function WillCockpit() {
   const [showTurmaAnalytics, setShowTurmaAnalytics] = useState(false);
   const [showQRCheckin, setShowQRCheckin] = useState(false);
   const [showLessonRecap, setShowLessonRecap] = useState(false);
+  const [showQuickAttendance, setShowQuickAttendance] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -2273,6 +2275,15 @@ export default function WillCockpit() {
                   >
                     <QrCode className="mx-auto h-4 w-4 text-emerald-400" />
                   </motion.button>
+                  <motion.button
+                    whileTap={PRESS_SCALE}
+                    type="button"
+                    onClick={() => setShowQuickAttendance(true)}
+                    className={`min-h-11 min-w-11 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:border-blue-500/50 hover:bg-blue-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
+                    title="Chamada rápida"
+                  >
+                    <Users className="mx-auto h-4 w-4 text-blue-400" />
+                  </motion.button>
                   {selectedLesson?.status === "completed" && (
                     <motion.button
                       whileTap={PRESS_SCALE}
@@ -2757,6 +2768,16 @@ export default function WillCockpit() {
             lesson={selectedLesson}
             students={students}
             onClose={() => setShowLessonRecap(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showQuickAttendance && selectedLesson ? (
+          <QuickAttendancePanel
+            lesson={selectedLesson}
+            students={students}
+            onClose={() => setShowQuickAttendance(false)}
           />
         ) : null}
       </AnimatePresence>
