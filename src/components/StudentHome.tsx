@@ -75,6 +75,7 @@ const StudentPillarPanel      = dynamic(() => import("@/components/student/Stude
 const StudentMessagesPanel    = dynamic(() => import("@/components/student/StudentMessagesPanel"), { ssr: false, loading: () => null });
 const AttendanceCalendarPanel = dynamic(() => import("@/components/student/AttendanceCalendarPanel"), { ssr: false, loading: () => null });
 const AbsenceRequestSheet     = dynamic(() => import("@/components/student/AbsenceRequestSheet"), { ssr: false, loading: () => null });
+const RepositionSheet         = dynamic(() => import("@/components/student/RepositionSheet"), { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
@@ -569,6 +570,7 @@ export default function StudentHome() {
   const [showPillarPanel, setShowPillarPanel] = useState(false);
   const [showMessagesPanel, setShowMessagesPanel] = useState(false);
   const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
+  const [showRepositionSheet, setShowRepositionSheet] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
@@ -594,6 +596,7 @@ export default function StudentHome() {
       showPillarPanel ||
       showMessagesPanel ||
       showAbsenceSheet ||
+      showRepositionSheet ||
       showAttendanceCalendar ||
       showPayments ||
       justUnlockedTier,
@@ -3025,6 +3028,7 @@ export default function StudentHome() {
         onCheckIn={() => toast("💚 Check-in: vá até a quadra e pressione o botão de check-in da turma", "info")}
         onViewLessons={() => setShowAgendaPanel(true)}
         onReportAbsence={() => setShowAbsenceSheet(true)}
+        onRequestReposition={() => setShowRepositionSheet(true)}
       />
 
       <AnimatePresence>
@@ -3047,6 +3051,16 @@ export default function StudentHome() {
             studentId={user.id}
             getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
             onClose={() => setShowAbsenceSheet(false)}
+            onRequestReposition={() => setShowRepositionSheet(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showRepositionSheet && (
+          <RepositionSheet
+            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
+            onClose={() => setShowRepositionSheet(false)}
           />
         )}
       </AnimatePresence>

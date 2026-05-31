@@ -2,19 +2,21 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Zap, CheckSquare, Calendar, AlertCircle, X } from "lucide-react";
+import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, X } from "lucide-react";
 import Link from "next/link";
 
 interface FloatingActionMenuProps {
   onCheckIn?: () => void;
   onViewLessons?: () => void;
   onReportAbsence?: () => void;
+  onRequestReposition?: () => void;
 }
 
 export function FloatingActionMenu({
   onCheckIn,
   onViewLessons,
   onReportAbsence,
+  onRequestReposition,
 }: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -46,6 +48,16 @@ export function FloatingActionMenu({
       color: "from-orange-500 to-red-600",
       action: () => {
         onReportAbsence?.();
+        setIsOpen(false);
+      },
+    },
+    {
+      id: "reposition",
+      label: "Solicitar Reposição",
+      icon: RefreshCw,
+      color: "from-teal-500 to-cyan-600",
+      action: () => {
+        onRequestReposition?.();
         setIsOpen(false);
       },
     },

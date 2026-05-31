@@ -168,6 +168,7 @@ export default function WillCockpit() {
   const [highlightSentId, setHighlightSentId] = useState<string | null>(null);
   const [currentHighlightStudentId, setCurrentHighlightStudentId] = useState<string | null>(null);
   const [absenceRequests, setAbsenceRequests] = useState<Array<{ id: string; studentName: string; lessonTitle: string; lessonDate: string; lessonTime: string | null; reason: string; notes: string | null }>>([]);
+  const [repositionRequests, setRepositionRequests] = useState<Array<{ id: string; studentName: string; targetLessonTitle: string; targetLessonDate: string; targetLessonTime: string | null; createdAt: string }>>([]);
   const [approvalFilter, setApprovalFilter] = useState<"all" | "pending" | "trial">("all");
   const [selectedApprovalIds, setSelectedApprovalIds] = useState<string[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -193,7 +194,7 @@ export default function WillCockpit() {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(localDateISO(new Date()));
   const [calendarWeekStart] = useState<Date>(getMonday(new Date()));
 
-  // Load upcoming absence requests on mount
+  // Load upcoming absence + reposition requests on mount
   useEffect(() => {
     if (!user) return;
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
@@ -216,6 +217,26 @@ export default function WillCockpit() {
               lessonTime: r.lesson_time as string | null,
               reason: r.reason as string,
               notes: r.notes as string | null,
+            }))
+          );
+        });
+
+      sb.from("reposition_requests")
+        .select("id, target_lesson_date, target_lesson_title, target_lesson_time, created_at, students(name)")
+        .eq("status", "pending")
+        .gte("target_lesson_date", today)
+        .order("target_lesson_date", { ascending: true })
+        .limit(20)
+        .then(({ data }) => {
+          if (!data) return;
+          setRepositionRequests(
+            data.map((r: Record<string, unknown>) => ({
+              id: r.id as string,
+              studentName: (Array.isArray(r.students) ? (r.students[0] as { name: string })?.name : (r.students as { name: string } | null)?.name) ?? "Aluno",
+              targetLessonTitle: r.target_lesson_title as string,
+              targetLessonDate: r.target_lesson_date as string,
+              targetLessonTime: r.target_lesson_time as string | null,
+              createdAt: r.created_at as string,
             }))
           );
         });
@@ -844,6 +865,47 @@ export default function WillCockpit() {
                       toast(`✅ Falta de ${req.studentName.split(" ")[0]} confirmada.`);
                     }}
                     className="flex-shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-[10px] font-black text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                  >
+                    Confirmar
+                  </motion.button>
+                </div>
+              );
+            })}
+          </AppSectionCard>
+        </motion.div>
+      )}
+
+      {/* BLOCO 1.6: Reposições Solicitadas */}
+      {activeTab === "hoje" && repositionRequests.length > 0 && (
+        <motion.div variants={itemV}>
+          <AppSectionCard
+            title={`Reposições Solicitadas (${repositionRequests.length})`}
+            subtitle="Alunos inscritos em aula de reposição — aguardando sua confirmação."
+            contentClassName="pt-3 space-y-2"
+          >
+            {repositionRequests.map((req) => {
+              const dateStr = new Date(`${req.targetLessonDate}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+              const timeStr = req.targetLessonTime ? ` · ${req.targetLessonTime}` : "";
+              return (
+                <div key={req.id} className="flex items-start justify-between gap-3 rounded-xl border border-teal-500/20 bg-teal-500/5 px-3 py-2.5">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <span className="text-base mt-0.5">🔄</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{req.studentName}</p>
+                      <p className="text-[10px] text-zinc-500">{req.targetLessonTitle} · {dateStr}{timeStr}</p>
+                      <p className="text-[10px] text-teal-600 mt-0.5">Já inscrito na aula</p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={async () => {
+                      const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                      const sb = getSupabaseClient();
+                      await sb.from("reposition_requests").update({ status: "confirmed", confirmed_at: new Date().toISOString() }).eq("id", req.id);
+                      setRepositionRequests((prev) => prev.filter((r) => r.id !== req.id));
+                      toast(`✅ Reposição de ${req.studentName.split(" ")[0]} confirmada.`);
+                    }}
+                    className="flex-shrink-0 rounded-lg border border-teal-700/50 bg-teal-900/30 px-2.5 py-1.5 text-[10px] font-black text-teal-400 hover:text-white hover:bg-teal-800/40 transition-colors"
                   >
                     Confirmar
                   </motion.button>

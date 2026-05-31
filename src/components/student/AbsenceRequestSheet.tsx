@@ -23,11 +23,12 @@ interface Props {
   studentId: string;
   getCategoryName: (id: string) => string;
   onClose: () => void;
+  onRequestReposition?: () => void;
 }
 
 type Step = "lesson" | "reason" | "done";
 
-export default function AbsenceRequestSheet({ lessons, studentId, getCategoryName, onClose }: Props) {
+export default function AbsenceRequestSheet({ lessons, studentId, getCategoryName, onClose, onRequestReposition }: Props) {
   const [step, setStep] = useState<Step>("lesson");
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedReason, setSelectedReason] = useState<ReasonId | null>(null);
@@ -167,9 +168,17 @@ export default function AbsenceRequestSheet({ lessons, studentId, getCategoryNam
                     </p>
                   </div>
                 )}
+                {onRequestReposition && (
+                  <button
+                    onClick={() => { onClose(); setTimeout(onRequestReposition, 120); }}
+                    className="w-full flex items-center justify-center gap-2 rounded-2xl border border-teal-500/35 bg-teal-500/10 py-3 text-sm font-black text-teal-200 hover:bg-teal-500/20 transition-colors"
+                  >
+                    <span>🔄</span> Solicitar Reposição agora
+                  </button>
+                )}
                 <button
                   onClick={onClose}
-                  className="mt-2 w-full rounded-2xl border border-[#EAB308]/30 bg-[#EAB308]/10 py-3 text-sm font-black text-amber-200 hover:bg-[#EAB308]/20 transition-colors"
+                  className="mt-1 w-full rounded-2xl border border-zinc-800 bg-zinc-900/60 py-3 text-sm font-black text-zinc-400 hover:text-white transition-colors"
                 >
                   Fechar
                 </button>
