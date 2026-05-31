@@ -20,33 +20,62 @@ import { useGamification } from "@/context/GamificationContext";
 import { useFeed } from "@/context/FeedContext";
 import { useApp } from "@/context/AppContext";
 import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award, CreditCard, AlertTriangle as AlertIcon } from "lucide-react";
-import { StudentPaymentSheet } from "@/components/student/StudentPaymentSheet";
+import dynamic from "next/dynamic";
 import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersistence";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
 import WeatherWidget from "@/components/WeatherWidget";
-import { StudentGamificationDashboard } from "@/components/StudentGamificationDashboard";
-import { GamificationPanel } from "@/components/gamification/GamificationPanel";
-import { LeaderboardRankingPanel } from "@/components/leaderboard/LeaderboardRankingPanel";
 import Link from "next/link";
-import LessonRatingSheet from "@/components/LessonRatingSheet";
-import Confetti from "@/components/Confetti";
-import { LeaderboardPanel } from "@/components/LeaderboardPanel";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
-import DailyChallengesPanel from "@/components/gamification/DailyChallengesPanel";
-import StudentTwinCard from "@/components/gamification/StudentTwinCard";
-import AthleteTwinPanel from "@/components/will/AthleteTwinPanel";
-import OnboardingWidget, { markTwinViewed } from "@/components/gamification/OnboardingWidget";
-import TurmaLeaderboardCard from "@/components/leaderboard/TurmaLeaderboardCard";
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
-import StudentPillarPanel from "@/components/student/StudentPillarPanel";
-import StudentMessagesPanel, { useCoachMessagesUnread } from "@/components/student/StudentMessagesPanel";
-import WeeklyHighlightBanner from "@/components/student/WeeklyHighlightBanner";
 import LessonCountdownCard from "@/components/student/LessonCountdownCard";
-import AbsenceRequestSheet from "@/components/student/AbsenceRequestSheet";
-import AttendanceCalendarPanel from "@/components/student/AttendanceCalendarPanel";
-import WeeklySummaryBanner from "@/components/student/WeeklySummaryBanner";
+import { useCoachMessagesUnread } from "@/hooks/useCoachMessagesUnread";
+
+// ─── Lazy-loaded panels (code-split — zero cost at startup) ──────────────────
+const StudentGamificationDashboard = dynamic(
+  () => import("@/components/StudentGamificationDashboard").then((m) => ({ default: m.StudentGamificationDashboard })),
+  { ssr: false, loading: () => null }
+);
+const GamificationPanel = dynamic(
+  () => import("@/components/gamification/GamificationPanel").then((m) => ({ default: m.GamificationPanel })),
+  { ssr: false, loading: () => null }
+);
+const LeaderboardRankingPanel = dynamic(
+  () => import("@/components/leaderboard/LeaderboardRankingPanel").then((m) => ({ default: m.LeaderboardRankingPanel })),
+  { ssr: false, loading: () => null }
+);
+const TurmaLeaderboardCard = dynamic(
+  () => import("@/components/leaderboard/TurmaLeaderboardCard"),
+  { ssr: false, loading: () => null }
+);
+const StudentTwinCard = dynamic(
+  () => import("@/components/gamification/StudentTwinCard"),
+  { ssr: false, loading: () => null }
+);
+const OnboardingWidget = dynamic(
+  () => import("@/components/gamification/OnboardingWidget"),
+  { ssr: false, loading: () => null }
+);
+const WeeklyHighlightBanner = dynamic(
+  () => import("@/components/student/WeeklyHighlightBanner"),
+  { ssr: false, loading: () => null }
+);
+const WeeklySummaryBanner = dynamic(
+  () => import("@/components/student/WeeklySummaryBanner"),
+  { ssr: false, loading: () => null }
+);
+// Modal panels — only loaded when first opened
+const LessonRatingSheet      = dynamic(() => import("@/components/LessonRatingSheet"), { ssr: false, loading: () => null });
+const Confetti                = dynamic(() => import("@/components/Confetti"), { ssr: false, loading: () => null });
+const LeaderboardPanel        = dynamic(() => import("@/components/LeaderboardPanel").then((m) => ({ default: m.LeaderboardPanel })), { ssr: false, loading: () => null });
+const DailyChallengesPanel    = dynamic(() => import("@/components/gamification/DailyChallengesPanel"), { ssr: false, loading: () => null });
+const AthleteTwinPanel        = dynamic(() => import("@/components/will/AthleteTwinPanel"), { ssr: false, loading: () => null });
+const StudentPillarPanel      = dynamic(() => import("@/components/student/StudentPillarPanel"), { ssr: false, loading: () => null });
+const StudentMessagesPanel    = dynamic(() => import("@/components/student/StudentMessagesPanel"), { ssr: false, loading: () => null });
+const AttendanceCalendarPanel = dynamic(() => import("@/components/student/AttendanceCalendarPanel"), { ssr: false, loading: () => null });
+const AbsenceRequestSheet     = dynamic(() => import("@/components/student/AbsenceRequestSheet"), { ssr: false, loading: () => null });
+const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -54,6 +83,11 @@ import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { FloatingActionMenu } from "@/components/FloatingActionMenu";
 import { YourDayCard } from "@/components/YourDayCard";
+
+// Inlined from OnboardingWidget to avoid static import
+function markTwinViewed(studentId: string) {
+  try { localStorage.setItem(`wt_twin_viewed_${studentId}`, "1"); } catch { /* ignore */ }
+}
 
 const SPORTS_QUOTES = [
   { text: "Eu posso aceitar o fracasso — todos falham em alguma coisa. Mas não consigo aceitar não tentar.", author: "Michael Jordan", role: "Basketball" },
@@ -962,9 +996,9 @@ export default function StudentHome() {
       headerAura: "from-[#101830]/40 via-[#0b0e19]/20 to-transparent",
     };
   })();
-  const haptic = (pattern: number | number[]) => {
+  const haptic = React.useCallback((pattern: number | number[]) => {
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(pattern);
-  };
+  }, []);
   const checkInGate = (lesson: Lesson) => {
     if (!localNow) {
       return { locked: true, reason: "Sincronizando horário local...", unlockLabel: "" };

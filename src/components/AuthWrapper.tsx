@@ -72,36 +72,76 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
 
   if (!authResolved || (usingSupabaseSession && criticalDataLoading)) {
     return (
-      <div className="flex min-h-[100dvh] flex-1 flex-col items-center justify-center bg-black px-4 py-10">
-        <div className="w-full max-w-md space-y-4">
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="h-10 w-10 flex-shrink-0 rounded-full border-2 border-zinc-800 border-t-[#EAB308] animate-spin"
-              aria-hidden
-            />
-            <p className="text-center text-xs font-medium text-zinc-500">
-              {!authResolved ? "Validando sessão segura..." : "Sincronizando dados ao vivo…"}
-            </p>
-            {showSlowSyncHint && (
-              <div className="mt-3 w-full space-y-2 rounded-xl border border-zinc-800 bg-zinc-950/80 p-3">
-                <p className="text-center text-[11px] text-zinc-500">
-                  A conexão está lenta ou instável. Você pode tentar sincronizar de novo sem sair da página.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void retryCriticalDataSync()}
-                  disabled={criticalDataLoading}
-                  className="w-full rounded-lg border border-[#EAB308]/40 bg-[#EAB308]/10 py-2 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/20 disabled:opacity-50"
-                >
-                  Tentar sincronizar de novo
-                </button>
+      <div className="flex min-h-[100dvh] flex-1 flex-col bg-black px-4 pt-4 pb-8 overflow-hidden">
+        {/* Brand header skeleton */}
+        <div className="flex items-center justify-between mb-5 h-12">
+          <div className="h-8 w-36 rounded-xl bg-zinc-900 animate-pulse" />
+          <div className="h-8 w-8 rounded-full bg-zinc-900 animate-pulse" />
+        </div>
+
+        {/* Hero card skeleton */}
+        <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/60 p-5 mb-4 animate-pulse">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-12 w-12 rounded-2xl bg-zinc-800" />
+            <div className="space-y-2 flex-1">
+              <div className="h-4 w-40 rounded-lg bg-zinc-800" />
+              <div className="h-3 w-24 rounded-lg bg-zinc-800" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[1,2,3].map((i) => (
+              <div key={i} className="h-14 rounded-2xl bg-zinc-800/70" />
+            ))}
+          </div>
+        </div>
+
+        {/* Lesson card skeleton */}
+        <div className="rounded-3xl border border-zinc-800/60 bg-zinc-900/40 p-4 mb-4 animate-pulse">
+          <div className="h-3 w-20 rounded bg-zinc-800 mb-3" />
+          <div className="space-y-2.5">
+            {[1,2].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl bg-zinc-800/50 px-3 py-2.5">
+                <div className="h-2 w-2 rounded-full bg-zinc-700 flex-shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 w-32 rounded bg-zinc-700" />
+                  <div className="h-2.5 w-20 rounded bg-zinc-800" />
+                </div>
+                <div className="h-5 w-12 rounded-lg bg-zinc-700" />
               </div>
-            )}
+            ))}
           </div>
-          <div className="min-h-[120px] space-y-3">
-            <SkeletonLoader lines={2} className="min-h-[52px] border-zinc-800/80" />
-            <SkeletonLoader lines={3} className="min-h-[72px] border-zinc-800/80" />
+        </div>
+
+        {/* KPI strip skeleton */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {[1,2,3,4].map((i) => (
+            <div key={i} className="h-16 rounded-2xl border border-zinc-800/50 bg-zinc-900/50 animate-pulse" />
+          ))}
+        </div>
+
+        {/* Status + retry */}
+        <div className="flex flex-col items-center gap-2 mt-auto pt-4">
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full border border-zinc-800 border-t-[#EAB308] animate-spin flex-shrink-0" />
+            <p className="text-[11px] text-zinc-600">
+              {!authResolved ? "Verificando sessão…" : "Carregando dados…"}
+            </p>
           </div>
+          {showSlowSyncHint && (
+            <div className="w-full max-w-xs space-y-2 rounded-xl border border-zinc-800 bg-zinc-950 p-3 mt-2">
+              <p className="text-center text-[11px] text-zinc-500">
+                Conexão lenta. Tente novamente.
+              </p>
+              <button
+                type="button"
+                onClick={() => void retryCriticalDataSync()}
+                disabled={criticalDataLoading}
+                className="w-full rounded-lg border border-[#EAB308]/40 bg-[#EAB308]/10 py-2 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/20 disabled:opacity-50"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

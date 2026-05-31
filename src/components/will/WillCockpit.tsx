@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
@@ -53,21 +54,23 @@ import AppSectionCard from "@/components/ui/AppSectionCard";
 import KpiActionCard from "@/components/ui/KpiActionCard";
 import CockpitHero from "./CockpitHero";
 import OracleInsights from "./OracleInsights";
-import CreateLessonModal from "@/components/CreateLessonModal";
-import LessonRatingsSheet from "./LessonRatingsSheet";
-import LiveLessonCoachPanel from "./LiveLessonCoachPanel";
-import TrainingPlansPanel from "./TrainingPlansPanel";
-import XPModerationPanel from "./XPModerationPanel";
-import { XPAnalyticsPanel } from "@/components/will/XPAnalyticsPanel";
-import CoachCopilotPanel from "./CoachCopilotPanel";
-import AthleteTwinPanel from "./AthleteTwinPanel";
-import FinancialForecastPanel from "./FinancialForecastPanel";
-import EvaluationHistoryPanel from "./EvaluationHistoryPanel";
-import MonthlyReportPanel from "./MonthlyReportPanel";
-import CourtWeatherPanel from "./CourtWeatherPanel";
-import AbsenceTrackerPanel from "./AbsenceTrackerPanel";
-import BroadcastMessagePanel from "./BroadcastMessagePanel";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
+import CourtWeatherPanel from "./CourtWeatherPanel";  // inline card — keep static
+
+// ─── Lazy-loaded panels (modal/drawer — zero cost at startup) ─────────────────
+const CreateLessonModal    = dynamic(() => import("@/components/CreateLessonModal"), { ssr: false, loading: () => null });
+const LessonRatingsSheet   = dynamic(() => import("./LessonRatingsSheet"), { ssr: false, loading: () => null });
+const LiveLessonCoachPanel = dynamic(() => import("./LiveLessonCoachPanel"), { ssr: false, loading: () => null });
+const TrainingPlansPanel   = dynamic(() => import("./TrainingPlansPanel"), { ssr: false, loading: () => null });
+const XPModerationPanel    = dynamic(() => import("./XPModerationPanel"), { ssr: false, loading: () => null });
+const XPAnalyticsPanel     = dynamic(() => import("@/components/will/XPAnalyticsPanel").then((m) => ({ default: m.XPAnalyticsPanel })), { ssr: false, loading: () => null });
+const CoachCopilotPanel    = dynamic(() => import("./CoachCopilotPanel"), { ssr: false, loading: () => null });
+const AthleteTwinPanel     = dynamic(() => import("./AthleteTwinPanel"), { ssr: false, loading: () => null });
+const FinancialForecastPanel = dynamic(() => import("./FinancialForecastPanel"), { ssr: false, loading: () => null });
+const EvaluationHistoryPanel = dynamic(() => import("./EvaluationHistoryPanel"), { ssr: false, loading: () => null });
+const MonthlyReportPanel   = dynamic(() => import("./MonthlyReportPanel"), { ssr: false, loading: () => null });
+const AbsenceTrackerPanel  = dynamic(() => import("./AbsenceTrackerPanel"), { ssr: false, loading: () => null });
+const BroadcastMessagePanel = dynamic(() => import("./BroadcastMessagePanel"), { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";

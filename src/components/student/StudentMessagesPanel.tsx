@@ -177,19 +177,5 @@ function MessageCard({ msg }: { msg: CoachMessage }) {
   );
 }
 
-// Hook for unread count — used in StudentHome for the badge
-export function useCoachMessagesUnread(studentCrmId: string | null) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!studentCrmId) return;
-    const sb = getSupabaseClient();
-    sb.from("coach_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("to_student_id", studentCrmId)
-      .is("read_at", null)
-      .then(({ count: c }) => setCount(c ?? 0));
-  }, [studentCrmId]);
-
-  return { count, setCount };
-}
+// Re-export hook from its own file so lazy consumers don't need to import this module
+export { useCoachMessagesUnread } from "@/hooks/useCoachMessagesUnread";
