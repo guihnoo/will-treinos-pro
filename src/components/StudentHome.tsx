@@ -1962,6 +1962,17 @@ export default function StudentHome() {
                 >
                   Progresso 🎯
                 </button>
+                {profile?.id && (
+                  <a
+                    href={`/atleta/${profile.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+                    onClick={() => haptic(8)}
+                  >
+                    🔗 Perfil
+                  </a>
+                )}
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-zinc-500">Meta competitiva</p>
