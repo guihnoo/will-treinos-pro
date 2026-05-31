@@ -14,6 +14,7 @@ import {
   CalendarPlus,
   CalendarDays,
   CalendarX,
+  LayoutDashboard,
   Megaphone,
   CheckCircle2,
   Clock3,
@@ -156,6 +157,7 @@ export default function WillCockpit() {
   const [showMonthlyReport, setShowMonthlyReport] = useState(false);
   const [showAbsenceTracker, setShowAbsenceTracker] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
   const [messageSentId, setMessageSentId] = useState<string | null>(null);
@@ -606,15 +608,48 @@ export default function WillCockpit() {
         onResolver={handleCockpitResolver}
       />
 
+      {/* ── Tab bar ── */}
+      <motion.div variants={itemV}>
+        <div className="relative flex rounded-2xl border border-zinc-800/60 bg-zinc-950/70 p-1 gap-1">
+          {([
+            { id: "hoje",    label: "Hoje",    icon: LayoutDashboard },
+            { id: "turma",   label: "Turma",   icon: Users },
+            { id: "arsenal", label: "Arsenal", icon: Zap },
+          ] as const).map(({ id, label, icon: Icon }) => (
+            <motion.button
+              key={id}
+              type="button"
+              onClick={() => setActiveTab(id)}
+              whileTap={{ scale: 0.96 }}
+              className={`relative flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-black transition-colors ${
+                activeTab === id
+                  ? "text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              {activeTab === id && (
+                <motion.div
+                  layoutId="cockpit-tab-pill"
+                  className="absolute inset-0 rounded-xl bg-[#EAB308]/12 border border-[#EAB308]/25"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <Icon size={14} className={`relative z-10 ${activeTab === id ? "text-[#EAB308]" : ""}`} />
+              <span className="relative z-10">{label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+
       {/* BLOCO 0: Clima da Quadra — alerta inteligente */}
-      {appConfig.courtLocation && (
+      {activeTab === "hoje" && appConfig.courtLocation && (
         <motion.div variants={itemV}>
           <CourtWeatherPanel />
         </motion.div>
       )}
 
       {/* BLOCO 1: Aulas de Hoje — hero de operação */}
-      <motion.div variants={itemV}>
+      {activeTab === "hoje" && <motion.div variants={itemV}> {/* opened by tab "hoje" */}
         <AppSectionCard
           title="Aulas de Hoje"
           subtitle={
@@ -718,10 +753,10 @@ export default function WillCockpit() {
             </div>
           )}
         </AppSectionCard>
-      </motion.div>
+      </motion.div>}  {/* closed "hoje" BLOCO 1 */}
 
       {/* BLOCO 1.5: Reposições Pendentes */}
-      {pendingRepositions.length > 0 && (
+      {activeTab === "hoje" && pendingRepositions.length > 0 && (
         <motion.div variants={itemV}>
           <AppSectionCard
             title={`Reposições Pendentes (${pendingRepositions.length})`}
@@ -778,7 +813,7 @@ export default function WillCockpit() {
       )}
 
       {/* BLOCO 1.5: Faltas Comunicadas */}
-      {absenceRequests.length > 0 && (
+      {activeTab === "hoje" && absenceRequests.length > 0 && (
         <motion.div variants={itemV}>
           <AppSectionCard
             title={`Faltas Comunicadas (${absenceRequests.length})`}
@@ -820,7 +855,7 @@ export default function WillCockpit() {
       )}
 
       {/* BLOCO 2: Financeiro + Aprovações — gestão crítica */}
-      <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">
+      {activeTab === "turma" && <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">
         <KpiActionCard
           accent="emerald"
           title="Saúde Financeira - Mês Atual"
@@ -887,10 +922,10 @@ export default function WillCockpit() {
           </div>
           <KpiSparkline points={activeStudentsSparkPoints} accent="gold" label="atletas ativos 6 semanas" animated />
         </KpiActionCard>
-      </motion.div>
+      </motion.div>}  {/* closed "turma" BLOCO 2 */}
 
       {/* BLOCO 3: Ações rápidas */}
-      <motion.div variants={itemV}>
+      {activeTab === "arsenal" && <motion.div variants={itemV}>
         <AppSectionCard
           title="Ações rápidas"
           subtitle="Atalhos operacionais para acelerar o dia."
@@ -1034,10 +1069,10 @@ export default function WillCockpit() {
           </button>
           </div>
         </AppSectionCard>
-      </motion.div>
+      </motion.div>}  {/* closed "arsenal" BLOCO 3 */}
 
       {/* BLOCO 4: Grade semanal */}
-      <motion.div variants={itemV}>
+      {activeTab === "hoje" && <motion.div variants={itemV}>
         <AppSectionCard
           title="Grade semanal"
           subtitle="Navegue semana a semana e veja todas as aulas agendadas."
@@ -1104,9 +1139,10 @@ export default function WillCockpit() {
           </button>
           </div>
         </AppSectionCard>
-      </motion.div>
+      </motion.div>}  {/* closed "hoje" BLOCO 4 */}
 
       {/* BLOCO 5: Oráculo + A Rede + Cadastro — contexto e gestão */}
+      {activeTab === "turma" && <>
       <motion.div variants={itemV}>
         <div className="rounded-2xl border border-white/[0.06] bg-[#050505]/70 px-4 py-4 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <OracleInsights ctx={oracleCtx} />
@@ -1224,6 +1260,7 @@ export default function WillCockpit() {
           </div>
         </AppSectionCard>
       </motion.div>
+      </>}  {/* closed Fragment "turma" BLOCO 5 */}
       </motion.div>
 
       <AnimatePresence>
