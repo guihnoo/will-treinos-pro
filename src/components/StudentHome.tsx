@@ -87,6 +87,9 @@ const FrequencyAlertBanner      = dynamic(() => import("@/components/student/Fre
 const MilestoneTracker          = dynamic(() => import("@/components/student/MilestoneTracker"),          { ssr: false, loading: () => null });
 const FreeTrainingSheet         = dynamic(() => import("@/components/student/FreeTrainingSheet"),         { ssr: false, loading: () => null });
 const PushSettingsPanel         = dynamic(() => import("@/components/PushSettingsPanel"),                 { ssr: false, loading: () => null });
+const AchievementFeedPanel      = dynamic(() => import("@/components/student/AchievementFeedPanel"),      { ssr: false, loading: () => null });
+const StudentTrainingPlanPanel  = dynamic(() => import("@/components/student/StudentTrainingPlanPanel"),  { ssr: false, loading: () => null });
+const QRScannerSheet            = dynamic(() => import("@/components/student/QRScannerSheet"),            { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 const LessonHistoryPanel      = dynamic(() => import("@/components/student/LessonHistoryPanel"),       { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
@@ -613,6 +616,9 @@ export default function StudentHome() {
   const [showPushSettings, setShowPushSettings] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [showFreeTraining, setShowFreeTraining] = useState(false);
+  const [showAchievementFeed, setShowAchievementFeed] = useState(false);
+  const [showTrainingPlan, setShowTrainingPlan] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [showLessonHistory, setShowLessonHistory] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
@@ -644,6 +650,9 @@ export default function StudentHome() {
       showNotificationCenter ||
       showPushSettings ||
       showFreeTraining ||
+      showAchievementFeed ||
+      showTrainingPlan ||
+      showQRScanner ||
       showAttendanceCalendar ||
       showLessonHistory ||
       showPayments ||
@@ -2124,6 +2133,20 @@ export default function StudentHome() {
                 >
                   📲 Push
                 </button>
+                <button
+                  onClick={() => { haptic([16, 12, 24]); setShowAchievementFeed(true); }}
+                  data-testid="btn-achievement-feed"
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-amber-500/35 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors ${ctaClass}`}
+                >
+                  🏆 Turma
+                </button>
+                <button
+                  onClick={() => { haptic([16, 12, 24]); setShowTrainingPlan(true); }}
+                  data-testid="btn-training-plan"
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-500/35 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors ${ctaClass}`}
+                >
+                  💪 Meu Plano
+                </button>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-zinc-500">Meta competitiva</p>
@@ -3234,6 +3257,7 @@ export default function StudentHome() {
         onRequestReposition={() => setShowRepositionSheet(true)}
         onViewPayments={() => setShowPayments(true)}
         onFreeTraining={() => setShowFreeTraining(true)}
+        onQRScan={() => setShowQRScanner(true)}
       />
 
       <AnimatePresence>
@@ -3313,6 +3337,32 @@ export default function StudentHome() {
           <FreeTrainingSheet
             studentCrmId={profile.id}
             onClose={() => setShowFreeTraining(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAchievementFeed && user?.id && (
+          <AchievementFeedPanel
+            studentId={user.id}
+            onClose={() => setShowAchievementFeed(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTrainingPlan && user?.id && (
+          <StudentTrainingPlanPanel
+            studentId={user.id}
+            onClose={() => setShowTrainingPlan(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showQRScanner && (
+          <QRScannerSheet
+            onClose={() => setShowQRScanner(false)}
           />
         )}
       </AnimatePresence>

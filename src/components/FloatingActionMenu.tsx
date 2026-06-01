@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, CreditCard, Dumbbell, X } from "lucide-react";
+import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, CreditCard, Dumbbell, X, ScanLine } from "lucide-react";
 import Link from "next/link";
 
 interface FloatingActionMenuProps {
@@ -12,6 +12,7 @@ interface FloatingActionMenuProps {
   onRequestReposition?: () => void;
   onViewPayments?: () => void;
   onFreeTraining?: () => void;
+  onQRScan?: () => void;
 }
 
 export function FloatingActionMenu({
@@ -21,6 +22,7 @@ export function FloatingActionMenu({
   onRequestReposition,
   onViewPayments,
   onFreeTraining,
+  onQRScan,
 }: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -82,6 +84,16 @@ export function FloatingActionMenu({
       color: "from-violet-500 to-purple-600",
       action: () => {
         onFreeTraining?.();
+        setIsOpen(false);
+      },
+    },
+    {
+      id: "qr-scan",
+      label: "Check-in QR",
+      icon: ScanLine,
+      color: "from-amber-500 to-yellow-600",
+      action: () => {
+        onQRScan?.();
         setIsOpen(false);
       },
     },
