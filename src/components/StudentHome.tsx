@@ -65,6 +65,10 @@ const WeeklySummaryBanner = dynamic(
   () => import("@/components/student/WeeklySummaryBanner"),
   { ssr: false, loading: () => null }
 );
+const WeeklyChallengeCard = dynamic(
+  () => import("@/components/student/WeeklyChallengeCard"),
+  { ssr: false, loading: () => null }
+);
 // Modal panels — only loaded when first opened
 const LessonRatingSheet      = dynamic(() => import("@/components/LessonRatingSheet"), { ssr: false, loading: () => null });
 const Confetti                = dynamic(() => import("@/components/Confetti"), { ssr: false, loading: () => null });
@@ -2016,6 +2020,16 @@ export default function StudentHome() {
                 totalXP={totalXP}
                 streak={streak}
                 getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
+              />
+            )}
+            {/* Priority 2b: Desafio Semanal da Turma */}
+            {profile?.id && user?.id && (
+              <WeeklyChallengeCard
+                lessons={lessons}
+                studentId={profile.id}
+                authUserId={user.id}
+                totalXP={totalXP}
+                onConfetti={() => setConfettiActive(true)}
               />
             )}
             {/* Priority 3: Onboarding (só novos atletas, não-Sex/Sáb para evitar stack) */}

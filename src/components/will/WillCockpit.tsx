@@ -16,6 +16,7 @@ import {
   CalendarDays,
   CalendarX,
   LayoutDashboard,
+  LayoutGrid,
   Megaphone,
   CheckCircle2,
   Clock3,
@@ -34,6 +35,8 @@ import {
   UserPlus,
   UserCheck,
   ShieldAlert,
+  Target,
+  HeartHandshake,
   Search,
   Newspaper,
   Users,
@@ -84,6 +87,9 @@ const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),  
 const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),    { ssr: false, loading: () => null });
 const AttentionPanel         = dynamic(() => import("./AttentionPanel"),         { ssr: false, loading: () => null });
 const CoachOnboarding        = dynamic(() => import("./CoachOnboarding"),        { ssr: false, loading: () => null });
+const AttendanceHeatmapPanel = dynamic(() => import("./AttendanceHeatmapPanel"), { ssr: false, loading: () => null });
+const WeeklyChallengeEditor  = dynamic(() => import("./WeeklyChallengeEditor"),  { ssr: false, loading: () => null });
+const ChurnPreventionPanel   = dynamic(() => import("./ChurnPreventionPanel"),   { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -176,6 +182,9 @@ export default function WillCockpit() {
   const [showBulkEval, setShowBulkEval] = useState(false);
   const [showAttention, setShowAttention] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showWeeklyChallenge, setShowWeeklyChallenge] = useState(false);
+  const [showChurnPrevention, setShowChurnPrevention] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -339,6 +348,9 @@ export default function WillCockpit() {
     showBroadcast ||
     showTurmaAnalytics ||
     showAttention ||
+    showHeatmap ||
+    showWeeklyChallenge ||
+    showChurnPrevention ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -1262,6 +1274,45 @@ export default function WillCockpit() {
           >
             <ArrowUpRight className="h-5 w-5 text-zinc-400" />
             Exportar Pagamentos
+          </button>
+          <button
+            type="button"
+            data-testid="btn-heatmap"
+            onClick={() => {
+              haptic(20);
+              setShowHeatmap(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver mapa de calor de presença"
+          >
+            <LayoutGrid className="h-5 w-5 text-amber-400" />
+            Mapa de Calor
+          </button>
+          <button
+            type="button"
+            data-testid="btn-weekly-challenge"
+            onClick={() => {
+              haptic(20);
+              setShowWeeklyChallenge(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Gerenciar desafio semanal da turma"
+          >
+            <Target className="h-5 w-5 text-violet-400" />
+            Desafio da Semana
+          </button>
+          <button
+            type="button"
+            data-testid="btn-churn-prevention"
+            onClick={() => {
+              haptic(20);
+              setShowChurnPrevention(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 text-sm font-black text-rose-200 transition-all hover:border-rose-400/60 hover:bg-rose-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver alunos em risco de churn e acionar retenção"
+          >
+            <HeartHandshake className="h-5 w-5 text-rose-400" />
+            Retenção
           </button>
           </div>
         </AppSectionCard>
@@ -2957,6 +3008,24 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showOnboarding ? (
           <CoachOnboarding onClose={() => setShowOnboarding(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showHeatmap ? (
+          <AttendanceHeatmapPanel onClose={() => setShowHeatmap(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showWeeklyChallenge ? (
+          <WeeklyChallengeEditor onClose={() => setShowWeeklyChallenge(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showChurnPrevention ? (
+          <ChurnPreventionPanel onClose={() => setShowChurnPrevention(false)} />
         ) : null}
       </AnimatePresence>
 
