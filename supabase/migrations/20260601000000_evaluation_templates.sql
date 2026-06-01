@@ -11,8 +11,10 @@ CREATE TABLE IF NOT EXISTS public.evaluation_templates (
 
 ALTER TABLE public.evaluation_templates ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "staff_all_templates" ON public.evaluation_templates;
 CREATE POLICY "staff_all_templates" ON public.evaluation_templates
   FOR ALL TO authenticated USING (public.wt_is_staff()) WITH CHECK (public.wt_is_staff());
 
+DROP POLICY IF EXISTS "student_read_templates" ON public.evaluation_templates;
 CREATE POLICY "student_read_templates" ON public.evaluation_templates
   FOR SELECT TO authenticated USING (true);

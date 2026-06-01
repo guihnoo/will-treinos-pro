@@ -14,8 +14,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS weekly_challenges_week_start_idx ON public.wee
 
 ALTER TABLE public.weekly_challenges ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "staff_all_challenges" ON public.weekly_challenges;
 CREATE POLICY "staff_all_challenges" ON public.weekly_challenges
   FOR ALL TO authenticated USING (public.wt_is_staff()) WITH CHECK (public.wt_is_staff());
 
+DROP POLICY IF EXISTS "student_read_challenges" ON public.weekly_challenges;
 CREATE POLICY "student_read_challenges" ON public.weekly_challenges
   FOR SELECT TO authenticated USING (true);
