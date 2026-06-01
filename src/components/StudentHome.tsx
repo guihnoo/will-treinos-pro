@@ -94,6 +94,7 @@ const QRScannerSheet            = dynamic(() => import("@/components/student/QRS
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 const LessonHistoryPanel      = dynamic(() => import("@/components/student/LessonHistoryPanel"),       { ssr: false, loading: () => null });
 const StudentSchedulePanel    = dynamic(() => import("@/components/student/StudentSchedulePanel"),     { ssr: false, loading: () => null });
+const ShareProgressCard       = dynamic(() => import("@/components/student/ShareProgressCard"),        { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import OfflineBanner from "@/components/student/OfflineBanner";
 import { offlineCache } from "@/lib/offlineCache";
@@ -626,6 +627,7 @@ export default function StudentHome() {
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [showLessonHistory, setShowLessonHistory] = useState(false);
   const [showStudentSchedule, setShowStudentSchedule] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -662,6 +664,7 @@ export default function StudentHome() {
       showLessonHistory ||
       showPayments ||
       showStudentSchedule ||
+      showShareCard ||
       justUnlockedTier,
   );
   useBodyScrollLock(hasOverlayOpen);
@@ -958,6 +961,24 @@ export default function StudentHome() {
       return { id: fund.id, label: fund.label, points, score: Math.round(last), trend };
     });
   }, [myFeedbacks]);
+  // XP by fundamental derived from trend scores (0-100 range — used in share card radar)
+  const xpByFundamental = useMemo<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    const FUNDAMENTAL_KEY_MAP: Record<string, string> = {
+      serve: "saque",
+      receive: "recepcao",
+      set: "levantamento",
+      attack: "ataque",
+      block: "bloqueio",
+      defense: "defesa",
+    };
+    for (const f of fundamentalsTrend) {
+      const key = FUNDAMENTAL_KEY_MAP[f.id] ?? f.id;
+      map[key] = f.score;
+    }
+    return map;
+  }, [fundamentalsTrend]);
+
   const getLessonExecutionStage = (lesson: Lesson) => {
     const userId = user?.id || "";
     const myCheckIn = lesson.checkInRequests?.find((r) => r.studentId === userId);
@@ -1263,6 +1284,19 @@ export default function StudentHome() {
             </div>
           </motion.div>
         </Link>
+      </motion.div>
+
+      {/* Share progress button */}
+      <motion.div variants={homeItem} className="px-1">
+        <button
+          type="button"
+          data-testid="btn-share-progress-card"
+          onClick={(e) => { e.preventDefault(); setShowShareCard(true); }}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl border border-[#EAB308]/20 bg-[#EAB308]/5 py-2.5 text-[11px] font-bold text-amber-400/80 hover:bg-[#EAB308]/10 hover:border-[#EAB308]/35 transition-all"
+        >
+          <span>📸</span>
+          Compartilhar progresso no Stories
+        </button>
       </motion.div>
 
       {/* 3. Próximas Aulas — Bloco "Hoje" — 3 upcoming with quick actions */}
@@ -3550,6 +3584,24 @@ export default function StudentHome() {
             </motion.div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* Sprint 81 — Share Progress Card */}
+      <AnimatePresence>
+        {showShareCard && user && (
+          <ShareProgressCard
+            student={{
+              id: profile?.id ?? user.id,
+              name: profile?.name ?? user.name ?? "Atleta",
+              totalXP,
+              tier: equippedTier.label,
+              tierColor: equippedTier.color,
+              streak,
+              xpByFundamental,
+            }}
+            onClose={() => setShowShareCard(false)}
+          />
+        )}
       </AnimatePresence>
     </motion.div>
     </>

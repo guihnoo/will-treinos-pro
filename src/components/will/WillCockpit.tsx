@@ -99,6 +99,8 @@ const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet")
 const ScoutModePanel             = dynamic(() => import("./ScoutModePanel"),             { ssr: false, loading: () => null });
 const EvaluationTemplateManager  = dynamic(() => import("./EvaluationTemplateManager"), { ssr: false, loading: () => null });
 const AppHealthPanel              = dynamic(() => import("./AppHealthPanel"),              { ssr: false, loading: () => null });
+const StudentReportSheet          = dynamic(() => import("./StudentReportSheet"),          { ssr: false, loading: () => null });
+const AdminSettingsPanel          = dynamic(() => import("./AdminSettingsPanel"),          { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -200,6 +202,9 @@ export default function WillCockpit() {
   const [showScoutMode, setShowScoutMode] = useState(false);
   const [showEvalTemplates, setShowEvalTemplates] = useState(false);
   const [showAppHealth, setShowAppHealth] = useState(false);
+  const [showStudentReport, setShowStudentReport] = useState(false);
+  const [reportStudentId, setReportStudentId] = useState<string | null>(null);
+  const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
@@ -370,6 +375,8 @@ export default function WillCockpit() {
     showStudentFinance ||
     showScoutMode ||
     showEvalTemplates ||
+    showStudentReport ||
+    showAdminSettings ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -499,6 +506,7 @@ export default function WillCockpit() {
   const twinStudent = useMemo(() => students.find((s) => s.id === twinStudentId) ?? null, [twinStudentId, students]);
   const evalHistoryStudent = useMemo(() => students.find((s) => s.id === evalHistoryStudentId) ?? null, [evalHistoryStudentId, students]);
   const financeStudent = useMemo(() => students.find((s) => s.id === financeStudentId) ?? null, [financeStudentId, students]);
+  const reportStudent = useMemo(() => students.find((s) => s.id === reportStudentId) ?? null, [reportStudentId, students]);
   const birthdayStudents = useMemo(() => {
     const today = new Date();
     const todayM = today.getMonth() + 1;
@@ -1445,6 +1453,19 @@ export default function WillCockpit() {
           >
             <Activity className="h-5 w-5 text-teal-400" />
             Saúde do App
+          </button>
+          <button
+            type="button"
+            data-testid="btn-admin-settings"
+            onClick={() => {
+              haptic(14);
+              setShowAdminSettings(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-600/40 bg-zinc-800/40 px-4 py-3 text-sm font-black text-zinc-300 transition-all hover:border-zinc-400/50 hover:bg-zinc-700/40 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir configurações do admin"
+          >
+            <LayoutList className="h-5 w-5 text-zinc-400" />
+            Configurações do Admin
           </button>
           </div>
         </AppSectionCard>
@@ -2857,6 +2878,20 @@ export default function WillCockpit() {
                   <Zap className="h-4 w-4 text-amber-400" />
                   Ver Histórico de Avaliações
                 </motion.button>
+                <motion.button
+                  type="button"
+                  whileTap={PRESS_SCALE}
+                  data-testid="btn-student-report"
+                  onClick={() => {
+                    setReportStudentId(selectedStudent.id);
+                    setShowStudentModal(false);
+                    setShowStudentReport(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 py-3 text-[12px] font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15"
+                >
+                  <ClipboardList className="h-4 w-4 text-teal-400" />
+                  Relatório WhatsApp
+                </motion.button>
 
                 {/* AI Training Plan */}
                 {planGeneratedId === selectedStudent.id ? (
@@ -3297,6 +3332,24 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showAppHealth ? (
           <AppHealthPanel onClose={() => setShowAppHealth(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showStudentReport && reportStudent ? (
+          <StudentReportSheet
+            student={reportStudent}
+            onClose={() => {
+              setShowStudentReport(false);
+              setReportStudentId(null);
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAdminSettings ? (
+          <AdminSettingsPanel onClose={() => setShowAdminSettings(false)} />
         ) : null}
       </AnimatePresence>
     </div>

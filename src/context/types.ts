@@ -215,6 +215,12 @@ export type CourtLocation = {
   label: string;
 };
 
+export interface WorkingHoursDay {
+  open: string;   // "HH:MM"
+  close: string;  // "HH:MM"
+  closed: boolean;
+}
+
 export interface AppConfig {
   pixKey: string;           // admin PIX key (email, CPF, phone, random)
   pixKeyType: "email" | "cpf" | "telefone" | "aleatoria";
@@ -224,6 +230,15 @@ export interface AppConfig {
   enrollmentInviteCode?: string;
   studentProfilePolicy?: Partial<StudentProfileEditPolicy>;
   courtLocation?: CourtLocation | null;
+  // ─── Admin Settings (Sprint 83) ─────────────────────────────────────────
+  academyName?: string;
+  welcomeMessage?: string;
+  workingHours?: Record<string, WorkingHoursDay>;  // key = "0".."6" (Sun..Sat)
+  defaultMonthlyValue?: number;
+  defaultPaymentDay?: number;
+  dailyReminderEnabled?: boolean;
+  paymentReminderEnabled?: boolean;
+  welcomePushMessage?: string;
 }
 
 // ─── Phase 8: Gamification XP System ──────────────────────────────────────────
