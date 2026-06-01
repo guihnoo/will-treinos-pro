@@ -46,6 +46,8 @@ import {
   TrendingUp,
   QrCode,
   Sparkles,
+  ScanSearch,
+  Cake,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -90,6 +92,8 @@ const CoachOnboarding        = dynamic(() => import("./CoachOnboarding"),       
 const AttendanceHeatmapPanel = dynamic(() => import("./AttendanceHeatmapPanel"), { ssr: false, loading: () => null });
 const WeeklyChallengeEditor  = dynamic(() => import("./WeeklyChallengeEditor"),  { ssr: false, loading: () => null });
 const ChurnPreventionPanel   = dynamic(() => import("./ChurnPreventionPanel"),   { ssr: false, loading: () => null });
+const StudentFinanceSheet    = dynamic(() => import("./StudentFinanceSheet"),    { ssr: false, loading: () => null });
+const ScoutModePanel         = dynamic(() => import("./ScoutModePanel"),         { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -185,6 +189,9 @@ export default function WillCockpit() {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showWeeklyChallenge, setShowWeeklyChallenge] = useState(false);
   const [showChurnPrevention, setShowChurnPrevention] = useState(false);
+  const [showStudentFinance, setShowStudentFinance] = useState(false);
+  const [financeStudentId, setFinanceStudentId] = useState<string | null>(null);
+  const [showScoutMode, setShowScoutMode] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -351,6 +358,8 @@ export default function WillCockpit() {
     showHeatmap ||
     showWeeklyChallenge ||
     showChurnPrevention ||
+    showStudentFinance ||
+    showScoutMode ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -479,6 +488,17 @@ export default function WillCockpit() {
   const selectedStudent = useMemo(() => students.find((student) => student.id === selectedStudentId) ?? null, [selectedStudentId, students]);
   const twinStudent = useMemo(() => students.find((s) => s.id === twinStudentId) ?? null, [twinStudentId, students]);
   const evalHistoryStudent = useMemo(() => students.find((s) => s.id === evalHistoryStudentId) ?? null, [evalHistoryStudentId, students]);
+  const financeStudent = useMemo(() => students.find((s) => s.id === financeStudentId) ?? null, [financeStudentId, students]);
+  const birthdayStudents = useMemo(() => {
+    const today = new Date();
+    const todayM = today.getMonth() + 1;
+    const todayD = today.getDate();
+    return students.filter((s) => {
+      if (!s.birthdate) return false;
+      const parts = s.birthdate.split("-");
+      return Number(parts[1]) === todayM && Number(parts[2]) === todayD;
+    });
+  }, [students]);
   const billingWhatsappTemplates = useMemo(() => {
     const phoneRaw = appConfig.whatsappNumber || "";
     const phone = phoneRaw.replace(/\D/g, "");
@@ -722,6 +742,69 @@ export default function WillCockpit() {
       {activeTab === "hoje" && appConfig.courtLocation && (
         <motion.div variants={itemV}>
           <CourtWeatherPanel />
+        </motion.div>
+      )}
+
+      {/* BLOCO 0.5: Aniversariantes de Hoje */}
+      {activeTab === "hoje" && birthdayStudents.length > 0 && (
+        <motion.div variants={itemV}>
+          <AppSectionCard
+            title={`🎂 Aniversariantes de Hoje (${birthdayStudents.length})`}
+            subtitle="Alunos fazendo aniversário. Parabenize com um push personalizado!"
+            className="border-rose-500/25 bg-rose-950/30"
+            contentClassName="pt-3"
+          >
+            <div className="space-y-2">
+              {birthdayStudents.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/20 bg-rose-500/5 px-3.5 py-3"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <UserAvatar name={s.name} photo={s.avatar} size="sm" />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold text-white truncate">{s.name}</p>
+                      <p className="text-[10px] text-zinc-500">Plano: {s.plan || "—"}</p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.92 }}
+                    type="button"
+                    data-testid={`btn-birthday-wish-${s.id}`}
+                    onClick={async () => {
+                      haptic(20);
+                      try {
+                        const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                        const sb = getSupabaseClient();
+                        if (!sb) { toast("Supabase não configurado."); return; }
+                        const { data: { session } } = await sb.auth.getSession();
+                        if (!session?.access_token) { toast("Sem sessão."); return; }
+                        await fetch("/api/push/send", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                          body: JSON.stringify({
+                            payload: {
+                              title: `🎂 Feliz aniversário, ${s.name.split(" ")[0]}!`,
+                              body: `Seu professor deseja um dia incrível para você! Continue voando alto 🏐`,
+                              url: "/dashboard",
+                            },
+                            targetUserId: s.authUserId,
+                          }),
+                        });
+                        toast(`🎂 Parabéns enviados para ${s.name.split(" ")[0]}!`);
+                      } catch {
+                        toast("Erro ao enviar parabéns.");
+                      }
+                    }}
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-1.5 text-[10px] font-black text-rose-300 transition-colors hover:bg-rose-500/20"
+                  >
+                    <Cake className="h-3.5 w-3.5" />
+                    Parabenizar
+                  </motion.button>
+                </div>
+              ))}
+            </div>
+          </AppSectionCard>
         </motion.div>
       )}
 
@@ -1313,6 +1396,19 @@ export default function WillCockpit() {
           >
             <HeartHandshake className="h-5 w-5 text-rose-400" />
             Retenção
+          </button>
+          <button
+            type="button"
+            data-testid="btn-scout-mode"
+            onClick={() => {
+              haptic(20);
+              setShowScoutMode(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Comparar dois atletas lado a lado"
+          >
+            <ScanSearch className="h-5 w-5 text-cyan-400" />
+            Scout Mode
           </button>
           </div>
         </AppSectionCard>
@@ -2636,6 +2732,20 @@ export default function WillCockpit() {
                 <motion.button
                   type="button"
                   whileTap={PRESS_SCALE}
+                  data-testid="btn-student-finance"
+                  onClick={() => {
+                    setFinanceStudentId(selectedStudent.id);
+                    setShowStudentModal(false);
+                    setShowStudentFinance(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 py-3 text-[12px] font-black text-amber-200 transition-all hover:border-[#EAB308]/60 hover:bg-[#EAB308]/15"
+                >
+                  <WalletCards className="h-4 w-4 text-[#EAB308]" />
+                  Financeiro
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileTap={PRESS_SCALE}
                   onClick={() => {
                     setTwinStudentId(selectedStudent.id);
                     setShowStudentModal(false);
@@ -3065,6 +3175,27 @@ export default function WillCockpit() {
             lesson={selectedLesson}
             students={students}
             onClose={() => setShowBulkEval(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showStudentFinance && financeStudent ? (
+          <StudentFinanceSheet
+            student={financeStudent}
+            onClose={() => {
+              setShowStudentFinance(false);
+              setFinanceStudentId(null);
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showScoutMode ? (
+          <ScoutModePanel
+            students={students}
+            onClose={() => setShowScoutMode(false)}
           />
         ) : null}
       </AnimatePresence>

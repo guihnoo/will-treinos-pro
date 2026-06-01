@@ -39,6 +39,8 @@ export interface Student {
   plan: string; monthlyValue: number; paymentDay: number;
   categories: string[]; joinedAt: string; frequency: number; totalClasses: number; notes: string;
   professorNotes?: string;   // renamed from medicalNotes — set by admin/professor only, student reads only
+  /** ISO date "YYYY-MM-DD" — used by birthday cron and cockpit birthday panel. */
+  birthdate?: string;
   attendanceHistory?: { date: string; status: 'present' | 'absent' }[];
 }
 
