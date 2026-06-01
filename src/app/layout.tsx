@@ -17,6 +17,7 @@ import { TrainingProvider } from "@/context/TrainingContext";
 import { GamificationProvider } from "@/context/GamificationContext";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ToastProvider } from "@/components/Toast";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata = {
   title: "Will Treinos PRO",
@@ -41,8 +42,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="/icons/apple-touch-icon.png" />
         <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="/icons/apple-touch-icon.png" />
         <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/icons/apple-touch-icon.png" />
+        {/* Preconnect para domínios externos */}
+        <link rel="preconnect" href="https://api.dicebear.com" />
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        )}
       </head>
       <body className="bg-black text-zinc-100 min-h-screen font-sans antialiased selection:bg-[#EAB308]/30 overflow-x-hidden overflow-y-auto flex">
+        <ErrorBoundary>
         <AppProvider>
           <CriticalDataProvider>
             <AuthProvider>
@@ -78,6 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </AuthProvider>
           </CriticalDataProvider>
         </AppProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

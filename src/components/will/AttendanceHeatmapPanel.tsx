@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutGrid, X, Flame, Clock, Calendar, TrendingUp } from "lucide-react";
+import { LayoutGrid, X, Flame, Clock, Calendar, TrendingUp, BarChart2 } from "lucide-react";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
 import type { Lesson } from "@/context/types";
@@ -72,7 +72,7 @@ export default function AttendanceHeatmapPanel({ onClose }: Props) {
     data: CellData;
   } | null>(null);
 
-  const { grid, bestDay, bestSlot, bestCell } = useMemo(() => {
+  const { grid, totalPresences, bestDay, bestSlot, bestCell } = useMemo(() => {
     // grid[dayIndex][slotId] = CellData
     const raw: Record<number, Record<SlotId, { count: number; studentCounts: Map<string, number> }>> = {};
     for (let d = 0; d < 7; d++) {
@@ -153,8 +153,14 @@ export default function AttendanceHeatmapPanel({ onClose }: Props) {
       }
     }
 
+    const totalPresences = Object.values(finalGrid).reduce(
+      (sum, day) => sum + SLOTS.reduce((s, sl) => s + day[sl.id].count, 0),
+      0,
+    );
+
     return {
       grid: finalGrid,
+      totalPresences,
       bestDay: { name: DAYS[bestDayIdx], count: bestDayCount },
       bestSlot: { label: SLOTS.find((s) => s.id === bestSlotId)?.label ?? "Noite", count: bestSlotCount },
       bestCell: {
@@ -202,6 +208,19 @@ export default function AttendanceHeatmapPanel({ onClose }: Props) {
             </div>
 
             <div className={`${MODAL_BODY_SCROLL} px-5 py-4 space-y-5`}>
+              {/* Empty state */}
+              {totalPresences === 0 && (
+                <div className="flex flex-col items-center gap-3 py-12 text-center">
+                  <BarChart2 className="h-10 w-10 text-zinc-600" />
+                  <p className="text-sm font-bold text-zinc-400">Nenhuma aula completada ainda</p>
+                  <p className="text-xs text-zinc-600 max-w-xs">
+                    O mapa de calor será preenchido conforme as aulas forem concluídas com presença registrada.
+                  </p>
+                </div>
+              )}
+
+              {totalPresences > 0 && (
+              <>
               {/* Summary chips */}
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -327,6 +346,8 @@ export default function AttendanceHeatmapPanel({ onClose }: Props) {
                   </motion.div>
                 )}
               </AnimatePresence>
+              </>
+              )}
             </div>
           </motion.div>
         </div>

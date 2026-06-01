@@ -234,9 +234,10 @@ export default function ChurnPreventionPanel({ onClose }: Props) {
 
             <div className={`${MODAL_BODY_SCROLL} px-5 py-4 space-y-3`}>
               {loading ? (
-                <div className="flex items-center justify-center py-12 gap-2 text-zinc-500">
-                  <Loader2 size={20} className="animate-spin" />
-                  <span className="text-sm">Analisando atividade...</span>
+                <div className="space-y-3 animate-pulse">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className={`h-16 rounded-xl bg-zinc-800/60 border border-zinc-800/40 ${i === 0 ? "h-12" : ""}`} />
+                  ))}
                 </div>
               ) : atRisk.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-10 text-center">

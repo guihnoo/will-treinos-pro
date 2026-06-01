@@ -6,17 +6,20 @@ import CoachHome from "@/components/CoachHome";
 import StudentHome from "@/components/StudentHome";
 import StudentShell from "@/components/student/StudentShell";
 import WillCockpit from "@/components/will/WillCockpit";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function DashboardPage() {
   const { user } = useAuth();
 
   if (!user) return null;
 
-  if (user.role === "admin") return <WillCockpit />;
-  if (user.role === "coach") return <CoachHome />;
+  if (user.role === "admin") return <ErrorBoundary><WillCockpit /></ErrorBoundary>;
+  if (user.role === "coach") return <ErrorBoundary><CoachHome /></ErrorBoundary>;
   return (
-    <StudentShell>
-      <StudentHome />
-    </StudentShell>
+    <ErrorBoundary>
+      <StudentShell>
+        <StudentHome />
+      </StudentShell>
+    </ErrorBoundary>
   );
 }

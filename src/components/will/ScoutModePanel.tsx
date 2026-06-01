@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ScanSearch, Circle, ChevronDown } from "lucide-react";
+import { X, ScanSearch, Circle, ChevronDown, Users } from "lucide-react";
 import type { Student, VolleyballFundamental } from "@/context/types";
 import { FUNDAMENTAL_MULTIPLIERS } from "@/context/types";
 import { MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -429,6 +429,21 @@ export default function ScoutModePanel({ students, onClose }: Props) {
                 </>
               )}
             </motion.button>
+
+            {/* Empty state — waiting for comparison */}
+            {!compared && !loading && (
+              <div className="flex flex-col items-center gap-3 py-8 text-center rounded-2xl border border-zinc-800/50 bg-zinc-900/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-700/60 bg-zinc-900/60">
+                  <Users className="h-6 w-6 text-zinc-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-zinc-400">Selecione dois atletas</p>
+                  <p className="text-xs text-zinc-600 mt-0.5 max-w-xs">
+                    Escolha Atleta A e Atleta B acima e clique em &quot;Comparar&quot; para ver o radar de fundamentos.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Results */}
             <AnimatePresence>
