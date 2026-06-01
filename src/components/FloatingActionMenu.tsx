@@ -2,12 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, CreditCard, Dumbbell, X, ScanLine } from "lucide-react";
+import { Zap, CheckSquare, Calendar, CalendarDays, AlertCircle, RefreshCw, CreditCard, Dumbbell, X, ScanLine } from "lucide-react";
 import Link from "next/link";
 
 interface FloatingActionMenuProps {
   onCheckIn?: () => void;
   onViewLessons?: () => void;
+  onViewSchedule?: () => void;
   onReportAbsence?: () => void;
   onRequestReposition?: () => void;
   onViewPayments?: () => void;
@@ -18,6 +19,7 @@ interface FloatingActionMenuProps {
 export function FloatingActionMenu({
   onCheckIn,
   onViewLessons,
+  onViewSchedule,
   onReportAbsence,
   onRequestReposition,
   onViewPayments,
@@ -44,6 +46,16 @@ export function FloatingActionMenu({
       color: "from-blue-500 to-cyan-600",
       action: () => {
         onViewLessons?.();
+        setIsOpen(false);
+      },
+    },
+    {
+      id: "schedule",
+      label: "Agenda",
+      icon: CalendarDays,
+      color: "from-indigo-500 to-violet-600",
+      action: () => {
+        onViewSchedule?.();
         setIsOpen(false);
       },
     },

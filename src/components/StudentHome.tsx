@@ -92,7 +92,10 @@ const StudentTrainingPlanPanel  = dynamic(() => import("@/components/student/Stu
 const QRScannerSheet            = dynamic(() => import("@/components/student/QRScannerSheet"),            { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 const LessonHistoryPanel      = dynamic(() => import("@/components/student/LessonHistoryPanel"),       { ssr: false, loading: () => null });
+const StudentSchedulePanel    = dynamic(() => import("@/components/student/StudentSchedulePanel"),     { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
+import OfflineBanner from "@/components/student/OfflineBanner";
+import { offlineCache } from "@/lib/offlineCache";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
@@ -621,6 +624,7 @@ export default function StudentHome() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [showLessonHistory, setShowLessonHistory] = useState(false);
+  const [showStudentSchedule, setShowStudentSchedule] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -656,6 +660,7 @@ export default function StudentHome() {
       showAttendanceCalendar ||
       showLessonHistory ||
       showPayments ||
+      showStudentSchedule ||
       justUnlockedTier,
   );
   useBodyScrollLock(hasOverlayOpen);
@@ -1138,9 +1143,34 @@ export default function StudentHome() {
     );
   }
 
+  // Persist upcoming lessons and XP to offline cache when online
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.onLine) return;
+    const today = localDateISO();
+    const upcoming = myLessons
+      .filter((l) => l.status === "scheduled" && l.date >= today)
+      .slice(0, 20)
+      .map((l) => ({
+        id: l.id,
+        title: l.title,
+        date: l.date,
+        startTime: l.startTime,
+        categoryId: l.categoryId,
+        status: l.status,
+      }));
+    offlineCache.saveLessons(upcoming);
+  }, [myLessons]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.onLine) return;
+    if (!profile?.id || totalXP === 0) return;
+    offlineCache.saveStudentXP(profile.id, totalXP, currentTier.label);
+  }, [profile?.id, totalXP, currentTier.label]);
+
   return (
     <>
     <PushPermissionBanner role="aluno" />
+    <OfflineBanner />
     <motion.div
       className="w-full space-y-5 pt-2 sm:pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] relative"
       variants={homeList}
@@ -3253,6 +3283,7 @@ export default function StudentHome() {
       <FloatingActionMenu
         onCheckIn={() => toast("💚 Check-in: vá até a quadra e pressione o botão de check-in da turma", "info")}
         onViewLessons={() => setShowAgendaPanel(true)}
+        onViewSchedule={() => setShowStudentSchedule(true)}
         onReportAbsence={() => setShowAbsenceSheet(true)}
         onRequestReposition={() => setShowRepositionSheet(true)}
         onViewPayments={() => setShowPayments(true)}
@@ -3279,6 +3310,17 @@ export default function StudentHome() {
             studentId={profile.id}
             getCategory={getCategory}
             onClose={() => setShowLessonHistory(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showStudentSchedule && user?.id && (
+          <StudentSchedulePanel
+            studentId={user.id}
+            lessons={lessons}
+            getCategory={getCategory}
+            onClose={() => setShowStudentSchedule(false)}
           />
         )}
       </AnimatePresence>

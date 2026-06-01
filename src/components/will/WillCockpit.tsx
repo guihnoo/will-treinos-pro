@@ -50,6 +50,7 @@ import {
   Cake,
   ClipboardList,
   LayoutList,
+  Activity,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -97,6 +98,7 @@ const ChurnPreventionPanel       = dynamic(() => import("./ChurnPreventionPanel"
 const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet"),        { ssr: false, loading: () => null });
 const ScoutModePanel             = dynamic(() => import("./ScoutModePanel"),             { ssr: false, loading: () => null });
 const EvaluationTemplateManager  = dynamic(() => import("./EvaluationTemplateManager"), { ssr: false, loading: () => null });
+const AppHealthPanel              = dynamic(() => import("./AppHealthPanel"),              { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -197,6 +199,7 @@ export default function WillCockpit() {
   const [financeStudentId, setFinanceStudentId] = useState<string | null>(null);
   const [showScoutMode, setShowScoutMode] = useState(false);
   const [showEvalTemplates, setShowEvalTemplates] = useState(false);
+  const [showAppHealth, setShowAppHealth] = useState(false);
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
@@ -1429,6 +1432,19 @@ export default function WillCockpit() {
           >
             <ClipboardList className="h-5 w-5 text-emerald-400" />
             Templates de Avaliação
+          </button>
+          <button
+            type="button"
+            data-testid="btn-app-health"
+            onClick={() => {
+              haptic(16);
+              setShowAppHealth(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 px-4 py-3 text-sm font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver painel de saúde e métricas do app"
+          >
+            <Activity className="h-5 w-5 text-teal-400" />
+            Saúde do App
           </button>
           </div>
         </AppSectionCard>
@@ -3275,6 +3291,12 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showEvalTemplates ? (
           <EvaluationTemplateManager onClose={() => setShowEvalTemplates(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAppHealth ? (
+          <AppHealthPanel onClose={() => setShowAppHealth(false)} />
         ) : null}
       </AnimatePresence>
     </div>
