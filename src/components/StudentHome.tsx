@@ -104,6 +104,7 @@ import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { FloatingActionMenu } from "@/components/FloatingActionMenu";
 import { YourDayCard } from "@/components/YourDayCard";
+import WelcomeModal from "@/components/student/WelcomeModal";
 
 // Inlined from OnboardingWidget to avoid static import
 function markTwinViewed(studentId: string) {
@@ -546,6 +547,18 @@ export default function StudentHome() {
   const { toast } = useToast();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
+
+  // Show welcome modal on first login (once per user)
+  useEffect(() => {
+    if (!hydrated || !user?.id) return;
+    const key = `wt_welcomed_${user.id}`;
+    try {
+      if (!localStorage.getItem(key)) {
+        setShowWelcome(true);
+      }
+    } catch { /* ignore */ }
+  }, [hydrated, user?.id]);
+
   useEffect(() => {
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
       getSupabaseClient().auth.getSession().then(({ data: { session } }) => {
@@ -632,10 +645,12 @@ export default function StudentHome() {
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
   const [shareText, setShareText] = useState("");
+  const [showWelcome, setShowWelcome] = useState(false);
   const prevXPRef = useRef<number | null>(null);
   const hasInitializedRef = useRef(false);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   const hasOverlayOpen = Boolean(
+    showWelcome ||
     showNotif ||
       lessonModal ||
       evolModal ||
@@ -1191,6 +1206,15 @@ export default function StudentHome() {
 
   return (
     <>
+    {showWelcome && (
+      <WelcomeModal
+        name={(profile?.name || user?.name || "Atleta").split(" ")[0]!}
+        onClose={() => {
+          try { localStorage.setItem(`wt_welcomed_${user?.id ?? ""}`, "1"); } catch { /* ignore */ }
+          setShowWelcome(false);
+        }}
+      />
+    )}
     <PushPermissionBanner role="aluno" />
     <OfflineBanner />
     <motion.div

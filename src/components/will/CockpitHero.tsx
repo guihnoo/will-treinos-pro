@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
-import { CheckCircle2, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Search, ShieldAlert } from "lucide-react";
 import WeatherWidget from "@/components/WeatherWidget";
 import { GoldVolleyballBadge } from "@/components/ui/WillPremiumAssets";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -27,6 +27,7 @@ export type CockpitHeroProps = {
   resolverLabel: string;
   resolverHint: string;
   onResolver: () => void;
+  onSearch?: () => void;
 };
 
 export default function CockpitHero({
@@ -43,6 +44,7 @@ export default function CockpitHero({
   resolverLabel,
   resolverHint,
   onResolver,
+  onSearch,
 }: CockpitHeroProps) {
   return (
     <motion.section
@@ -81,6 +83,19 @@ export default function CockpitHero({
                 </span>
                 <p className="text-[9px] font-black uppercase tracking-[0.18em] text-green-400">Ao Vivo</p>
               </div>
+            )}
+            {onSearch && (
+              <button
+                type="button"
+                onClick={onSearch}
+                aria-label="Busca global (Ctrl+K)"
+                data-testid="cockpit-search-btn"
+                className={`inline-flex items-center gap-1.5 rounded-full border border-zinc-700/60 bg-zinc-900/60 px-3 py-1.5 text-[10px] font-bold text-zinc-400 backdrop-blur-xl transition hover:border-zinc-500 hover:text-white ${INTERACTIVE_FOCUS_RING}`}
+              >
+                <Search className="h-3 w-3" />
+                <span className="hidden sm:inline">Buscar</span>
+                <kbd className="hidden sm:inline font-mono text-[9px] text-zinc-600">⌘K</kbd>
+              </button>
             )}
           </div>
           <h1 className="break-words text-3xl font-black tracking-tight text-white sm:text-5xl drop-shadow-lg">Centro de Comando</h1>

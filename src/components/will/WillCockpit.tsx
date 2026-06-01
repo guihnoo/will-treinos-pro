@@ -101,6 +101,7 @@ const EvaluationTemplateManager  = dynamic(() => import("./EvaluationTemplateMan
 const AppHealthPanel              = dynamic(() => import("./AppHealthPanel"),              { ssr: false, loading: () => null });
 const StudentReportSheet          = dynamic(() => import("./StudentReportSheet"),          { ssr: false, loading: () => null });
 const AdminSettingsPanel          = dynamic(() => import("./AdminSettingsPanel"),          { ssr: false, loading: () => null });
+const GlobalSearchModal           = dynamic(() => import("./GlobalSearchModal"),           { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
@@ -205,6 +206,7 @@ export default function WillCockpit() {
   const [showStudentReport, setShowStudentReport] = useState(false);
   const [reportStudentId, setReportStudentId] = useState<string | null>(null);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
@@ -377,8 +379,21 @@ export default function WillCockpit() {
     showEvalTemplates ||
     showStudentReport ||
     showAdminSettings ||
+    showGlobalSearch ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
+
+  // Ctrl+K / Cmd+K → Global Search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setShowGlobalSearch((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const awaitingApproval = approvalQueue.length;
   const athletesToday = todayEnrolledCount;
@@ -721,6 +736,7 @@ export default function WillCockpit() {
         resolverLabel={resolverLabel}
         resolverHint={resolverHint}
         onResolver={handleCockpitResolver}
+        onSearch={() => setShowGlobalSearch(true)}
       />
 
       {/* ── Tab bar ── */}
@@ -1776,6 +1792,30 @@ export default function WillCockpit() {
       </motion.div>
       </>}  {/* closed Fragment "turma" BLOCO 5 */}
       </motion.div>
+
+      <AnimatePresence>
+        {showGlobalSearch && (
+          <GlobalSearchModal
+            onClose={() => setShowGlobalSearch(false)}
+            students={students}
+            lessons={lessons}
+            payments={payments}
+            getCategory={getCategory}
+            onSelectStudent={(studentId) => {
+              setShowGlobalSearch(false);
+              setSelectedStudentId(studentId);
+              setSelectedStudentLayoutId(null);
+              setShowStudentModal(true);
+            }}
+            onSelectLesson={(lessonId) => {
+              setShowGlobalSearch(false);
+              setSelectedLessonId(lessonId);
+              setSelectedLessonLayoutId(null);
+              setShowLessonModal(true);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showApprovalModal ? (
