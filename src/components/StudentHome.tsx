@@ -81,6 +81,7 @@ const StudentGoalsCard          = dynamic(() => import("@/components/student/Stu
 const NotificationCenterPanel  = dynamic(() => import("@/components/student/NotificationCenterPanel"),   { ssr: false, loading: () => null });
 const FrequencyAlertBanner      = dynamic(() => import("@/components/student/FrequencyAlertBanner"),      { ssr: false, loading: () => null });
 const MilestoneTracker          = dynamic(() => import("@/components/student/MilestoneTracker"),          { ssr: false, loading: () => null });
+const FreeTrainingSheet         = dynamic(() => import("@/components/student/FreeTrainingSheet"),         { ssr: false, loading: () => null });
 const PushSettingsPanel         = dynamic(() => import("@/components/PushSettingsPanel"),                 { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
@@ -606,6 +607,7 @@ export default function StudentHome() {
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showPushSettings, setShowPushSettings] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [showFreeTraining, setShowFreeTraining] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
@@ -635,6 +637,7 @@ export default function StudentHome() {
       showTimeline ||
       showNotificationCenter ||
       showPushSettings ||
+      showFreeTraining ||
       showAttendanceCalendar ||
       showPayments ||
       justUnlockedTier,
@@ -3163,6 +3166,7 @@ export default function StudentHome() {
         onReportAbsence={() => setShowAbsenceSheet(true)}
         onRequestReposition={() => setShowRepositionSheet(true)}
         onViewPayments={() => setShowPayments(true)}
+        onFreeTraining={() => setShowFreeTraining(true)}
       />
 
       <AnimatePresence>
@@ -3223,6 +3227,15 @@ export default function StudentHome() {
           <PushSettingsPanel
             role="aluno"
             onClose={() => setShowPushSettings(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showFreeTraining && profile?.id && (
+          <FreeTrainingSheet
+            studentCrmId={profile.id}
+            onClose={() => setShowFreeTraining(false)}
           />
         )}
       </AnimatePresence>

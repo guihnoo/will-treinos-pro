@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, CreditCard, X } from "lucide-react";
+import { Zap, CheckSquare, Calendar, AlertCircle, RefreshCw, CreditCard, Dumbbell, X } from "lucide-react";
 import Link from "next/link";
 
 interface FloatingActionMenuProps {
@@ -11,6 +11,7 @@ interface FloatingActionMenuProps {
   onReportAbsence?: () => void;
   onRequestReposition?: () => void;
   onViewPayments?: () => void;
+  onFreeTraining?: () => void;
 }
 
 export function FloatingActionMenu({
@@ -19,6 +20,7 @@ export function FloatingActionMenu({
   onReportAbsence,
   onRequestReposition,
   onViewPayments,
+  onFreeTraining,
 }: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -70,6 +72,16 @@ export function FloatingActionMenu({
       color: "from-emerald-500 to-green-600",
       action: () => {
         onViewPayments?.();
+        setIsOpen(false);
+      },
+    },
+    {
+      id: "free-training",
+      label: "Treino Livre",
+      icon: Dumbbell,
+      color: "from-violet-500 to-purple-600",
+      action: () => {
+        onFreeTraining?.();
         setIsOpen(false);
       },
     },

@@ -82,6 +82,7 @@ const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),     
 const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),       { ssr: false, loading: () => null });
 const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),   { ssr: false, loading: () => null });
 const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),    { ssr: false, loading: () => null });
+const AttentionPanel         = dynamic(() => import("./AttentionPanel"),         { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -172,6 +173,7 @@ export default function WillCockpit() {
   const [showLessonRecap, setShowLessonRecap] = useState(false);
   const [showQuickAttendance, setShowQuickAttendance] = useState(false);
   const [showBulkEval, setShowBulkEval] = useState(false);
+  const [showAttention, setShowAttention] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -326,6 +328,7 @@ export default function WillCockpit() {
     showAbsenceTracker ||
     showBroadcast ||
     showTurmaAnalytics ||
+    showAttention ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -1204,11 +1207,51 @@ export default function WillCockpit() {
               haptic(20);
               setShowTurmaAnalytics(true);
             }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 px-4 py-3 text-sm font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 px-4 py-3 text-sm font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver evolução e analytics da turma"
           >
             <TrendingUp className="h-5 w-5 text-indigo-400" />
             Evolução da Turma
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowAttention(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver alunos que precisam de atenção"
+          >
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+            Requer Atenção
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              haptic(12);
+              const { exportStudentsCsv } = await import("@/lib/exportCsv");
+              exportStudentsCsv(students);
+              toast("📥 Alunos exportados para CSV.");
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700/50 bg-zinc-900/50 px-4 py-3 text-sm font-black text-zinc-300 transition-all hover:border-zinc-600 hover:bg-zinc-800/50 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Exportar lista de alunos para CSV"
+          >
+            <ArrowUpRight className="h-5 w-5 text-zinc-400" />
+            Exportar Alunos
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              haptic(12);
+              const { exportPaymentsCsv } = await import("@/lib/exportCsv");
+              exportPaymentsCsv(payments, students);
+              toast("📥 Pagamentos exportados para CSV.");
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700/50 bg-zinc-900/50 px-4 py-3 text-sm font-black text-zinc-300 transition-all hover:border-zinc-600 hover:bg-zinc-800/50 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Exportar histórico de pagamentos para CSV"
+          >
+            <ArrowUpRight className="h-5 w-5 text-zinc-400" />
+            Exportar Pagamentos
           </button>
           </div>
         </AppSectionCard>
@@ -2860,6 +2903,12 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showTurmaAnalytics ? (
           <TurmaAnalyticsPanel onClose={() => setShowTurmaAnalytics(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAttention ? (
+          <AttentionPanel onClose={() => setShowAttention(false)} />
         ) : null}
       </AnimatePresence>
 
