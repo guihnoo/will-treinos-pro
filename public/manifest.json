@@ -37,22 +37,7 @@
       "purpose": "maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/cockpit.svg",
-      "sizes": "390x844",
-      "type": "image/svg+xml",
-      "form_factor": "narrow",
-      "label": "Cockpit do treinador com KPIs em tempo real"
-    },
-    {
-      "src": "/screenshots/student.svg",
-      "sizes": "390x844",
-      "type": "image/svg+xml",
-      "form_factor": "narrow",
-      "label": "Dashboard do atleta com XP e conquistas"
-    }
-  ],
+  "screenshots": [],
   "shortcuts": [
     {
       "name": "Prancheta da Quadra",

@@ -346,6 +346,13 @@ export default function SignupPage() {
                 >
                   Cancelar
                 </Link>
+
+                <p className="text-center text-xs text-zinc-600 leading-relaxed">
+                  Ao se cadastrar, você concorda com os{" "}
+                  <Link href="/termos" target="_blank" className="text-zinc-400 hover:text-amber-400 underline">Termos de Uso</Link>
+                  {" "}e a{" "}
+                  <Link href="/privacidade" target="_blank" className="text-zinc-400 hover:text-amber-400 underline">Política de Privacidade</Link>.
+                </p>
               </form>
             </motion.div>
           )}
