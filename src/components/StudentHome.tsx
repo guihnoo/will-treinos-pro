@@ -1258,7 +1258,7 @@ export default function StudentHome() {
               <h2 className="text-base font-bold text-white leading-tight truncate">
                 {greeting()}, <span style={{ color: equippedTier.color }}>{(profile?.name || user?.name || "Atleta").split(" ")[0]}!</span>
               </h2>
-              <p className="text-[11px] text-zinc-500 truncate mt-0.5">{equippedTier.label} · {profile?.plan || "Aluno"} · {profile?.categories[0] || "Vôlei"}</p>
+              <p className="text-[11px] text-zinc-500 truncate mt-0.5">{equippedTier.label} · {profile?.plan || "Aluno"} · {profile?.categories?.[0] || "Vôlei"}</p>
             </div>
             {/* XP + Streak compact */}
             <div className="flex-shrink-0 flex flex-col items-end gap-1">

@@ -105,7 +105,7 @@ export default function AlunosPage() {
     return template
       .replace("{nome}", student.name.split(" ")[0])
       .replace("{valor}", student.monthlyValue.toString())
-      .replace("{categoria}", student.categories[0] || "aula")
+      .replace("{categoria}", student.categories?.[0] || "aula")
       .replace("{referencia}", pay?.reference || currentMonthReference)
       .replace("{horario}", "18:00");
   };

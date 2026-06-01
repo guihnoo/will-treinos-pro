@@ -314,7 +314,7 @@ export default function PerfilPage() {
               <span className="text-[10px] font-bold text-black bg-[#EAB308] px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {profile?.status === "active" ? "✓ Ativo" : profile?.status === "pending" ? "⏳ Pendente" : profile?.status || "Aluno"}
               </span>
-              {profile?.categories[0] && (
+              {profile?.categories?.[0] && (
                 <span className="text-[10px] font-bold text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{profile.categories[0]}</span>
               )}
             </div>
