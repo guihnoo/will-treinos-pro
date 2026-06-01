@@ -9,6 +9,7 @@ import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowUpRight,
+  ChevronRight,
   BarChart3,
   Bot,
   CalendarPlus,
@@ -196,6 +197,7 @@ export default function WillCockpit() {
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [selectedBillingTemplate, setSelectedBillingTemplate] = useState<string | null>(null);
   const [approvalSearch, setApprovalSearch] = useState("");
+  const [studentSearch, setStudentSearch]   = useState("");
   const [selectedApprovalRole, setSelectedApprovalRole] = useState<Map<string, StudentRole>>(new Map());
   const [onboardingStudentId, setOnboardingStudentId] = useState<string | null>(null);
   const [onboardingDraft, setOnboardingDraft] = useState({
@@ -1281,6 +1283,68 @@ export default function WillCockpit() {
           </div>
         </AppSectionCard>
       </motion.div>}  {/* closed "hoje" BLOCO 4 */}
+
+      {/* BLOCO 4.5: Busca de Alunos Ativos */}
+      {activeTab === "turma" && (
+        <motion.div variants={itemV}>
+          <AppSectionCard
+            title="Buscar Atleta"
+            subtitle="Acesse a ficha de qualquer aluno ativo."
+            contentClassName="pt-3"
+          >
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <input
+                value={studentSearch}
+                onChange={e => setStudentSearch(e.target.value)}
+                placeholder="Nome do atleta…"
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/60 pl-9 pr-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+              />
+              {studentSearch && (
+                <button onClick={() => setStudentSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {students
+                .filter(s => s.status === "active" && (
+                  !studentSearch.trim() ||
+                  s.name.toLowerCase().includes(studentSearch.trim().toLowerCase())
+                ))
+                .slice(0, studentSearch.trim() ? 20 : 8)
+                .map(student => (
+                  <motion.button
+                    key={student.id}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      haptic(12);
+                      setSelectedStudentId(student.id);
+                      setSelectedStudentLayoutId(null);
+                      setShowStudentModal(true);
+                    }}
+                    className="w-full flex items-center gap-3 rounded-xl border border-zinc-800/60 bg-zinc-900/30 px-3 py-2.5 text-left hover:border-zinc-700 hover:bg-zinc-900/60 transition-all"
+                  >
+                    <UserAvatar name={student.name} photo={student.avatar} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{student.name}</p>
+                      <p className="text-[10px] text-zinc-500 truncate">{student.plan || "Sem plano"} · {student.frequency}x/sem</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-zinc-600 flex-shrink-0" />
+                  </motion.button>
+                ))}
+              {studentSearch.trim() && students.filter(s => s.status === "active" && s.name.toLowerCase().includes(studentSearch.trim().toLowerCase())).length === 0 && (
+                <p className="text-center text-xs text-zinc-600 py-4">Nenhum atleta encontrado.</p>
+              )}
+              {!studentSearch.trim() && (
+                <p className="text-[10px] text-zinc-600 text-center pt-1">
+                  Mostrando {Math.min(8, students.filter(s => s.status === "active").length)} de {students.filter(s => s.status === "active").length} ativos · Digite para buscar
+                </p>
+              )}
+            </div>
+          </AppSectionCard>
+        </motion.div>
+      )}
 
       {/* BLOCO 5: Oráculo + A Rede + Cadastro — contexto e gestão */}
       {activeTab === "turma" && <>

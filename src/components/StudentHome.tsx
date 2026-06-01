@@ -80,6 +80,7 @@ const AthleteTimelinePanel    = dynamic(() => import("@/components/student/Athle
 const StudentGoalsCard          = dynamic(() => import("@/components/student/StudentGoalsCard"),           { ssr: false, loading: () => null });
 const NotificationCenterPanel  = dynamic(() => import("@/components/student/NotificationCenterPanel"),   { ssr: false, loading: () => null });
 const FrequencyAlertBanner      = dynamic(() => import("@/components/student/FrequencyAlertBanner"),      { ssr: false, loading: () => null });
+const MilestoneTracker          = dynamic(() => import("@/components/student/MilestoneTracker"),          { ssr: false, loading: () => null });
 const PushSettingsPanel         = dynamic(() => import("@/components/PushSettingsPanel"),                 { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
@@ -531,6 +532,13 @@ export default function StudentHome() {
   const { toast } = useToast();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
+  useEffect(() => {
+    import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
+      getSupabaseClient().auth.getSession().then(({ data: { session } }) => {
+        if (session?.access_token) setSessionToken(session.access_token);
+      });
+    });
+  }, []);
 
   // Detect card tier unlock
   useEffect(() => {
@@ -597,6 +605,7 @@ export default function StudentHome() {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showPushSettings, setShowPushSettings] = useState(false);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
@@ -3217,6 +3226,21 @@ export default function StudentHome() {
           />
         )}
       </AnimatePresence>
+
+      {/* Invisible milestone tracker — fires onUnlock toast when a new badge is earned */}
+      {profile?.id && sessionToken && (
+        <MilestoneTracker
+          studentCrmId={profile.id}
+          authToken={sessionToken}
+          lessons={lessons}
+          studentId={user?.id ?? ""}
+          totalXP={totalXP}
+          streak={streak}
+          onUnlock={({ title, emoji, xp }) => {
+            toast(`${emoji} ${title} +${xp} XP`, "success");
+          }}
+        />
+      )}
 
       {/* Achievement Share Sheet */}
       <AnimatePresence>

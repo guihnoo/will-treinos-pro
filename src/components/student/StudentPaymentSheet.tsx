@@ -4,8 +4,9 @@ import React, { useRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Copy, CheckCircle2, Clock, AlertTriangle, CreditCard,
-  Paperclip, Send, ChevronDown, ChevronUp, Image as ImageIcon,
+  Paperclip, Send, ChevronDown, ChevronUp, Image as ImageIcon, QrCode,
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import { usePayments } from "@/context/PaymentsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useAuth } from "@/context/AuthContext";
@@ -53,6 +54,7 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
   );
 
   const hasPixKey = Boolean(appConfig.pixKey?.trim());
+  const [showQR, setShowQR] = useState(false);
   const pixLabel = appConfig.pixKeyType === "cpf" ? "CPF" :
     appConfig.pixKeyType === "telefone" ? "Telefone" :
     appConfig.pixKeyType === "aleatoria" ? "Chave aleatória" : "E-mail";
@@ -148,6 +150,13 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
                 <div className="flex items-center gap-2">
                   <p className="flex-1 min-w-0 truncate text-sm font-bold text-white">{appConfig.pixKey}</p>
                   <button
+                    onClick={() => setShowQR(v => !v)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-[11px] font-bold text-zinc-300 hover:text-white transition`}
+                  >
+                    <QrCode className="h-3.5 w-3.5" />
+                    QR
+                  </button>
+                  <button
                     onClick={handleCopyPix}
                     className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/15 px-3 py-2 text-[11px] font-bold text-[#EAB308] hover:bg-[#EAB308]/25 transition ${FOCUS_RING_GOLD}`}
                   >
@@ -155,8 +164,30 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
                     Copiar
                   </button>
                 </div>
+
+                {/* QR Code PIX */}
+                <AnimatePresence>
+                  {showQR && appConfig.pixKey && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-col items-center gap-2 pt-3">
+                        <div className="p-3 bg-white rounded-2xl shadow-lg">
+                          <QRCode value={appConfig.pixKey} size={180} level="M" />
+                        </div>
+                        <p className="text-[10px] text-zinc-500 text-center">
+                          Escaneie com o app do seu banco para pagar
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <p className="mt-1.5 text-[10px] text-zinc-500">
-                  Copie a chave, faça o PIX no seu banco e envie o comprovante abaixo.
+                  Copie a chave ou escaneie o QR, faça o PIX e envie o comprovante abaixo.
                 </p>
               </div>
             )}
