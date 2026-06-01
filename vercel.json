@@ -27,6 +27,10 @@
     {
       "path": "/api/cron/birthday-reminder",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/post-lesson-feedback",
+      "schedule": "0 * * * *"
     }
   ]
 }

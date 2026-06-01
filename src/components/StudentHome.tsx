@@ -105,6 +105,12 @@ import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTo
 import { FloatingActionMenu } from "@/components/FloatingActionMenu";
 import { YourDayCard } from "@/components/YourDayCard";
 import WelcomeModal from "@/components/student/WelcomeModal";
+import { useSessionRecovery } from "@/hooks/useSessionRecovery";
+import SessionExpiredModal from "@/components/SessionExpiredModal";
+const MoodResponseCard = dynamic(
+  () => import("@/components/student/MoodResponseCard"),
+  { ssr: false, loading: () => null }
+);
 
 // Inlined from OnboardingWidget to avoid static import
 function markTwinViewed(studentId: string) {
@@ -547,6 +553,7 @@ export default function StudentHome() {
   const { toast } = useToast();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
+  const { isExpired: sessionExpired, recovering: sessionRecovering, recover: recoverSession, forceLogout: sessionForceLogout } = useSessionRecovery();
 
   // Show welcome modal on first login (once per user)
   useEffect(() => {
@@ -1245,6 +1252,16 @@ export default function StudentHome() {
             studentId={user.id}
             getCategoryFn={getCategory}
             onCheckIn={() => toast("Vá até a quadra e pressione o botão de check-in da turma 🏐", "info")}
+          />
+        </motion.div>
+      )}
+
+      {/* 1b. Feedback de humor pós-aula */}
+      {user?.id && (
+        <motion.div variants={homeItem} className="px-1">
+          <MoodResponseCard
+            lessons={lessons}
+            studentId={user.id}
           />
         </motion.div>
       )}
@@ -3628,6 +3645,14 @@ export default function StudentHome() {
         )}
       </AnimatePresence>
     </motion.div>
+
+      {/* ===== SESSION EXPIRED MODAL ===== */}
+      <SessionExpiredModal
+        isOpen={sessionExpired}
+        onReconnect={recoverSession}
+        onLogout={sessionForceLogout}
+        recovering={sessionRecovering}
+      />
     </>
   );
 }

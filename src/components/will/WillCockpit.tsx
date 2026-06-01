@@ -109,6 +109,8 @@ import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRA
 import { localDateISO, getMonday, paymentReferenceForDate } from "@/lib/dateUtils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
+import { useSessionRecovery } from "@/hooks/useSessionRecovery";
+import SessionExpiredModal from "@/components/SessionExpiredModal";
 function currencyBRL(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -133,6 +135,34 @@ const haptic = (pattern: number | number[]) => {
   }
 };
 
+// ── Inline component: mood summary badge for completed lessons ──────────────
+function LessonMoodSummary({ lessonId }: { lessonId: string }) {
+  const [summary, setSummary] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!lessonId) return;
+    let cancelled = false;
+    fetch(`/api/student/lesson-mood?lessonId=${lessonId}`)
+      .then((r) => r.json())
+      .then((data: { summary?: string; total?: number }) => {
+        if (!cancelled && data.total && data.total > 0) setSummary(data.summary ?? null);
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [lessonId]);
+
+  if (loading || !summary) return null;
+
+  return (
+    <div className="mx-0 mb-3 rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-3 py-2.5 flex items-center gap-2">
+      <span className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500 flex-shrink-0">Humor da turma</span>
+      <span className="text-xs text-zinc-300 font-semibold">{summary}</span>
+    </div>
+  );
+}
+
 const containerV = {
   hidden: { opacity: 0 },
   visible: {
@@ -156,6 +186,7 @@ const INTERACTIVE_FOCUS_RING =
 export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
+  const { isExpired: sessionExpired, recovering: sessionRecovering, recover: recoverSession, forceLogout: sessionForceLogout } = useSessionRecovery();
   const { payments, pendingOrLatePaymentsCount, currentMonthReference, currentMonthBuckets } = usePayments();
   const { appConfig, cadastroPath, cadastroInviteUrl, generateEnrollmentInviteCode } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
@@ -2808,8 +2839,12 @@ export default function WillCockpit() {
                 </div>
               </motion.div>
               <div className={`${MODAL_BODY_SCROLL} flex min-h-0 flex-col`}>
-                <LessonRatingsSheet 
-                  lesson={selectedLesson} 
+                {/* Mood summary for completed lessons */}
+                {selectedLesson?.status === "completed" && (
+                  <LessonMoodSummary lessonId={selectedLesson.id} />
+                )}
+                <LessonRatingsSheet
+                  lesson={selectedLesson}
                   onSave={() => {
                     setActionFeedback(`Avaliação da aula "${selectedLesson.title}" salva no cofre de performance.`);
                     setShowLessonModal(false);
@@ -3392,6 +3427,14 @@ export default function WillCockpit() {
           <AdminSettingsPanel onClose={() => setShowAdminSettings(false)} />
         ) : null}
       </AnimatePresence>
+
+      {/* ===== SESSION EXPIRED MODAL ===== */}
+      <SessionExpiredModal
+        isOpen={sessionExpired}
+        onReconnect={recoverSession}
+        onLogout={sessionForceLogout}
+        recovering={sessionRecovering}
+      />
     </div>
     </LayoutGroup>
   );

@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Medal, TrendingUp } from "lucide-react";
+import { X, Medal, TrendingUp, Crown } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { CARD_TIER_THRESHOLDS } from "@/context/types";
 import type { Student } from "@/context/types";
+import dynamic from "next/dynamic";
+
+const HallOfFamePanel = dynamic(() => import("@/components/will/HallOfFamePanel"), { ssr: false, loading: () => null });
 
 interface LeaderboardEntry {
   studentId: string;
@@ -16,6 +19,8 @@ interface LeaderboardEntry {
   rank: number;
   weeklyXP: number;
 }
+
+type Period = "week" | "month" | "quarter" | "alltime";
 
 interface LeaderboardPanelProps {
   isOpen: boolean;
@@ -53,10 +58,18 @@ const calculateTier = (totalXP: number): "bronze" | "prata" | "ouro" | "diamante
   return "bronze";
 };
 
+const PERIOD_LABELS: Record<Period, string> = {
+  week: "Semana",
+  month: "Mes",
+  quarter: "Trimestre",
+  alltime: "Historico",
+};
+
 export function LeaderboardPanel({ isOpen, onClose, timeframe = "all" }: LeaderboardPanelProps) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedTimeframe, setSelectedTimeframe] = useState(timeframe);
+  const [period, setPeriod] = useState<Period>(timeframe === "week" ? "week" : timeframe === "month" ? "month" : "alltime");
+  const [showHallOfFame, setShowHallOfFame] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -64,83 +77,30 @@ export function LeaderboardPanel({ isOpen, onClose, timeframe = "all" }: Leaderb
     const loadLeaderboard = async () => {
       setLoading(true);
       try {
-        const supabase = getSupabaseClient();
-        if (!supabase) return;
+        const res = await fetch(`/api/leaderboard?period=${period}&limit=50`);
+        if (!res.ok) throw new Error("leaderboard fetch failed");
+        const data = (await res.json()) as {
+          entries: Array<{
+            studentId: string;
+            name: string;
+            email: string;
+            totalXP: number;
+            allTimeXP: number;
+            tier: string;
+            rank: number;
+            weeklyXP: number;
+          }>;
+        };
 
-        // Calculate date cutoff based on timeframe
-        const now = new Date();
-        let dateFilter = null;
-
-        if (selectedTimeframe === "week") {
-          dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        } else if (selectedTimeframe === "month") {
-          dateFilter = new Date(now.getFullYear(), now.getMonth(), 1);
-        }
-
-        // Query all-time totals
-        const { data: allTimeData, error: allTimeError } = await supabase
-          .from("xp_log")
-          .select("student_id, points")
-          .eq("validation_passed", true);
-
-        if (allTimeError) {
-          console.error("Failed to load leaderboard:", allTimeError);
-          return;
-        }
-
-        // Query filtered by timeframe
-        let weeklyQuery = supabase.from("xp_log").select("student_id, points").eq("validation_passed", true);
-
-        if (dateFilter) {
-          weeklyQuery = weeklyQuery.gte("created_at", dateFilter.toISOString());
-        }
-
-        const { data: timeframeData } = await weeklyQuery;
-
-        // Get students list
-        const { data: studentsData } = await supabase.from("students").select("auth_user_id, name, email");
-
-        // Aggregate XP by student
-        const allTimeMap = new Map<string, number>();
-        const timeframeMap = new Map<string, number>();
-
-        allTimeData?.forEach((row) => {
-          const current = allTimeMap.get(row.student_id) || 0;
-          allTimeMap.set(row.student_id, current + (row.points || 0));
-        });
-
-        timeframeData?.forEach((row) => {
-          const current = timeframeMap.get(row.student_id) || 0;
-          timeframeMap.set(row.student_id, current + (row.points || 0));
-        });
-
-        // Build leaderboard entries
-        const leaderboardEntries: LeaderboardEntry[] = (studentsData || [])
-          .filter((s) => {
-            const xp = selectedTimeframe === "all" ? allTimeMap.get(s.auth_user_id) : timeframeMap.get(s.auth_user_id);
-            return xp && xp > 0;
-          })
-          .map((student) => {
-            const totalXP = selectedTimeframe === "all" ? allTimeMap.get(student.auth_user_id) || 0 : timeframeMap.get(student.auth_user_id) || 0;
-            return {
-              studentId: student.auth_user_id,
-              name: student.name || "Sem nome",
-              email: student.email || "",
-              totalXP,
-              weeklyXP: timeframeMap.get(student.auth_user_id) || 0,
-              tier: calculateTier(allTimeMap.get(student.auth_user_id) || 0),
-              rank: 0, // Will be set after sorting
-            };
-          })
-          .sort((a, b) => {
-            const xpA = selectedTimeframe === "all" ? a.totalXP : a.weeklyXP;
-            const xpB = selectedTimeframe === "all" ? b.totalXP : b.weeklyXP;
-            return xpB - xpA;
-          })
-          .map((entry, idx) => ({
-            ...entry,
-            rank: idx + 1,
-          }));
+        const leaderboardEntries: LeaderboardEntry[] = (data.entries ?? []).map((e) => ({
+          studentId: e.studentId,
+          name: e.name || "Sem nome",
+          email: e.email || "",
+          totalXP: e.totalXP,
+          weeklyXP: e.weeklyXP,
+          tier: calculateTier(e.allTimeXP ?? e.totalXP),
+          rank: e.rank,
+        }));
 
         setEntries(leaderboardEntries);
       } catch (error) {
@@ -151,9 +111,10 @@ export function LeaderboardPanel({ isOpen, onClose, timeframe = "all" }: Leaderb
     };
 
     loadLeaderboard();
-  }, [isOpen, selectedTimeframe]);
+  }, [isOpen, period]);
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -184,21 +145,24 @@ export function LeaderboardPanel({ isOpen, onClose, timeframe = "all" }: Leaderb
               </button>
             </div>
 
-            {/* Timeframe selector */}
-            <div className="px-6 pt-4 pb-2 flex gap-2">
-              {(["all", "month", "week"] as const).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setSelectedTimeframe(tf)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    selectedTimeframe === tf
-                      ? "bg-yellow-500/20 text-yellow-400 border border-yellow-400/50"
-                      : "bg-slate-700/30 text-slate-300 border border-slate-600/30 hover:bg-slate-700/50"
-                  }`}
-                >
-                  {tf === "all" ? "Histórico" : tf === "month" ? "Este mês" : "Esta semana"}
-                </button>
-              ))}
+            {/* Period filters */}
+            <div className="px-6 pt-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
+              <AnimatePresence initial={false}>
+                {(["week", "month", "quarter", "alltime"] as Period[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    data-testid={`leaderboard-period-${p}`}
+                    className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      period === p
+                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-400/50"
+                        : "bg-slate-700/30 text-slate-300 border border-slate-600/30 hover:bg-slate-700/50"
+                    }`}
+                  >
+                    {PERIOD_LABELS[p]}
+                  </button>
+                ))}
+              </AnimatePresence>
             </div>
 
             {/* Leaderboard */}
@@ -212,13 +176,21 @@ export function LeaderboardPanel({ isOpen, onClose, timeframe = "all" }: Leaderb
                   <div className="text-slate-400">Nenhum atleta com XP ainda</div>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <AnimatePresence mode="wait">
+                <motion.div
+                  key={period}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18 }}
+                  className="space-y-3"
+                >
                   {entries.map((entry, idx) => (
                     <motion.div
                       key={entry.studentId}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
+                      transition={{ delay: idx * 0.04 }}
                       className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
                         entry.rank <= 3
                           ? "bg-gradient-to-r from-yellow-500/10 to-yellow-500/5 border-yellow-500/30 shadow-lg shadow-yellow-500/10"
@@ -249,23 +221,42 @@ export function LeaderboardPanel({ isOpen, onClose, timeframe = "all" }: Leaderb
                       <div className="text-right flex-shrink-0">
                         <div className="flex items-center gap-1 text-yellow-400 font-bold text-lg">
                           <TrendingUp className="w-4 h-4" />
-                          {selectedTimeframe === "all" ? entry.totalXP : entry.weeklyXP}
+                          {entry.totalXP}
                         </div>
                         <p className="text-xs text-slate-400">XP</p>
                       </div>
                     </motion.div>
                   ))}
-                </div>
+                </motion.div>
+                </AnimatePresence>
               )}
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-slate-700/50 bg-slate-900/50 text-xs text-slate-400">
-              <p>Mostrando {entries.length} atletas • Filtrando apenas XP validado</p>
+            <div className="px-6 py-4 border-t border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
+              <p className="text-xs text-slate-400">
+                {entries.length} atleta{entries.length !== 1 ? "s" : ""} • XP validado
+              </p>
+              <button
+                onClick={() => setShowHallOfFame(true)}
+                data-testid="hall-of-fame-btn"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold hover:bg-amber-500/20 transition-colors"
+              >
+                <Crown className="w-3.5 h-3.5" />
+                Hall of Fame
+              </button>
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+
+    {/* Hall of Fame panel */}
+    <AnimatePresence>
+      {showHallOfFame && (
+        <HallOfFamePanel onClose={() => setShowHallOfFame(false)} />
+      )}
+    </AnimatePresence>
+    </>
   );
 }

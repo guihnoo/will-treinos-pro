@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
 
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)));
-    const timeframe = searchParams.get("timeframe") ?? "all";
+    // Support both 'timeframe' (legacy) and 'period' (sprint 89) params
+    const rawTimeframe = searchParams.get("period") ?? searchParams.get("timeframe") ?? "all";
+    // Normalize: 'alltime' → 'all', 'quarter' → custom
+    const timeframe = rawTimeframe === "alltime" ? "all" : rawTimeframe;
     const offset = (page - 1) * limit;
 
     // Use service role to bypass RLS for leaderboard (public data)
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
       auth: { persistSession: false },
     });
 
-    // Calculate date filter for timeframe
+    // Calculate date filter for timeframe/period
     let dateFilter: string | null = null;
     if (timeframe === "week") {
       const d = new Date();
@@ -59,7 +62,12 @@ export async function GET(request: NextRequest) {
       d.setDate(1);
       d.setHours(0, 0, 0, 0);
       dateFilter = d.toISOString();
+    } else if (timeframe === "quarter") {
+      const d = new Date();
+      d.setDate(d.getDate() - 90);
+      dateFilter = d.toISOString();
     }
+    // 'all' / 'alltime' → no date filter
 
     // Build the aggregate query — single DB round-trip
     let xpQuery = supabase
