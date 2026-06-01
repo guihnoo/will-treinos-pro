@@ -83,6 +83,7 @@ const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),      
 const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),   { ssr: false, loading: () => null });
 const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),    { ssr: false, loading: () => null });
 const AttentionPanel         = dynamic(() => import("./AttentionPanel"),         { ssr: false, loading: () => null });
+const CoachOnboarding        = dynamic(() => import("./CoachOnboarding"),        { ssr: false, loading: () => null });
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -174,6 +175,7 @@ export default function WillCockpit() {
   const [showQuickAttendance, setShowQuickAttendance] = useState(false);
   const [showBulkEval, setShowBulkEval] = useState(false);
   const [showAttention, setShowAttention] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -214,6 +216,14 @@ export default function WillCockpit() {
   const [calendarWeekStart] = useState<Date>(getMonday(new Date()));
 
   // Load upcoming absence + reposition requests on mount
+  // Show onboarding wizard for first-time coach
+  useEffect(() => {
+    if (!user) return;
+    import("./CoachOnboarding").then(({ shouldShowOnboarding }) => {
+      if (shouldShowOnboarding()) setShowOnboarding(true);
+    });
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
@@ -2408,6 +2418,38 @@ export default function WillCockpit() {
                       type="button"
                       onClick={async () => {
                         if (!selectedLesson) return;
+                        try {
+                          const { getSupabaseClient } = await import("@/lib/supabaseClient");
+                          const sb = getSupabaseClient();
+                          const { data: { session } } = await sb.auth.getSession();
+                          if (!session?.access_token) return;
+                          const res = await fetch("/api/coach/send-confirmation", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                            body: JSON.stringify({
+                              lessonId:           selectedLesson.id,
+                              lessonTitle:        selectedLesson.title || "Aula",
+                              lessonDate:         selectedLesson.date,
+                              lessonTime:         selectedLesson.startTime,
+                              enrolledStudentIds: selectedLesson.enrolledStudents,
+                            }),
+                          });
+                          const data = await res.json();
+                          toast(`📨 Confirmação enviada para ${data.sent ?? 0} aluno${data.sent !== 1 ? "s" : ""}!`);
+                        } catch { toast("Erro ao enviar confirmação.", "error"); }
+                      }}
+                      className={`min-h-11 min-w-11 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:border-cyan-500/50 hover:bg-cyan-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
+                      title="Pedir confirmação de presença"
+                    >
+                      <MessageCircle className="mx-auto h-4 w-4 text-cyan-400" />
+                    </motion.button>
+                  )}
+                  {selectedLesson?.status === "scheduled" && (
+                    <motion.button
+                      whileTap={PRESS_SCALE}
+                      type="button"
+                      onClick={async () => {
+                        if (!selectedLesson) return;
                         if (!window.confirm(`Cancelar "${selectedLesson.title}"? Todos os alunos serão notificados.`)) return;
                         updateLesson(selectedLesson.id, { status: "cancelled" });
                         setShowLessonModal(false);
@@ -2909,6 +2951,12 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showAttention ? (
           <AttentionPanel onClose={() => setShowAttention(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showOnboarding ? (
+          <CoachOnboarding onClose={() => setShowOnboarding(false)} />
         ) : null}
       </AnimatePresence>
 

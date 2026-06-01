@@ -1157,6 +1157,51 @@ export default function StudentHome() {
         </motion.div>
       )}
 
+      {/* Próximas Aulas — 3 upcoming lessons with quick actions */}
+      {user?.id && (() => {
+        const today = localDateISO();
+        const upcoming = myLessons
+          .filter(l => l.status === "scheduled" && l.date >= today)
+          .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
+          .slice(0, 3);
+        if (upcoming.length === 0) return null;
+        return (
+          <motion.div variants={homeItem} className="mb-3 px-1">
+            <div className="space-y-1.5">
+              {upcoming.map(lesson => {
+                const title = lesson.title || getCategory(lesson.categoryId)?.name || "Aula";
+                const d = new Date(`${lesson.date}T00:00:00`);
+                const today2 = new Date(); today2.setHours(0,0,0,0);
+                const diff = Math.round((d.getTime() - today2.getTime()) / 86400000);
+                const dayLabel = diff === 0 ? "Hoje" : diff === 1 ? "Amanhã" : d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+                return (
+                  <div key={lesson.id} className="flex items-center gap-3 rounded-2xl border border-zinc-800/60 bg-zinc-900/30 px-3 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-white truncate">{title}</p>
+                      <p className="text-[10px] text-zinc-500">{dayLabel} · {lesson.startTime}</p>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => { haptic(8); setShowAbsenceSheet(true); }}
+                        className="rounded-lg border border-orange-500/30 bg-orange-500/8 px-2 py-1 text-[9px] font-black text-orange-400 hover:bg-orange-500/15 transition-colors"
+                      >
+                        Faltar
+                      </button>
+                      <button
+                        onClick={() => { haptic(8); setShowRepositionSheet(true); }}
+                        className="rounded-lg border border-teal-500/30 bg-teal-500/8 px-2 py-1 text-[9px] font-black text-teal-400 hover:bg-teal-500/15 transition-colors"
+                      >
+                        Repor
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {/* Alerta de Frequência */}
       {user?.id && profile?.frequency && (
         <motion.div variants={homeItem} className="mb-3 px-1">
