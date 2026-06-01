@@ -151,7 +151,7 @@ async function buildForecast(
     trend: "estável",
     riskLevel: atRiskCount > 3 ? "alto" : atRiskCount > 0 ? "médio" : "baixo",
     projectedRevenue3m: maxPotential * 0.85 * 3,
-    summary: "Configure ANTHROPIC_API_KEY para análise preditiva financeira.",
+    summary: "Mantenha o acompanhamento de pagamentos em dia para uma visão financeira precisa.",
     topAction: "Revisar pagamentos pendentes e contatar alunos inadimplentes.",
     secondaryActions: ["Confirmar mensalidades no início do mês", "Monitorar taxa de retenção"],
   };

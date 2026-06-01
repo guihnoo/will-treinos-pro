@@ -55,7 +55,7 @@ function buildFallback(params: {
       params.avgScore !== null ? `Nota média da aula: ${params.avgScore}/10.` : "Avaliações pendentes.",
       params.xpDistributed > 0 ? `${params.xpDistributed} XP distribuídos na sessão.` : "XP será distribuído após avaliações.",
     ],
-    aiSummary: `Aula de ${params.lessonTitle} realizada com ${params.presentCount} atletas presentes. Configure ANTHROPIC_API_KEY para resumo personalizado com IA.`,
+    aiSummary: `Aula de ${params.lessonTitle} concluída com ${params.presentCount} de ${params.enrolledCount} atletas presentes (${rate}% de presença).${params.avgScore !== null ? ` Nota média da turma: ${params.avgScore}/10.` : ""}`,
     suggestedPost: `Aula de ${params.lessonTitle} concluída! ${params.presentCount}/${params.enrolledCount} atletas presentes. 🏐`,
   };
 }

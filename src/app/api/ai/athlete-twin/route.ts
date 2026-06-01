@@ -254,7 +254,7 @@ function buildFallbackProfile(totalXP: number, lastActivity: number | null, xp7d
   return {
     type: isInactive ? "Em Risco" : isActive ? "Em Ascensão" : totalXP > 3000 ? "Guerreiro" : "Promessa",
     burnoutRisk: "baixo",
-    motivationalNote: "Configure ANTHROPIC_API_KEY para análise psicológica personalizada deste atleta.",
+    motivationalNote: "Continue treinando com consistência — cada aula é um passo a mais na sua evolução.",
     focusPriorities: ["saque", "defesa"],
     insight: "Acompanhe a frequência e as avaliações para ter insights detalhados.",
     nextTierETA: null,

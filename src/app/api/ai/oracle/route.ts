@@ -163,7 +163,7 @@ function buildFallback(): OraclePayload {
         type: "attendance",
         severity: "ok",
         title: "Oráculo offline",
-        body: "Configure ANTHROPIC_API_KEY nas variáveis de ambiente para ativar análise preditiva em tempo real.",
+        body: "Dados insuficientes para gerar análise preditiva. Continue registrando presenças e avaliações.",
         action: "Ver configurações",
       },
       {

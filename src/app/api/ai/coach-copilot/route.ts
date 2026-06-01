@@ -497,7 +497,7 @@ function trainingFallback(): TrainingPlanResult {
       { name: "Saque flutuante", focus: "saque", description: "Saque float da linha dos 9m com variação de trajetória", sets: "3 séries", reps: "8 tentativas", tip: "Contato firme no centro da bola" },
       { name: "Ataque por zona 4", focus: "ataque", description: "Tossed ball + armada por zona 4, variando ângulo", sets: "3 séries", reps: "6 ataques", tip: "Olhar bloqueio antes de bater" },
     ],
-    notes: "Configure ANTHROPIC_API_KEY para planos personalizados baseados no perfil de cada atleta.",
+    notes: "Plano base gerado. Ajuste os exercícios conforme o nível e histórico de cada atleta.",
   };
 }
 

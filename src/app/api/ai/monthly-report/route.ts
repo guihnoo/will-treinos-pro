@@ -215,7 +215,7 @@ async function buildAISection(data: Record<string, unknown>, period: string): Pr
       "Acompanhe a tendência de receita para identificar oportunidades de crescimento.",
       "Mantenha o engajamento dos alunos com check-ins e avaliações regulares.",
     ],
-    strategicComment: "Configure ANTHROPIC_API_KEY para análise estratégica personalizada.",
+    strategicComment: "Foque na retenção dos alunos ativos e no acompanhamento dos pagamentos pendentes para manter a saúde financeira do negócio.",
     nextMonthFocus: "Revisar retenção de alunos e pipeline de novos cadastros.",
   };
 
