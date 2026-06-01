@@ -8,6 +8,7 @@ import {
   Send, Dumbbell, UserCheck, UserX, PhoneCall, DollarSign, Activity, RotateCcw, Star, Copy, Link2,
 } from "lucide-react";
 import type { Student } from "@/context/types";
+import { STUDENT_TAGS, type StudentTag } from "@/lib/studentTags";
 import { useAuth } from "@/context/AuthContext";
 import { useCriticalData } from "@/context/CriticalDataContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -69,6 +70,7 @@ export default function AlunosPage() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
+  const [tagFilter, setTagFilter] = useState<StudentTag | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [showMessage, setShowMessage] = useState(false);
   const [messageText, setMessageText] = useState("");
@@ -82,8 +84,9 @@ export default function AlunosPage() {
   const filtered = useMemo(() => {
     return students
       .filter(s => filter === "all" || s.status === filter)
+      .filter(s => !tagFilter || (s.tags ?? []).includes(tagFilter))
       .filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
-  }, [students, filter, search]);
+  }, [students, filter, tagFilter, search]);
 
   const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     active: { label: "Ativo", color: "#22C55E", bg: "rgba(34,197,94,0.1)" },
@@ -252,6 +255,36 @@ export default function AlunosPage() {
             </motion.button>
           ))}
         </div>
+
+        {/* Tag filters */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setTagFilter(null)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${ctaClass} ${
+              tagFilter === null
+                ? "bg-zinc-700 text-white border-zinc-600"
+                : "bg-[#0A0A0A] text-zinc-500 border-zinc-800 hover:border-zinc-600"
+            }`}
+          >
+            Todas as tags
+          </motion.button>
+          {(Object.entries(STUDENT_TAGS) as [StudentTag, (typeof STUDENT_TAGS)[StudentTag]][]).map(([key, tag]) => (
+            <motion.button
+              key={key}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTagFilter(tagFilter === key ? null : key)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${ctaClass} ${
+                tagFilter === key
+                  ? `${tag.bg} ${tag.border}`
+                  : "bg-[#0A0A0A] text-zinc-500 border-zinc-800 hover:border-zinc-600"
+              }`}
+              style={tagFilter === key ? { color: tag.color } : {}}
+            >
+              {tag.icon} {tag.label}
+            </motion.button>
+          ))}
+        </div>
       </motion.div>
 
       {/* Student List */}
@@ -265,6 +298,7 @@ export default function AlunosPage() {
             onAction={() => {
               setSearch("");
               setFilter("all");
+              setTagFilter(null);
             }}
           />
         ) : null}
@@ -330,6 +364,23 @@ export default function AlunosPage() {
                       <span>{student.plan}</span>
                       {student.monthlyValue > 0 && <span className="text-zinc-600">R$ {student.monthlyValue}</span>}
                     </div>
+                    {(student.tags ?? []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {(student.tags ?? []).map((tag) => {
+                          const cfg = STUDENT_TAGS[tag as StudentTag];
+                          if (!cfg) return null;
+                          return (
+                            <span
+                              key={tag}
+                              className={`flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${cfg.bg} ${cfg.border}`}
+                              style={{ color: cfg.color }}
+                            >
+                              {cfg.icon} {cfg.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                   {student.attendanceHistory && (
                     <Sparkline data={student.attendanceHistory} color="#22C55E" />

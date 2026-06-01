@@ -42,6 +42,8 @@ export interface Student {
   /** ISO date "YYYY-MM-DD" — used by birthday cron and cockpit birthday panel. */
   birthdate?: string;
   attendanceHistory?: { date: string; status: 'present' | 'absent' }[];
+  /** Etiquetas do coach: vip, em_risco, destaque, iniciante, trial */
+  tags?: string[];
 }
 
 // ─── Reposition System ──────────────────────────────────────────────────────

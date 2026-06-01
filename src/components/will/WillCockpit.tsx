@@ -98,11 +98,15 @@ const ChurnPreventionPanel       = dynamic(() => import("./ChurnPreventionPanel"
 const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet"),        { ssr: false, loading: () => null });
 const ScoutModePanel             = dynamic(() => import("./ScoutModePanel"),             { ssr: false, loading: () => null });
 const EvaluationTemplateManager  = dynamic(() => import("./EvaluationTemplateManager"), { ssr: false, loading: () => null });
+const TemporalComparisonPanel    = dynamic(() => import("./TemporalComparisonPanel"),    { ssr: false, loading: () => null });
 const AppHealthPanel              = dynamic(() => import("./AppHealthPanel"),              { ssr: false, loading: () => null });
 const StudentReportSheet          = dynamic(() => import("./StudentReportSheet"),          { ssr: false, loading: () => null });
 const AdminSettingsPanel          = dynamic(() => import("./AdminSettingsPanel"),          { ssr: false, loading: () => null });
 const GlobalSearchModal           = dynamic(() => import("./GlobalSearchModal"),           { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
+import EmptyCockpitGuide from "./EmptyCockpitGuide";
+import StudentTagsEditor from "./StudentTagsEditor";
+import { STUDENT_TAGS } from "@/lib/studentTags";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -238,6 +242,8 @@ export default function WillCockpit() {
   const [reportStudentId, setReportStudentId] = useState<string | null>(null);
   const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [showTemporalComparison, setShowTemporalComparison] = useState(false);
+  const [temporalStudentId, setTemporalStudentId] = useState<string | null>(null);
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
@@ -411,6 +417,7 @@ export default function WillCockpit() {
     showStudentReport ||
     showAdminSettings ||
     showGlobalSearch ||
+    showTemporalComparison ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -553,6 +560,7 @@ export default function WillCockpit() {
   const evalHistoryStudent = useMemo(() => students.find((s) => s.id === evalHistoryStudentId) ?? null, [evalHistoryStudentId, students]);
   const financeStudent = useMemo(() => students.find((s) => s.id === financeStudentId) ?? null, [financeStudentId, students]);
   const reportStudent = useMemo(() => students.find((s) => s.id === reportStudentId) ?? null, [reportStudentId, students]);
+  const temporalStudent = useMemo(() => students.find((s) => s.id === temporalStudentId) ?? null, [temporalStudentId, students]);
   const birthdayStudents = useMemo(() => {
     const today = new Date();
     const todayM = today.getMonth() + 1;
@@ -802,6 +810,16 @@ export default function WillCockpit() {
           ))}
         </div>
       </motion.div>
+
+      {/* BLOCO EMPTY STATE: Guia do primeiro aluno */}
+      {activeTab === "hoje" && students.filter((s) => s.status === "active").length === 0 && (
+        <motion.div variants={itemV}>
+          <EmptyCockpitGuide
+            onCreateLesson={() => setShowCreateLesson(true)}
+            onInviteStudent={() => {}}
+          />
+        </motion.div>
+      )}
 
       {/* BLOCO 0: Clima da Quadra — alerta inteligente */}
       {activeTab === "hoje" && appConfig.courtLocation && (
@@ -2906,6 +2924,30 @@ export default function WillCockpit() {
                     </div>
                   </div>
                 </div>
+                {/* Tags do aluno — leitura rápida */}
+                {(selectedStudent.tags ?? []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(selectedStudent.tags ?? []).map((tag) => {
+                      const cfg = STUDENT_TAGS[tag as keyof typeof STUDENT_TAGS];
+                      if (!cfg) return null;
+                      return (
+                        <span
+                          key={tag}
+                          className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${cfg.bg} ${cfg.border}`}
+                          style={{ color: cfg.color }}
+                        >
+                          {cfg.icon} {cfg.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Tags editor */}
+                <StudentTagsEditor
+                  studentId={selectedStudent.id}
+                  currentTags={selectedStudent.tags ?? []}
+                  onSave={(tags) => updateStudent(selectedStudent.id, { tags })}
+                />
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3">Plano: {selectedStudent.plan}</div>
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3">Frequencia alvo: {selectedStudent.frequency}x semana</div>
                 <div className="rounded-xl border border-zinc-800/90 bg-black/45 p-3">Status: {selectedStudent.status}</div>
@@ -2966,6 +3008,20 @@ export default function WillCockpit() {
                 >
                   <ClipboardList className="h-4 w-4 text-teal-400" />
                   Relatório WhatsApp
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileTap={PRESS_SCALE}
+                  data-testid="btn-temporal-comparison"
+                  onClick={() => {
+                    setTemporalStudentId(selectedStudent.id);
+                    setShowStudentModal(false);
+                    setShowTemporalComparison(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 py-3 text-[12px] font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15"
+                >
+                  <CalendarDays className="h-4 w-4 text-indigo-400" />
+                  Comparar Períodos
                 </motion.button>
 
                 {/* AI Training Plan */}
@@ -3425,6 +3481,18 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showAdminSettings ? (
           <AdminSettingsPanel onClose={() => setShowAdminSettings(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTemporalComparison && temporalStudent ? (
+          <TemporalComparisonPanel
+            student={temporalStudent}
+            onClose={() => {
+              setShowTemporalComparison(false);
+              setTemporalStudentId(null);
+            }}
+          />
         ) : null}
       </AnimatePresence>
 
