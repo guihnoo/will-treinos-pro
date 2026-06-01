@@ -24,6 +24,7 @@ import dynamic from "next/dynamic";
 import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersistence";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
+import { richToast } from "@/hooks/useToast";
 import WeatherWidget from "@/components/WeatherWidget";
 import Link from "next/link";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -1191,9 +1192,9 @@ export default function StudentHome() {
         </div>
       </motion.div>
 
-      {/* Countdown da próxima aula */}
+      {/* 1. Countdown da próxima aula — destaque máximo */}
       {user?.id && (
-        <motion.div variants={homeItem} className="mb-3 px-1">
+        <motion.div variants={homeItem} className="px-1">
           <LessonCountdownCard
             lessons={lessons}
             studentId={user.id}
@@ -1203,7 +1204,68 @@ export default function StudentHome() {
         </motion.div>
       )}
 
-      {/* Próximas Aulas — 3 upcoming lessons with quick actions */}
+      {/* 2. Bloco Hero do Aluno */}
+      <motion.div variants={homeItem}>
+        <Link href="/perfil">
+          <motion.div
+            whileTap={{ scale: 0.985 }}
+            className="rounded-2xl border border-[#EAB308]/15 bg-zinc-950 px-4 py-3.5 flex items-center gap-3.5 relative overflow-hidden cursor-pointer hover:border-[#EAB308]/30 transition-colors"
+          >
+            <div className="absolute top-0 right-0 w-28 h-28 bg-[#EAB308] opacity-[0.04] blur-[40px] rounded-full pointer-events-none" />
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <img
+                src={resolveAvatarSrc(avatarSeed, "Ricardo")}
+                className={`w-14 h-14 aspect-square rounded-full bg-zinc-900 object-cover ${
+                  (avatarSeed?.startsWith("data:") || avatarSeed?.startsWith("http://") || avatarSeed?.startsWith("https://") || avatarSeed?.startsWith("/"))
+                    ? "border-2 border-[#EAB308]"
+                    : "border-2 border-zinc-700"
+                }`}
+                alt={profile?.name || user?.name || "Atleta"}
+              />
+              {/* Tier badge */}
+              <div
+                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border border-black flex items-center justify-center text-[9px] font-black"
+                style={{ background: equippedTier.color, color: "#000" }}
+                title={equippedTier.label}
+              >
+                {equippedTier.label.slice(0, 1)}
+              </div>
+            </div>
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-bold text-white leading-tight truncate">
+                {greeting()}, <span style={{ color: equippedTier.color }}>{(profile?.name || user?.name || "Atleta").split(" ")[0]}!</span>
+              </h2>
+              <p className="text-[11px] text-zinc-500 truncate mt-0.5">{equippedTier.label} · {profile?.plan || "Aluno"} · {profile?.categories[0] || "Vôlei"}</p>
+            </div>
+            {/* XP + Streak compact */}
+            <div className="flex-shrink-0 flex flex-col items-end gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-black" style={{ color: equippedTier.color }}>{totalXP}</span>
+                <span className="text-[10px] text-zinc-500">XP</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-orange-400" />
+                <span className="text-xs font-bold text-zinc-300">{streak}</span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); haptic([16, 12, 24]); setShowNotif(true); }}
+                className="relative mt-0.5"
+                aria-label="Notificações"
+              >
+                <Bell className="w-4 h-4 text-zinc-400" />
+                {unread > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center">{unread}</span>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </Link>
+      </motion.div>
+
+      {/* 3. Próximas Aulas — Bloco "Hoje" — 3 upcoming with quick actions */}
       {user?.id && (() => {
         const today = localDateISO();
         const upcoming = myLessons
@@ -1212,7 +1274,7 @@ export default function StudentHome() {
           .slice(0, 3);
         if (upcoming.length === 0) return null;
         return (
-          <motion.div variants={homeItem} className="mb-3 px-1">
+          <motion.div variants={homeItem} className="px-1">
             <div className="space-y-1.5">
               {upcoming.map(lesson => {
                 const title = lesson.title || getCategory(lesson.categoryId)?.name || "Aula";
@@ -1250,7 +1312,7 @@ export default function StudentHome() {
 
       {/* Alerta de Frequência */}
       {user?.id && profile?.frequency && (
-        <motion.div variants={homeItem} className="mb-3 px-1">
+        <motion.div variants={homeItem} className="px-1">
           <FrequencyAlertBanner
             lessons={lessons}
             studentId={user.id}
@@ -1262,7 +1324,7 @@ export default function StudentHome() {
 
       {/* Metas do Coach */}
       {profile?.id && (
-        <motion.div variants={homeItem} className="mb-3 px-1">
+        <motion.div variants={homeItem} className="px-1">
           <StudentGoalsCard
             studentCrmId={profile.id}
             totalXP={totalXP}
@@ -1273,7 +1335,7 @@ export default function StudentHome() {
 
       {/* Banner: aulas não avaliadas */}
       {unratedLessons.length > 0 && (
-        <motion.div variants={homeItem} className="mb-3 px-1">
+        <motion.div variants={homeItem} className="px-1">
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => setRatingLesson(unratedLessons[0])}
@@ -1296,58 +1358,8 @@ export default function StudentHome() {
       )}
 
       {/* Your Day Card */}
-      <motion.div variants={homeItem} className="mb-4">
+      <motion.div variants={homeItem}>
         <YourDayCard />
-      </motion.div>
-
-      {/* Header */}
-      <motion.div variants={homeItem} className={`mb-1 flex justify-between items-start gap-3 sm:gap-4 rounded-2xl p-2 bg-gradient-to-b ${dayTheme.headerAura}`}>
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          {/* Avatar — clickable, goes to /perfil. Shows real photo if uploaded */}
-          <Link href="/perfil" className="flex-shrink-0">
-            <motion.div whileTap={{scale:0.92}} className="relative cursor-pointer flex-shrink-0">
-              <img
-                src={resolveAvatarSrc(avatarSeed, "Ricardo")}
-                className={`w-16 h-16 sm:w-20 sm:h-20 aspect-square rounded-full bg-zinc-900 object-cover transition-all flex-shrink-0 ${
-                  (avatarSeed?.startsWith("data:") || avatarSeed?.startsWith("http://") || avatarSeed?.startsWith("https://") || avatarSeed?.startsWith("/")) ? "border-2 border-[#EAB308]" : "border-2 border-zinc-700"
-                }`}
-              />
-              <motion.button
-                whileTap={{ scale: 0.85 }}
-                onClick={(e) => { e.preventDefault(); haptic([16, 12, 24]); setShowXpModal(true); }}
-                className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-black/80 border backdrop-blur-md p-0.5 ${ctaClass}`}
-                style={{ borderColor: `${equippedTier.color}88` }}
-                aria-label="Ver score de mérito"
-              >
-                <svg viewBox="0 0 24 24" className="w-full h-full" aria-hidden>
-                  <path d="M12 2 L20 6 V11.5 C20 16.5 16.4 20.1 12 22 C7.6 20.1 4 16.5 4 11.5 V6 Z" fill={equippedTier.color} stroke="rgba(255,255,255,0.45)" strokeWidth="0.8" />
-                  <path d="M7 9.5 C8.8 8.2, 11.4 8, 13.6 9.2 C15.6 10.3, 16.8 12.2, 17 14.5" fill="none" stroke="#0B0B0B" strokeWidth="1" strokeLinecap="round" />
-                  <circle cx="11.2" cy="12.4" r="1.1" fill="#0B0B0B" />
-                </svg>
-              </motion.button>
-            </motion.div>
-          </Link>
-          <div className="min-w-0">
-            {/* Use profile.name (live from students array) with user.name fallback */}
-            <h1 className="text-[clamp(1.15rem,5vw,1.72rem)] font-bold text-white leading-tight">
-              {greeting()}, <span className="text-[#EAB308]">{(profile?.name || user?.name || "Atleta").split(" ")[0]}!</span>
-            </h1>
-            <p className="text-zinc-500 text-xs sm:text-sm truncate">{profile?.plan||"Aluno"} · {profile?.categories[0]||"Vôlei"} · pronto para evoluir hoje</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <Link href="/perfil">
-            <motion.div whileTap={{scale:0.9}} whileHover={{ scale: 1.03 }}
-              className="w-11 h-11 flex items-center justify-center rounded-xl border border-white/[0.08] bg-zinc-950/50 backdrop-blur-xl hover:border-[#EAB308]/35 transition-colors shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
-              <User className="w-5 h-5 text-zinc-400"/>
-            </motion.div>
-          </Link>
-          <motion.button whileTap={{scale:0.9}} whileHover={{ scale: 1.03 }} onClick={()=>setShowNotif(true)}
-            className="relative w-11 h-11 flex items-center justify-center rounded-xl border border-white/[0.08] bg-zinc-950/50 backdrop-blur-xl hover:border-zinc-600 transition-colors shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
-            <Bell className="w-5 h-5 text-zinc-400"/>
-            {unread>0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">{unread}</span>}
-          </motion.button>
-        </div>
       </motion.div>
 
       {/* BLOCO 1: Próxima Aula + Check-in */}
@@ -1411,7 +1423,7 @@ export default function StudentHome() {
                       e.stopPropagation();
                       haptic([18, 12, 20]);
                       requestCheckIn(nextLesson.id, user!.id);
-                      toast("Chegada registrada! Aguardando confirmação do professor.");
+                      richToast.success("Chegada registrada!", "Aguardando confirmação do professor.");
                     }}
                     className={`flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl bg-[#EAB308] px-3 py-2 font-bold text-black shadow-[0_0_16px_rgba(234,179,8,0.3)] ${ctaClass}`}
                   >
@@ -2407,7 +2419,7 @@ export default function StudentHome() {
             lessonDate={ratingLesson.date}
             studentId={user?.id || ""}
             existingRating={getLessonRating(ratingLesson.id, user?.id || "")}
-            onSubmit={(r) => { addLessonRating(r); toast("⭐ Feedback enviado ao professor!"); }}
+            onSubmit={(r) => { addLessonRating(r); richToast.success("Feedback enviado!", "Obrigado por avaliar o treino."); }}
             onClose={() => setRatingLesson(null)}
           />
         )}
@@ -3419,7 +3431,7 @@ export default function StudentHome() {
           totalXP={totalXP}
           streak={streak}
           onUnlock={({ title, emoji, xp }) => {
-            toast(`${emoji} ${title} +${xp} XP`, "success");
+            richToast.xp(xp, `${emoji} ${title}`);
           }}
         />
       )}

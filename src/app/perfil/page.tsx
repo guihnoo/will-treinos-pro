@@ -54,12 +54,15 @@ export default function PerfilPage() {
   const profile = students.find(s => s.id === user?.id);
   const [editing, setEditing] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
+  const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success" | "error">("idle");
   useBodyScrollLock(showPhotoSheet);
   const [form, setForm] = useState({
     phone: profile?.phone || "",
     email: profile?.email || "",
     instagram: profile?.instagram || "",
     notes: profile?.notes || "",
+    birthdate: profile?.birthdate || "",
+    position: (profile as (typeof profile & { position?: string }))?.position || "",
   });
   const [avatar, setAvatar] = useState(profile?.avatar || user?.avatar || "Ricardo");
   const [customPhoto, setCustomPhoto] = useState<string | null>(() => {
@@ -83,6 +86,33 @@ export default function PerfilPage() {
     }
   };
 
+  // Computed age from birthdate
+  const computedAge = useMemo(() => {
+    const bd = form.birthdate || profile?.birthdate;
+    if (!bd) return null;
+    const birth = new Date(bd + "T12:00:00");
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const mDiff = now.getMonth() - birth.getMonth();
+    if (mDiff < 0 || (mDiff === 0 && now.getDate() < birth.getDate())) age--;
+    return age >= 0 && age < 120 ? age : null;
+  }, [form.birthdate, profile?.birthdate]);
+
+  // Profile completeness
+  const profileCompleteness = useMemo(() => {
+    const fields = [
+      Boolean(user?.name),
+      Boolean(form.email),
+      Boolean(form.phone),
+      Boolean(customPhoto || (avatar && !AVATAR_SEEDS.includes(avatar))),
+      Boolean(form.birthdate),
+      Boolean(form.position),
+      Boolean(profile?.frequency && profile.frequency > 0),
+    ];
+    const filled = fields.filter(Boolean).length;
+    return Math.round((filled / fields.length) * 100);
+  }, [user?.name, form.email, form.phone, customPhoto, avatar, form.birthdate, form.position, profile?.frequency]);
+
   const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -98,6 +128,7 @@ export default function PerfilPage() {
         toast("Sessão indisponível para upload da foto.", "error");
         return;
       }
+      setUploadState("uploading");
       try {
         const avatarUrl = await uploadAvatarToStorage(supabase, storageUserId, file);
         setCustomPhoto(null);
@@ -108,8 +139,12 @@ export default function PerfilPage() {
           updateUser(user.id, { avatar: avatarUrl });
         }
         setShowPhotoSheet(false);
+        setUploadState("success");
+        setTimeout(() => setUploadState("idle"), 2000);
         toast("📸 Foto enviada e salva!");
       } catch (error) {
+        setUploadState("error");
+        setTimeout(() => setUploadState("idle"), 3000);
         toast(error instanceof Error ? error.message : "Não foi possível enviar a foto.", "error");
       }
       return;
@@ -147,17 +182,21 @@ export default function PerfilPage() {
       img.src = raw;
     };
     reader.readAsDataURL(file);
+    setUploadState("success");
+    setTimeout(() => setUploadState("idle"), 2000);
   };
 
   const handleSave = () => {
     if (profile) {
-      const patch: Partial<Student> = {};
+      const patch: Partial<Student> & { position?: string } = {};
       if (canEditField("phone")) patch.phone = form.phone;
       if (canEditField("email")) patch.email = form.email;
       if (canEditField("instagram")) patch.instagram = form.instagram;
       if (canEditField("notes")) patch.notes = form.notes;
       if (canEditField("avatar")) patch.avatar = avatar;
-      if (Object.keys(patch).length) updateStudent(profile.id, patch);
+      if (form.birthdate) patch.birthdate = form.birthdate;
+      if (form.position) patch.position = form.position;
+      if (Object.keys(patch).length) updateStudent(profile.id, patch as Partial<Student>);
     } else if (user) {
       if (canEditField("avatar")) updateUser(user.id, { avatar });
     }
@@ -212,7 +251,7 @@ export default function PerfilPage() {
         className="bg-[#0A0A0A]/85 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-5 sm:p-6 mb-5 relative overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.5)]">
         <div className="absolute top-0 right-0 w-48 h-48 bg-[#EAB308] opacity-[0.08] blur-[70px] rounded-full" />
         <div className="absolute bottom-0 left-0 w-44 h-44 bg-[#EAB308] opacity-[0.04] blur-[60px] rounded-full" />
-        <div className="flex items-center gap-4 sm:gap-5">
+        <div className="flex items-start gap-4 sm:gap-5 pb-5">
           {/* Avatar with edit button */}
           <div className="relative flex-shrink-0">
             <motion.div whileTap={{ scale: 0.95 }} onClick={() => editing && canEditField("avatar") && setShowPhotoSheet(true)}
@@ -221,9 +260,26 @@ export default function PerfilPage() {
                 name={user?.name || "Aluno"}
                 photo={currentAvatar}
                 size="lg"
-                className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-[#EAB308]/65"
+                className={`h-24 w-24 sm:h-28 sm:w-28 border-4 transition-colors duration-700 ${
+                  uploadState === "success"
+                    ? "border-emerald-500"
+                    : uploadState === "error"
+                    ? "border-red-500"
+                    : "border-[#EAB308]/65"
+                }`}
               />
-              {editing && canEditField("avatar") && (
+              {/* Upload overlay */}
+              {uploadState === "uploading" && (
+                <div className="absolute inset-0 rounded-full bg-black/70 flex flex-col items-center justify-center gap-1">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                    className="w-6 h-6 rounded-full border-2 border-[#EAB308] border-t-transparent"
+                  />
+                  <span className="text-[9px] font-bold text-[#EAB308]">Enviando...</span>
+                </div>
+              )}
+              {editing && canEditField("avatar") && uploadState === "idle" && (
                 <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
                   <Camera className="w-6 h-6 text-white" />
                 </div>
@@ -234,6 +290,20 @@ export default function PerfilPage() {
                 className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#EAB308] rounded-full flex items-center justify-center shadow-lg">
                 <Camera className="w-4 h-4 text-black" />
               </motion.button>
+            )}
+            {/* Profile completeness bar */}
+            {profileCompleteness < 100 && (
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-28 space-y-0.5">
+                <div className="h-1 rounded-full bg-zinc-800 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${profileCompleteness}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="h-full rounded-full bg-[#EAB308]"
+                  />
+                </div>
+                <p className="text-[9px] text-zinc-500 text-center">{profileCompleteness}% completo</p>
+              </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -347,6 +417,75 @@ export default function PerfilPage() {
             </div>
           );
         })}
+
+        {/* Birthdate */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-zinc-900/80 border border-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Calendar className="w-4 h-4 text-zinc-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="mb-0.5 flex items-center gap-2">
+              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider">Data de nascimento</p>
+            </div>
+            {editing ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={form.birthdate}
+                  onChange={e => setForm(p => ({ ...p, birthdate: e.target.value }))}
+                  className="flex-1 min-h-11 bg-zinc-900/75 border border-zinc-700/90 rounded-xl py-2 px-3 text-white text-sm outline-none focus:border-[#EAB308]/60 focus:ring-2 focus:ring-[#EAB308]/20 transition-all accent-amber-400"
+                  style={{ colorScheme: "dark" }}
+                />
+                {computedAge !== null && (
+                  <span className="text-sm text-zinc-500 flex-shrink-0">{computedAge} anos</span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-white">
+                  {form.birthdate
+                    ? new Date(form.birthdate + "T12:00:00").toLocaleDateString("pt-BR")
+                    : <span className="text-zinc-600">Não informado</span>}
+                </p>
+                {computedAge !== null && (
+                  <span className="text-xs text-zinc-500">{computedAge} anos</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Position */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-zinc-900/80 border border-zinc-800 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Star className="w-4 h-4 text-zinc-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="mb-0.5">
+              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-wider">Posição preferida</p>
+            </div>
+            {editing ? (
+              <select
+                value={form.position}
+                onChange={e => setForm(p => ({ ...p, position: e.target.value }))}
+                className="w-full min-h-11 bg-zinc-900/75 border border-zinc-700/90 rounded-xl py-2 px-3 text-white text-sm outline-none focus:border-[#EAB308]/60 focus:ring-2 focus:ring-[#EAB308]/20 transition-all accent-amber-400"
+                style={{ colorScheme: "dark" }}
+              >
+                <option value="">Selecionar...</option>
+                <option value="Levantador">Levantador</option>
+                <option value="Oposto">Oposto</option>
+                <option value="Ponteiro">Ponteiro</option>
+                <option value="Central">Central</option>
+                <option value="Líbero">Líbero</option>
+                <option value="Universal">Universal</option>
+              </select>
+            ) : (
+              <p className="text-sm text-white">
+                {form.position || <span className="text-zinc-600">Não informado</span>}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Observations */}
         {(profile?.notes || editing) && (canEditField("notes") || !isStudent || profile?.notes) && (

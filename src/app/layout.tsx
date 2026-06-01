@@ -17,6 +17,7 @@ import { TrainingProvider } from "@/context/TrainingContext";
 import { GamificationProvider } from "@/context/GamificationContext";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ToastProvider } from "@/components/Toast";
+import { RichToastProvider } from "@/components/ui/ToastProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata = {
@@ -67,7 +68,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                                     <GamificationProvider>
                                       <LessonRatingsProvider>
                                         <ToastProvider>
-                                          <AuthWrapper>{children}</AuthWrapper>
+                                          <RichToastProvider>
+                                            <AuthWrapper>{children}</AuthWrapper>
+                                          </RichToastProvider>
                                         </ToastProvider>
                                       </LessonRatingsProvider>
                                     </GamificationProvider>
