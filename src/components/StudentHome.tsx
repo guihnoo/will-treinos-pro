@@ -88,6 +88,7 @@ const MilestoneTracker          = dynamic(() => import("@/components/student/Mil
 const FreeTrainingSheet         = dynamic(() => import("@/components/student/FreeTrainingSheet"),         { ssr: false, loading: () => null });
 const PushSettingsPanel         = dynamic(() => import("@/components/PushSettingsPanel"),                 { ssr: false, loading: () => null });
 const StudentPaymentSheet     = dynamic(() => import("@/components/student/StudentPaymentSheet").then((m) => ({ default: m.StudentPaymentSheet })), { ssr: false, loading: () => null });
+const LessonHistoryPanel      = dynamic(() => import("@/components/student/LessonHistoryPanel"),       { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import { wtLsGetString, wtLsSetString } from "@/lib/willLocalStorage";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -613,6 +614,7 @@ export default function StudentHome() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [showFreeTraining, setShowFreeTraining] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
+  const [showLessonHistory, setShowLessonHistory] = useState(false);
   const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
   const [showPayments, setShowPayments] = useState(false);
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
@@ -643,6 +645,7 @@ export default function StudentHome() {
       showPushSettings ||
       showFreeTraining ||
       showAttendanceCalendar ||
+      showLessonHistory ||
       showPayments ||
       justUnlockedTier,
   );
@@ -1871,6 +1874,11 @@ export default function StudentHome() {
               <motion.button whileTap={{scale:0.9}} onClick={()=>setShowAttendanceCalendar(true)}
                 className={`text-[10px] font-bold text-zinc-300 bg-zinc-800/60 px-3 py-1.5 rounded-lg border border-zinc-700/40 hover:bg-zinc-700/60 transition-colors ${ctaClass}`}>
                 📅 Histórico
+              </motion.button>
+              <motion.button whileTap={{scale:0.9}} onClick={()=>setShowLessonHistory(true)}
+                data-testid="btn-lesson-history"
+                className={`text-[10px] font-bold text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/25 hover:bg-amber-500/20 transition-colors ${ctaClass}`}>
+                📋 Histórico de Treinos
               </motion.button>
               <motion.button whileTap={{scale:0.9}} onClick={()=>setEvolModal(true)}
                 className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
@@ -3237,6 +3245,16 @@ export default function StudentHome() {
             streak={streak}
             bestStreak={bestStreak}
             onClose={() => setShowAttendanceCalendar(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showLessonHistory && profile?.id && (
+          <LessonHistoryPanel
+            studentId={profile.id}
+            getCategory={getCategory}
+            onClose={() => setShowLessonHistory(false)}
           />
         )}
       </AnimatePresence>

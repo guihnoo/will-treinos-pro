@@ -1,18 +1,34 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, CheckCircle2, Loader2, Send, Sparkles, X, Star, Zap, Brain, MessageSquare, TrendingUp, Save, ChevronDown } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import type { EvalFeedbackResult } from "@/app/api/ai/eval-feedback/route";
 import type { Student, VolleyballFundamental } from "@/context/types";
 import { calculateXPFromEvaluation } from "@/context/types";
+import type { EvaluationTemplate } from "@/components/will/EvaluationTemplateManager";
 import { useCoaching } from "@/context/CoachingContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { avatarSrc } from "@/lib/avatarSrc";
 import { useXPMutations } from "@/hooks/useXPMutations";
 import { useEvaluations } from "@/hooks/useEvaluations";
+
+/** XP calc with optional template weight per pillar */
+export function xpFromEval(
+  score: number,
+  fundamental: VolleyballFundamental,
+  template?: EvaluationTemplate | null,
+): { basePoints: number; multiplier: number; totalPoints: number } {
+  const base = calculateXPFromEvaluation(score, fundamental);
+  const templateWeight = template?.weights?.[fundamental] ?? 1;
+  return {
+    basePoints: base.basePoints,
+    multiplier: base.multiplier * templateWeight,
+    totalPoints: Math.round(base.totalPoints * templateWeight),
+  };
+}
 
 interface Props {
   student: Student;
@@ -35,6 +51,29 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
   const { saveEvaluation } = useEvaluations();
   const { toast } = useToast();
   useBodyScrollLock(true);
+
+  const [activeTemplate, setActiveTemplate] = useState<EvaluationTemplate | null>(null);
+
+  // Fetch default template for the student's primary category on mount
+  useEffect(() => {
+    const primaryCategory = student.categories?.[0];
+    if (!primaryCategory) return;
+    const sb = getSupabaseClient();
+    if (!sb) return;
+    void (async () => {
+      try {
+        const { data } = await sb
+          .from("evaluation_templates")
+          .select("*")
+          .eq("category_id", primaryCategory)
+          .eq("is_default", true)
+          .maybeSingle();
+        if (data) setActiveTemplate(data as EvaluationTemplate);
+      } catch {
+        // ignore — template is optional
+      }
+    })();
+  }, [student.categories]);
 
   const [scores, setScores] = useState<Record<string, number>>({
     fisico: 7, tecnico: 7, tatico: 7, atitude: 8, evolucao: 7
@@ -59,8 +98,8 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
     // Determine dominant fundamental from pillar scores
     const dominantFundamental: VolleyballFundamental = scores.tecnico > 7 ? "posicionamento" : "recepcao";
 
-    // Calculate XP (formula: 100 × (nota/10)² × 10 × multiplier)
-    const { basePoints, multiplier, totalPoints } = calculateXPFromEvaluation(avg, dominantFundamental);
+    // Calculate XP with optional template weight
+    const { basePoints, multiplier, totalPoints } = xpFromEval(avg, dominantFundamental, activeTemplate);
 
     // Log XP transaction (fire and forget, will complete after modal closes)
     logXP({
@@ -200,6 +239,11 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
             <div>
               <p className="font-bold text-white text-sm">{student.name}</p>
               <p className="text-[11px] text-zinc-500 truncate max-w-[200px]">{lessonTitle}</p>
+              {activeTemplate && (
+                <span className="inline-flex items-center gap-1 mt-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black text-emerald-400">
+                  Template: {activeTemplate.name}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">

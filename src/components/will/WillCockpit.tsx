@@ -48,6 +48,8 @@ import {
   Sparkles,
   ScanSearch,
   Cake,
+  ClipboardList,
+  LayoutList,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -91,9 +93,11 @@ const AttentionPanel         = dynamic(() => import("./AttentionPanel"),        
 const CoachOnboarding        = dynamic(() => import("./CoachOnboarding"),        { ssr: false, loading: () => null });
 const AttendanceHeatmapPanel = dynamic(() => import("./AttendanceHeatmapPanel"), { ssr: false, loading: () => null });
 const WeeklyChallengeEditor  = dynamic(() => import("./WeeklyChallengeEditor"),  { ssr: false, loading: () => null });
-const ChurnPreventionPanel   = dynamic(() => import("./ChurnPreventionPanel"),   { ssr: false, loading: () => null });
-const StudentFinanceSheet    = dynamic(() => import("./StudentFinanceSheet"),    { ssr: false, loading: () => null });
-const ScoutModePanel         = dynamic(() => import("./ScoutModePanel"),         { ssr: false, loading: () => null });
+const ChurnPreventionPanel       = dynamic(() => import("./ChurnPreventionPanel"),       { ssr: false, loading: () => null });
+const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet"),        { ssr: false, loading: () => null });
+const ScoutModePanel             = dynamic(() => import("./ScoutModePanel"),             { ssr: false, loading: () => null });
+const EvaluationTemplateManager  = dynamic(() => import("./EvaluationTemplateManager"), { ssr: false, loading: () => null });
+import WeeklyScheduleView from "./WeeklyScheduleView";
 import KpiSparkline from "@/components/ui/KpiSparkline";
 import { MODAL_BADGE_ENTER, MODAL_HEADER_ENTER, MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP, MODAL_PANEL_COLUMN } from "@/components/ui/modalScrollClasses";
@@ -192,6 +196,8 @@ export default function WillCockpit() {
   const [showStudentFinance, setShowStudentFinance] = useState(false);
   const [financeStudentId, setFinanceStudentId] = useState<string | null>(null);
   const [showScoutMode, setShowScoutMode] = useState(false);
+  const [showEvalTemplates, setShowEvalTemplates] = useState(false);
+  const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -360,6 +366,7 @@ export default function WillCockpit() {
     showChurnPrevention ||
     showStudentFinance ||
     showScoutMode ||
+    showEvalTemplates ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -1410,6 +1417,19 @@ export default function WillCockpit() {
             <ScanSearch className="h-5 w-5 text-cyan-400" />
             Scout Mode
           </button>
+          <button
+            type="button"
+            data-testid="btn-eval-templates"
+            onClick={() => {
+              haptic(18);
+              setShowEvalTemplates(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Gerenciar templates de avaliação por categoria"
+          >
+            <ClipboardList className="h-5 w-5 text-emerald-400" />
+            Templates de Avaliação
+          </button>
           </div>
         </AppSectionCard>
       </motion.div>}  {/* closed "arsenal" BLOCO 3 */}
@@ -1420,42 +1440,94 @@ export default function WillCockpit() {
           title="Grade semanal"
           subtitle="Navegue semana a semana e veja todas as aulas agendadas."
           rightSlot={
-            <button
-              type="button"
-              onClick={() => {
-                haptic(12);
-                router.push("/agenda");
-              }}
-              className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
-              aria-label="Abrir calendário completo na agenda"
-            >
-              Agenda completa
-            </button>
+            <div className="flex items-center gap-2">
+              {/* View toggle: Grid / Detail */}
+              <div className="flex items-center gap-1 rounded-xl border border-zinc-700/50 bg-zinc-900/60 p-1">
+                <button
+                  type="button"
+                  onClick={() => setCalendarView("grid")}
+                  data-testid="btn-calendar-grid"
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${calendarView === "grid" ? "bg-[#EAB308]/20 text-[#EAB308]" : "text-zinc-500 hover:text-zinc-300"}`}
+                  aria-label="Vista grade"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarView("detail")}
+                  data-testid="btn-calendar-detail"
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${calendarView === "detail" ? "bg-[#EAB308]/20 text-[#EAB308]" : "text-zinc-500 hover:text-zinc-300"}`}
+                  aria-label="Vista detalhe"
+                >
+                  <LayoutList className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  haptic(12);
+                  router.push("/agenda");
+                }}
+                className={`min-h-11 shrink-0 px-2 text-[10px] font-bold text-[#EAB308] hover:underline ${INTERACTIVE_FOCUS_RING}`}
+                aria-label="Abrir calendário completo na agenda"
+              >
+                Agenda completa
+              </button>
+            </div>
           }
           className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
           contentClassName="pt-3"
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(59,130,246,0.14),transparent_65%)]" />
-          <WeeklyCalendarGrid
-            weekStart={calendarWeekStart}
-            lessons={lessons}
-            selectedDate={selectedCalendarDate}
-            onSelectDate={(iso) => {
-              haptic(12);
-              setSelectedCalendarDate(iso);
-            }}
-            onSelectLesson={(lessonId) => {
-              haptic(15);
-              setSelectedLessonId(lessonId);
-              setSelectedLessonLayoutId(`lesson-${lessonId}`);
-              setShowLessonModal(true);
-            }}
-            onCreateLesson={() => {
-              haptic(10);
-              setShowCreateLesson(true);
-            }}
-            theme="admin"
-          />
+
+          <AnimatePresence mode="wait">
+            {calendarView === "grid" ? (
+              <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <WeeklyCalendarGrid
+                  weekStart={calendarWeekStart}
+                  lessons={lessons}
+                  selectedDate={selectedCalendarDate}
+                  onSelectDate={(iso) => {
+                    haptic(12);
+                    setSelectedCalendarDate(iso);
+                  }}
+                  onSelectLesson={(lessonId) => {
+                    haptic(15);
+                    setSelectedLessonId(lessonId);
+                    setSelectedLessonLayoutId(`lesson-${lessonId}`);
+                    setShowLessonModal(true);
+                  }}
+                  onCreateLesson={() => {
+                    haptic(10);
+                    setShowCreateLesson(true);
+                  }}
+                  theme="admin"
+                />
+              </motion.div>
+            ) : (
+              <motion.div key="detail" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <WeeklyScheduleView
+                  lessons={lessons}
+                  onCancelLesson={(id) => {
+                    haptic(15);
+                    updateLesson(id, { status: "cancelled" });
+                  }}
+                  onReopenLesson={(id) => {
+                    haptic(15);
+                    updateLesson(id, { status: "scheduled" });
+                  }}
+                  onSelectLesson={(lessonId) => {
+                    haptic(15);
+                    setSelectedLessonId(lessonId);
+                    setSelectedLessonLayoutId(`lesson-${lessonId}`);
+                    setShowLessonModal(true);
+                  }}
+                  getCategory={getCategory}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
           <button
             type="button"
@@ -3197,6 +3269,12 @@ export default function WillCockpit() {
             students={students}
             onClose={() => setShowScoutMode(false)}
           />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showEvalTemplates ? (
+          <EvaluationTemplateManager onClose={() => setShowEvalTemplates(false)} />
         ) : null}
       </AnimatePresence>
     </div>
