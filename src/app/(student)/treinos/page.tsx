@@ -227,11 +227,11 @@ export default function TreinosPage() {
   const [exerciseModal, setExerciseModal] = useState<{ ex: any; planId: string; exIdx: number } | null>(null);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
 
-  const myPlans = (trainingPlans as any[]).filter((p: any) => p.studentId === user?.id);
+  const myPlans = ((trainingPlans as any[]) ?? []).filter((p: any) => p.studentId === user?.id);
   const didAutoExpand = useRef(false);
 
   const totalSets = useMemo(
-    () => myPlans.reduce((acc, plan) => acc + plan.exercises.reduce((sum, ex) => sum + (ex.sets || 0), 0), 0),
+    () => myPlans.reduce((acc, plan) => acc + (plan.exercises ?? []).reduce((sum: number, ex: any) => sum + (ex.sets || 0), 0), 0),
     [myPlans]
   );
   const completedSets = useMemo(

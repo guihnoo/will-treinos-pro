@@ -245,7 +245,7 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
             )}
 
             {/* Payment list */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain px-5 py-4 space-y-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
               {myPayments.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-12 text-center">
                   <CreditCard className="h-10 w-10 text-zinc-700" />

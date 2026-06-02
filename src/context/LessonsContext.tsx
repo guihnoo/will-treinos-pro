@@ -24,7 +24,7 @@ const LessonsContext = createContext<LessonsContextValue | undefined>(undefined)
 export function LessonsProvider({ children }: { children: React.ReactNode }) {
   const app = useApp();
   const calendarTick = useCalendarTick();
-  const todayStr = useMemo(() => localDateISO(), [calendarTick, app.lessons]);
+  const todayStr = useMemo(() => localDateISO(), [calendarTick]);
   const todayLessons = useMemo(
     () => app.lessons.filter((lesson) => lesson.date === todayStr),
     [app.lessons, todayStr],

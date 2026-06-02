@@ -705,7 +705,7 @@ export default function FeedPage() {
         whileTap={{ scale: 0.9 }}
         whileHover={{ scale: 1.05 }}
         onClick={() => setShowComposer(true)}
-        className={`fixed bottom-24 right-5 w-14 h-14 bg-[#EAB308] rounded-full shadow-[0_0_25px_rgba(234,179,8,0.4)] flex items-center justify-center z-30 ${FOCUS_RING_GOLD}`}>
+        className={`fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] right-5 w-14 h-14 bg-[#EAB308] rounded-full shadow-[0_0_25px_rgba(234,179,8,0.4)] flex items-center justify-center z-30 ${FOCUS_RING_GOLD}`}>
         <Plus className="w-7 h-7 text-black" />
       </motion.button>
 

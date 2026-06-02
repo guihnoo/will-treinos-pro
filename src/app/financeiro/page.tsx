@@ -807,7 +807,8 @@ function AdminFinanceiro() {
 /* ─── ROUTER ─── */
 export default function FinanceiroPage() {
   const { user } = useAuth();
-  if (user?.role === "aluno") return <AlunoFinanceiro/>;
-  if (user?.role === "coach") return <CoachFinanceiro/>;
+  if (!user) return null;
+  if (user.role === "aluno") return <AlunoFinanceiro/>;
+  if (user.role === "coach") return <CoachFinanceiro/>;
   return <AdminFinanceiro/>;
 }

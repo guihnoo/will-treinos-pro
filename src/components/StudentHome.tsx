@@ -577,7 +577,9 @@ export default function StudentHome() {
 
   useEffect(() => {
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
-      getSupabaseClient().auth.getSession().then(({ data: { session } }) => {
+      const sb = getSupabaseClient();
+      if (!sb) return;
+      void sb.auth.getSession().then(({ data: { session } }) => {
         if (session?.access_token) setSessionToken(session.access_token);
       });
     });
@@ -736,7 +738,7 @@ export default function StudentHome() {
     void fetchXpLogEntriesRemote(supabase, user.id, 10).then(entries => setXpLogEntries(entries));
   }, [showXpModal, user?.id]);
 
-  const profile = students.find(s => s.id === user?.id);
+  const profile = students.find(s => s.authUserId === user?.id || s.id === user?.id);
 
   // Sprint 104: Realtime XP via Supabase subscription
   useRealtimeXP({
@@ -762,10 +764,10 @@ export default function StudentHome() {
   // Use student profile avatar (updated via perfil page)
   const avatarSeed = profile?.avatar || user?.avatar || "Ricardo";
 
-  const myFeedbacks = useMemo(() => feedbacks.filter(f => f.studentId === user?.id).sort((a,b) => b.date.localeCompare(a.date)), [feedbacks, user]);
+  const myFeedbacks = useMemo(() => feedbacks.filter(f => f.studentId === user?.id).sort((a,b) => b.date.localeCompare(a.date)), [feedbacks, user?.id]);
   const myLessonRatings = useMemo(
     () => lessonRatings.filter((r) => r.studentId === user?.id).sort((a, b) => b.date.localeCompare(a.date)),
-    [lessonRatings, user],
+    [lessonRatings, user?.id],
   );
 
   // Completed lessons in last 7 days where student was present and hasn't rated yet
@@ -773,7 +775,7 @@ export default function StudentHome() {
     if (!user?.id) return [];
     const since = new Date();
     since.setDate(since.getDate() - 7);
-    const sinceStr = since.toISOString().slice(0, 10);
+    const sinceStr = localDateISO(since);
     const ratedIds = new Set(myLessonRatings.map(r => r.lessonId));
     return myLessons
       .filter(l =>
@@ -1215,8 +1217,10 @@ export default function StudentHome() {
   }
 
   // Persist upcoming lessons and XP to offline cache when online
+  // NOTE: estes effects estão após returns condicionais — as condições de guarda
+  // estão DENTRO dos effects (não como returns externos) para respeitar as regras dos hooks
   useEffect(() => {
-    if (typeof window === "undefined" || !navigator.onLine) return;
+    if (!hydrated || typeof window === "undefined" || !navigator.onLine) return;
     const today = localDateISO();
     const upcoming = myLessons
       .filter((l) => l.status === "scheduled" && l.date >= today)
@@ -1230,13 +1234,13 @@ export default function StudentHome() {
         status: l.status,
       }));
     offlineCache.saveLessons(upcoming);
-  }, [myLessons]);
+  }, [myLessons, hydrated]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !navigator.onLine) return;
+    if (!hydrated || typeof window === "undefined" || !navigator.onLine) return;
     if (!profile?.id || totalXP === 0) return;
     offlineCache.saveStudentXP(profile.id, totalXP, currentTier.label);
-  }, [profile?.id, totalXP, currentTier.label]);
+  }, [profile?.id, totalXP, currentTier.label, hydrated]);
 
   return (
     <>
@@ -1544,7 +1548,8 @@ export default function StudentHome() {
                     onClick={e => {
                       e.stopPropagation();
                       haptic([18, 12, 20]);
-                      requestCheckIn(nextLesson.id, user!.id);
+                      if (!user?.id) return;
+                      requestCheckIn(nextLesson.id, user.id);
                       richToast.success("Chegada registrada!", "Aguardando confirmação do professor.");
                     }}
                     className={`flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl bg-[#EAB308] px-3 py-2 font-bold text-black shadow-[0_0_16px_rgba(234,179,8,0.3)] ${ctaClass}`}
@@ -1728,7 +1733,7 @@ export default function StudentHome() {
         const today = localDateISO();
         const twoWeeksAgo = new Date();
         twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-        const twoWeeksAgoStr = twoWeeksAgo.toISOString().slice(0, 10);
+        const twoWeeksAgoStr = localDateISO(twoWeeksAgo);
 
         const missedLessons = lessons.filter(l =>
           l.status === "completed" &&
@@ -1863,7 +1868,7 @@ export default function StudentHome() {
                   <p className="text-[11px] font-bold text-[#EAB308]">{executionRate}%</p>
                 </div>
               </div>
-              <div className="-mx-1 px-1 flex gap-3 overflow-x-auto overflow-y-visible no-scrollbar pb-2 overscroll-x-contain touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none]" style={{ WebkitOverflowScrolling: "touch" }}>
+              <div className="-mx-1 px-1 flex gap-3 overflow-x-auto overflow-y-visible no-scrollbar pb-2 overscroll-x-contain touch-pan-x [scrollbar-width:none] [-ms-overflow-style:none]">
                 {week7.map((date, i) => {
                   const d = new Date(date+"T12:00:00");
                   const dayLessons = myLessons.filter(l => l.date===date && (l.status==="scheduled"||l.status==="in-progress"||l.status==="completed"));
@@ -2524,7 +2529,7 @@ export default function StudentHome() {
 
                 return (
                   <motion.button whileTap={{scale:0.96}}
-                    onClick={()=>{requestCheckIn(lessonModal.id,user!.id);toast("📍 Chegada registrada!");setLessonModal(null);}}
+                    onClick={()=>{if(!user?.id)return;requestCheckIn(lessonModal.id,user.id);toast("📍 Chegada registrada!");setLessonModal(null);}}
                     className={`w-full flex items-center justify-center gap-2 py-4 bg-[#EAB308] text-black rounded-2xl font-bold text-base shadow-[0_0_20px_rgba(234,179,8,0.2)] ${ctaClass}`}>
                     <MapPin className="w-5 h-5"/> Registrar Chegada
                   </motion.button>

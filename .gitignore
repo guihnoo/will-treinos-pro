@@ -65,3 +65,4 @@ public/worker-*.js.map
 !.agent-arsenal/debug-screenshots/README.md
 
 .vercel
+.env*.local

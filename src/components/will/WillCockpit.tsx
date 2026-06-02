@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -311,13 +311,14 @@ export default function WillCockpit() {
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
       const sb = getSupabaseClient();
       const today = localDateISO(new Date());
-      sb.from("absence_requests")
-        .select("id, lesson_date, lesson_title, lesson_time, reason, notes, status, students(name)")
-        .gte("lesson_date", today)
-        .eq("status", "pending")
-        .order("lesson_date", { ascending: true })
-        .limit(20)
-        .then(({ data }) => {
+      void (async () => {
+        try {
+          const { data } = await sb.from("absence_requests")
+            .select("id, lesson_date, lesson_title, lesson_time, reason, notes, status, students(name)")
+            .gte("lesson_date", today)
+            .eq("status", "pending")
+            .order("lesson_date", { ascending: true })
+            .limit(20);
           if (!data) return;
           setAbsenceRequests(
             data.map((r: Record<string, unknown>) => ({
@@ -330,15 +331,17 @@ export default function WillCockpit() {
               notes: r.notes as string | null,
             }))
           );
-        });
+        } catch { /* rede/RLS — ignorar silenciosamente */ }
+      })();
 
-      sb.from("reposition_requests")
-        .select("id, target_lesson_date, target_lesson_title, target_lesson_time, created_at, students(name)")
-        .eq("status", "pending")
-        .gte("target_lesson_date", today)
-        .order("target_lesson_date", { ascending: true })
-        .limit(20)
-        .then(({ data }) => {
+      void (async () => {
+        try {
+          const { data } = await sb.from("reposition_requests")
+            .select("id, target_lesson_date, target_lesson_title, target_lesson_time, created_at, students(name)")
+            .eq("status", "pending")
+            .gte("target_lesson_date", today)
+            .order("target_lesson_date", { ascending: true })
+            .limit(20);
           if (!data) return;
           setRepositionRequests(
             data.map((r: Record<string, unknown>) => ({
@@ -350,7 +353,8 @@ export default function WillCockpit() {
               createdAt: r.created_at as string,
             }))
           );
-        });
+        } catch { /* rede/RLS — ignorar silenciosamente */ }
+      })();
 
       // Load NPS ratings for last 7 days
       sb.auth.getSession().then(({ data: { session } }) => {
@@ -436,6 +440,9 @@ export default function WillCockpit() {
     showExportData ||
     showImportStudents ||
     showQRCheckin ||
+    showLessonRecap ||
+    showQuickAttendance ||
+    showBulkEval ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -503,8 +510,7 @@ export default function WillCockpit() {
         ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
         : undefined;
 
-    const weekStart = new Date(now2);
-    weekStart.setDate(now2.getDate() - now2.getDay());
+    const weekStart = getMonday(now2);
     weekStart.setHours(0, 0, 0, 0);
     const weekLessons = lessons.filter((l) => {
       if (l.status === "cancelled") return false;
@@ -638,8 +644,7 @@ export default function WillCockpit() {
     setActionFeedback("Formulário de nova aula aberto.");
   };
 
-  const nowRef = useRef(new Date());
-  const now = nowRef.current;
+  const now = new Date();
   const todayISO = localDateISO(now);
   const todayDate = new Date(`${todayISO}T00:00:00`);
   const dayStart = new Date(todayDate);

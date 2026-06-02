@@ -131,7 +131,7 @@ export default function ConfigPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
         {tabs.map(t => (
           <motion.button key={t.key} whileTap={{ scale: 0.95 }}
             onClick={() => setTab(t.key)}
