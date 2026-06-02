@@ -331,6 +331,7 @@ export default function AlunosPage() {
                 drag="x"
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.4}
+                dragDirectionLock
                 onDragEnd={(e, info) => {
                   if (info.offset.x > 80) {
                      window.open(`https://wa.me/55${student.phone.replace(/\D/g, '')}?text=Olá ${student.name.split(" ")[0]}, tudo bem?`, "_blank");
