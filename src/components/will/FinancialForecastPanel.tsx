@@ -126,7 +126,7 @@ export default function FinancialForecastPanel({ onClose }: { onClose: () => voi
       const token = await getToken();
       await fetch("/api/cron/payment-reminder", {
         method: "GET",
-        headers: { authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? token}` },
+        headers: { authorization: `Bearer ${token}` },
       });
       setSent(true);
     } catch { /* ignore */ } finally {

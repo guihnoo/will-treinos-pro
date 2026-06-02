@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     }
 
     const studentMap = new Map(
-      (studentsData ?? []).map((s) => [s.auth_user_id, { name: s.name, email: s.email }])
+      (studentsData ?? []).map((s) => [s.auth_user_id, { name: s.name }])
     );
 
     const entries = paginated.map((e) => {
@@ -149,7 +149,6 @@ export async function GET(request: NextRequest) {
       return {
         studentId: e.studentId,
         name: student?.name ?? "Atleta",
-        email: student?.email ?? "",
         totalXP: e.xp,
         allTimeXP,
         tier: calculateTier(allTimeXP),

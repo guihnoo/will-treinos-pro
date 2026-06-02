@@ -72,10 +72,10 @@ export default function LiveLessonCoachPanel({
   );
 
   const presentStudents = enrolledStudents.filter((s) =>
-    lesson.presentStudents.includes(s.id),
+    (lesson.presentStudents ?? []).includes(s.id),
   );
   const absentStudents = enrolledStudents.filter((s) =>
-    lesson.absentStudents.includes(s.id),
+    (lesson.absentStudents ?? []).includes(s.id),
   );
   const onlineStudents = enrolledStudents.filter((s) =>
     presence.has(s.id),
@@ -121,7 +121,7 @@ export default function LiveLessonCoachPanel({
           <div>
             <h3 className="text-sm font-bold text-white mb-1">{lesson.title}</h3>
             <p className="text-xs text-zinc-500">
-              {new Date(lesson.date).toLocaleDateString("pt-BR")} •{" "}
+              {new Date(`${lesson.date}T12:00:00`).toLocaleDateString("pt-BR")} •{" "}
               {lesson.startTime} {lesson.lessonType ? `• ${lesson.lessonType}` : ""}
             </p>
           </div>

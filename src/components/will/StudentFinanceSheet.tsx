@@ -107,7 +107,7 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
   const handleMarkPayment = async (paymentId: string) => {
     setMarkingId(paymentId);
     try {
-      markPayment(paymentId);
+      await markPayment(paymentId);
       // Optimistic update
       setRows((prev) =>
         prev.map((r) =>

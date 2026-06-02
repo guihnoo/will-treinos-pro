@@ -200,9 +200,9 @@ export default function StudentPillarPanel({ onClose }: Props) {
                     </div>
 
                     {/* Status badge */}
-                    <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black ${toneConfig[result.insightTone].bg}`} style={{ color: toneConfig[result.insightTone].color }}>
+                    <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black ${(toneConfig[result.insightTone] ?? toneConfig["inicio"]).bg}`} style={{ color: (toneConfig[result.insightTone] ?? toneConfig["inicio"]).color }}>
                       <Trophy size={10} />
-                      {toneConfig[result.insightTone].label}
+                      {(toneConfig[result.insightTone] ?? toneConfig["inicio"]).label}
                     </div>
                   </div>
 

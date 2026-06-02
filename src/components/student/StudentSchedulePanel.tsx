@@ -91,8 +91,8 @@ export default function StudentSchedulePanel({
   const getEnrollmentState = (lesson: Lesson): EnrollmentState => {
     const opt = optimistic.get(lesson.id);
     if (opt) return opt;
-    if (lesson.enrolledStudents.includes(studentId)) return "enrolled";
-    if (lesson.enrolledStudents.length >= lesson.maxStudents) return "full";
+    if ((lesson.enrolledStudents ?? []).includes(studentId)) return "enrolled";
+    if ((lesson.enrolledStudents ?? []).length >= lesson.maxStudents) return "full";
     return "available";
   };
 
@@ -211,7 +211,7 @@ export default function StudentSchedulePanel({
                     const state = getEnrollmentState(lesson);
                     const cat = getCategory(lesson.categoryId);
                     const { label: dayLabel, weekday } = formatDate(lesson.date);
-                    const spots = lesson.enrolledStudents.length;
+                    const spots = (lesson.enrolledStudents ?? []).length;
                     const max = lesson.maxStudents;
                     const pct = Math.min(100, Math.round((spots / Math.max(1, max)) * 100));
                     const isLoading = loading.has(lesson.id);

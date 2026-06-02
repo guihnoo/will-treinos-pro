@@ -70,19 +70,18 @@ const SEVERITY_LABEL: Record<Severity, string> = {
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
 
-let _cachedPayload: { insights: Insight[]; ts: number } | null = null;
-
 export default function OracleInsights({ ctx }: { ctx: OracleContext }) {
-  const [insights, setInsights] = useState<Insight[]>(_cachedPayload?.insights ?? []);
-  const [loading, setLoading] = useState(_cachedPayload === null);
+  const cacheRef = useRef<{ insights: Insight[]; ts: number } | null>(null);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchInsights = useCallback(
     async (force = false) => {
-      if (!force && _cachedPayload && Date.now() - _cachedPayload.ts < CACHE_TTL_MS) {
-        setInsights(_cachedPayload.insights);
+      if (!force && cacheRef.current && Date.now() - cacheRef.current.ts < CACHE_TTL_MS) {
+        setInsights(cacheRef.current.insights);
         return;
       }
 
@@ -111,7 +110,7 @@ export default function OracleInsights({ ctx }: { ctx: OracleContext }) {
 
         if (!res.ok) throw new Error("oracle_error");
         const data = await res.json() as { insights: Insight[]; generatedAt: string };
-        _cachedPayload = { insights: data.insights, ts: Date.now() };
+        cacheRef.current = { insights: data.insights, ts: Date.now() };
         setInsights(data.insights);
         setGeneratedAt(data.generatedAt);
       } catch (e: unknown) {

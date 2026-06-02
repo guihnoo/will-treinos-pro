@@ -33,7 +33,8 @@ function formatDate(iso: string): string {
   });
 }
 
-function maskEmail(email: string): string {
+function maskEmail(email: string | null | undefined): string {
+  if (!email) return "—";
   const [localPart, domain] = email.split("@");
   if (!localPart || !domain) return email;
   const visible = localPart.slice(0, 3);

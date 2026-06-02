@@ -79,14 +79,14 @@ export default function WeeklyChallengeCard({ lessons, studentId, authUserId, to
       return lessons.filter((l) => {
         if (l.status !== "completed") return false;
         if (l.date < ch.week_start || l.date > weekEnd) return false;
-        return l.presentStudents.includes(studentId);
+        return (l.presentStudents ?? []).includes(studentId);
       }).length;
     }
 
     if (ch.challenge_type === "streak") {
       const days = new Set(
         lessons
-          .filter((l) => l.status === "completed" && l.date >= ch.week_start && l.date <= weekEnd && l.presentStudents.includes(studentId))
+          .filter((l) => l.status === "completed" && l.date >= ch.week_start && l.date <= weekEnd && (l.presentStudents ?? []).includes(studentId))
           .map((l) => l.date)
       );
       return days.size;
@@ -168,7 +168,7 @@ export default function WeeklyChallengeCard({ lessons, studentId, authUserId, to
       const { data: { session } } = await sb.auth.getSession();
       if (!session?.access_token) return;
 
-      await fetch("/api/xp/integration", {
+      const bonusRes = await fetch("/api/xp/integration", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -181,7 +181,7 @@ export default function WeeklyChallengeCard({ lessons, studentId, authUserId, to
           description: `Desafio da semana: ${challenge.title}`,
         }),
       });
-
+      if (!bonusRes.ok) throw new Error("xp_failed");
       wtLsSetString(BONUS_KEY(weekStart, authUserId), "1");
       setBonusClaimed(true);
       toast(`+${challenge.xp_bonus} XP bônus desbloqueado! 🏆`);

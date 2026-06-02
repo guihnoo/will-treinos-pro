@@ -87,7 +87,7 @@ export default function ChurnPreventionPanel({ onClose }: Props) {
       // Fetch xp_log last 14 days grouped by student_id (student_id = CRM id)
       const { data: xpRows } = await sb
         .from("xp_log")
-        .select("student_id, total_xp, created_at")
+        .select("student_id, points, created_at")
         .gte("created_at", cutoffISO);
 
       // Build maps per student
@@ -96,7 +96,7 @@ export default function ChurnPreventionPanel({ onClose }: Props) {
 
       for (const row of xpRows ?? []) {
         const sid = row.student_id as string;
-        xpPerStudent.set(sid, (xpPerStudent.get(sid) ?? 0) + ((row.total_xp as number) ?? 0));
+        xpPerStudent.set(sid, (xpPerStudent.get(sid) ?? 0) + ((row.points as number) ?? 0));
         const d = new Date(row.created_at as string);
         const prev = lastSeenPerStudent.get(sid);
         if (!prev || d > prev) lastSeenPerStudent.set(sid, d);

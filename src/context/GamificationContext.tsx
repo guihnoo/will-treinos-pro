@@ -119,10 +119,10 @@ export function GamificationProvider({
   // Total XP do aluno (soma de todos os logs)
   const totalXP = xpLogs.reduce((sum, log) => sum + log.total_xp, 0);
 
-  // Tier atual (maior award desbloqueado)
-  const currentTier = awards.find(
-    (a) => a.unlocked_at && a.xp_threshold <= totalXP
-  );
+  // Tier atual (maior award desbloqueado — ordenado decrescente para pegar o mais alto)
+  const currentTier = [...awards]
+    .filter((a) => a.unlocked_at && a.xp_threshold <= totalXP)
+    .sort((a, b) => b.xp_threshold - a.xp_threshold)[0] ?? null;
 
   const refreshXPData = useCallback(async () => {
     if (!user?.id) return;

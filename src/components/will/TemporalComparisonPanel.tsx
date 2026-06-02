@@ -48,7 +48,7 @@ const EMPTY_PERIOD: PeriodData = {
 };
 
 function toLocalISO(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function defaultPeriodA(): { start: string; end: string } {
@@ -195,7 +195,7 @@ export default function TemporalComparisonPanel({ student, onClose }: Props) {
 
       // XP in period
       const { data: xpRows } = await sb
-        .from("xp_logs")
+        .from("xp_log")
         .select("points")
         .eq("student_id", sid)
         .gte("created_at", `${start}T00:00:00`)
@@ -204,10 +204,10 @@ export default function TemporalComparisonPanel({ student, onClose }: Props) {
 
       // Check-ins in period
       const { data: checkinRows } = await sb
-        .from("xp_logs")
+        .from("xp_log")
         .select("id")
         .eq("student_id", sid)
-        .eq("type", "checkin")
+        .in("type", ["checkin_presencial", "checkin_externo"])
         .gte("created_at", `${start}T00:00:00`)
         .lte("created_at", `${end}T23:59:59`);
       const checkins = (checkinRows ?? []).length;
@@ -271,6 +271,7 @@ export default function TemporalComparisonPanel({ student, onClose }: Props) {
     try {
       const { getSupabaseClient } = await import("@/lib/supabaseClient");
       const sb = getSupabaseClient();
+      if (!sb) { toast("Serviço indisponível.", "error"); setLoading(false); return; }
       const [a, b] = await Promise.all([
         fetchPeriod(periodA.start, periodA.end, sb),
         fetchPeriod(periodB.start, periodB.end, sb),

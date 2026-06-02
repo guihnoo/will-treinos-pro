@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         endpoint: body.endpoint,
         p256dh: body.keys.p256dh,
         auth: body.keys.auth,
-        role: body.role,
+        role: (body.role === "admin" || body.role === "coach" || body.role === "professor") ? body.role : "aluno",
         updated_at: new Date().toISOString(),
       },
       { onConflict: "endpoint" }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Lesson } from "@/context/types";
 
@@ -43,6 +43,9 @@ export default function MoodResponseCard({ lessons, studentId }: MoodResponseCar
   const [done, setDone] = useState(false);
   const [visible, setVisible] = useState(false);
   const [targetLesson, setTargetLesson] = useState<Lesson | null>(null);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current); }, []);
 
   // Find a recently completed lesson (last 6h) where student was present and hasn't responded yet
   const recentLesson = useMemo(() => {
@@ -89,7 +92,7 @@ export default function MoodResponseCard({ lessons, studentId }: MoodResponseCar
     setDone(true);
 
     // Dismiss after 2s
-    setTimeout(() => {
+    dismissTimerRef.current = setTimeout(() => {
       setVisible(false);
     }, 2000);
   };

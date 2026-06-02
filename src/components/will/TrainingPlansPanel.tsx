@@ -131,7 +131,7 @@ export default function TrainingPlansPanel({
               <AnimatePresence>
                 {filteredPlans.map((plan) => {
                   const student = students.find((s) => s.id === plan.studentId);
-                  const startDate = new Date(plan.startDate);
+                  const startDate = new Date(`${plan.startDate}T12:00:00`);
                   const daysActive = Math.floor(
                     (new Date().getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
                   );

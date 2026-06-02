@@ -46,7 +46,7 @@ export default function LessonCountdownCard({ lessons, studentId, getCategoryFn,
     const today = localDateISO(now);
     const tomorrow = localDateISO(new Date(now.getTime() + 86400000));
     const enrolled = lessons.filter(
-      (l) => l.enrolledStudents.includes(studentId) && l.status === "scheduled"
+      (l) => (l.enrolledStudents ?? []).includes(studentId) && l.status === "scheduled"
     );
     // Prioritize today's lessons, then tomorrow
     const todayLessons = enrolled
@@ -136,7 +136,7 @@ export default function LessonCountdownCard({ lessons, studentId, getCategoryFn,
               {/* Vagas info */}
               <span className="text-[9px] text-zinc-600 flex items-center gap-0.5">
                 <Users size={9} />
-                {lesson.enrolledStudents.length}/{lesson.maxStudents}
+                {(lesson.enrolledStudents ?? []).length}/{lesson.maxStudents}
               </span>
             </div>
 

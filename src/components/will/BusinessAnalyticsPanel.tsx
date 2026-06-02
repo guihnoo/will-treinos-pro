@@ -366,7 +366,8 @@ export default function BusinessAnalyticsPanel({ onClose }: Props) {
       }
 
       // --- Engagement by day of week (check-ins last 30 days) ---
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const _d30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgo = `${_d30.getFullYear()}-${String(_d30.getMonth()+1).padStart(2,"0")}-${String(_d30.getDate()).padStart(2,"0")}T00:00:00`;
       const { data: recentCheckins } = await sb
         .from("xp_log")
         .select("created_at")

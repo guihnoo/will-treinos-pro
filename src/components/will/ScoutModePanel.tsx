@@ -229,7 +229,7 @@ export default function ScoutModePanel({ students, onClose }: Props) {
           .from("xp_log")
           .select("id")
           .eq("student_id", studentId)
-          .eq("type", "checkin"),
+          .in("type", ["checkin_presencial", "checkin_externo"]),
         sb
           .from("student_achievements")
           .select("tier_id, unlocked_at")
