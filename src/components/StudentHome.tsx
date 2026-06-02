@@ -95,6 +95,7 @@ const StudentPaymentSheet     = dynamic(() => import("@/components/student/Stude
 const LessonHistoryPanel      = dynamic(() => import("@/components/student/LessonHistoryPanel"),       { ssr: false, loading: () => null });
 const StudentSchedulePanel    = dynamic(() => import("@/components/student/StudentSchedulePanel"),     { ssr: false, loading: () => null });
 const ShareProgressCard       = dynamic(() => import("@/components/student/ShareProgressCard"),        { ssr: false, loading: () => null });
+const MonthlySummaryCard      = dynamic(() => import("@/components/student/MonthlySummaryCard"),        { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import OfflineBanner from "@/components/student/OfflineBanner";
 import { offlineCache } from "@/lib/offlineCache";
@@ -1243,6 +1244,18 @@ export default function StudentHome() {
           </span>
         </div>
       </motion.div>
+
+      {/* 0. Resumo mensal de IA — visível apenas nos dias 1-7 do mês */}
+      {user?.id && new Date().getDate() <= 7 && (
+        <motion.div variants={homeItem} className="px-1">
+          <MonthlySummaryCard
+            studentId={user.id}
+            addPost={addPost}
+            userName={user.name || "Atleta"}
+            userAvatar={profile?.avatar || user.avatar || "user"}
+          />
+        </motion.div>
+      )}
 
       {/* 1. Countdown da próxima aula — destaque máximo */}
       {user?.id && (

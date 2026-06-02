@@ -7,6 +7,7 @@ import {
   Paperclip, Send, ChevronDown, ChevronUp, Image as ImageIcon, QrCode,
 } from "lucide-react";
 import QRCode from "react-qr-code";
+import { generatePixPayload } from "@/lib/pixUtils";
 import { usePayments } from "@/context/PaymentsContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useAuth } from "@/context/AuthContext";
@@ -55,14 +56,30 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
 
   const hasPixKey = Boolean(appConfig.pixKey?.trim());
   const [showQR, setShowQR] = useState(false);
+  const [pixCopied, setPixCopied] = useState(false);
   const pixLabel = appConfig.pixKeyType === "cpf" ? "CPF" :
     appConfig.pixKeyType === "telefone" ? "Telefone" :
     appConfig.pixKeyType === "aleatoria" ? "Chave aleatória" : "E-mail";
 
+  // Gera payload EMV/BR Code para QR Code real — usa valor da mensalidade pendente se disponível
+  const pixPayload = useMemo(() => {
+    if (!appConfig.pixKey?.trim()) return "";
+    return generatePixPayload({
+      pixKey: appConfig.pixKey.trim(),
+      merchantName: appConfig.pixOwnerName || "WILL TREINOS PRO",
+      merchantCity: "SAO PAULO",
+      amount: currentPayment?.amount,
+      txId: currentPayment ? `WT${currentPayment.reference.replace("-", "")}` : "***",
+    });
+  }, [appConfig.pixKey, appConfig.pixOwnerName, currentPayment]);
+
   const handleCopyPix = () => {
-    if (!appConfig.pixKey) return;
-    void navigator.clipboard.writeText(appConfig.pixKey);
-    toast("Chave PIX copiada!");
+    const value = pixPayload || appConfig.pixKey;
+    if (!value) return;
+    void navigator.clipboard.writeText(value);
+    setPixCopied(true);
+    setTimeout(() => setPixCopied(false), 2000);
+    toast("Código PIX copiado!");
   };
 
   const handleFileChange = (paymentId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,50 +161,85 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
             {/* PIX Key */}
             {hasPixKey && (
               <div className="flex-shrink-0 mx-5 mt-4 rounded-2xl border border-[#EAB308]/30 bg-[#EAB308]/6 p-3.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#EAB308] mb-1">
-                  Chave PIX ({pixLabel})
-                </p>
+                {/* Badge PIX */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-400">
+                    <svg viewBox="0 0 24 24" className="h-3 w-3 fill-current" aria-hidden="true">
+                      <path d="M17.09 11.5h-2.31l-2.77-2.77a1 1 0 0 0-1.42 0L7.82 11.5H5.5A3.5 3.5 0 0 0 2 15v.5A3.5 3.5 0 0 0 5.5 19h2.31l2.77 2.77a1 1 0 0 0 1.42 0L14.77 19h2.32A3.5 3.5 0 0 0 21 15.5V15a3.5 3.5 0 0 0-3.91-3.5z"/>
+                    </svg>
+                    PIX
+                  </span>
+                  <p className="text-[10px] font-bold text-[#EAB308]">
+                    {pixLabel}
+                  </p>
+                  {currentPayment && (
+                    <span className="ml-auto text-[10px] font-black text-white">
+                      {currencyBRL(currentPayment.amount)}
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex items-center gap-2">
                   <p className="flex-1 min-w-0 truncate text-sm font-bold text-white">{appConfig.pixKey}</p>
                   <button
                     onClick={() => setShowQR(v => !v)}
+                    data-testid="pix-toggle-qr"
                     className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-2.5 py-2 text-[11px] font-bold text-zinc-300 hover:text-white transition`}
                   >
                     <QrCode className="h-3.5 w-3.5" />
-                    QR
+                    {showQR ? "Fechar" : "QR"}
                   </button>
                   <button
                     onClick={handleCopyPix}
+                    data-testid="pix-copy-btn"
                     className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/15 px-3 py-2 text-[11px] font-bold text-[#EAB308] hover:bg-[#EAB308]/25 transition ${FOCUS_RING_GOLD}`}
                   >
-                    <Copy className="h-3.5 w-3.5" />
-                    Copiar
+                    {pixCopied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    {pixCopied ? "Copiado!" : "Copiar"}
                   </button>
                 </div>
 
-                {/* QR Code PIX */}
+                {/* QR Code PIX — payload EMV/BR Code real */}
                 <AnimatePresence>
-                  {showQR && appConfig.pixKey && (
+                  {showQR && pixPayload && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.22 }}
                       className="overflow-hidden"
                     >
-                      <div className="flex flex-col items-center gap-2 pt-3">
-                        <div className="p-3 bg-white rounded-2xl shadow-lg">
-                          <QRCode value={appConfig.pixKey} size={180} level="M" />
+                      <div className="flex flex-col items-center gap-3 pt-4">
+                        {/* QR Code com fundo branco */}
+                        <div className="p-4 bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                          <QRCode value={pixPayload} size={200} level="M" bgColor="#FFFFFF" fgColor="#000000" />
                         </div>
-                        <p className="text-[10px] text-zinc-500 text-center">
+                        <p className="text-[10px] text-zinc-400 text-center">
                           Escaneie com o app do seu banco para pagar
                         </p>
+
+                        {/* Código copia-e-cola */}
+                        <div className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-600 mb-1">Código PIX copia e cola</p>
+                          <p className="text-[10px] text-zinc-400 font-mono break-all line-clamp-2">
+                            {pixPayload.slice(0, 60)}…
+                          </p>
+                          <button
+                            onClick={handleCopyPix}
+                            data-testid="pix-copy-code-btn"
+                            className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#EAB308]/30 bg-[#EAB308]/10 py-1.5 text-[10px] font-bold text-[#EAB308] hover:bg-[#EAB308]/20 transition ${FOCUS_RING_GOLD}`}
+                          >
+                            {pixCopied ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                            {pixCopied ? "Código copiado!" : "Copiar código completo"}
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <p className="mt-1.5 text-[10px] text-zinc-500">
-                  Copie a chave ou escaneie o QR, faça o PIX e envie o comprovante abaixo.
+                <p className="mt-2 text-[10px] text-zinc-500">
+                  Escaneie o QR ou copie o código, faça o PIX e envie o comprovante abaixo.
                 </p>
               </div>
             )}
@@ -273,8 +325,15 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
                               {hasPixKey && (
                                 <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2">
                                   <p className="flex-1 min-w-0 truncate text-[11px] text-zinc-400">PIX: <span className="text-white font-bold">{appConfig.pixKey}</span></p>
-                                  <button onClick={handleCopyPix} className={`flex-shrink-0 ${FOCUS_RING_GOLD}`}>
-                                    <Copy className="h-4 w-4 text-[#EAB308]" />
+                                  <button
+                                    onClick={handleCopyPix}
+                                    data-testid="pix-copy-inline-btn"
+                                    className={`flex-shrink-0 ${FOCUS_RING_GOLD}`}
+                                  >
+                                    {pixCopied
+                                      ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                      : <Copy className="h-4 w-4 text-[#EAB308]" />
+                                    }
                                   </button>
                                 </div>
                               )}
