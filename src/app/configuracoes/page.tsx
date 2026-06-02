@@ -107,7 +107,7 @@ export default function ConfigPage() {
   const EMOJIS = ["🏐","⚡","🚀","✨","💪","🏆","⭐","🎯","👶","👫","👥","🎓","🧘","🏃","💎","🌊"];
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto pb-28">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <AppPageHeader
         title="Configurações"
         subtitle="Categorias, locais, jornada e — na área do staff — chave PIX que o aluno usa para pagar."

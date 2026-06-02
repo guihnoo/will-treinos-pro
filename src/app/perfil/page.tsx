@@ -211,7 +211,7 @@ export default function PerfilPage() {
   const currentAvatar = resolveAvatarSrc(customPhoto || avatar, "Ricardo");
 
   return (
-    <div className="p-4 md:p-8 max-w-2xl mx-auto pb-28">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoFile} />
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoFile} />
 

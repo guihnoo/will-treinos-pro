@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo, useRef } from "react";
+import { formatBRL } from "@/lib/formatCurrency";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wallet, CheckCircle2, Clock, AlertTriangle, TrendingUp, TrendingDown, DollarSign, QrCode, Copy, Check, X, PhoneCall, CalendarRange, ChevronRight, Send, Upload, FileText, Eye, RotateCcw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -141,7 +142,7 @@ function PaymentModal({
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{background:`${cfg.color}15`,border:`1px solid ${cfg.color}30`}}>
                 <Icon className="w-3.5 h-3.5" style={{color:cfg.color}}/><span className="text-xs font-bold" style={{color:cfg.color}}>{cfg.label}</span>
               </div>
-              <p className="text-3xl font-bold text-white">R$ {pay.amount}</p>
+              <p className="text-3xl font-bold text-white">{formatBRL(pay.amount)}</p>
             </div>
           </div>
         </div>
@@ -304,13 +305,13 @@ function AlunoFinanceiro() {
   const firstPendingOrLate = myPayments.find((payment) => payment.status === "late" || payment.status === "pending");
   const selObj = myPayments.find(p=>p.id===selectedPay)||null;
   if (usingSupabaseSession && criticalDataLoading) {
-    return <div className="p-4 md:p-8 max-w-2xl mx-auto pb-28"><div className="rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-5 text-sm text-zinc-300">Sincronizando financeiro...</div></div>;
+    return <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]"><div className="rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-5 text-sm text-zinc-300">Sincronizando financeiro...</div></div>;
   }
   if (usingSupabaseSession && criticalDataError) {
-    return <div className="p-4 md:p-8 max-w-2xl mx-auto pb-28"><div className="rounded-2xl border border-red-500/35 bg-red-500/10 p-5 text-sm text-zinc-200">{criticalDataError}</div></div>;
+    return <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]"><div className="rounded-2xl border border-red-500/35 bg-red-500/10 p-5 text-sm text-zinc-200">{criticalDataError}</div></div>;
   }
   return (
-    <div className="p-4 md:p-8 max-w-2xl mx-auto pb-28">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} className="mb-6">
         <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Wallet className="w-8 h-8 text-[#EAB308]"/>Meu Financeiro</h1>
         <p className="text-zinc-500 mt-1">Toque em um pagamento para ver detalhes.</p>
@@ -344,7 +345,7 @@ function AlunoFinanceiro() {
               <div><p className="text-sm font-bold text-white">{pay.reference}</p><p className="text-xs text-zinc-500">Venc: {new Date(pay.dueDate+"T12:00:00").toLocaleDateString("pt-BR")}</p></div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-right"><p className="text-lg font-bold text-white">R$ {pay.amount}</p><p className="text-[10px] font-bold" style={{color:cfg.color}}>{cfg.label}</p></div>
+              <div className="text-right"><p className="text-lg font-bold text-white">{formatBRL(pay.amount)}</p><p className="text-[10px] font-bold" style={{color:cfg.color}}>{cfg.label}</p></div>
               <ChevronRight className="w-4 h-4 text-zinc-700"/>
             </div>
           </motion.div>
@@ -394,7 +395,7 @@ function CoachFinanceiro() {
   const estimatedCache = monthLessons.length*80;
   const allCompleted = lessons.filter(l=>l.status==="completed");
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto pb-28">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} className="mb-6">
         <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Wallet className="w-8 h-8 text-[#EAB308]"/>Meu Cache</h1>
         <p className="text-zinc-500 mt-1">Suas aulas dadas e ganhos estimados.</p>
@@ -519,7 +520,7 @@ function AdminPaymentDetailModal({
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Validação de comprovante</p>
             <h3 className="text-lg font-black text-white">{studentName}</h3>
-            <p className="text-xs text-zinc-500">{pay.reference} · R$ {pay.amount}</p>
+            <p className="text-xs text-zinc-500">{pay.reference} · {formatBRL(pay.amount)}</p>
           </div>
           <button
             type="button"
@@ -637,7 +638,7 @@ function AdminFinanceiro() {
   };
   if (usingSupabaseSession && criticalDataLoading) {
     return (
-      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <AppPageHeader title="Financeiro" subtitle="Sincronizando financeiro em tempo real..." icon={Wallet} className="mb-6" />
         <div className="space-y-3">
           <SkeletonLoader className="h-20" lines={2} />
@@ -649,7 +650,7 @@ function AdminFinanceiro() {
   }
   if (usingSupabaseSession && criticalDataError) {
     return (
-      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <AppPageHeader title="Financeiro" subtitle="Falha de sincronização. Tente novamente sem recarregar." icon={Wallet} className="mb-6" />
         <AppSectionCard title="Erro de sincronização" subtitle="O painel não recebeu os dados ao vivo do Supabase.">
           <p className="text-sm text-zinc-300">{criticalDataError}</p>
@@ -665,7 +666,7 @@ function AdminFinanceiro() {
     );
   }
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <AppPageHeader
         title="Financeiro"
         subtitle="Controle de pagamentos e inadimplência."
@@ -739,7 +740,7 @@ function AdminFinanceiro() {
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <span className="text-lg font-bold text-white">R$ {pay.amount}</span>
+              <span className="text-lg font-bold text-white">{formatBRL(pay.amount)}</span>
               {pay.studentProofDataUrl ? (
                 <motion.button
                   whileTap={{ scale: 0.9 }}

@@ -40,7 +40,7 @@ export default function StudentShell({ children }: { children: React.ReactNode }
           </div>
         </div>
       </motion.header>
-      <div className="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pb-28">{children}</div>
+      <div className="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 md:px-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">{children}</div>
     </div>
   );
 }

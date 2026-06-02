@@ -118,7 +118,7 @@ export default function AgendaPage() {
   if (!user) return null;
 
   return (
-    <div className="p-3 sm:p-4 max-w-5xl mx-auto pb-28">
+    <div className="p-3 sm:p-4 max-w-5xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <AppPageHeader
         title="Agenda de Treinos"
         subtitle={

@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
 } from "react";
@@ -69,7 +70,9 @@ export function TrainingProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = getSupabaseClient();
+  // Perf: useRef estabiliza referência — evita invalidação de useCallback em cada render
+  const supabaseRef = useRef(getSupabaseClient());
+  const supabase = supabaseRef.current;
 
   const refreshSessions = useCallback(async () => {
     if (!user?.id) return;

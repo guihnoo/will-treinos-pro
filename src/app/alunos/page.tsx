@@ -130,7 +130,7 @@ export default function AlunosPage() {
 
   if (usingSupabaseSession && criticalDataLoading) {
     return (
-      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <AppPageHeader
           title="Gestão de Alunos"
           subtitle="Sincronizando base em tempo real..."
@@ -147,7 +147,7 @@ export default function AlunosPage() {
 
   if (usingSupabaseSession && criticalDataError) {
     return (
-      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <AppPageHeader
           title="Gestão de Alunos"
           subtitle="Falha de sincronização. Você pode tentar novamente sem recarregar."
@@ -169,7 +169,7 @@ export default function AlunosPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto pb-28">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <AppPageHeader
         title="Gestão de Alunos"
         subtitle="Gerencie cadastros, aprovações e perfis dos alunos."

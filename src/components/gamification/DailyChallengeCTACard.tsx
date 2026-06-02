@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Zap, ArrowRight } from "lucide-react";
+import { PRESS_SCALE } from "@/components/ui/motionTokens";
 
 interface DailyChallengeCTACardProps {
   onViewChallenges?: () => void;
@@ -12,52 +13,61 @@ export default function DailyChallengeCTACard({
 }: DailyChallengeCTACardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      whileHover={{ scale: 1.02 }}
+      transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 28 }}
+      whileHover={{ y: -2, boxShadow: "0 0 32px rgba(234,179,8,0.12)" }}
+      whileTap={PRESS_SCALE}
       onClick={onViewChallenges}
-      className="rounded-2xl bg-gradient-to-br from-violet-600/40 to-fuchsia-600/40 border border-violet-500/30 p-4 cursor-pointer transition-all hover:border-violet-400/50 hover:shadow-lg hover:shadow-violet-500/20"
+      className="relative rounded-2xl border border-[#EAB308]/20 bg-[#050505] overflow-hidden cursor-pointer p-4"
     >
-      <div className="flex items-start justify-between mb-3">
+      {/* Radial glow dourado no canto superior direito */}
+      <div
+        className="pointer-events-none absolute -top-6 -right-6 w-32 h-32 rounded-full blur-2xl opacity-25"
+        style={{ background: "radial-gradient(circle, #EAB308 0%, transparent 70%)" }}
+        aria-hidden
+      />
+
+      <div className="relative flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <motion.div
-            animate={{ rotate: [0, -5, 5, -5, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity }}
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="w-8 h-8 rounded-lg bg-[#EAB308]/10 flex items-center justify-center"
           >
-            <Sparkles className="w-5 h-5 text-violet-300" />
+            <Zap className="w-4 h-4 text-[#EAB308]" />
           </motion.div>
-          <h3 className="text-sm font-bold text-white">Desafios Diários</h3>
+          <h3 className="text-sm font-bold text-white font-display">Desafios Diários</h3>
         </div>
         <motion.div
-          animate={{ x: [0, 4, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          animate={{ x: [0, 3, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         >
-          <ArrowRight className="w-4 h-4 text-violet-300" />
+          <ArrowRight className="w-4 h-4 text-[#EAB308]/60" />
         </motion.div>
       </div>
 
-      <p className="text-xs text-violet-100 mb-4">
+      <p className="relative text-xs text-zinc-400 mb-4 leading-relaxed">
         Complete tarefas rápidas para ganhar bônus de XP e desbloqueios especiais!
       </p>
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-[10px] text-violet-200">
-          <div className="w-1 h-1 rounded-full bg-violet-300" />
+      <div className="relative space-y-2 mb-4">
+        <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+          <div className="w-1 h-1 rounded-full bg-[#EAB308]/60 flex-shrink-0" />
           <span>Faça check-in na quadra</span>
-          <span className="ml-auto font-semibold">+25 XP</span>
+          <span className="ml-auto font-semibold text-[#EAB308]">+25 XP</span>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-violet-200">
-          <div className="w-1 h-1 rounded-full bg-violet-300" />
+        <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+          <div className="w-1 h-1 rounded-full bg-[#EAB308]/60 flex-shrink-0" />
           <span>Ganhe 100+ XP no dia</span>
-          <span className="ml-auto font-semibold">+50 XP</span>
+          <span className="ml-auto font-semibold text-[#EAB308]">+50 XP</span>
         </div>
       </div>
 
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="mt-4 w-full py-2 px-3 rounded-lg bg-violet-500/30 hover:bg-violet-500/50 text-white text-xs font-bold uppercase tracking-wider transition-colors"
+        whileHover={{ backgroundColor: "rgba(234,179,8,0.15)" }}
+        whileTap={{ scale: 0.97 }}
+        className="relative w-full py-2 px-3 rounded-xl border border-[#EAB308]/25 bg-[#EAB308]/8 text-[#EAB308] text-xs font-bold uppercase tracking-wider transition-colors"
       >
         Ver Desafios de Hoje
       </motion.button>

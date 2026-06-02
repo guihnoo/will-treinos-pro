@@ -58,7 +58,7 @@ export default function CoachHome() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto pb-28">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
