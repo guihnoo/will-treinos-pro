@@ -291,11 +291,43 @@ export default function FeedPage() {
       .slice(0, 8)
       .map((post, idx) => ({
         id: `live-${idx}-${post.id}`,
+        postId: post.id,
         name: post.user?.name ?? "Atleta",
         avatar: post.user?.avatar ?? "",
         hasNew: idx < 3,
       }));
   }, [posts]);
+
+  // Bookmark — estado local persistido em localStorage
+  const [savedPostIds, setSavedPostIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem("wt_saved_posts");
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch { return new Set(); }
+  });
+  const toggleSaved = (postId: string) => {
+    setSavedPostIds(prev => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId); else next.add(postId);
+      try { localStorage.setItem("wt_saved_posts", JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  // Share com fallback de cópia
+  const handleShare = async (postContent: string) => {
+    const text = postContent.trim() || "Confira esse post no Will Treinos PRO!";
+    if (navigator.share) {
+      try { await navigator.share({ text, url: window.location.href }); return; } catch { /* fallback */ }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Link copiado!");
+    } catch {
+      toast("Não foi possível compartilhar.", "error");
+    }
+  };
 
   // Get student profile for avatar (may be custom photo)
   const profile = students.find(s => s.id === user?.id);
@@ -427,10 +459,16 @@ export default function FeedPage() {
 
         {liveStories.map(s => (
           <motion.div key={s.id} whileTap={{ scale: 0.95 }}
-            className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0">
+            onClick={() => {
+              const el = document.getElementById(`post-${s.postId}`);
+              el?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+            className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0"
+            aria-label={`Ver post de ${s.name}`}
+          >
             <div className={`w-16 h-16 rounded-full p-[2px] ${s.hasNew ? "bg-gradient-to-br from-[#EAB308] to-[#F97316]" : "bg-zinc-800"}`}>
               <img src={resolveStoryAvatarSrc(s.avatar)}
-                alt=""
+                alt={s.name}
                 className="w-full h-full rounded-full border-2 border-black object-cover" />
             </div>
             <span className={`text-[10px] font-medium ${s.hasNew ? "text-white" : "text-zinc-500"}`}>{s.name}</span>
@@ -464,6 +502,7 @@ export default function FeedPage() {
         {visiblePosts.map((post, i) => (
           <motion.article
             key={post.id}
+            id={`post-${post.id}`}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
@@ -621,16 +660,23 @@ export default function FeedPage() {
                   <span className="text-sm font-medium">{post.comments.length}</span>
                 </motion.button>
 
-                {/* Share */}
+                {/* Share com fallback de cópia */}
                 <motion.button whileTap={{ scale: 0.9 }}
-                  onClick={() => { navigator.share?.({ text: post.content || "" }); }}
+                  onClick={() => void handleShare(post.content || "")}
+                  aria-label="Compartilhar post"
                   className={`text-zinc-400 hover:text-zinc-200 transition-colors ${FOCUS_RING_GOLD}`}>
                   <Share2 className="w-6 h-6" />
                 </motion.button>
               </div>
 
-              <motion.button whileTap={{ scale: 0.9 }} className={FOCUS_RING_GOLD}>
-                <Bookmark className={`w-6 h-6 transition-colors ${post.isSaved ? "text-[#EAB308] fill-[#EAB308]" : "text-zinc-400 hover:text-zinc-200"}`} />
+              {/* Bookmark funcional com localStorage */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => toggleSaved(post.id)}
+                aria-label={savedPostIds.has(post.id) ? "Remover dos salvos" : "Salvar post"}
+                className={FOCUS_RING_GOLD}
+              >
+                <Bookmark className={`w-6 h-6 transition-colors ${savedPostIds.has(post.id) ? "text-[#EAB308] fill-[#EAB308]" : "text-zinc-400 hover:text-zinc-200"}`} />
               </motion.button>
             </div>
 
