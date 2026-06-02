@@ -1,4 +1,5 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import { AppProvider } from "@/context/AppContext";
 import { CriticalDataProvider } from "@/context/CriticalDataContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -20,9 +21,33 @@ import { ToastProvider } from "@/components/Toast";
 import { RichToastProvider } from "@/components/ui/ToastProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-export const metadata = {
-  title: "Will Treinos PRO",
-  description: "Performance & Gestão Elite",
+export const metadata: Metadata = {
+  metadataBase: new URL("https://willtreinospro.com.br"),
+  title: {
+    default: "Will Treinos PRO — Vôlei de Alta Performance",
+    template: "%s | Will Treinos PRO",
+  },
+  description: "A plataforma de gestão e gamificação para vôlei de alta performance. Avaliação técnica por fundamento, XP, tiers e acompanhamento em tempo real.",
+  keywords: ["vôlei", "treino", "performance", "gamificação", "esporte", "avaliação técnica"],
+  authors: [{ name: "Will Treinos PRO" }],
+  creator: "Will Treinos PRO",
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "https://willtreinospro.com.br",
+    siteName: "Will Treinos PRO",
+    title: "Will Treinos PRO — Vôlei de Alta Performance",
+    description: "Plataforma exclusiva de gestão e gamificação para vôlei. Evolua de Iniciante a Elite.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Will Treinos PRO" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Will Treinos PRO — Vôlei de Alta Performance",
+    description: "Plataforma exclusiva de gamificação para vôlei de alta performance.",
+    images: ["/og-image.png"],
+  },
+  robots: { index: true, follow: true },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

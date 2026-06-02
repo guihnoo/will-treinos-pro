@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /privacidade
+Allow: /termos
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /will/
+Disallow: /alunos
+Disallow: /financeiro
+Disallow: /feed
+Disallow: /dev/
+
+Sitemap: https://willtreinospro.com.br/sitemap.xml

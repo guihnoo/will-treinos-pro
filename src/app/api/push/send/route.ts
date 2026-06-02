@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRequiredEnv } from "@/lib/envCheck";
+
+// Verificar variáveis de ambiente obrigatórias no startup
+checkRequiredEnv();
 
 // VAPID setup is deferred to request time to avoid build-time crash
 // when environment variables are not available on Vercel
