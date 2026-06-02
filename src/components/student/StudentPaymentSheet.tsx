@@ -109,7 +109,7 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
     setSubmitting(paymentId);
     try {
       submitStudentPaymentProof(paymentId, { note, attachment });
-      toast("Comprovante enviado! O Will irá confirmar em breve.");
+      toast("Comprovante enviado! O Will foi notificado e vai revisar em breve.");
       setProofNote((p) => { const n = { ...p }; delete n[paymentId]; return n; });
       setProofFile((p) => { const n = { ...p }; delete n[paymentId]; return n; });
       setExpandedId(null);

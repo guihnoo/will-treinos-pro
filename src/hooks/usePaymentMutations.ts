@@ -187,7 +187,34 @@ export function usePaymentMutations(options: {
         return submitStudentProofRemote(supabase, id, { note: payload.note, attachment: undefined });
       };
       void submitRemote()
-        .then((updated) => setPayments((p) => p.map((pay) => (pay.id === id ? updated : pay))))
+        .then((updated) => {
+          setPayments((p) => p.map((pay) => (pay.id === id ? updated : pay)));
+          // Fire-and-forget push notification to admin
+          try {
+            const sb = getSupabaseClient();
+            if (sb) {
+              void sb.auth.getSession().then(({ data: { session } }) => {
+                if (!session?.access_token) return;
+                const studentName = supabaseAuthUserRef.current?.user_metadata?.name as string | undefined ?? "Aluno";
+                void fetch("/api/push/send", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    targetRole: "admin",
+                    payload: {
+                      title: "💰 Comprovante recebido!",
+                      body: `${studentName} enviou comprovante de ${updated.reference}`,
+                      url: "/financeiro",
+                    },
+                  }),
+                }).catch(() => { /* ignore push failure */ });
+              });
+            }
+          } catch { /* ignore push failure */ }
+        })
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao registrar comprovante: " + (error instanceof Error ? error.message : "erro desconhecido")));
     },
     [usingSupabaseSession, supabaseAuthUserRef, setPayments, setCriticalDataError],

@@ -53,6 +53,7 @@ import {
   Activity,
   Layers,
   Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -111,6 +112,8 @@ const AdminSettingsPanel          = dynamic(() => import("./AdminSettingsPanel")
 const GlobalSearchModal           = dynamic(() => import("./GlobalSearchModal"),           { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import EmptyCockpitGuide from "./EmptyCockpitGuide";
+import TodayView from "./TodayView";
+const ImportStudentsModal = dynamic(() => import("./ImportStudentsModal"), { ssr: false, loading: () => null });
 import StudentTagsEditor from "./StudentTagsEditor";
 import { STUDENT_TAGS } from "@/lib/studentTags";
 import KpiSparkline from "@/components/ui/KpiSparkline";
@@ -197,7 +200,7 @@ export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
   const { isExpired: sessionExpired, recovering: sessionRecovering, recover: recoverSession, forceLogout: sessionForceLogout } = useSessionRecovery();
-  const { payments, pendingOrLatePaymentsCount, currentMonthReference, currentMonthBuckets } = usePayments();
+  const { payments, pendingOrLatePaymentsCount, currentMonthReference, currentMonthBuckets, proofPendingCount } = usePayments();
   const { appConfig, cadastroPath, cadastroInviteUrl, generateEnrollmentInviteCode } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
   const { user, isLive } = useAuth();
@@ -253,6 +256,7 @@ export default function WillCockpit() {
   const [temporalStudentId, setTemporalStudentId] = useState<string | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showExportData, setShowExportData] = useState(false);
+  const [showImportStudents, setShowImportStudents] = useState(false);
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
@@ -430,6 +434,7 @@ export default function WillCockpit() {
     showTemporalComparison ||
     showCategoryManager ||
     showExportData ||
+    showImportStudents ||
     showQRCheckin ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
@@ -819,6 +824,11 @@ export default function WillCockpit() {
               )}
               <Icon size={14} className={`relative z-10 ${activeTab === id ? "text-[#EAB308]" : ""}`} />
               <span className="relative z-10">{label}</span>
+              {id === "turma" && proofPendingCount > 0 && (
+                <span className="relative z-10 ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
+                  {proofPendingCount}
+                </span>
+              )}
             </motion.button>
           ))}
         </div>
@@ -830,6 +840,23 @@ export default function WillCockpit() {
           <EmptyCockpitGuide
             onCreateLesson={() => setShowCreateLesson(true)}
             onInviteStudent={() => {}}
+          />
+        </motion.div>
+      )}
+
+      {/* BLOCO Today View — resumo executivo do dia */}
+      {activeTab === "hoje" && (
+        <motion.div variants={itemV}>
+          <TodayView
+            lessons={lessons}
+            students={students}
+            payments={payments}
+            pendingStudents={approvalQueue}
+            latePayments={payments.filter((p) => p.status === "late" || p.status === "pending")}
+            birthdayStudents={birthdayStudents}
+            todayLessons={todayLessons}
+            onNavigate={(tab) => setActiveTab(tab)}
+            onCreateLesson={() => setShowCreateLesson(true)}
           />
         </motion.div>
       )}
@@ -1590,6 +1617,19 @@ export default function WillCockpit() {
           >
             <Download className="h-5 w-5 text-emerald-400" />
             Exportar
+          </button>
+          <button
+            type="button"
+            data-testid="btn-import-students"
+            onClick={() => {
+              haptic(16);
+              setShowImportStudents(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 px-4 py-3 text-sm font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Importar alunos via CSV"
+          >
+            <FileSpreadsheet className="h-5 w-5 text-teal-400" />
+            Importar CSV
           </button>
           </div>
         </AppSectionCard>
@@ -3570,6 +3610,18 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showExportData ? (
           <ExportDataPanel onClose={() => setShowExportData(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showImportStudents ? (
+          <ImportStudentsModal
+            onClose={() => setShowImportStudents(false)}
+            onGoToApproval={() => {
+              setShowImportStudents(false);
+              setActiveTab("turma");
+            }}
+          />
         ) : null}
       </AnimatePresence>
 
