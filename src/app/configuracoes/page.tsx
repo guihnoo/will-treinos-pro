@@ -59,7 +59,8 @@ export default function ConfigPage() {
     ? (students.find(s => s.id === user.id) ?? null)
     : null;
 
-  const [tab, setTab] = useState<Tab>("categorias");
+  // Aluno começa em notificações; admin/coach em categorias
+  const [tab, setTab] = useState<Tab>(user?.role === "aluno" ? "notificacoes" : "categorias");
   const [pixDraft, setPixDraft] = useState<AppConfig>(appConfig);
 
   useEffect(() => {
@@ -80,11 +81,13 @@ export default function ConfigPage() {
   const [wh, setWh] = useState(workHours);
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
+    // Tabs exclusivas do staff (admin/coach)
     ...(user?.role !== "aluno" ? [{ key: "recebimentos" as const, label: "Recebimentos PIX", icon: QrCode }] : []),
     ...(user?.role !== "aluno" ? [{ key: "perfilAluno" as const, label: "Perfil do aluno", icon: UserCircle }] : []),
-    { key: "categorias", label: "Categorias", icon: Tag },
-    { key: "locais", label: "Locais", icon: MapPin },
-    { key: "jornada", label: "Jornada", icon: Clock },
+    ...(user?.role !== "aluno" ? [{ key: "categorias" as const, label: "Categorias", icon: Tag }] : []),
+    ...(user?.role !== "aluno" ? [{ key: "locais" as const, label: "Locais", icon: MapPin }] : []),
+    ...(user?.role !== "aluno" ? [{ key: "jornada" as const, label: "Jornada", icon: Clock }] : []),
+    // Tab exclusiva do aluno
     ...(user?.role === "aluno" ? [{ key: "notificacoes" as const, label: "Notificações", icon: Bell }] : []),
   ];
 
@@ -110,7 +113,9 @@ export default function ConfigPage() {
     <div className="p-4 md:p-8 max-w-4xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <AppPageHeader
         title="Configurações"
-        subtitle="Categorias, locais, jornada e — na área do staff — chave PIX que o aluno usa para pagar."
+        subtitle={user?.role === "aluno"
+          ? "Preferências de notificação e conta pessoal."
+          : "Categorias, locais, jornada e chave PIX de recebimento."}
         icon={Settings}
         className="mb-6"
         rightSlot={

@@ -1195,6 +1195,16 @@ export default function StudentHome() {
     return () => cancelAnimationFrame(raf);
   }, [completedCount, streak, avgRating, frequency]);
 
+  // Ambient XP Pulse — hooks ANTES de qualquer return condicional (regra dos hooks)
+  const lastXpCountRef = useRef(0);
+  const [xpPulseKey, setXpPulseKey] = useState(0);
+  useEffect(() => {
+    if (xpFloatEvents.length > lastXpCountRef.current) {
+      lastXpCountRef.current = xpFloatEvents.length;
+      setXpPulseKey(k => k + 1);
+    }
+  }, [xpFloatEvents.length]);
+
   if (!hydrated) return <StudentHomeSkeleton />;
 
   if (usingSupabaseSession && criticalDataError) {
@@ -1241,16 +1251,6 @@ export default function StudentHome() {
     if (!profile?.id || totalXP === 0) return;
     offlineCache.saveStudentXP(profile.id, totalXP, currentTier.label);
   }, [profile?.id, totalXP, currentTier.label, hydrated]);
-
-  // Ambient XP Pulse — fundo do app pulsa gold quando XP é ganho
-  const lastXpCountRef = useRef(0);
-  const [xpPulseKey, setXpPulseKey] = useState(0);
-  useEffect(() => {
-    if (xpFloatEvents.length > lastXpCountRef.current) {
-      lastXpCountRef.current = xpFloatEvents.length;
-      setXpPulseKey(k => k + 1);
-    }
-  }, [xpFloatEvents.length]);
 
   return (
     <>
