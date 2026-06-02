@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -310,7 +310,7 @@ export default function WillCockpit() {
     if (!user) return;
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => {
       const sb = getSupabaseClient();
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localDateISO(new Date());
       sb.from("absence_requests")
         .select("id, lesson_date, lesson_title, lesson_time, reason, notes, status, students(name)")
         .gte("lesson_date", today)
@@ -638,7 +638,8 @@ export default function WillCockpit() {
     setActionFeedback("Formulário de nova aula aberto.");
   };
 
-  const now = new Date();
+  const nowRef = useRef(new Date());
+  const now = nowRef.current;
   const todayISO = localDateISO(now);
   const todayDate = new Date(`${todayISO}T00:00:00`);
   const dayStart = new Date(todayDate);
@@ -689,7 +690,7 @@ export default function WillCockpit() {
       result.push(months[ref] ?? 0);
     }
     return result;
-  }, [payments, now]);
+  }, [payments]);
 
   // Sparkline data: last 6 weeks active students (unique per week)
   const activeStudentsSparkPoints = useMemo(() => {
@@ -711,7 +712,7 @@ export default function WillCockpit() {
       weekCounts.push(active.size);
     }
     return weekCounts;
-  }, [lessons, now]);
+  }, [lessons]);
 
   const handleCockpitResolver = () => {
     haptic(18);

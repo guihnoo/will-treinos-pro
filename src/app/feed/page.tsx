@@ -283,7 +283,7 @@ export default function FeedPage() {
       .filter((post) => post.user?.name && post.user?.avatar)
       .slice(0, 30)
       .filter((post) => {
-        const key = `${post.user.name}::${post.user.avatar}`;
+        const key = `${post.user?.name}::${post.user?.avatar}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -291,8 +291,8 @@ export default function FeedPage() {
       .slice(0, 8)
       .map((post, idx) => ({
         id: `live-${idx}-${post.id}`,
-        name: post.user.name,
-        avatar: post.user.avatar,
+        name: post.user?.name ?? "Atleta",
+        avatar: post.user?.avatar ?? "",
         hasNew: idx < 3,
       }));
   }, [posts]);

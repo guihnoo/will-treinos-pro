@@ -34,7 +34,7 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
   const { payments, submitStudentPaymentProof, currentMonthReference } = usePayments();
   const { appConfig } = useAppConfig();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [proofNote, setProofNote] = useState<Record<string, string>>({});
@@ -354,7 +354,7 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
                               <div>
                                 <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Comprovante (foto / PDF)</label>
                                 <input
-                                  ref={fileInputRef}
+                                  ref={(el) => { fileInputRefs.current[payment.id] = el; }}
                                   type="file"
                                   accept="image/jpeg,image/png,image/webp,application/pdf"
                                   className="hidden"
@@ -378,7 +378,7 @@ export function StudentPaymentSheet({ open, onClose }: Props) {
                                   </div>
                                 ) : (
                                   <button
-                                    onClick={() => { setActiveFileId(payment.id); fileInputRef.current?.click(); }}
+                                    onClick={() => { setActiveFileId(payment.id); fileInputRefs.current[payment.id]?.click(); }}
                                     className={`mt-1 flex w-full items-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/40 px-3 py-2.5 text-[11px] text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 transition ${FOCUS_RING_GOLD}`}
                                   >
                                     <Paperclip className="h-4 w-4" />

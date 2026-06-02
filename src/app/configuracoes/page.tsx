@@ -30,6 +30,11 @@ const NotificationPreferencesPanel = dynamic(
 
 type Tab = "categorias" | "locais" | "jornada" | "recebimentos" | "perfilAluno" | "notificacoes";
 
+function timeToHours(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (h || 0) + (m || 0) / 60;
+}
+
 export default function ConfigPage() {
   const router = useRouter();
   const { appConfig, updateAppConfig } = useAppConfig();
@@ -550,15 +555,15 @@ export default function ConfigPage() {
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{
-                    left: `${(parseInt(wh.start) / 24) * 100}%`,
-                    width: `${((parseInt(wh.end) - parseInt(wh.start)) / 24) * 100}%`,
+                    left: `${(timeToHours(wh.start) / 24) * 100}%`,
+                    width: `${((timeToHours(wh.end) - timeToHours(wh.start)) / 24) * 100}%`,
                   }}
                   transition={{ duration: 0.5 }}
                   className="absolute h-full bg-gradient-to-r from-[#EAB308] to-[#F97316] rounded-full"
                 />
               </div>
               <p className="text-center text-sm text-zinc-400 mt-3">
-                {parseInt(wh.end) - parseInt(wh.start)}h de operação diária
+                {(timeToHours(wh.end) - timeToHours(wh.start)).toFixed(1).replace(".0", "")}h de operação diária
               </p>
             </div>
 

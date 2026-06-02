@@ -390,7 +390,7 @@ function CoachFinanceiro() {
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   const monthLessons = lessons.filter(l=>l.date.startsWith(thisMonth)&&l.status==="completed");
-  const totalStudentsMonth = monthLessons.reduce((a,l)=>a+l.presentStudents.length,0);
+  const totalStudentsMonth = monthLessons.reduce((a,l)=>a+(l.presentStudents?.length ?? 0),0);
   const estimatedCache = monthLessons.length*80;
   const allCompleted = lessons.filter(l=>l.status==="completed");
   return (
@@ -414,7 +414,7 @@ function CoachFinanceiro() {
           <div className="space-y-2">
             {monthLessons.map((l,i)=>(
               <motion.div key={l.id} initial={{opacity:0,x:-8}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/40">
-                <div><p className="text-sm font-bold text-white">{l.title}</p><p className="text-xs text-zinc-500">{new Date(l.date).toLocaleDateString("pt-BR")} • {l.startTime}–{l.endTime} • {l.presentStudents.length} presentes</p></div>
+                <div><p className="text-sm font-bold text-white">{l.title}</p><p className="text-xs text-zinc-500">{new Date(l.date).toLocaleDateString("pt-BR")} • {l.startTime}–{l.endTime} • {l.presentStudents?.length ?? 0} presentes</p></div>
                 <div className="text-right"><p className="text-sm font-bold text-[#22C55E]">R$ 80</p><p className="text-[10px] text-zinc-600">estimado</p></div>
               </motion.div>
             ))}
