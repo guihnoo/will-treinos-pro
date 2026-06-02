@@ -93,6 +93,7 @@ const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),   
 const AttentionPanel         = dynamic(() => import("./AttentionPanel"),         { ssr: false, loading: () => null });
 const CoachOnboarding        = dynamic(() => import("./CoachOnboarding"),        { ssr: false, loading: () => null });
 const AttendanceHeatmapPanel = dynamic(() => import("./AttendanceHeatmapPanel"), { ssr: false, loading: () => null });
+const BusinessAnalyticsPanel = dynamic(() => import("./BusinessAnalyticsPanel"), { ssr: false, loading: () => null });
 const WeeklyChallengeEditor  = dynamic(() => import("./WeeklyChallengeEditor"),  { ssr: false, loading: () => null });
 const ChurnPreventionPanel       = dynamic(() => import("./ChurnPreventionPanel"),       { ssr: false, loading: () => null });
 const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet"),        { ssr: false, loading: () => null });
@@ -231,6 +232,7 @@ export default function WillCockpit() {
   const [showAttention, setShowAttention] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showBusinessAnalytics, setShowBusinessAnalytics] = useState(false);
   const [showWeeklyChallenge, setShowWeeklyChallenge] = useState(false);
   const [showChurnPrevention, setShowChurnPrevention] = useState(false);
   const [showStudentFinance, setShowStudentFinance] = useState(false);
@@ -409,6 +411,7 @@ export default function WillCockpit() {
     showTurmaAnalytics ||
     showAttention ||
     showHeatmap ||
+    showBusinessAnalytics ||
     showWeeklyChallenge ||
     showChurnPrevention ||
     showStudentFinance ||
@@ -1400,6 +1403,19 @@ export default function WillCockpit() {
           >
             <TrendingUp className="h-5 w-5 text-indigo-400" />
             Evolução da Turma
+          </button>
+          <button
+            type="button"
+            data-testid="btn-business-analytics"
+            onClick={() => {
+              haptic(20);
+              setShowBusinessAnalytics(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir painel de analytics executivo do negócio"
+          >
+            <BarChart3 className="h-5 w-5 text-violet-400" />
+            Analytics
           </button>
           <button
             type="button"
@@ -3378,6 +3394,12 @@ export default function WillCockpit() {
       <AnimatePresence>
         {showHeatmap ? (
           <AttendanceHeatmapPanel onClose={() => setShowHeatmap(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBusinessAnalytics ? (
+          <BusinessAnalyticsPanel onClose={() => setShowBusinessAnalytics(false)} />
         ) : null}
       </AnimatePresence>
 

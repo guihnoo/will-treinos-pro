@@ -96,6 +96,7 @@ const LessonHistoryPanel      = dynamic(() => import("@/components/student/Lesso
 const StudentSchedulePanel    = dynamic(() => import("@/components/student/StudentSchedulePanel"),     { ssr: false, loading: () => null });
 const ShareProgressCard       = dynamic(() => import("@/components/student/ShareProgressCard"),        { ssr: false, loading: () => null });
 const MonthlySummaryCard      = dynamic(() => import("@/components/student/MonthlySummaryCard"),        { ssr: false, loading: () => null });
+const ReferralPanel           = dynamic(() => import("@/components/student/ReferralPanel"),              { ssr: false, loading: () => null });
 import { studentSeesNotification } from "@/lib/notificationVisibility";
 import OfflineBanner from "@/components/student/OfflineBanner";
 import { offlineCache } from "@/lib/offlineCache";
@@ -643,6 +644,7 @@ export default function StudentHome() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [showFreeTraining, setShowFreeTraining] = useState(false);
   const [showAchievementFeed, setShowAchievementFeed] = useState(false);
+  const [showReferralPanel, setShowReferralPanel] = useState(false);
   const [showTrainingPlan, setShowTrainingPlan] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
@@ -681,6 +683,7 @@ export default function StudentHome() {
       showPushSettings ||
       showFreeTraining ||
       showAchievementFeed ||
+      showReferralPanel ||
       showTrainingPlan ||
       showQRScanner ||
       showAttendanceCalendar ||
@@ -2277,6 +2280,13 @@ export default function StudentHome() {
                 >
                   💪 Meu Plano
                 </button>
+                <button
+                  onClick={() => { haptic([16, 12, 24]); setShowReferralPanel(true); }}
+                  data-testid="btn-referral-panel"
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-violet-500/35 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors ${ctaClass}`}
+                >
+                  👥 Indicar Amigo
+                </button>
               </div>
               <div className="text-right">
                 <p className="text-[10px] text-zinc-500">Meta competitiva</p>
@@ -3488,6 +3498,15 @@ export default function StudentHome() {
           <AchievementFeedPanel
             studentId={user.id}
             onClose={() => setShowAchievementFeed(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showReferralPanel && profile?.id && (
+          <ReferralPanel
+            studentId={profile.id}
+            onClose={() => setShowReferralPanel(false)}
           />
         )}
       </AnimatePresence>

@@ -31,6 +31,10 @@
     {
       "path": "/api/cron/post-lesson-feedback",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/fomo-reminder",
+      "schedule": "0 22 * * *"
     }
   ]
 }

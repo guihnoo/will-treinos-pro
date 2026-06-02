@@ -41,6 +41,20 @@ export default function SignupPage() {
     }
   }, [inviteGate.ready, inviteGate.blocked, authResolved, user, router]);
 
+  // Capture referral ID from URL query param and persist to sessionStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const refId = params.get("ref");
+    if (refId) {
+      try {
+        sessionStorage.setItem("wt_ref_id", refId);
+      } catch {
+        // ignore — sessionStorage may be unavailable in some contexts
+      }
+    }
+  }, []);
+
   if (!inviteGate.ready) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-black">

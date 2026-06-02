@@ -121,6 +121,15 @@ export function useStudentMutations(options: {
             });
           }
 
+          // Verificar e recompensar referral pendente para o email do aluno aprovado
+          if (updated.email) {
+            void fetch("/api/student/referral", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ referredStudentId: updated.id }),
+            }).catch(() => { /* best-effort */ });
+          }
+
           void logDevEvent("student_approved", "student", id, { name: updated.name, studentRole: updated.studentRole });
         })
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao aprovar aluno."));
