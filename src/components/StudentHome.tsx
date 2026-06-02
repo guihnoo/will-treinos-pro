@@ -109,8 +109,14 @@ import { YourDayCard } from "@/components/YourDayCard";
 import WelcomeModal from "@/components/student/WelcomeModal";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import SessionExpiredModal from "@/components/SessionExpiredModal";
+import { useRealtimeXP } from "@/hooks/useRealtimeXP";
+import type { XPEvent } from "@/hooks/useRealtimeXP";
 const MoodResponseCard = dynamic(
   () => import("@/components/student/MoodResponseCard"),
+  { ssr: false, loading: () => null }
+);
+const RealtimeXPIndicator = dynamic(
+  () => import("@/components/student/RealtimeXPIndicator"),
   { ssr: false, loading: () => null }
 );
 
@@ -656,6 +662,7 @@ export default function StudentHome() {
   const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
   const [shareText, setShareText] = useState("");
   const [showWelcome, setShowWelcome] = useState(false);
+  const [realtimeXPEvent, setRealtimeXPEvent] = useState<XPEvent | null>(null);
   const prevXPRef = useRef<number | null>(null);
   const hasInitializedRef = useRef(false);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
@@ -729,6 +736,21 @@ export default function StudentHome() {
   }, [showXpModal, user?.id]);
 
   const profile = students.find(s => s.id === user?.id);
+
+  // Sprint 104: Realtime XP via Supabase subscription
+  useRealtimeXP({
+    studentId: profile?.id ?? user?.id ?? null,
+    initialTotalXP: totalXP,
+    onXPGained: (xpAmount, event) => {
+      setRealtimeXPEvent(event);
+      richToast.xp(xpAmount, "XP ganho em tempo real!");
+    },
+    onTierUnlock: (newTier, _xpGained) => {
+      setJustUnlockedTier(newTier);
+      setConfettiActive(true);
+    },
+  });
+
   const { count: messagesUnread, setCount: setMessagesUnread } = useCoachMessagesUnread(profile?.id ?? null);
   const myLessons = lessons.filter(l => l.enrolledStudents.includes(user?.id || ""));
   // Real count: completed lessons with presence + historical record from profile
@@ -1228,6 +1250,14 @@ export default function StudentHome() {
     )}
     <PushPermissionBanner role="aluno" />
     <OfflineBanner />
+    <AnimatePresence>
+      {realtimeXPEvent && (
+        <RealtimeXPIndicator
+          xpAmount={realtimeXPEvent.xp}
+          onDismiss={() => setRealtimeXPEvent(null)}
+        />
+      )}
+    </AnimatePresence>
     <motion.div
       className="w-full space-y-5 pt-2 sm:pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] relative"
       variants={homeList}

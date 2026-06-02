@@ -51,6 +51,8 @@ import {
   ClipboardList,
   LayoutList,
   Activity,
+  Layers,
+  Download,
 } from "lucide-react";
 import type { StudentRole } from "@/context/types";
 import { useAuth } from "@/context/AuthContext";
@@ -99,6 +101,8 @@ const ChurnPreventionPanel       = dynamic(() => import("./ChurnPreventionPanel"
 const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet"),        { ssr: false, loading: () => null });
 const ScoutModePanel             = dynamic(() => import("./ScoutModePanel"),             { ssr: false, loading: () => null });
 const EvaluationTemplateManager  = dynamic(() => import("./EvaluationTemplateManager"), { ssr: false, loading: () => null });
+const CategoryManagerPanel       = dynamic(() => import("./CategoryManagerPanel"),       { ssr: false, loading: () => null });
+const ExportDataPanel            = dynamic(() => import("./ExportDataPanel"),            { ssr: false, loading: () => null });
 const TemporalComparisonPanel    = dynamic(() => import("./TemporalComparisonPanel"),    { ssr: false, loading: () => null });
 const AppHealthPanel              = dynamic(() => import("./AppHealthPanel"),              { ssr: false, loading: () => null });
 const StudentReportSheet          = dynamic(() => import("./StudentReportSheet"),          { ssr: false, loading: () => null });
@@ -246,6 +250,8 @@ export default function WillCockpit() {
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [showTemporalComparison, setShowTemporalComparison] = useState(false);
   const [temporalStudentId, setTemporalStudentId] = useState<string | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showExportData, setShowExportData] = useState(false);
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
   const [messageText, setMessageText] = useState("");
@@ -421,6 +427,8 @@ export default function WillCockpit() {
     showAdminSettings ||
     showGlobalSearch ||
     showTemporalComparison ||
+    showCategoryManager ||
+    showExportData ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -1547,6 +1555,32 @@ export default function WillCockpit() {
           >
             <LayoutList className="h-5 w-5 text-zinc-400" />
             Configurações do Admin
+          </button>
+          <button
+            type="button"
+            data-testid="btn-category-manager"
+            onClick={() => {
+              haptic(18);
+              setShowCategoryManager(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Gerenciar turmas e categorias"
+          >
+            <Layers className="h-5 w-5 text-violet-400" />
+            Turmas
+          </button>
+          <button
+            type="button"
+            data-testid="btn-export-data"
+            onClick={() => {
+              haptic(16);
+              setShowExportData(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Exportar dados em CSV"
+          >
+            <Download className="h-5 w-5 text-emerald-400" />
+            Exportar
           </button>
           </div>
         </AppSectionCard>
@@ -3515,6 +3549,18 @@ export default function WillCockpit() {
               setTemporalStudentId(null);
             }}
           />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCategoryManager ? (
+          <CategoryManagerPanel onClose={() => setShowCategoryManager(false)} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showExportData ? (
+          <ExportDataPanel onClose={() => setShowExportData(false)} />
         ) : null}
       </AnimatePresence>
 
