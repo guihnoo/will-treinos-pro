@@ -56,8 +56,8 @@ export function useRealtimeXP({
     (payload: Record<string, unknown>) => {
       const row = payload as {
         student_id?: string;
-        total_xp?: number;
-        base_xp?: number;
+        points?: number;
+        base_points?: number;
         source?: string;
         fundamental?: string;
         validation_passed?: boolean;
@@ -67,7 +67,7 @@ export function useRealtimeXP({
       // Only process validated entries for this student
       if (!row.validation_passed) return;
 
-      const xpGained = (row.total_xp ?? row.base_xp ?? 0) as number;
+      const xpGained = (row.points ?? row.base_points ?? 0) as number;
       if (xpGained <= 0) return;
 
       const event: XPEvent = {

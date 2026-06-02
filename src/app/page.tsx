@@ -28,11 +28,11 @@ export default function LandingPage() {
   }, [user, authResolved, router]);
 
   const tiers = [
-    { emoji: "🌱", name: "Iniciante", xp: "0 XP", benefit: "Acesso ao feed e check-in", color: "from-zinc-700 to-zinc-800", border: "border-zinc-600" },
-    { emoji: "🥉", name: "Bronze", xp: "500 XP", benefit: "Card exclusivo Bronze + badge", color: "from-amber-900/60 to-zinc-900", border: "border-amber-800/50" },
-    { emoji: "🥈", name: "Prata", xp: "1.500 XP", benefit: "Relatório técnico mensal", color: "from-zinc-500/40 to-zinc-900", border: "border-zinc-400/30" },
-    { emoji: "🥇", name: "Ouro", xp: "3.000 XP", benefit: "Destaque no ranking + bônus XP", color: "from-yellow-600/40 to-zinc-900", border: "border-yellow-500/40" },
-    { emoji: "💎", name: "Diamante", xp: "6.000 XP", benefit: "IA personalizada + plano exclusivo", color: "from-sky-600/40 to-zinc-900", border: "border-sky-400/30" },
+    { emoji: "🌱", name: "Iniciante", xp: "0 XP", benefit: "Acesso ao feed e check-in", gradient: "linear-gradient(135deg, #3f3f46, #27272a)", borderColor: "#52525b" },
+    { emoji: "🥉", name: "Bronze", xp: "500 XP", benefit: "Card exclusivo Bronze + badge", gradient: "linear-gradient(135deg, rgba(120,53,15,0.6), #18181b)", borderColor: "rgba(146,64,14,0.5)" },
+    { emoji: "🥈", name: "Prata", xp: "1.500 XP", benefit: "Relatório técnico mensal", gradient: "linear-gradient(135deg, rgba(113,113,122,0.4), #18181b)", borderColor: "rgba(161,161,170,0.3)" },
+    { emoji: "🥇", name: "Ouro", xp: "3.000 XP", benefit: "Destaque no ranking + bônus XP", gradient: "linear-gradient(135deg, rgba(202,138,4,0.4), #18181b)", borderColor: "rgba(234,179,8,0.4)" },
+    { emoji: "💎", name: "Diamante", xp: "6.000 XP", benefit: "IA personalizada + plano exclusivo", gradient: "linear-gradient(135deg, rgba(2,132,199,0.4), #18181b)", borderColor: "rgba(56,189,248,0.3)" },
   ];
 
   const steps = [
@@ -354,9 +354,10 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: i * 0.08 }}
                 whileHover={{ scale: 1.06, y: -6 }}
-                className={`relative rounded-3xl border ${tier.border} p-6 cursor-default overflow-hidden group`}
+                className="relative rounded-3xl p-6 cursor-default overflow-hidden group"
                 style={{
-                  background: `linear-gradient(135deg, ${tier.color.replace("from-", "").replace(" to-", ", ")})`,
+                  background: tier.gradient,
+                  border: `1px solid ${tier.borderColor}`,
                 }}
                 data-testid={`tier-card-${tier.name.toLowerCase()}`}
               >

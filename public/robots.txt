@@ -2,12 +2,20 @@ User-agent: *
 Allow: /
 Allow: /privacidade
 Allow: /termos
+Allow: /atleta/
 Disallow: /dashboard
 Disallow: /api/
 Disallow: /will/
 Disallow: /alunos
 Disallow: /financeiro
 Disallow: /feed
+Disallow: /treinos
+Disallow: /perfil
+Disallow: /ranking
+Disallow: /checkin/
+Disallow: /agenda
+Disallow: /configuracoes
+Disallow: /aguardando
 Disallow: /dev/
 
 Sitemap: https://willtreinospro.com.br/sitemap.xml

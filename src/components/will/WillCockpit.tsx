@@ -429,6 +429,7 @@ export default function WillCockpit() {
     showTemporalComparison ||
     showCategoryManager ||
     showExportData ||
+    showQRCheckin ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 

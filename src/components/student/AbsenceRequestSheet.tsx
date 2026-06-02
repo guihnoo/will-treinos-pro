@@ -39,7 +39,7 @@ export default function AbsenceRequestSheet({ lessons, studentId, getCategoryNam
   const today = localDateISO();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + 14);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const cutoffStr = localDateISO(cutoff);
 
   const upcoming = useMemo(() =>
     lessons

@@ -84,14 +84,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // 3. Find the top XP earner in the last 7 days (for FOMO message)
   const { data: recentXpRows } = await sb
     .from("xp_log")
-    .select("student_id, xp_amount")
+    .select("student_id, points")
     .gte("created_at", sevenDaysAgo);
 
   // Aggregate XP per student in last 7 days
   const xpByStudent = new Map<string, number>();
   if (recentXpRows) {
-    for (const row of recentXpRows as Array<{ student_id: string; xp_amount: number }>) {
-      xpByStudent.set(row.student_id, (xpByStudent.get(row.student_id) ?? 0) + (row.xp_amount ?? 0));
+    for (const row of recentXpRows as Array<{ student_id: string; points: number }>) {
+      xpByStudent.set(row.student_id, (xpByStudent.get(row.student_id) ?? 0) + (row.points ?? 0));
     }
   }
 
