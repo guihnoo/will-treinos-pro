@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, UserX, Users, CheckCircle2, Loader2 } from "lucide-react";
 import type { Lesson, Student } from "@/context/types";
@@ -27,6 +27,12 @@ export default function QuickAttendancePanel({ lesson, students, onClose, onSave
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!saved) return;
+    closeTimerRef.current = setTimeout(onClose, 1200);
+    return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
+  }, [saved, onClose]);
 
   const toggle = useCallback((id: string) => {
     setPresent(prev => {
@@ -54,7 +60,6 @@ export default function QuickAttendancePanel({ lesson, students, onClose, onSave
       onSave?.(presentIds);
       setSaved(true);
       toast(`✅ Presença salva — ${presentIds.length}/${enrolled.length} presentes`);
-      setTimeout(onClose, 1200);
     } catch {
       toast("Erro ao salvar presença.", "error");
     } finally {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, CheckCircle2, Loader2, ChevronUp, ChevronDown,
@@ -83,6 +83,12 @@ export default function BulkEvaluationModal({ lesson, students, onClose, onSaved
   const [scores, setScores]   = useState<StudentScores>(initScores);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!saved) return;
+    closeTimerRef.current = setTimeout(onClose, 1500);
+    return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
+  }, [saved, onClose]);
   const [globalPillar, setGlobalPillar] = useState<keyof EvaluationScores | null>(null);
   const [globalValue, setGlobalValue]   = useState(DEFAULT_SCORE);
 
@@ -160,7 +166,6 @@ export default function BulkEvaluationModal({ lesson, students, onClose, onSaved
       toast(`✅ ${saved} avaliações salvas!`);
       setSaved(true);
       onSaved?.();
-      setTimeout(onClose, 1500);
     } catch (e) {
       toast(`Erro: ${String(e).replace("Error: ", "")}`, "error");
     } finally {

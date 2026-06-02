@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Send, Zap, Shield, Target, TrendingUp } from "lucide-react";
 import type { Student } from "@/context/types";
@@ -42,6 +42,16 @@ export default function FeedbackModal({ lessonId, student, onClose }: Props) {
   const [improvements, setImprovements] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!submitted) return;
+    closeTimerRef.current = setTimeout(onClose, 1500);
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, [submitted, onClose]);
+
   const toggleSkill = (id: string, list: "strengths" | "improvements") => {
     const setter = list === "strengths" ? setStrengths : setImprovements;
     const other = list === "strengths" ? setImprovements : setStrengths;
@@ -89,7 +99,6 @@ export default function FeedbackModal({ lessonId, student, onClose }: Props) {
     }
 
     setSubmitted(true);
-    setTimeout(onClose, 1500);
   };
 
   const displayRating = hoverRating || rating;
