@@ -26,7 +26,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Authenticate via JWT (may be absent in dev impersonation — fallback to anon)
+  // Authenticate via JWT
   const anon = createClient(SUPABASE_URL, ANON_KEY);
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -52,59 +52,41 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, error: "Não autenticado" }, { status: 401 });
   }
 
-  // Fetch current lesson
-  const { data: lesson, error: lessonErr } = await sb
-    .from("lessons")
-    .select("id, enrolled_students, max_students, status")
-    .eq("id", lessonId)
-    .maybeSingle();
+  // Chamada atômica via RPC — evita race condition de vagas
+  const { data: rpcResult, error: rpcErr } = await sb.rpc("enroll_student_in_lesson", {
+    p_lesson_id: lessonId,
+    p_student_id: studentId,
+    p_action: action,
+  });
 
-  if (lessonErr || !lesson) {
-    return NextResponse.json({ success: false, error: "Aula não encontrada" }, { status: 404 });
-  }
-
-  if (lesson.status !== "scheduled") {
+  if (rpcErr) {
+    console.error("[enroll-lesson] RPC error:", rpcErr);
     return NextResponse.json(
-      { success: false, error: "Inscrições encerradas para esta aula" },
-      { status: 409 }
+      { success: false, error: "Erro ao processar inscrição" },
+      { status: 500 }
     );
   }
 
-  const enrolled: string[] = Array.isArray(lesson.enrolled_students)
-    ? (lesson.enrolled_students as string[])
-    : [];
+  const result = rpcResult as { success: boolean; error?: string; spotsLeft?: number };
 
-  let updated: string[];
+  if (!result.success) {
+    const errorMap: Record<string, { message: string; status: number }> = {
+      lesson_not_found:     { message: "Aula não encontrada",                status: 404 },
+      lesson_not_scheduled: { message: "Inscrições encerradas para esta aula", status: 409 },
+      already_enrolled:     { message: "Já inscrito nesta aula",              status: 409 },
+      lesson_full:          { message: "Aula lotada",                         status: 409 },
+      invalid_action:       { message: "Ação inválida",                       status: 400 },
+    };
 
-  if (action === "enroll") {
-    if (enrolled.includes(studentId)) {
-      return NextResponse.json({ success: true, spotsLeft: lesson.max_students - enrolled.length });
-    }
-    if (enrolled.length >= lesson.max_students) {
-      return NextResponse.json(
-        { success: false, error: "Aula lotada" },
-        { status: 409 }
-      );
-    }
-    updated = [...enrolled, studentId];
-  } else {
-    updated = enrolled.filter((id) => id !== studentId);
-  }
-
-  const { error: updateErr } = await sb
-    .from("lessons")
-    .update({ enrolled_students: updated })
-    .eq("id", lessonId);
-
-  if (updateErr) {
+    const mapped = result.error ? errorMap[result.error] : undefined;
     return NextResponse.json(
-      { success: false, error: "Erro ao atualizar inscrição" },
-      { status: 500 }
+      { success: false, error: mapped?.message ?? result.error ?? "Erro desconhecido" },
+      { status: mapped?.status ?? 500 }
     );
   }
 
   return NextResponse.json({
     success: true,
-    spotsLeft: lesson.max_students - updated.length,
+    spotsLeft: result.spotsLeft ?? 0,
   });
 }

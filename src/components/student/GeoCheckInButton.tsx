@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Home, Loader2, MapPin, X } from "lucide-react";
 import { checkIfAtCourt, type GeoCheckResult } from "@/lib/geolocation";
@@ -25,6 +25,13 @@ export default function GeoCheckInButton({
 }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [geoResult, setGeoResult] = useState<GeoCheckResult | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handlePress = async () => {
     if (disabled || phase !== "idle") return;
@@ -42,7 +49,7 @@ export default function GeoCheckInButton({
 
     // Auto-proceed after showing result for 2s
     const isAtCourt = result.status === "at_court" || result.status === "permission_denied" || result.status === "unavailable";
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       onCheckIn(isAtCourt);
       setPhase("idle");
       setGeoResult(null);

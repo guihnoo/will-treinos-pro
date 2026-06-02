@@ -158,6 +158,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       .map((s) => [s.auth_user_id as string, s])
   );
 
+  // Fetch notification preferences for inactive students
+  const inactiveStudentIds = inactiveAll.map((s) => s.id);
+  const { data: prefsRows } = await sb
+    .from("notification_preferences")
+    .select("student_id, fomo_reminder")
+    .in("student_id", inactiveStudentIds);
+
+  const prefsMap = new Map<string, boolean>();
+  if (prefsRows) {
+    for (const row of prefsRows as Array<{ student_id: string; fomo_reminder: boolean }>) {
+      prefsMap.set(row.student_id, row.fomo_reminder);
+    }
+  }
+
   let sent3d = 0;
   let sent7d = 0;
 
@@ -165,6 +179,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     (subs as PushSub[]).map((sub) => {
       const student = authToStudent.get(sub.user_id);
       if (!student) return Promise.resolve();
+
+      // Check fomo_reminder preference (default true if no row)
+      const wantsFomo = prefsMap.has(student.id) ? prefsMap.get(student.id)! : true;
+      if (!wantsFomo) return Promise.resolve();
 
       const firstName = student.name.split(" ")[0]!;
       const isStrong = inactiveStrong.some((s) => s.id === student.id);

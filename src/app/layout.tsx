@@ -77,8 +77,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-black text-zinc-100 min-h-screen font-sans antialiased selection:bg-[#EAB308]/30 overflow-x-hidden overflow-y-auto flex">
         <ErrorBoundary>
         <AppProvider>
-          <CriticalDataProvider>
             <AuthProvider>
+              <CriticalDataProvider>
               <CalendarTickProvider>
                 <StudentsProvider>
                   <LessonsProvider>
@@ -110,8 +110,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </LessonsProvider>
                 </StudentsProvider>
               </CalendarTickProvider>
+              </CriticalDataProvider>
             </AuthProvider>
-          </CriticalDataProvider>
         </AppProvider>
         </ErrorBoundary>
       </body>

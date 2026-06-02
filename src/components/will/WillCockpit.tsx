@@ -68,9 +68,10 @@ import AppEmptyState from "@/components/ui/AppEmptyState";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import KpiActionCard from "@/components/ui/KpiActionCard";
 import CockpitHero from "./CockpitHero";
-import OracleInsights from "./OracleInsights";
 import WeeklyCalendarGrid from "@/components/will/WeeklyCalendarGrid";
 import CourtWeatherPanel from "./CourtWeatherPanel";  // inline card — keep static
+import OnlineStudentsPanel from "./OnlineStudentsPanel";  // Realtime widget — keep static (lightweight)
+const OracleInsights = dynamic(() => import("@/components/will/OracleInsights"), { ssr: false, loading: () => null });
 
 // ─── Lazy-loaded panels (modal/drawer — zero cost at startup) ─────────────────
 const CreateLessonModal    = dynamic(() => import("@/components/CreateLessonModal"), { ssr: false, loading: () => null });
@@ -833,7 +834,14 @@ export default function WillCockpit() {
         </motion.div>
       )}
 
-      {/* BLOCO 0: Clima da Quadra — alerta inteligente */}
+      {/* BLOCO 0a: Alunos online agora — Realtime presence */}
+      {activeTab === "hoje" && (
+        <motion.div variants={itemV}>
+          <OnlineStudentsPanel />
+        </motion.div>
+      )}
+
+      {/* BLOCO 0b: Clima da Quadra — alerta inteligente */}
       {activeTab === "hoje" && appConfig.courtLocation && (
         <motion.div variants={itemV}>
           <CourtWeatherPanel />

@@ -4,11 +4,12 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings, MapPin, Clock, Tag, Plus, X, Trash2, Edit3,
-  ExternalLink, Save, ChevronRight, Globe, QrCode, UserCircle, Lock, LockOpen, Eraser,
+  ExternalLink, Save, ChevronRight, Globe, QrCode, UserCircle, Lock, LockOpen, Eraser, Bell,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useCatalog } from "@/context/CatalogContext";
+import { useStudents } from "@/context/StudentsContext";
 import { useToast } from "@/components/Toast";
 import UserAvatar from "@/components/ui/UserAvatar";
 import type { AppConfig, StudentProfileEditPolicy } from "@/context/types";
@@ -20,8 +21,14 @@ import { useRouter } from "next/navigation";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import CourtLocationSettings from "@/components/will/CourtLocationSettings";
+import dynamic from "next/dynamic";
 
-type Tab = "categorias" | "locais" | "jornada" | "recebimentos" | "perfilAluno";
+const NotificationPreferencesPanel = dynamic(
+  () => import("@/components/student/NotificationPreferencesPanel"),
+  { ssr: false, loading: () => <div className="h-40 rounded-xl bg-zinc-900/40 animate-pulse" /> }
+);
+
+type Tab = "categorias" | "locais" | "jornada" | "recebimentos" | "perfilAluno" | "notificacoes";
 
 export default function ConfigPage() {
   const router = useRouter();
@@ -40,7 +47,12 @@ export default function ConfigPage() {
     getVenueMapsUrl,
   } = useCatalog();
   const { user } = useAuth();
+  const { students } = useStudents();
   const { toast } = useToast();
+  // CRM student id for the logged-in student (aluno role only)
+  const studentProfile = user?.role === "aluno"
+    ? (students.find(s => s.id === user.id) ?? null)
+    : null;
 
   const [tab, setTab] = useState<Tab>("categorias");
   const [pixDraft, setPixDraft] = useState<AppConfig>(appConfig);
@@ -68,6 +80,7 @@ export default function ConfigPage() {
     { key: "categorias", label: "Categorias", icon: Tag },
     { key: "locais", label: "Locais", icon: MapPin },
     { key: "jornada", label: "Jornada", icon: Clock },
+    ...(user?.role === "aluno" ? [{ key: "notificacoes" as const, label: "Notificacoes", icon: Bell }] : []),
   ];
 
   const handleAddCat = () => {
@@ -553,6 +566,23 @@ export default function ConfigPage() {
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[#EAB308] text-black font-bold text-sm">
               <Save className="w-4 h-4" /> Salvar Jornada
             </motion.button>
+          </AppSectionCard>
+        </motion.div>
+      )}
+
+      {/* ─── NOTIFICACOES (aluno) ─── */}
+      {tab === "notificacoes" && user?.role === "aluno" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <AppSectionCard
+            title="Preferencias de Notificacao"
+            subtitle="Escolha quais pushes voce quer receber. As alteracoes sao salvas automaticamente."
+            rightSlot={<Bell className="w-5 h-5 text-amber-400" />}
+          >
+            {studentProfile?.id ? (
+              <NotificationPreferencesPanel studentId={studentProfile.id} />
+            ) : (
+              <p className="text-sm text-zinc-500">Perfil de aluno nao encontrado.</p>
+            )}
           </AppSectionCard>
         </motion.div>
       )}

@@ -125,11 +125,26 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     subByUserId.set(sub.user_id, sub);
   });
 
+  // Fetch eval_feedback preferences for relevant students
+  const { data: prefRows } = await sb
+    .from("notification_preferences")
+    .select("student_id, eval_feedback")
+    .in("student_id", uniqueStudentIds);
+
+  const evalFeedbackMap = new Map<string, boolean>();
+  (prefRows as Array<{ student_id: string; eval_feedback: boolean }> | null)?.forEach((row) => {
+    evalFeedbackMap.set(row.student_id, row.eval_feedback);
+  });
+
   let sent = 0;
 
   for (const target of targets) {
     const sub = subByUserId.get(target.studentId);
     if (!sub) continue;
+
+    // Check eval_feedback preference (default true if no row)
+    const wantsFeedback = evalFeedbackMap.has(target.studentId) ? evalFeedbackMap.get(target.studentId)! : true;
+    if (!wantsFeedback) continue;
 
     const payload = JSON.stringify({
       title: "Como foi o treino? 💪",

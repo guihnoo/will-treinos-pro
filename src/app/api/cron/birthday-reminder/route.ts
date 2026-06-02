@@ -95,8 +95,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
     xpInserted = !xpResult.error;
 
-    // 3b. Fetch push subscriptions for this student
-    if (wp && student.auth_user_id) {
+    // 3b. Check birthday_wishes preference before sending push
+    const { data: prefRow } = await sb
+      .from("notification_preferences")
+      .select("birthday_wishes")
+      .eq("student_id", student.id)
+      .maybeSingle();
+    const wantsBirthday = prefRow ? (prefRow as { birthday_wishes: boolean }).birthday_wishes : true;
+
+    // 3c. Fetch push subscriptions for this student
+    if (wp && student.auth_user_id && wantsBirthday) {
       const { data: subsData } = await sb
         .from("push_subscriptions")
         .select("endpoint, p256dh, auth, user_id")

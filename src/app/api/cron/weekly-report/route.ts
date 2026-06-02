@@ -67,11 +67,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .in("auth_user_id", userIds)
     .eq("status", "active");
 
-  const studentMap = new Map(
-    ((students ?? []) as { id: string; auth_user_id: string; name: string }[])
-      .filter((s) => s.auth_user_id)
-      .map((s) => [s.auth_user_id!, s])
-  );
+  const studentList = ((students ?? []) as { id: string; auth_user_id: string; name: string }[])
+    .filter((s) => s.auth_user_id);
+
+  const studentMap = new Map(studentList.map((s) => [s.auth_user_id!, s]));
+
+  // Fetch monthly_summary preferences for these students
+  const studentIds = studentList.map((s) => s.id);
+  const { data: prefsRows } = await sb
+    .from("notification_preferences")
+    .select("student_id, monthly_summary")
+    .in("student_id", studentIds);
+
+  const monthlySummaryMap = new Map<string, boolean>();
+  if (prefsRows) {
+    for (const row of prefsRows as Array<{ student_id: string; monthly_summary: boolean }>) {
+      monthlySummaryMap.set(row.student_id, row.monthly_summary);
+    }
+  }
 
   // XP this week vs last week per student
   const { data: xpThisWeek } = await sb
@@ -117,6 +130,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     (subs as PushSub[]).map((sub) => {
       const student = studentMap.get(sub.user_id);
       if (!student) return Promise.resolve();
+
+      // Check monthly_summary preference (default true if no row)
+      const wantsSummary = monthlySummaryMap.has(student.id) ? monthlySummaryMap.get(student.id)! : true;
+      if (!wantsSummary) return Promise.resolve();
 
       const xpW  = thisWeekXP.get(student.id) ?? 0;
       const xpL  = lastWeekXP.get(student.id) ?? 0;

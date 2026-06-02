@@ -111,6 +111,7 @@ import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import SessionExpiredModal from "@/components/SessionExpiredModal";
 import { useRealtimeXP } from "@/hooks/useRealtimeXP";
 import type { XPEvent } from "@/hooks/useRealtimeXP";
+import PresenceTracker from "@/components/student/PresenceTracker";
 const MoodResponseCard = dynamic(
   () => import("@/components/student/MoodResponseCard"),
   { ssr: false, loading: () => null }
@@ -3557,6 +3558,11 @@ export default function StudentHome() {
           />
         )}
       </AnimatePresence>
+
+      {/* Invisible presence tracker — registra o aluno no canal Realtime de presença */}
+      {profile?.id && profile?.name && (
+        <PresenceTracker studentId={profile.id} studentName={profile.name} />
+      )}
 
       {/* Invisible milestone tracker — fires onUnlock toast when a new badge is earned */}
       {profile?.id && sessionToken && (
