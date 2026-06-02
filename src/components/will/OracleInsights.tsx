@@ -76,6 +76,7 @@ export default function OracleInsights({ ctx }: { ctx: OracleContext }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [aiPowered, setAiPowered] = useState<boolean | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchInsights = useCallback(
@@ -109,10 +110,11 @@ export default function OracleInsights({ ctx }: { ctx: OracleContext }) {
         });
 
         if (!res.ok) throw new Error("oracle_error");
-        const data = await res.json() as { insights: Insight[]; generatedAt: string };
+        const data = await res.json() as { insights: Insight[]; generatedAt: string; ai_powered?: boolean };
         cacheRef.current = { insights: data.insights, ts: Date.now() };
         setInsights(data.insights);
         setGeneratedAt(data.generatedAt);
+        setAiPowered(data.ai_powered ?? false);
       } catch (e: unknown) {
         if (e instanceof Error && e.name === "AbortError") return;
         setError(true);
@@ -142,7 +144,18 @@ export default function OracleInsights({ ctx }: { ctx: OracleContext }) {
             <Brain className="h-4 w-4 text-[#EAB308]" />
           </div>
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#EAB308]">Oráculo IA</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#EAB308]">Oráculo IA</p>
+              {aiPowered !== null && (
+                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                  aiPowered
+                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                    : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                }`}>
+                  {aiPowered ? "IA ao vivo" : "Análise padrão"}
+                </span>
+              )}
+            </div>
             {timeLabel && (
               <p className="text-[9px] text-zinc-500">Atualizado às {timeLabel}</p>
             )}

@@ -19,6 +19,7 @@ type OracleInsight = {
 type OraclePayload = {
   insights: OracleInsight[];
   generatedAt: string;
+  ai_powered: boolean;
 };
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -102,6 +103,7 @@ REGRAS CRÍTICAS:
     return NextResponse.json<OraclePayload>({
       insights: parsed.insights.slice(0, 4),
       generatedAt: new Date().toISOString(),
+      ai_powered: true,
     });
   } catch {
     return NextResponse.json<OraclePayload>(buildFallback(), { status: 200 });
@@ -157,6 +159,7 @@ Gere 4 insights preditivos e acionáveis. Priorize alertas reais. Se os números
 
 function buildFallback(): OraclePayload {
   return {
+    ai_powered: false,
     insights: [
       {
         id: "fallback-1",
