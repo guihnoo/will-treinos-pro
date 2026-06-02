@@ -212,7 +212,10 @@ function LoginContent() {
 
           {/* Email + Password */}
           <div className="space-y-2.5">
+            <div>
+              <label htmlFor="login-email" className="sr-only">E-mail</label>
             <input
+              id="login-email"
               type="email"
               autoComplete="email"
               placeholder="E-mail"
@@ -229,7 +232,11 @@ function LoginContent() {
                   : "border border-white/[0.07]",
               ].join(" ")}
             />
+            </div>
+            <div>
+              <label htmlFor="login-password" className="sr-only">Senha</label>
             <input
+              id="login-password"
               type="password"
               autoComplete="current-password"
               placeholder="Senha"
@@ -246,6 +253,7 @@ function LoginContent() {
                   : "border border-white/[0.07]",
               ].join(" ")}
             />
+            </div>
             {/* Remember me */}
             <button
               type="button"
@@ -272,6 +280,17 @@ function LoginContent() {
               {submitting === "password" ? <Spinner /> : null}
               {submitting === "password" ? "Entrando…" : "Entrar com e-mail"}
             </motion.button>
+
+            {supabaseReady && (
+              <div className="text-center">
+                <a
+                  href="/esqueci-senha"
+                  className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors underline-offset-2 hover:underline"
+                >
+                  Esqueci minha senha
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Dev mock buttons (only when Supabase not configured) */}

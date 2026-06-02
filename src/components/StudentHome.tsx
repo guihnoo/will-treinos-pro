@@ -550,7 +550,7 @@ export default function StudentHome() {
   const { appConfig } = useAppConfig();
   const { lessonRatings, addLessonRating, getLessonRating } = useLessonRatings();
   const { user, usingSupabaseSession } = useAuth();
-  const { totalXP } = useGamification();
+  const { totalXP, xpFloatEvents } = useGamification();
   const { addPost } = useFeed();
   const { requestReposition } = useApp();
   const { lessons } = useLessons();
@@ -1242,8 +1242,35 @@ export default function StudentHome() {
     offlineCache.saveStudentXP(profile.id, totalXP, currentTier.label);
   }, [profile?.id, totalXP, currentTier.label, hydrated]);
 
+  // Ambient XP Pulse — fundo do app pulsa gold quando XP é ganho
+  const lastXpCountRef = useRef(0);
+  const [xpPulseKey, setXpPulseKey] = useState(0);
+  useEffect(() => {
+    if (xpFloatEvents.length > lastXpCountRef.current) {
+      lastXpCountRef.current = xpFloatEvents.length;
+      setXpPulseKey(k => k + 1);
+    }
+  }, [xpFloatEvents.length]);
+
   return (
     <>
+    {/* Ambient XP Pulse: fundo reage ao ganho de XP */}
+    <AnimatePresence>
+      {xpPulseKey > 0 && (
+        <motion.div
+          key={xpPulseKey}
+          className="pointer-events-none fixed inset-0 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          style={{
+            background: "radial-gradient(ellipse at 50% 50%, rgba(234,179,8,0.07) 0%, transparent 65%)",
+          }}
+          aria-hidden
+        />
+      )}
+    </AnimatePresence>
     {showWelcome && (
       <WelcomeModal
         name={(profile?.name || user?.name || "Atleta").split(" ")[0]!}
