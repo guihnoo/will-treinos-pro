@@ -85,7 +85,11 @@ export default function AlunosPage() {
     return students
       .filter(s => filter === "all" || s.status === filter)
       .filter(s => !tagFilter || (s.tags ?? []).includes(tagFilter))
-      .filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+      .filter(s => {
+        const normalize = (str: string) =>
+          str.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+        return normalize(s.name).includes(normalize(search));
+      });
   }, [students, filter, tagFilter, search]);
 
   const statusConfig: Record<string, { label: string; color: string; bg: string }> = {

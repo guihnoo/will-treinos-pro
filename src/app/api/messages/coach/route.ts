@@ -125,11 +125,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { data: { user }, error: authError } = await anonClient.auth.getUser(jwt);
   if (authError || !user) return NextResponse.json({ error: "Token inválido" }, { status: 401 });
 
+  const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+
+  // Security C2: verificar staff antes de retornar mensagens de qualquer aluno
+  const { data: staffRow } = await sb
+    .from("staff_access")
+    .select("role")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  if (!staffRow) return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+
   const { searchParams } = new URL(req.url);
   const studentId = searchParams.get("studentId");
   if (!studentId) return NextResponse.json({ error: "studentId obrigatório" }, { status: 400 });
-
-  const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const { data, error } = await sb
     .from("coach_messages")

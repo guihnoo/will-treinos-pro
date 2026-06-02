@@ -6,6 +6,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        display: ["var(--font-space-grotesk)", "Space Grotesk", "system-ui", "sans-serif"],
+      },
       colors: {
         background: "#000000",
         gold: {

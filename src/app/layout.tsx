@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { AppProvider } from "@/context/AppContext";
 import { CriticalDataProvider } from "@/context/CriticalDataContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -20,6 +21,18 @@ import AuthWrapper from "@/components/AuthWrapper";
 import { ToastProvider } from "@/components/Toast";
 import { RichToastProvider } from "@/components/ui/ToastProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://willtreinospro.com.br"),
@@ -74,7 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
         )}
       </head>
-      <body className="bg-black text-zinc-100 min-h-screen font-sans antialiased selection:bg-[#EAB308]/30 overflow-x-hidden overflow-y-auto flex">
+      <body className={`${inter.variable} ${spaceGrotesk.variable} bg-black text-zinc-100 min-h-screen font-sans antialiased selection:bg-[#EAB308]/30 overflow-x-hidden overflow-y-auto flex`}>
         <ErrorBoundary>
         <AppProvider>
             <AuthProvider>

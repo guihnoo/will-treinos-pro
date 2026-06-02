@@ -20,8 +20,13 @@ export async function POST(request: NextRequest) {
 
     const secretKey = process.env.TURNSTILE_SECRET_KEY;
     if (!secretKey) {
-      console.warn("[Turnstile] Secret key não configurada. CAPTCHA será ignorado em produção.");
-      // Graceful fallback: permitir se chave não estiver configurada
+      // Security M3: fail-closed em produção — sem chave, sem acesso
+      if (process.env.NODE_ENV === "production") {
+        console.error("[Turnstile] Secret key não configurada em produção. Bloqueando requisição.");
+        return NextResponse.json({ success: false, errorCodes: ["misconfigured"] }, { status: 500 });
+      }
+      // Em dev/preview: permitir sem CAPTCHA para facilitar testes locais
+      console.warn("[Turnstile] Secret key não configurada. CAPTCHA ignorado (apenas em dev).");
       return NextResponse.json({ success: true });
     }
 

@@ -21,10 +21,21 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error: authError } = await anonClient.auth.getUser(jwt);
   if (authError || !user) return NextResponse.json({ error: "Token inválido" }, { status: 401 });
 
-  // Upsert via service_role (se disponível) ou anon
   const client = serviceRoleKey
     ? createClient(supabaseUrl!, serviceRoleKey)
     : anonClient;
+
+  // Security A3: derivar role do servidor (staff_access), nunca aceitar do cliente
+  let serverRole = "aluno";
+  if (serviceRoleKey) {
+    const { data: staffRow } = await client
+      .from("staff_access")
+      .select("role")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+    if (staffRow?.role === "admin") serverRole = "admin";
+    else if (staffRow?.role === "coach") serverRole = "coach";
+  }
 
   const { error } = await client
     .from("push_subscriptions")
@@ -34,7 +45,7 @@ export async function POST(req: NextRequest) {
         endpoint: body.endpoint,
         p256dh: body.keys.p256dh,
         auth: body.keys.auth,
-        role: (body.role === "admin" || body.role === "coach" || body.role === "professor") ? body.role : "aluno",
+        role: serverRole,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "endpoint" }

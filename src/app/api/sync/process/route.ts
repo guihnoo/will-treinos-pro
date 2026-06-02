@@ -15,6 +15,7 @@ import type { QueuedAction } from "@/lib/syncQueue";
 export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !anonKey) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
@@ -27,11 +28,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const client = createClient(supabaseUrl, anonKey);
+  // Security C3: criar client com JWT injetado para que RLS de 'authenticated' aplique
+  const client = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+  });
   const { data: { user }, error: authError } = await client.auth.getUser(jwt);
   if (authError || !user) {
     return NextResponse.json({ error: "Token inválido" }, { status: 401 });
   }
+
+  // Client de service-role para operações de staff (approveCheckIn)
+  const serviceClient = serviceKey ? createClient(supabaseUrl, serviceKey) : null;
 
   // Parsear ação
   let action: QueuedAction;
@@ -49,7 +56,7 @@ export async function POST(req: NextRequest) {
       }
 
       case "approveCheckIn": {
-        return await handleApproveCheckIn(client as any, user.id, action);
+        return await handleApproveCheckIn(client as any, serviceClient as any, user.id, action);
       }
 
       case "addPost": {
@@ -129,6 +136,7 @@ async function handleRequestCheckIn(
 
 async function handleApproveCheckIn(
   client: any,
+  serviceClient: any,
   userId: string,
   action: QueuedAction,
 ) {
@@ -141,8 +149,23 @@ async function handleApproveCheckIn(
     return NextResponse.json({ error: "lessonId e studentId obrigatórios" }, { status: 400 });
   }
 
+  // Security C3: verificar que o chamador é staff antes de aprovar presença
+  if (serviceClient) {
+    const { data: staffRow } = await serviceClient
+      .from("staff_access")
+      .select("role")
+      .eq("auth_user_id", userId)
+      .maybeSingle();
+    if (!staffRow) {
+      return NextResponse.json({ error: "Acesso negado: apenas staff pode aprovar check-in" }, { status: 403 });
+    }
+  }
+
+  // Usar serviceClient para a operação de staff, ou client autenticado como fallback
+  const execClient = serviceClient ?? client;
+
   // Buscar lição com check-in requests
-  const { data: lesson, error: fetchError } = await client
+  const { data: lesson, error: fetchError } = await execClient
     .from("lessons")
     .select("check_in_requests, present_students")
     .eq("id", lessonId)
@@ -179,7 +202,7 @@ async function handleApproveCheckIn(
     presentStudents.push(studentId);
   }
 
-  const { error: updateError } = await client
+  const { error: updateError } = await execClient
     .from("lessons")
     .update({
       check_in_requests: updated,
@@ -205,14 +228,14 @@ async function handleAddPost(
     authorId: string;
   };
 
-  if (!post.body || !post.authorId) {
-    return NextResponse.json({ error: "body e authorId obrigatórios" }, { status: 400 });
+  if (!post.body) {
+    return NextResponse.json({ error: "body obrigatório" }, { status: 400 });
   }
 
   const { error } = await client.from("feed_posts").insert({
     title: post.title || "",
     body: post.body,
-    author_id: post.authorId,
+    author_id: userId, // Security C3: sempre usar userId do JWT, nunca do payload
     created_at: new Date().toISOString(),
   });
 
@@ -275,10 +298,26 @@ async function handleAddPaymentProof(
     return NextResponse.json({ error: "paymentId obrigatório" }, { status: 400 });
   }
 
-  const { error } = await client
+  // Security C3: restringir update ao student_id do usuário autenticado (ownership check via RLS)
+  // O client já tem o JWT injetado, então a RLS de 'authenticated' se aplica.
+  // Adicionalmente, filtrar por student_id resolvido do auth_user_id para garantia dupla.
+  const { data: student } = await client
+    .from("students")
+    .select("id")
+    .eq("auth_user_id", userId)
+    .maybeSingle();
+
+  const studentId = student?.id;
+
+  const baseQuery = client
     .from("payments")
     .update({ proof_note: note, proof_submitted_at: new Date().toISOString() })
     .eq("id", paymentId);
+
+  // Security C3: filtro extra de ownership se student_id foi resolvido
+  const { error } = studentId
+    ? await baseQuery.eq("student_id", studentId)
+    : await baseQuery;
 
   if (error) {
     throw new Error(`Falha ao atualizar comprovante: ${error.message}`);

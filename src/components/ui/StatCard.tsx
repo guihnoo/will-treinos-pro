@@ -27,7 +27,7 @@ export default function StatCard({ label, value, icon: Icon, color, subtitle, de
         <Icon className="w-4 h-4" style={{ color }} />
       </div>
       <div className="min-w-0">
-        <p className="text-lg font-bold text-white leading-none">{value}</p>
+        <p className="text-lg font-bold text-white leading-none font-display">{value}</p>
         <p className="text-[10px] text-zinc-500 mt-0.5">{label}</p>
         {subtitle ? <p className="text-[10px] text-zinc-600">{subtitle}</p> : null}
       </div>

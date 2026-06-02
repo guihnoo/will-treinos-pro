@@ -85,7 +85,7 @@ export default function ConfigPage() {
     { key: "categorias", label: "Categorias", icon: Tag },
     { key: "locais", label: "Locais", icon: MapPin },
     { key: "jornada", label: "Jornada", icon: Clock },
-    ...(user?.role === "aluno" ? [{ key: "notificacoes" as const, label: "Notificacoes", icon: Bell }] : []),
+    ...(user?.role === "aluno" ? [{ key: "notificacoes" as const, label: "Notificações", icon: Bell }] : []),
   ];
 
   const handleAddCat = () => {
