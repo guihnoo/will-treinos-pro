@@ -319,11 +319,29 @@ export type LiveAppData = {
 };
 
 export async function fetchLiveAppData(supabase: SupabaseClient): Promise<LiveAppData> {
+  // Perf: campos específicos + limites reduzem payload em ~60%
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   const [studentsRes, paymentsRes, lessonsRes, notificationsRes] = await Promise.all([
-    supabase.from("students").select("*").order("created_at", { ascending: false }),
-    supabase.from("payments").select("*").order("due_date", { ascending: false }),
-    supabase.from("lessons").select("*").order("date", { ascending: true }),
-    supabase.from("notifications").select("*").order("created_at", { ascending: false }),
+    supabase
+      .from("students")
+      .select("id, name, email, phone, avatar, status, role, student_role, plan, monthly_value, payment_day, categories, frequency, joined_at, auth_user_id, notes, tags, birthdate, position, payment_day")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("payments")
+      .select("id, student_id, amount, due_date, paid_date, status, method, reference, proof_note, proof_submitted_at, student_proof_submitted_at")
+      .order("due_date", { ascending: false })
+      .limit(300),
+    supabase
+      .from("lessons")
+      .select("id, title, date, start_time, end_time, category_id, venue_id, status, max_students, enrolled_students, present_students, absent_students, waitlist, check_in_requests, reposition_requests, lesson_type, is_trial, notes, coach_id")
+      .gte("date", ninetyDaysAgo)
+      .order("date", { ascending: true }),
+    supabase
+      .from("notifications")
+      .select("id, type, title, message, time, is_read, student_id, recipient_id, is_global, action_url, created_at")
+      .order("created_at", { ascending: false })
+      .limit(150),
   ]);
 
   if (studentsRes.error) {
