@@ -1,40 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/daily-reminder",
+      "path": "/api/cron/orchestrator-morning",
       "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/payment-reminder",
-      "schedule": "0 11 5,20 * *"
-    },
-    {
-      "path": "/api/cron/onboarding-reminder",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/monthly-report",
-      "schedule": "0 11 1 * *"
-    },
-    {
-      "path": "/api/cron/absence-reminder",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/cron/weekly-report",
-      "schedule": "0 21 * * 5"
-    },
-    {
-      "path": "/api/cron/birthday-reminder",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/post-lesson-feedback",
-      "schedule": "0 23 * * *"
-    },
-    {
-      "path": "/api/cron/fomo-reminder",
-      "schedule": "0 22 * * *"
     }
   ]
 }

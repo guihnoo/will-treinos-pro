@@ -14,6 +14,22 @@
 | **2 — Supabase Auth** | Redirect URLs no painel | ⚠️ **Manual no Dashboard** — MCP não expõe Auth URL config; copiar lista da seção 2.3 abaixo |
 | **3 — staff_access + Env** | SQL remoto + `vercel env ls` | ✅ `staff_access`: 2 linhas ativas (`guihmonteiro.2014@gmail.com` admin, `cityvoleicampeonatos@gmail.com` admin); env Production: `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_VAPID_*`, `VAPID_*` presentes |
 
+## LOTE A FREEMIUM (03/06/2026 — Claude)
+
+**Decisão: URL canônica = `https://will-treinos-pro.vercel.app` (sem domínio próprio por ora)**
+
+| Item | Ação | Resultado |
+|------|------|-----------|
+| Crons Hobby | 9 → 1 Vercel + cron-job.org | ✅ `vercel.json` com 1 cron (`orchestrator-morning` 08h BRT) |
+| cron-job.org evening | 2° slot externo gratuito | ⚠️ **Manual Will** — ver seção 4.4 |
+| CI workflow | Otimizado free tier | ✅ Playwright só main + só chromium + `NEXT_PUBLIC_APP_URL` |
+| CRON_SECRET | Auditado 11 rotas | ✅ Todos os arquivos protegidos |
+| TypeScript | `pnpm run typecheck` | ✅ Exit 0 |
+| Smoke 15 rotas | curl vs produção | ✅ 13/15 · 307 nas protegidas (correto) · 404 orchestrators (pré-deploy) |
+| NEXT_PUBLIC_APP_URL | Vercel env | ⚠️ **Manual Will** — adicionar no painel |
+| Supabase Auth redirects | URL Configuration | ⚠️ **Manual Will** — ver seção 2.3 |
+| VERIFY_PRODUCTION.sql | SQL Editor | ⚠️ **Manual Will** — rodar no Supabase |
+
 ---
 
 ## STATUS RESUMIDO
@@ -141,22 +157,33 @@ Copiar `publicKey` → `VAPID_PUBLIC_KEY` e `privateKey` → `VAPID_PRIVATE_KEY`
 
 ## 4. CRONS — VERCEL HOBBY PLAN
 
-### 4.1 Estado atual (`vercel.json`) — ✅ 2 orquestradores
+### 4.1 Estado atual (`vercel.json`) — ✅ 1 cron Vercel + 1 externo
 
-| Path | Schedule | BRT equiv. | Jobs internos |
-|------|----------|------------|---------------|
-| `/api/cron/orchestrator-morning` | `0 11 * * *` | 08h diário | birthday, daily-reminder, onboarding, payment (dias 5/20), monthly (dia 1) |
-| `/api/cron/orchestrator-evening` | `0 21 * * *` | 18h diário | absence, fomo, post-lesson-feedback, weekly-report (somente sexta) |
+| Slot | Path | Schedule UTC | BRT | Jobs internos |
+|------|------|-------------|-----|---------------|
+| Vercel Hobby | `/api/cron/orchestrator-morning` | `0 11 * * *` | 08h | birthday, daily-reminder, onboarding, payment (dias 5/20), monthly (dia 1) |
+| cron-job.org (gratuito) | `/api/cron/orchestrator-evening` | `0 21 * * *` | 18h | absence, fomo, post-lesson-feedback, weekly-report (sexta) |
 
-Os 9 crons individuais continuam existindo como rotas normais (chamadas internamente pelos orquestradores). Nenhuma lógica de negócio foi alterada.
+Os 9 crons individuais são rotas normais — chamadas pelos orquestradores. Nenhuma lógica de negócio foi alterada.
 
 ### 4.2 Limite do plano Hobby
 
-O plano Hobby da Vercel suporta **2 cron jobs por projeto**. A arquitetura atual usa exatamente 2.
+O plano Hobby da Vercel suporta **1 cron job por projeto**. Por isso usamos cron-job.org (free) para o slot noturno.
 
 ### 4.3 Quando fazer upgrade
 
-Ao migrar para Vercel Pro (~$20/mês), basta restaurar as 9 entradas individuais no `vercel.json` — cada cron passa a rodar no horário exato definido. Os orquestradores podem ser removidos.
+Ao migrar para Vercel Pro (~$20/mês): restaurar as 9 entradas individuais no `vercel.json`, remover os orquestradores e cancelar o cron-job.org.
+
+### 4.4 Setup cron-job.org (gratuito — 5 min, manual)
+
+1. Criar conta em **cron-job.org** (gratuito, sem cartão)
+2. **New cronjob**:
+   - **URL:** `https://will-treinos-pro.vercel.app/api/cron/orchestrator-evening`
+   - **Schedule:** Every day at `21:00 UTC`
+   - **Request method:** GET
+   - **Headers:** adicionar `Authorization: Bearer <CRON_SECRET>` (valor do painel Vercel)
+3. Salvar e ativar
+4. Testar com "Execute now" — resposta esperada: `{"ok":true,"dispatched":[...]}`
 
 ---
 
