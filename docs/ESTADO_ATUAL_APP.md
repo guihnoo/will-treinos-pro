@@ -10,30 +10,31 @@
 
 | Agente | Lote | Arquivo guia |
 |--------|------|----------------|
-| **Claude Code** | A — Infra, crons, Supabase Auth, CI | `docs/CLAUDE_CODE_LOTE_A_FREEMIUM.md` |
-| **Cursor** | B — URL canônica, docs | `docs/PLANO_FREEMIUM_CURSOR_CLAUDE.md` |
+| **Claude Code** | A — Infra, crons, CI | `docs/CLAUDE_CODE_LOTE_A_FREEMIUM.md` |
+| **Cursor** | B — URL canônica, docs, follow-up infra | `docs/PLANO_FREEMIUM_CURSOR_CLAUDE.md` |
 | **Will** | C — Piloto | `docs/QA_LANCAMENTO_MANUAL.md` |
 
 ---
 
-## Última entrega (Cursor — Lote B)
+## Última entrega (Cursor — follow-up Lote A)
 
 | Mudança | Detalhe |
 |---------|---------|
-| **URL canônica** | `src/lib/appUrl.ts`; layout OG/sitemap/referral/crons usam Vercel |
-| **Sem domínio** | Plano freemium; `.com.br` adiado |
-| **Docs** | Plano + prompt Claude Lote A |
+| **NEXT_PUBLIC_APP_URL** | Adicionada na Vercel Production via CLI |
+| **Cron evening** | `.github/workflows/cron-evening.yml` (18h BRT, gratuito) |
+| **Runbook** | Corrigidas inconsistências (1 cron Hobby, Site URL freemium) |
+| **VERIFY_PRODUCTION** | OK remoto: staff 2/2, RPCs, tabelas gamificação |
 
 ---
 
 ## Funciona / pendente
 
-| ✅ | ⚠️ Pendente |
-|----|-------------|
-| Cockpit, agenda, financeiro, gamificação | Crons orquestrador no `main` (Claude) |
-| Login fix (`wt_role`) em `main` | Supabase Auth redirects (Claude) |
-| `staff_access` + env Vercel | `NEXT_PUBLIC_APP_URL` na Vercel (Claude confirma) |
-| Runbook infra | QA piloto Will |
+| ✅ | ⚠️ Pendente (Will, ~5 min total) |
+|----|----------------------------------|
+| Cockpit, agenda, financeiro, gamificação | Supabase Auth: Site URL + 4 redirects (§2.3 runbook) |
+| Crons morning no Vercel + evening workflow | GitHub secret `CRON_SECRET` (copiar da Vercel) |
+| `staff_access` + env Vercel + APP_URL | QA piloto 1 aluno real |
+| Login fix `students.position` | |
 
 ---
 

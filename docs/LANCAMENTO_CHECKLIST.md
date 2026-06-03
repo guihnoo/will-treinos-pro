@@ -8,18 +8,20 @@
 | **Cursor** | Lote B — código + UX |
 | **Will** | Piloto real |
 
-## Infra (Claude — Lote A)
-- [ ] `vercel.json` + orchestrator(es) no `main` + deploy Ready
-- [ ] Supabase Auth: site URL + 4 redirect URLs (vercel.app + localhost)
-- [ ] `NEXT_PUBLIC_APP_URL` na Vercel Production
-- [ ] Smoke 15 rotas (runbook)
-- [ ] Playwright CI — doc de secrets (opcional workflow)
+## Infra (Claude — Lote A + Cursor follow-up)
+- [x] `vercel.json` + orchestrator(es) no `main` + deploy Ready
+- [ ] Supabase Auth: site URL + 4 redirect URLs (vercel.app + localhost) — **Will ~3 min**
+- [x] `NEXT_PUBLIC_APP_URL` na Vercel Production
+- [x] Smoke 15 rotas (runbook)
+- [x] VERIFY_PRODUCTION OK (MCP)
+- [x] CI Playwright otimizado freemium
+- [ ] Secret `CRON_SECRET` no GitHub Actions (mesmo valor Vercel) — **Will ~1 min**
 - [ ] ~~Domínio .com.br~~ adiado
 
 ## Produto (Cursor — Lote B)
 - [x] `src/lib/appUrl.ts` + links sem `willtreinospro.com.br`
 - [x] Docs plano freemium + prompt Claude
-- [ ] Build + push
+- [x] Build + push (parcial — ver git)
 - [ ] QA manual preenchido
 
 ## Piloto (Will)

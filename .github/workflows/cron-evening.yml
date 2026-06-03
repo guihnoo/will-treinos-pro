@@ -1,0 +1,27 @@
+name: Cron Evening (18h BRT)
+
+on:
+  schedule:
+    # 21:00 UTC = 18:00 BRT — slot noturno fora do limite de 1 cron Vercel Hobby
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+jobs:
+  orchestrator-evening:
+    name: orchestrator-evening
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger /api/cron/orchestrator-evening
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "❌ Secret CRON_SECRET ausente no GitHub (Settings → Secrets → Actions)"
+            exit 1
+          fi
+          code=$(curl -sS -o /tmp/cron-evening.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "https://will-treinos-pro.vercel.app/api/cron/orchestrator-evening")
+          echo "HTTP $code"
+          cat /tmp/cron-evening.json
+          test "$code" = "200"

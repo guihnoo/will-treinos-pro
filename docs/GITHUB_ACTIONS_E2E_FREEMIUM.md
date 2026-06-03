@@ -6,11 +6,16 @@ Smoke E2E roda contra a URL pública do app (sem login real com credenciais no C
 
 | Secret | Uso |
 |--------|-----|
+| `NEXT_PUBLIC_SUPABASE_URL` | Obrigatório — workflow `test.yml` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Obrigatório — workflow `test.yml` |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Obrigatório — workflow `test.yml` |
+| `NEXT_PUBLIC_DEV_ROOT_EMAILS` | Obrigatório — workflow `test.yml` |
+| `CRON_SECRET` | Obrigatório — workflow `cron-evening.yml` (mesmo valor da Vercel, **não** commitar) |
 | `PLAYWRIGHT_BASE_URL` | Opcional. Default: `https://will-treinos-pro.vercel.app` |
 | `E2E_STUDENT_EMAIL` | Opcional — só para testes autenticados futuros |
 | `E2E_STUDENT_PASSWORD` | Opcional — **nunca** commitar no repo |
 
-Não é necessário `SUPABASE_SERVICE_ROLE_KEY` nem `CRON_SECRET` no workflow de smoke atual.
+Não é necessário `SUPABASE_SERVICE_ROLE_KEY` no workflow de smoke E2E.
 
 ## Comandos locais
 

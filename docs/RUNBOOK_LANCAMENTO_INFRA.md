@@ -21,14 +21,15 @@
 | Item | Ação | Resultado |
 |------|------|-----------|
 | Crons Hobby | 9 → 1 Vercel + cron-job.org | ✅ `vercel.json` com 1 cron (`orchestrator-morning` 08h BRT) |
-| cron-job.org evening | 2° slot externo gratuito | ⚠️ **Manual Will** — ver seção 4.4 |
+| Cron evening 18h | GitHub Actions | ✅ Workflow no repo — secret `CRON_SECRET` no GitHub (§4.4) |
 | CI workflow | Otimizado free tier | ✅ Playwright só main + só chromium + `NEXT_PUBLIC_APP_URL` |
 | CRON_SECRET | Auditado 11 rotas | ✅ Todos os arquivos protegidos |
 | TypeScript | `pnpm run typecheck` | ✅ Exit 0 |
 | Smoke 15 rotas | curl vs produção | ✅ 13/15 · 307 nas protegidas (correto) · 404 orchestrators (pré-deploy) |
-| NEXT_PUBLIC_APP_URL | Vercel env | ⚠️ **Manual Will** — adicionar no painel |
-| Supabase Auth redirects | URL Configuration | ⚠️ **Manual Will** — ver seção 2.3 |
-| VERIFY_PRODUCTION.sql | SQL Editor | ⚠️ **Manual Will** — rodar no Supabase |
+| NEXT_PUBLIC_APP_URL | Vercel env Production | ✅ Cursor 03/06 — `https://will-treinos-pro.vercel.app` |
+| Supabase Auth redirects | URL Configuration | ⚠️ **Manual Will** — ver seção 2.3 (~3 min) |
+| VERIFY_PRODUCTION.sql | SQL Editor / MCP | ✅ Cursor 03/06 — staff_access 2/2, RPCs OK, tabelas OK |
+| Cron evening 18h | GitHub Actions | ✅ Workflow `.github/workflows/cron-evening.yml` — requer secret `CRON_SECRET` no GitHub |
 
 ---
 
@@ -37,17 +38,16 @@
 | Área | Item | Estado |
 |------|------|--------|
 | Deploy | Git push → Vercel automático | ✅ Ativo (webhook GitHub App) |
-| Deploy | Build atual em produção | ✅ `dpl_H75msTf5Pc4FR7gF5s3RxkTj2MLS` |
-| Domínio | `willtreinospro.com.br` | ⚠️ DNS pendente de configurar |
-| Domínio | SSL automático Vercel | ⚠️ Só ativa após DNS apontar |
-| Supabase Auth | Redirect `nova-senha` configurado | ⚠️ Verificar no painel |
-| Supabase Auth | Redirect `auth/callback` configurado | ⚠️ Verificar no painel |
-| Env Vars | `NEXT_PUBLIC_SUPABASE_*` | ✅ Obrigatório — já deve estar |
-| Env Vars | `SUPABASE_SERVICE_ROLE_KEY` | ✅ Obrigatório server-only |
-| Env Vars | `VAPID_*` + `CRON_SECRET` | ⚠️ Confirmar no painel Vercel |
-| Crons | 2 orquestradores em `vercel.json` | ✅ Dentro do limite Hobby (2 crons) |
-| staff_access | Linha ativa para Will | ⚠️ Verificar + SQL idempotente abaixo |
-| CI (Playwright) | GitHub Actions | ❌ Falha por falta de secrets |
+| URL canônica | `will-treinos-pro.vercel.app` | ✅ Freemium — sem domínio .com.br por ora |
+| Domínio | `willtreinospro.com.br` | ⏸️ Adiado — DNS opcional quando comprar |
+| Supabase Auth | Site URL + 4 redirects | ⚠️ Manual no painel — seção 2.3 |
+| Env Vars | `NEXT_PUBLIC_APP_URL` | ✅ Production (Vercel CLI 03/06) |
+| Env Vars | `NEXT_PUBLIC_SUPABASE_*` + service role | ✅ Confirmado |
+| Env Vars | `VAPID_*` + `CRON_SECRET` | ✅ Confirmado |
+| Crons | 1 Vercel + evening externo | ✅ `vercel.json` 1 slot · evening via GitHub Actions §4.4 |
+| staff_access | Admins ativos | ✅ 2 linhas (VERIFY_PRODUCTION) |
+| CI (Playwright) | GitHub Actions | ✅ Otimizado freemium — secrets `NEXT_PUBLIC_SUPABASE_*` |
+| CI (Cron evening) | GitHub Actions | ⚠️ Adicionar secret `CRON_SECRET` (mesmo valor da Vercel) |
 
 ---
 
@@ -93,13 +93,13 @@ O Vercel emite certificado Let's Encrypt **automaticamente** após o DNS propaga
 
 Painel Supabase → projeto `armrortldtqxmgvvcbko` → **Authentication → URL Configuration**
 
-### 2.2 Site URL
+### 2.2 Site URL (freemium — obrigatório agora)
 
 ```
-https://willtreinospro.com.br
+https://will-treinos-pro.vercel.app
 ```
 
-> Atualizar de `https://will-treinos-pro.vercel.app` para o domínio definitivo após DNS propagar.
+> Quando comprar o domínio `.com.br`, trocar Site URL e manter os redirects da seção 2.3 (ambos os hosts).
 
 ### 2.3 Redirect URLs permitidas (adicionar todas)
 
@@ -137,6 +137,7 @@ O middleware já libera `/nova-senha` e `/auth/` como rotas públicas (`src/midd
 | `VAPID_PUBLIC_KEY` | All | ✅ | Push notifications (web-push) |
 | `VAPID_PRIVATE_KEY` | Server only | ✅ | web-push VAPID signing |
 | `VAPID_SUBJECT` | Server only | ✅ | Ex: `mailto:contato@willtreinospro.com.br` |
+| `NEXT_PUBLIC_APP_URL` | All | ✅ | `https://will-treinos-pro.vercel.app` — links OG, convite, perfil público |
 | `ANTHROPIC_API_KEY` | Server only | ⚠️ Opcional | Ativa IA real nos planos de treino e resumos mensais — sem ela, usa fallback PT-BR |
 | `NEXT_PUBLIC_DEV_ROOT_EMAILS` | All | Dev | E-mails admin que ignoram RLS em dev |
 
@@ -162,28 +163,26 @@ Copiar `publicKey` → `VAPID_PUBLIC_KEY` e `privateKey` → `VAPID_PRIVATE_KEY`
 | Slot | Path | Schedule UTC | BRT | Jobs internos |
 |------|------|-------------|-----|---------------|
 | Vercel Hobby | `/api/cron/orchestrator-morning` | `0 11 * * *` | 08h | birthday, daily-reminder, onboarding, payment (dias 5/20), monthly (dia 1) |
-| cron-job.org (gratuito) | `/api/cron/orchestrator-evening` | `0 21 * * *` | 18h | absence, fomo, post-lesson-feedback, weekly-report (sexta) |
+| GitHub Actions (gratuito) | `/api/cron/orchestrator-evening` | `0 21 * * *` | 18h | absence, fomo, post-lesson-feedback, weekly-report (sexta) |
 
 Os 9 crons individuais são rotas normais — chamadas pelos orquestradores. Nenhuma lógica de negócio foi alterada.
 
 ### 4.2 Limite do plano Hobby
 
-O plano Hobby da Vercel suporta **1 cron job por projeto**. Por isso usamos cron-job.org (free) para o slot noturno.
+O plano Hobby da Vercel suporta **1 cron job por projeto**. O slot das 18h BRT roda via **GitHub Actions** (repo público = cron gratuito).
 
 ### 4.3 Quando fazer upgrade
 
-Ao migrar para Vercel Pro (~$20/mês): restaurar as 9 entradas individuais no `vercel.json`, remover os orquestradores e cancelar o cron-job.org.
+Ao migrar para Vercel Pro (~$20/mês): restaurar as 9 entradas individuais no `vercel.json`, remover os orquestradores e desativar o workflow `cron-evening.yml`.
 
-### 4.4 Setup cron-job.org (gratuito — 5 min, manual)
+### 4.4 Setup cron evening — GitHub Actions (recomendado, 2 min)
 
-1. Criar conta em **cron-job.org** (gratuito, sem cartão)
-2. **New cronjob**:
-   - **URL:** `https://will-treinos-pro.vercel.app/api/cron/orchestrator-evening`
-   - **Schedule:** Every day at `21:00 UTC`
-   - **Request method:** GET
-   - **Headers:** adicionar `Authorization: Bearer <CRON_SECRET>` (valor do painel Vercel)
-3. Salvar e ativar
-4. Testar com "Execute now" — resposta esperada: `{"ok":true,"dispatched":[...]}`
+1. **GitHub → Repo → Settings → Secrets and variables → Actions → New repository secret**
+2. Nome: `CRON_SECRET` · Valor: **o mesmo** que está em Vercel → Settings → Environment Variables (copiar do painel, não commitar)
+3. Workflow já no repo: `.github/workflows/cron-evening.yml` (dispara 21:00 UTC diário + botão manual)
+4. Testar: **Actions → Cron Evening → Run workflow** — resposta esperada HTTP 200 e `{"ok":true,"dispatched":[...]}`
+
+**Alternativa:** cron-job.org (seção antiga) — mesma URL e header `Authorization: Bearer <CRON_SECRET>`, schedule 21:00 UTC.
 
 ---
 

@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 22:15 BRT] (Cursor):** **[CONFIG]** Follow-up Lote A freemium — `NEXT_PUBLIC_APP_URL` criada na Vercel Production via CLI; workflow `.github/workflows/cron-evening.yml` (18h BRT, GitHub Actions gratuito) substitui cron-job.org manual; `VERIFY_PRODUCTION` OK via MCP (staff_access 2/2, RPCs, referrals/xp_log); runbook corrigido (Site URL freemium, 1 cron Hobby, STATUS RESUMIDO); checklists/ESTADO_ATUAL/GITHUB_ACTIONS atualizados. Pendente Will: Supabase Auth §2.3 + secret `CRON_SECRET` no GitHub. Build OK + push. Status: ✅ infra quase 100%.
+
 - **[03/06/2026 18:15 BRT] (Cursor):** **[FIX]** Login ainda bloqueado — `fetchLiveAppData` pedia `payments.proof_note`/`proof_submitted_at` (schema real: `student_proof_*`). Corrigido select de payments + lessons sem `coach_id`; `sync/process` atualiza `student_proof_note`. Auditoria SQL produção via MCP confirmou colunas. Build OK + push. Status: ✅ Desbloqueio pós-login.
 
 - **[03/06/2026 17:50 BRT] (Cursor):** **[FIX]** Login bloqueado — `fetchLiveAppData` pedia coluna `students.position` inexistente no Supabase remoto. Migration `20260602220000_students_position.sql` aplicada no projeto `willtreinos-pro` via MCP; mapeamento `position`/`birthdate`/`tags` em `supabasePersistence.ts` + tipo `Student`; perfil salva posição. Build OK + push. Status: ✅ Corrigido — usuário pode tentar login de novo após deploy Ready (coluna já existe no banco).
