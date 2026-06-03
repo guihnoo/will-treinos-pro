@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 14:00 BRT] (Cursor):** **[DEPLOY]** Commit deploy: middleware rotas auth públicas (`/nova-senha`, `/esqueci-senha`, etc.), landing aluno → `/dashboard`, banner staff em config `?conta=1`, `supabase/VERIFY_PRODUCTION.sql`. `pnpm run build` exit 0. `git push origin main` para disparar Vercel.
+
 - **[03/06/2026 01:15 BRT] (Cursor):** **[FIX] Área do aluno urgente** — React #310 Início (`StudentHome` hooks offline antes dos returns); Ranking via `/api/leaderboard` + `points/total_xp`; Config só Notificações (`?conta=1` ou role aluno); Perfil XP real + avatar Supabase + fallback `UserAvatar`. Build OK. Pendente: `git push origin main`.
 
 - **[02/06/2026 21:40 BRT] (Cursor):** **[DOCS]** Apresentação comercial para cliente — `docs/product-guide/WILL-TREINOS-PRO-APRESENTACAO-CLIENTE.html` (10 slides, dark+gold, botão imprimir/PDF) + `WILL-TREINOS-PRO-APRESENTACAO-CLIENTE.pdf` gerado via Playwright (`scripts/export-apresentacao-pdf.mjs`); `docs/product-guide/LEIA-ME.md` com instruções de download. Status: ✅ Completo.

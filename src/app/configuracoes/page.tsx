@@ -61,6 +61,10 @@ export default function ConfigPage() {
   /** Conta pessoal do atleta (role aluno ou link do Perfil ?conta=1). */
   const isStudentAccount =
     user?.role === "aluno" || searchParams.get("conta") === "1";
+  /** Admin/coach abrindo config no modo conta do atleta. */
+  const isStaffPreviewingAthleteAccount =
+    (user?.role === "admin" || user?.role === "coach") &&
+    searchParams.get("conta") === "1";
 
   const [tab, setTab] = useState<Tab>(isStudentAccount ? "notificacoes" : "categorias");
   const [pixDraft, setPixDraft] = useState<AppConfig>(appConfig);
@@ -118,6 +122,22 @@ export default function ConfigPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
+      {isStaffPreviewingAthleteAccount && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200"
+        >
+          Modo visualização: conta do atleta (notificações).{" "}
+          <button
+            type="button"
+            onClick={() => router.push("/configuracoes")}
+            className="font-semibold text-yellow-400 underline-offset-2 hover:underline"
+          >
+            Voltar às configurações do cockpit
+          </button>
+        </motion.div>
+      )}
       <AppPageHeader
         title="Configurações"
         subtitle={

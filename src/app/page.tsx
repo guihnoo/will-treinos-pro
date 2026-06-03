@@ -24,7 +24,7 @@ export default function LandingPage() {
   useEffect(() => {
     if (!authResolved || !user) return;
     if (user.role === "admin" || user.role === "coach") router.push("/dashboard");
-    else if (user.role === "aluno") router.push("/treinos");
+    else if (user.role === "aluno") router.push("/dashboard");
   }, [user, authResolved, router]);
 
   const tiers = [

@@ -15,7 +15,7 @@ const PROTECTED_PREFIXES = [
   "/will",
 ];
 
-// Rotas sempre públicas (não redirecionar)
+// Rotas sempre públicas (não redirecionar para login)
 const PUBLIC_PREFIXES = [
   "/api/",
   "/_next/",
@@ -31,6 +31,15 @@ const PUBLIC_PREFIXES = [
   "/og-image",
   "/opengraph-image",
   "/favicon",
+  "/login",
+  "/signup",
+  "/cadastro",
+  "/esqueci-senha",
+  "/nova-senha",
+  "/auth/",
+  "/aguardando",
+  "/termos",
+  "/privacidade",
 ];
 
 export function middleware(req: NextRequest) {
