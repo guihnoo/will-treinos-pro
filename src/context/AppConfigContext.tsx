@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { useApp, type AppContextType } from "@/context/AppContext";
 import type { AppConfig } from "@/context/types";
 import { generateNewEnrollmentInviteCode } from "@/lib/enrollmentInviteCode";
+import { getPublicAppUrl } from "@/lib/appUrl";
 
 type AppConfigContextValue = {
   appConfig: AppConfig;
@@ -22,8 +23,9 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
     ? `/cadastro?invite=${encodeURIComponent(enrollmentInviteCode)}`
     : "/cadastro";
   const cadastroInviteUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return `${window.location.origin}${cadastroPath}`;
+    const base =
+      typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : getPublicAppUrl();
+    return `${base}${cadastroPath}`;
   }, [cadastroPath]);
   const generateEnrollmentInviteCode = useCallback(() => {
     const code = generateNewEnrollmentInviteCode();

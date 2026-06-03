@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Users, Copy, Share2, CheckCircle2, Clock, Zap, Gift } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { publicAppPath } from "@/lib/appUrl";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,10 +72,7 @@ export default function ReferralPanel({ studentId, onClose }: Props) {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const referralLink =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/signup?ref=${studentId}`
-      : `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://will-treinos-pro.vercel.app"}/signup?ref=${studentId}`;
+  const referralLink = publicAppPath(`/signup?ref=${encodeURIComponent(studentId)}`);
 
   const fetchReferrals = useCallback(async () => {
     const sb = getSupabaseClient();

@@ -16,6 +16,7 @@ import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import AppSectionCard from "@/components/ui/AppSectionCard";
+import AppEmptyState from "@/components/ui/AppEmptyState";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { avatarSrc } from "@/lib/avatarSrc";
 import { wtLsGet, wtLsSet } from "@/lib/willLocalStorage";
@@ -410,17 +411,23 @@ export default function TreinosPage() {
       </AnimatePresence>
 
       {myPlans.length === 0 && (
-        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-16 px-6 bg-gradient-to-b from-purple-950/20 to-transparent border border-purple-900/30 rounded-3xl">
-          <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-            className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-            <Dumbbell className="w-8 h-8 text-purple-400" />
-          </motion.div>
-          <h3 className="text-xl font-bold text-white mb-2">Nenhum treino prescrito ainda</h3>
-          <p className="text-sm text-zinc-400 mb-6 max-w-xs mx-auto">Seu professor vai criar um plano personalizado para você em breve. Enquanto isso, prepare-se!</p>
-          <motion.button whileTap={{ scale: 0.96 }} onClick={() => { vibrate(20); openWhatsApp(); }}
-            className={`inline-flex items-center gap-2 bg-[#22C55E] text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-[#16A34A] transition-colors ${ctaClass}`}>
-            <PhoneCall className="w-4 h-4" /> Solicitar via WhatsApp
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <AppEmptyState
+            icon={Dumbbell}
+            title="Nenhum treino prescrito ainda"
+            description="Seu professor vai montar seu plano em breve. Enquanto isso, fale com a equipe."
+          />
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.02 }}
+            type="button"
+            onClick={() => {
+              vibrate(20);
+              openWhatsApp();
+            }}
+            className={`mx-auto flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-[#22C55E] px-6 py-3 text-sm font-bold text-white hover:bg-[#16A34A] ${ctaClass}`}
+          >
+            <PhoneCall className="h-4 w-4" /> Solicitar via WhatsApp
           </motion.button>
         </motion.div>
       )}

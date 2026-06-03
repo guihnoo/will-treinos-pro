@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[02/06/2026 22:30 BRT] (Cursor):** **[FEATURE/DESIGN]** Lote P1 Cursor (paralelo ao Claude Lote A) — `AppConfigContext` convite cadastro com `getPublicAppUrl()` no SSR; `ReferralPanel` usa `publicAppPath`; empty states gold em `treinos/page.tsx` e `StudentSchedulePanel`; `StudentDailyMissionCard` no `StudentHome`; E2E +3 rotas; `docs/GITHUB_ACTIONS_E2E_FREEMIUM.md`, `scripts/smoke-production.ps1`, QA manual atualizado. Build OK. Sem tocar `vercel.json`/orquestradores (Claude). Status: ✅ Cursor P1; push pendente se desejado.
+
 - **[03/06/2026 20:00 BRT] (Cursor):** **[CONFIG/DESIGN]** Lote B freemium — `src/lib/appUrl.ts` (default `will-treinos-pro.vercel.app`); layout OG/metadataBase, sitemap, ReferralPanel, monthly-report cron, perfil público atleta, WhatsApp convite AppHealth sem domínio quebrado; `docs/PLANO_FREEMIUM_CURSOR_CLAUDE.md`, `docs/CLAUDE_CODE_LOTE_A_FREEMIUM.md` (prompt Claude Lote A), checklist/estado atualizados; `.env.example` + `NEXT_PUBLIC_APP_URL`. Domínio .com.br adiado. Status: 🔄 build+push Cursor; Claude executa Lote A em paralelo.
 
 - **[03/06/2026 19:00 BRT] (Claude):** **[CONFIG]** Crons Hobby — 9 entradas → 2 orquestradores sem custo. Criados `src/app/api/cron/orchestrator-morning/route.ts` (08h BRT: birthday, daily, onboarding, payment dias 5/20, monthly dia 1) e `orchestrator-evening/route.ts` (18h BRT: absence, fomo, post-lesson, weekly sexta). `vercel.json` atualizado para 2 crons — dentro do limite Hobby. `pnpm exec tsc --noEmit` exit 0. Nenhuma lógica de negócio alterada; crons individuais continuam como rotas sub-chamadas. Status: ✅ App 100% funcional no plano Hobby gratuito.

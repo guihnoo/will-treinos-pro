@@ -95,3 +95,21 @@ test("public athlete profile 404 handled gracefully", async ({ page }) => {
   expect(bodyText).not.toContain("Internal Server Error");
   expect(bodyText).not.toContain("Application error");
 });
+
+test("cadastro page renders", async ({ page }) => {
+  await page.goto("/cadastro");
+  const bodyText = await page.locator("body").textContent();
+  expect(bodyText).not.toContain("Internal Server Error");
+  expect(bodyText).not.toContain("Application error");
+});
+
+test("feed route redirects without auth", async ({ page }) => {
+  await page.goto("/feed");
+  await page.waitForURL((url) => !url.pathname.startsWith("/feed"), { timeout: 10_000 });
+  await expect(page).not.toHaveURL(/\/feed$/);
+});
+
+test("health API responds", async ({ request }) => {
+  const res = await request.get("/api/health");
+  expect(res.status()).toBeLessThan(500);
+});

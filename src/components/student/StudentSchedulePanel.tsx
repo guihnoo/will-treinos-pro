@@ -9,6 +9,7 @@ import { localDateISO } from "@/lib/dateUtils";
 import { useToast } from "@/components/Toast";
 import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRAP } from "@/components/ui/modalScrollClasses";
 import { SPRING_PREMIUM } from "@/components/ui/motionTokens";
+import AppEmptyState from "@/components/ui/AppEmptyState";
 
 interface StudentSchedulePanelProps {
   studentId: string;
@@ -189,11 +190,12 @@ export default function StudentSchedulePanel({
           {/* Body */}
           <div className={`${MODAL_BODY_SCROLL} space-y-5 px-5 py-4`}>
             {grouped.length === 0 && (
-              <div className="flex flex-col items-center gap-3 py-10 text-center">
-                <Calendar className="h-10 w-10 text-zinc-700" />
-                <p className="text-sm font-bold text-zinc-400">Nenhuma aula agendada nos próximos 21 dias</p>
-                <p className="text-xs text-zinc-600">O professor ainda não publicou aulas futuras</p>
-              </div>
+              <AppEmptyState
+                icon={Calendar}
+                title="Nenhuma aula nos próximos 21 dias"
+                description="Quando o professor publicar turmas, elas aparecem aqui para você se inscrever."
+                className="my-4"
+              />
             )}
 
             {grouped.map(({ offset, items }) => (

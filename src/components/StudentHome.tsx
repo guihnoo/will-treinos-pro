@@ -31,6 +31,7 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
 import LessonCountdownCard from "@/components/student/LessonCountdownCard";
+import StudentDailyMissionCard from "@/components/student/StudentDailyMissionCard";
 import { useCoachMessagesUnread } from "@/hooks/useCoachMessagesUnread";
 
 // ─── Lazy-loaded panels (code-split — zero cost at startup) ──────────────────
@@ -1338,6 +1339,19 @@ export default function StudentHome() {
           <MoodResponseCard
             lessons={lessons}
             studentId={user.id}
+          />
+        </motion.div>
+      )}
+
+      {/* 1c. Missão do dia — onboarding leve */}
+      {user?.id && (
+        <motion.div variants={homeItem} className="px-1">
+          <StudentDailyMissionCard
+            studentId={user.id}
+            studentName={user.name}
+            hasAvatar={Boolean(profile?.avatar || user.avatar)}
+            hasPosition={Boolean(profile?.phone?.trim() && profile?.categories?.length)}
+            lessons={lessons}
           />
         </motion.div>
       )}
