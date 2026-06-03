@@ -30,7 +30,7 @@
     },
     {
       "path": "/api/cron/post-lesson-feedback",
-      "schedule": "0 * * * *"
+      "schedule": "0 23 * * *"
     },
     {
       "path": "/api/cron/fomo-reminder",
