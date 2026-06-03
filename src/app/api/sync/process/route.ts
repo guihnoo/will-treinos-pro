@@ -311,7 +311,10 @@ async function handleAddPaymentProof(
 
   const baseQuery = client
     .from("payments")
-    .update({ proof_note: note, proof_submitted_at: new Date().toISOString() })
+    .update({
+      student_proof_note: note,
+      student_proof_submitted_at: new Date().toISOString(),
+    })
     .eq("id", paymentId);
 
   // Security C3: filtro extra de ownership se student_id foi resolvido

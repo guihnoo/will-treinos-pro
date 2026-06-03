@@ -336,12 +336,12 @@ export async function fetchLiveAppData(supabase: SupabaseClient): Promise<LiveAp
       .order("created_at", { ascending: false }),
     supabase
       .from("payments")
-      .select("id, student_id, amount, due_date, paid_date, status, method, reference, proof_note, proof_submitted_at, student_proof_submitted_at")
+      .select("id, student_id, amount, due_date, paid_date, status, method, reference, student_proof_note, student_proof_submitted_at, student_proof_data_url, student_proof_file_name, student_proof_mime")
       .order("due_date", { ascending: false })
       .limit(300),
     supabase
       .from("lessons")
-      .select("id, title, date, start_time, end_time, category_id, venue_id, status, max_students, enrolled_students, present_students, absent_students, waitlist, check_in_requests, reposition_requests, lesson_type, is_trial, notes, coach_id")
+      .select("id, title, date, start_time, end_time, category_id, venue_id, status, max_students, enrolled_students, present_students, absent_students, waitlist, check_in_requests, reposition_requests, lesson_type, is_trial, notes")
       .gte("date", ninetyDaysAgo)
       .order("date", { ascending: true }),
     supabase

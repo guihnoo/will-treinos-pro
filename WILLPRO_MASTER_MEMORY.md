@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 18:15 BRT] (Cursor):** **[FIX]** Login ainda bloqueado — `fetchLiveAppData` pedia `payments.proof_note`/`proof_submitted_at` (schema real: `student_proof_*`). Corrigido select de payments + lessons sem `coach_id`; `sync/process` atualiza `student_proof_note`. Auditoria SQL produção via MCP confirmou colunas. Build OK + push. Status: ✅ Desbloqueio pós-login.
+
 - **[03/06/2026 17:50 BRT] (Cursor):** **[FIX]** Login bloqueado — `fetchLiveAppData` pedia coluna `students.position` inexistente no Supabase remoto. Migration `20260602220000_students_position.sql` aplicada no projeto `willtreinos-pro` via MCP; mapeamento `position`/`birthdate`/`tags` em `supabasePersistence.ts` + tipo `Student`; perfil salva posição. Build OK + push. Status: ✅ Corrigido — usuário pode tentar login de novo após deploy Ready (coluna já existe no banco).
 
 - **[02/06/2026 22:30 BRT] (Cursor):** **[FEATURE/DESIGN]** Lote P1 Cursor (paralelo ao Claude Lote A) — `AppConfigContext` convite cadastro com `getPublicAppUrl()` no SSR; `ReferralPanel` usa `publicAppPath`; empty states gold em `treinos/page.tsx` e `StudentSchedulePanel`; `StudentDailyMissionCard` no `StudentHome`; E2E +3 rotas; `docs/GITHUB_ACTIONS_E2E_FREEMIUM.md`, `scripts/smoke-production.ps1`, QA manual atualizado. Build OK. Sem tocar `vercel.json`/orquestradores (Claude). Status: ✅ Cursor P1; push pendente se desejado.
