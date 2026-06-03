@@ -66,7 +66,7 @@ export default function PerfilPage() {
     instagram: profile?.instagram || "",
     notes: profile?.notes || "",
     birthdate: profile?.birthdate || "",
-    position: (profile as (typeof profile & { position?: string }))?.position || "",
+    position: profile?.position || "",
   });
   const [avatar, setAvatar] = useState(profile?.avatar || user?.avatar || "Ricardo");
   const [customPhoto, setCustomPhoto] = useState<string | null>(() => {
@@ -192,7 +192,7 @@ export default function PerfilPage() {
 
   const handleSave = () => {
     if (profile) {
-      const patch: Partial<Student> & { position?: string } = {};
+      const patch: Partial<Student> = {};
       if (canEditField("phone")) patch.phone = form.phone;
       if (canEditField("email")) patch.email = form.email;
       if (canEditField("instagram")) patch.instagram = form.instagram;

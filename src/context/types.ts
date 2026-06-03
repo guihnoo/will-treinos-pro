@@ -41,6 +41,8 @@ export interface Student {
   professorNotes?: string;   // renamed from medicalNotes — set by admin/professor only, student reads only
   /** ISO date "YYYY-MM-DD" — used by birthday cron and cockpit birthday panel. */
   birthdate?: string;
+  /** Posição preferida na quadra (levantador, oposto, etc.) */
+  position?: string;
   attendanceHistory?: { date: string; status: 'present' | 'absent' }[];
   /** Etiquetas do coach: vip, em_risco, destaque, iniciante, trial */
   tags?: string[];

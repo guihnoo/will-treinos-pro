@@ -57,6 +57,10 @@ function mapStudent(row: DbRow): Student {
       ? (row.attendance_history ?? row.attendanceHistory) as Student["attendanceHistory"]
       : [],
     studentRole: ((row.student_role as string) || "aluno") as import("@/context/types").StudentRole,
+    birthdate: asString(row.birthdate) || undefined,
+    tags: asStringArray(row.tags),
+    /** Posição na quadra (ex.: levantador) — coluna opcional no Supabase */
+    position: asString(row.position) || undefined,
   };
 }
 
@@ -98,6 +102,9 @@ function serializeStudentPatch(patch: Partial<Student>) {
   if (patch.attendanceHistory !== undefined) payload.attendance_history = patch.attendanceHistory;
   if (patch.authUserId !== undefined) payload.auth_user_id = patch.authUserId;
   if (patch.studentRole !== undefined) payload.student_role = patch.studentRole;
+  if (patch.birthdate !== undefined) payload.birthdate = patch.birthdate;
+  if (patch.tags !== undefined) payload.tags = patch.tags;
+  if (patch.position !== undefined) payload.position = patch.position;
   return payload;
 }
 
@@ -325,7 +332,7 @@ export async function fetchLiveAppData(supabase: SupabaseClient): Promise<LiveAp
   const [studentsRes, paymentsRes, lessonsRes, notificationsRes] = await Promise.all([
     supabase
       .from("students")
-      .select("id, name, email, phone, avatar, status, role, student_role, plan, monthly_value, payment_day, categories, frequency, joined_at, auth_user_id, notes, tags, birthdate, position, payment_day")
+      .select("id, name, email, phone, avatar, status, role, student_role, plan, monthly_value, payment_day, categories, frequency, joined_at, auth_user_id, notes, tags, birthdate, position")
       .order("created_at", { ascending: false }),
     supabase
       .from("payments")

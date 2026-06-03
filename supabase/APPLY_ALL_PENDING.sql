@@ -246,6 +246,10 @@ ALTER TABLE public.students
 ALTER TABLE public.students
   ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}';
 
+-- ── Perfil: posição na quadra ────────────────────────────────
+ALTER TABLE public.students
+  ADD COLUMN IF NOT EXISTS position text;
+
 -- ── Sprint 100: Sistema de Indicação ─────────────────────────
 CREATE TABLE IF NOT EXISTS public.referrals (
   id                  uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
