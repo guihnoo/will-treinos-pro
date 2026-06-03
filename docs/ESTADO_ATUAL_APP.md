@@ -34,7 +34,7 @@
 |----|-------------|
 | Cockpit, agenda, financeiro, gamificação (código) | Domínio `.com.br` |
 | Reset senha (rotas) | Redirect URLs Supabase (manual) |
-| Login fix no repo | **Deploy** deste commit |
+| Login fix | Commit `0d5f0e5` pushed — aguardar Vercel Ready |
 | | Push automático Vercel (validar com Claude) |
 
 ---

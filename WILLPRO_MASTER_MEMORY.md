@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 15:10 BRT] (Cursor):** **[FIX + DEPLOY]** Login loop definitivo — middleware `wt_role` (era `wt-role`); redirect aluno `/dashboard`; ranking empty; `SIGNED_IN` await session; docs `ESTADO_ATUAL_APP`, `LANCAMENTO_CHECKLIST`, `QA_LANCAMENTO_MANUAL`. Commit `0d5f0e5` push `main` → Vercel. Build OK.
+
 - **[03/06/2026 14:15 BRT] (Cursor):** **[DEPLOY] ✅ Produção Vercel** — `git push` `57e7b24` + `4e2e0a1`; `vercel deploy --prod` após fix `vercel.json` (cron `post-lesson-feedback` `0 23 * * *` — Hobby não aceita `0 * * * *`). Deploy `dpl_H75msTf5Pc4FR7gF5s3RxkTj2MLS` Ready → `will-treinos-pro.vercel.app`. Inclui commits `27e6071`..`4e2e0a1` (área aluno, senha, middleware).
 
 - **[03/06/2026 14:00 BRT] (Cursor):** **[DEPLOY]** Commit deploy: middleware rotas auth públicas (`/nova-senha`, `/esqueci-senha`, etc.), landing aluno → `/dashboard`, banner staff em config `?conta=1`, `supabase/VERIFY_PRODUCTION.sql`. `pnpm run build` exit 0. `git push origin main` para disparar Vercel.
