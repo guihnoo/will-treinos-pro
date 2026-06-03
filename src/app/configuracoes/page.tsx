@@ -17,7 +17,7 @@ import { resolveStudentProfilePolicy } from "@/lib/studentProfilePolicy";
 import { clearTransactionalLocalStorage } from "@/lib/willLocalDataPolicy";
 import { hasSupabaseEnv } from "@/lib/supabaseClient";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import CourtLocationSettings from "@/components/will/CourtLocationSettings";
@@ -37,6 +37,7 @@ function timeToHours(hhmm: string): number {
 
 export default function ConfigPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { appConfig, updateAppConfig } = useAppConfig();
   const {
     categories,
@@ -54,13 +55,14 @@ export default function ConfigPage() {
   const { user } = useAuth();
   const { students } = useStudents();
   const { toast } = useToast();
-  // CRM student id for the logged-in student (aluno role only)
-  const studentProfile = user?.role === "aluno"
-    ? (students.find(s => s.id === user.id) ?? null)
-    : null;
+  const studentProfile =
+    students.find((s) => s.authUserId === user?.id || s.id === user?.id) ?? null;
 
-  // Aluno começa em notificações; admin/coach em categorias
-  const [tab, setTab] = useState<Tab>(user?.role === "aluno" ? "notificacoes" : "categorias");
+  /** Conta pessoal do atleta (role aluno ou link do Perfil ?conta=1). */
+  const isStudentAccount =
+    user?.role === "aluno" || searchParams.get("conta") === "1";
+
+  const [tab, setTab] = useState<Tab>(isStudentAccount ? "notificacoes" : "categorias");
   const [pixDraft, setPixDraft] = useState<AppConfig>(appConfig);
 
   useEffect(() => {
@@ -69,10 +71,10 @@ export default function ConfigPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.location.hash === "#recebimentos" && user?.role !== "aluno") {
+    if (window.location.hash === "#recebimentos" && !isStudentAccount) {
       setTab("recebimentos");
     }
-  }, [user]);
+  }, [user, isStudentAccount]);
   const [showAddCat, setShowAddCat] = useState(false);
   const [showAddVenue, setShowAddVenue] = useState(false);
   useBodyScrollLock(showAddCat || showAddVenue);
@@ -80,16 +82,21 @@ export default function ConfigPage() {
   const [newVenue, setNewVenue] = useState({ name: "", photo: "", address: "", lat: -22.9, lng: -43.2 });
   const [wh, setWh] = useState(workHours);
 
-  const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-    // Tabs exclusivas do staff (admin/coach)
-    ...(user?.role !== "aluno" ? [{ key: "recebimentos" as const, label: "Recebimentos PIX", icon: QrCode }] : []),
-    ...(user?.role !== "aluno" ? [{ key: "perfilAluno" as const, label: "Perfil do aluno", icon: UserCircle }] : []),
-    ...(user?.role !== "aluno" ? [{ key: "categorias" as const, label: "Categorias", icon: Tag }] : []),
-    ...(user?.role !== "aluno" ? [{ key: "locais" as const, label: "Locais", icon: MapPin }] : []),
-    ...(user?.role !== "aluno" ? [{ key: "jornada" as const, label: "Jornada", icon: Clock }] : []),
-    // Tab exclusiva do aluno
-    ...(user?.role === "aluno" ? [{ key: "notificacoes" as const, label: "Notificações", icon: Bell }] : []),
-  ];
+  const tabs: { key: Tab; label: string; icon: React.ElementType }[] = isStudentAccount
+    ? [{ key: "notificacoes" as const, label: "Notificações", icon: Bell }]
+    : [
+        { key: "recebimentos" as const, label: "Recebimentos PIX", icon: QrCode },
+        { key: "perfilAluno" as const, label: "Perfil do aluno", icon: UserCircle },
+        { key: "categorias" as const, label: "Categorias", icon: Tag },
+        { key: "locais" as const, label: "Locais", icon: MapPin },
+        { key: "jornada" as const, label: "Jornada", icon: Clock },
+      ];
+
+  useEffect(() => {
+    if (isStudentAccount && tab !== "notificacoes") {
+      setTab("notificacoes");
+    }
+  }, [isStudentAccount, tab]);
 
   const handleAddCat = () => {
     if (!newCat.name) return;
@@ -113,9 +120,11 @@ export default function ConfigPage() {
     <div className="p-4 md:p-8 max-w-4xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <AppPageHeader
         title="Configurações"
-        subtitle={user?.role === "aluno"
-          ? "Preferências de notificação e conta pessoal."
-          : "Categorias, locais, jornada e chave PIX de recebimento."}
+        subtitle={
+          isStudentAccount
+            ? "Preferências de notificação da sua conta."
+            : "Categorias, locais, jornada e chave PIX de recebimento."
+        }
         icon={Settings}
         className="mb-6"
         rightSlot={
@@ -151,7 +160,7 @@ export default function ConfigPage() {
       </div>
 
       {/* ─── RECEBIMENTOS (staff): PIX exibido ao aluno — comprovante só na área do aluno ─── */}
-      {tab === "recebimentos" && user?.role !== "aluno" && (
+      {tab === "recebimentos" && !isStudentAccount && (
         <motion.div id="recebimentos" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <AppSectionCard
             title="Dados de recebimento PIX"
@@ -251,7 +260,7 @@ export default function ConfigPage() {
         </motion.div>
       )}
 
-      {tab === "perfilAluno" && user?.role !== "aluno" && (
+      {tab === "perfilAluno" && !isStudentAccount && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <AppSectionCard
             title="O que o aluno pode editar em /perfil"
@@ -307,7 +316,7 @@ export default function ConfigPage() {
       )}
 
       {/* ─── CATEGORIAS ─── */}
-      {tab === "categorias" && (
+      {tab === "categorias" && !isStudentAccount && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
           <AppSectionCard
             title="Categorias de Aula"
@@ -425,7 +434,7 @@ export default function ConfigPage() {
       )}
 
       {/* ─── LOCAIS ─── */}
-      {tab === "locais" && (
+      {tab === "locais" && !isStudentAccount && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
           {/* Geolocalização da quadra */}
           <CourtLocationSettings
@@ -530,7 +539,7 @@ export default function ConfigPage() {
       )}
 
       {/* ─── JORNADA ─── */}
-      {tab === "jornada" && (
+      {tab === "jornada" && !isStudentAccount && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           <AppSectionCard
             title="Jornada de Trabalho"
@@ -581,7 +590,7 @@ export default function ConfigPage() {
       )}
 
       {/* ─── NOTIFICACOES (aluno) ─── */}
-      {tab === "notificacoes" && user?.role === "aluno" && (
+      {tab === "notificacoes" && isStudentAccount && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <AppSectionCard
             title="Preferencias de Notificacao"

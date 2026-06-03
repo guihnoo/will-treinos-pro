@@ -1,5 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export interface LeaderboardEntry {
@@ -21,12 +20,25 @@ export interface LeaderboardData {
 
 type Timeframe = "week" | "month" | "all";
 
+const TIER_THRESHOLDS = {
+  elite: 6000,
+  diamante: 3000,
+  ouro: 1500,
+  prata: 500,
+} as const;
+
 function calcTier(xp: number): LeaderboardEntry["tier"] {
-  if (xp >= 6000) return "elite";
-  if (xp >= 3000) return "diamante";
-  if (xp >= 1500) return "ouro";
-  if (xp >= 500) return "prata";
+  if (xp >= TIER_THRESHOLDS.elite) return "elite";
+  if (xp >= TIER_THRESHOLDS.diamante) return "diamante";
+  if (xp >= TIER_THRESHOLDS.ouro) return "ouro";
+  if (xp >= TIER_THRESHOLDS.prata) return "prata";
   return "bronze";
+}
+
+function mapPeriod(timeframe: Timeframe): string {
+  if (timeframe === "week") return "week";
+  if (timeframe === "month") return "month";
+  return "alltime";
 }
 
 export function useLeaderboard(timeframe: Timeframe = "all"): LeaderboardData {
@@ -37,94 +49,50 @@ export function useLeaderboard(timeframe: Timeframe = "all"): LeaderboardData {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Perf: useRef para estabilizar a referência do client
-  const supabaseRef = useRef(getSupabaseClient());
-  const supabase = supabaseRef.current;
-
   const fetchLeaderboard = useCallback(async () => {
-    if (!user?.id || !supabase) return;
+    if (!user?.id) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const now = new Date();
-      let dateFilter: string | null = null;
-
-      if (timeframe === "week") {
-        const d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        dateFilter = d.toISOString();
-      } else if (timeframe === "month") {
-        const d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        dateFilter = d.toISOString();
-      }
-
-      // xp_log usa 'points' (não 'total_xp') e 'student_id'
-      let xpQuery = supabase
-        .from("xp_log")
-        .select("student_id, points")
-        .limit(2000);
-
-      if (dateFilter) {
-        xpQuery = xpQuery.gte("created_at", dateFilter);
-      }
-
-      const { data: logsData, error: logsErr } = await xpQuery;
-      if (logsErr) throw logsErr;
-
-      // Agregar XP por student_id
-      const studentTotals = new Map<string, number>();
-      logsData?.forEach((log) => {
-        const current = studentTotals.get(log.student_id) || 0;
-        studentTotals.set(log.student_id, current + (log.points ?? 0));
-      });
-
-      if (studentTotals.size === 0) {
-        setEntries([]);
-        setUserRank(null);
-        setUserXP(0);
-        return;
-      }
-
-      // Buscar perfis dos alunos — colunas corretas: 'name', 'auth_user_id', 'avatar'
-      const studentIds = [...studentTotals.keys()];
-      const { data: studentsData, error: studentsErr } = await supabase
-        .from("students")
-        .select("id, auth_user_id, name, avatar")
-        .in("auth_user_id", studentIds);
-
-      if (studentsErr) throw studentsErr;
-
-      // Mapear auth_user_id → student
-      const studentMap = new Map(
-        (studentsData ?? []).map((s) => [s.auth_user_id, s])
+      const period = mapPeriod(timeframe);
+      const res = await fetch(
+        `/api/leaderboard?period=${period}&limit=10`,
+        { cache: "no-store" },
       );
 
-      // Montar ranking
-      const ranked: LeaderboardEntry[] = studentIds
-        .map((authId) => {
-          const student = studentMap.get(authId);
-          const xp = studentTotals.get(authId) ?? 0;
-          return {
-            id: student?.id ?? authId,
-            name: student?.name ?? "Atleta",
-            avatar: student?.avatar ?? null,
-            total_xp: xp,
-            rank: 0,
-            tier: calcTier(xp),
-          };
-        })
-        .filter((e) => e.total_xp > 0)
-        .sort((a, b) => b.total_xp - a.total_xp)
-        .map((e, i) => ({ ...e, rank: i + 1 }));
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
 
-      setEntries(ranked.slice(0, 10));
+      const data = (await res.json()) as {
+        entries?: Array<{
+          studentId: string;
+          name: string;
+          totalXP: number;
+          allTimeXP?: number;
+          tier?: string;
+          rank: number;
+        }>;
+      };
 
-      // Posição do usuário logado
-      const userEntry = ranked.find((e) => e.id === user.id);
-      if (userEntry) {
-        setUserRank(userEntry.rank);
-        setUserXP(userEntry.total_xp);
+      const mapped: LeaderboardEntry[] = (data.entries ?? []).map((e) => ({
+        id: e.studentId,
+        name: e.name || "Atleta",
+        avatar: null,
+        total_xp: e.totalXP ?? 0,
+        rank: e.rank,
+        tier: (e.tier as LeaderboardEntry["tier"]) ?? calcTier(e.allTimeXP ?? e.totalXP ?? 0),
+      }));
+
+      setEntries(mapped);
+
+      const self = mapped.find((e) => e.id === user.id);
+      if (self) {
+        setUserRank(self.rank);
+        setUserXP(self.total_xp);
       } else {
         setUserRank(null);
         setUserXP(0);
@@ -136,26 +104,11 @@ export function useLeaderboard(timeframe: Timeframe = "all"): LeaderboardData {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, timeframe, supabase]);
+  }, [user?.id, timeframe]);
 
   useEffect(() => {
     void fetchLeaderboard();
   }, [fetchLeaderboard]);
-
-  useEffect(() => {
-    if (!user?.id || !supabase) return;
-    try {
-      const channel = supabase
-        .channel("leaderboard_updates")
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "xp_log" }, () => {
-          void fetchLeaderboard();
-        })
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    } catch (err) {
-      console.error("[useLeaderboard] Realtime:", err);
-    }
-  }, [user?.id, supabase, fetchLeaderboard]);
 
   return { entries, userRank, userXP, loading, error };
 }

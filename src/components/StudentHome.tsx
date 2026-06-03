@@ -1205,30 +1205,7 @@ export default function StudentHome() {
     }
   }, [xpFloatEvents.length]);
 
-  if (!hydrated) return <StudentHomeSkeleton />;
-
-  if (usingSupabaseSession && criticalDataError) {
-    return (
-      <AppSectionCard
-        title="Falha ao sincronizar seu painel"
-        subtitle="Não foi possível carregar os dados ao vivo agora."
-        className="mt-2"
-      >
-        <p className="text-sm text-zinc-300">{criticalDataError}</p>
-        <button
-          type="button"
-          onClick={() => void retryCriticalDataSync()}
-          className={`mt-4 rounded-xl border border-red-300/35 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-200 hover:bg-red-500/15 ${ctaClass}`}
-        >
-          Tentar sincronizar novamente
-        </button>
-      </AppSectionCard>
-    );
-  }
-
-  // Persist upcoming lessons and XP to offline cache when online
-  // NOTE: estes effects estão após returns condicionais — as condições de guarda
-  // estão DENTRO dos effects (não como returns externos) para respeitar as regras dos hooks
+  // Offline cache — antes de qualquer return (regra dos hooks)
   useEffect(() => {
     if (!hydrated || typeof window === "undefined" || !navigator.onLine) return;
     const today = localDateISO();
@@ -1251,6 +1228,27 @@ export default function StudentHome() {
     if (!profile?.id || totalXP === 0) return;
     offlineCache.saveStudentXP(profile.id, totalXP, currentTier.label);
   }, [profile?.id, totalXP, currentTier.label, hydrated]);
+
+  if (!hydrated) return <StudentHomeSkeleton />;
+
+  if (usingSupabaseSession && criticalDataError) {
+    return (
+      <AppSectionCard
+        title="Falha ao sincronizar seu painel"
+        subtitle="Não foi possível carregar os dados ao vivo agora."
+        className="mt-2"
+      >
+        <p className="text-sm text-zinc-300">{criticalDataError}</p>
+        <button
+          type="button"
+          onClick={() => void retryCriticalDataSync()}
+          className={`mt-4 rounded-xl border border-red-300/35 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-200 hover:bg-red-500/15 ${ctaClass}`}
+        >
+          Tentar sincronizar novamente
+        </button>
+      </AppSectionCard>
+    );
+  }
 
   return (
     <>

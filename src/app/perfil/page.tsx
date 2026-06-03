@@ -19,7 +19,8 @@ import { useToast } from "@/components/Toast";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { uploadAvatarToStorage } from "@/lib/supabasePersistence";
-import { isDirectUserAvatar } from "@/lib/avatarSrc";
+import { avatarSrc, isDirectUserAvatar } from "@/lib/avatarSrc";
+import { useGamification } from "@/context/GamificationContext";
 
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
@@ -51,7 +52,10 @@ export default function PerfilPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
-  const profile = students.find(s => s.id === user?.id);
+  const profile = students.find(
+    (s) => s.authUserId === user?.id || s.id === user?.id,
+  );
+  const { totalXP: gamificationXP } = useGamification();
   const [editing, setEditing] = useState(false);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success" | "error">("idle");
@@ -75,8 +79,8 @@ export default function PerfilPage() {
   const myFeedbacks = feedbacks.filter(f => f.studentId === user?.id).sort((a, b) => b.date.localeCompare(a.date));
   const avgRating = myFeedbacks.length > 0 ? (myFeedbacks.reduce((s, f) => s + f.rating, 0) / myFeedbacks.length).toFixed(1) : "—";
   const frequency = profile?.frequency || Math.min(100, completedCount > 0 ? Math.round((completedCount / Math.max(profile?.totalClasses || completedCount, 1)) * 100) : 0);
-  const level = Math.max(1, Math.floor(completedCount / 4) + 1);
-  const xp = completedCount * 120 + Math.round((frequency / 100) * 180);
+  const level = Math.max(1, Math.floor((gamificationXP || completedCount * 120) / 1000) + 1);
+  const xp = gamificationXP > 0 ? gamificationXP : completedCount * 120 + Math.round((frequency / 100) * 180);
   const xpCurrent = xp % 1000;
   const xpPct = Math.max(8, Math.min(100, (xpCurrent / 1000) * 100));
   const technicalFocus = profile?.categories?.[0] || "Vôlei";
@@ -208,7 +212,10 @@ export default function PerfilPage() {
 
   const handleLogout = () => { haptic(25); logout(); router.push("/login"); };
 
-  const currentAvatar = resolveAvatarSrc(customPhoto || avatar, "Ricardo");
+  const currentAvatar = avatarSrc(
+    customPhoto || profile?.avatar || user?.avatar,
+    user?.name || profile?.name || "atleta",
+  );
 
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
@@ -557,7 +564,10 @@ export default function PerfilPage() {
         </motion.div>
       )}
 
-      <Link href="/configuracoes" className={`mb-4 block outline-none ${FOCUS_RING_GOLD}`}>
+      <Link
+        href={isStudent ? "/configuracoes?conta=1" : "/configuracoes"}
+        className={`mb-4 block outline-none ${FOCUS_RING_GOLD}`}
+      >
         <motion.div
           whileTap={{ scale: 0.98 }}
           className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 px-4 py-3.5 transition-colors hover:border-[#EAB308]/35 hover:bg-zinc-900/50"
@@ -570,7 +580,7 @@ export default function PerfilPage() {
               <p className="text-sm font-bold text-white">Configurações</p>
               <p className="truncate text-[11px] text-zinc-500">
                 {isStudent
-                  ? "Categorias, locais e jornada da academia — o que o aluno pode visualizar."
+                  ? "Notificações push e preferências da sua conta."
                   : "PIX, políticas de edição do aluno e estrutura operacional da academia."}
               </p>
             </div>

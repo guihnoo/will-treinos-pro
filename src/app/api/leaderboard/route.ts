@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
     // Build the aggregate query — single DB round-trip
     let xpQuery = supabase
       .from("xp_log")
-      .select("student_id, points")
-      .eq("validation_passed", true);
+      .select("student_id, points, total_xp")
+      .or("validation_passed.eq.true,validation_passed.is.null");
 
     if (dateFilter) {
       xpQuery = xpQuery.gte("created_at", dateFilter);
@@ -91,12 +91,13 @@ export async function GET(request: NextRequest) {
     if (timeframe !== "all") {
       const { data: allTimeData } = await supabase
         .from("xp_log")
-        .select("student_id, points")
-        .eq("validation_passed", true);
+        .select("student_id, points, total_xp")
+        .or("validation_passed.eq.true,validation_passed.is.null");
 
       allTimeData?.forEach((row) => {
         const current = allTimeMap.get(row.student_id) ?? 0;
-        allTimeMap.set(row.student_id, current + (row.points ?? 0));
+        const xp = row.points ?? row.total_xp ?? 0;
+        allTimeMap.set(row.student_id, current + xp);
       });
     }
 
@@ -104,7 +105,8 @@ export async function GET(request: NextRequest) {
     const xpMap = new Map<string, number>();
     xpData?.forEach((row) => {
       const current = xpMap.get(row.student_id) ?? 0;
-      xpMap.set(row.student_id, current + (row.points ?? 0));
+      const xp = row.points ?? row.total_xp ?? 0;
+      xpMap.set(row.student_id, current + xp);
     });
 
     if (timeframe === "all") {
