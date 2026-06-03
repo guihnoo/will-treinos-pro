@@ -69,6 +69,25 @@ test("signup page renders", async ({ page }) => {
   expect(bodyText?.trim().length).toBeGreaterThan(0);
 });
 
+test("password recovery pages render", async ({ page }) => {
+  for (const path of ["/esqueci-senha", "/nova-senha"] as const) {
+    await page.goto(path);
+    const bodyText = await page.locator("body").textContent();
+    expect(bodyText).not.toContain("Internal Server Error");
+  }
+});
+
+test("ranking page renders", async ({ page }) => {
+  await page.goto("/ranking");
+  const bodyText = await page.locator("body").textContent();
+  expect(bodyText).not.toContain("Internal Server Error");
+});
+
+test("leaderboard API responds", async ({ request }) => {
+  const res = await request.get("/api/leaderboard?period=week");
+  expect(res.status()).toBeLessThan(500);
+});
+
 test("public athlete profile 404 handled gracefully", async ({ page }) => {
   await page.goto("/atleta/nonexistent-id-000");
   // Não deve mostrar crash — deve mostrar estado de erro ou not found

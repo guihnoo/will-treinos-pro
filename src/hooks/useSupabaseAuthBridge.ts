@@ -73,8 +73,10 @@ export function useSupabaseAuthBridge(options: {
         if (session?.user) {
           setUsingSupabaseSession(true);
           setAuthError(null);
-          void applySupabaseSession(session.user);
-          void loadSupabaseCriticalData();
+          void (async () => {
+            await applySupabaseSession(session.user);
+            void loadSupabaseCriticalData();
+          })();
         }
       }
       if (event === "SIGNED_OUT") {

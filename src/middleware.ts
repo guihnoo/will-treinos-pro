@@ -54,17 +54,15 @@ export function middleware(req: NextRequest) {
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
   if (!isProtected) return NextResponse.next();
 
-  // Verificar cookie de sessão do Supabase
-  // O Supabase usa cookies com prefixo sb- para a sessão
+  // Sessão no browser fica em localStorage (`wt-auth-session`); edge lê `wt_role` (underscore).
+  const wtRole = req.cookies.get("wt_role")?.value?.trim();
   const hasSession =
+    Boolean(wtRole) ||
     req.cookies.has("sb-access-token") ||
     req.cookies.has("sb-refresh-token") ||
-    // Supabase v2 usa formato diferente de cookie
     [...req.cookies.getAll()].some(
-      (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token")
-    ) ||
-    // Cookie legado do projeto
-    req.cookies.has("wt-role");
+      (c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"),
+    );
 
   if (!hasSession) {
     const loginUrl = new URL("/login", req.url);

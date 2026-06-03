@@ -64,13 +64,17 @@ function LoginContent() {
     window.history.replaceState(null, "", "/login");
   }, [toast]);
 
-  // Redirect after login resolves
+  // Redirect após login (wt_role já setado em applySupabaseSession → middleware libera /dashboard)
   useEffect(() => {
     if (!awaitingRedirect || !authResolved || !user) return;
     const dest =
-      user.role === "visitor" ? "/feed" :
-      user.role === "aluno"   ? "/treinos" :
-      "/dashboard";
+      user.role === "visitor"
+        ? "/feed"
+        : user.role === "aluno"
+          ? "/dashboard"
+          : user.role === null
+            ? "/cadastro"
+            : "/dashboard";
     router.replace(nextPath ?? dest);
   }, [awaitingRedirect, authResolved, user, router, nextPath]);
 
@@ -127,7 +131,7 @@ function LoginContent() {
   const handleMockLogin = (role: "admin" | "coach" | "aluno") => {
     login(role);
     toast(`Login mock: ${role.toUpperCase()}`);
-    router.push(role === "aluno" ? "/treinos" : "/dashboard");
+    router.push("/dashboard");
   };
 
   if (awaitingRedirect && !user) {

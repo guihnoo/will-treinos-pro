@@ -7,6 +7,7 @@ import { appRoleFromSupabaseUser, getSupabaseClient, hasSupabaseEnv } from "@/li
 
 
 import { isDevRootEmail, postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
+import { STUDENT_HOME_PATH } from "@/lib/studentRoutes";
 import { fetchStaffAccessRole } from "@/lib/supabasePersistence";
 import { clearStaffOAuthGate, getStoredInviteToken } from "@/lib/enrollmentSession";
 
@@ -35,7 +36,7 @@ function sanitizeNextPath(raw: string | null | undefined): string | null {
 async function resolveApprovedStudentRoute(
   supabase: NonNullable<ReturnType<typeof getSupabaseClient>>,
   user: SupabaseAuthUser,
-): Promise<"/treinos" | "/feed" | "/dashboard" | "/cadastro"> {
+): Promise<typeof STUDENT_HOME_PATH | "/feed" | "/dashboard" | "/cadastro"> {
   try {
     let student: { status: string; student_role: string } | null = null;
 
@@ -59,7 +60,7 @@ async function resolveApprovedStudentRoute(
     if (!student || (student.status !== "approved" && student.status !== "active")) return "/cadastro";
     if (student.student_role === "observador") return "/feed";
     if (student.student_role === "professor") return "/dashboard";
-    return "/treinos";
+    return STUDENT_HOME_PATH;
   } catch {
     return "/cadastro";
   }

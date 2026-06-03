@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
+import { STUDENT_HOME_PATH } from "@/lib/studentRoutes";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +70,11 @@ export default function AguardandoPage() {
 
       if (currentStudent && currentStudent.status === "active") {
         setPollingActive(false);
-        router.replace(user.role === "coach" ? "/dashboard" : "/treinos");
+        router.replace(
+          user.role === "admin" || user.role === "coach"
+            ? "/dashboard"
+            : STUDENT_HOME_PATH,
+        );
       }
     };
 

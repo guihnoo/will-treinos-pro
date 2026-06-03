@@ -1,5 +1,6 @@
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { appRoleFromSupabaseUser } from "@/lib/supabaseClient";
+import { STUDENT_HOME_PATH } from "@/lib/studentRoutes";
 import { WT_SESSION_DEV_IMPERSONATION_KEY, wtSessionGet } from "@/lib/willLocalStorage";
 
 export type DevImpersonation = "admin" | "coach" | "aluno";
@@ -31,7 +32,9 @@ export function computeEffectiveRole(
 }
 
 /** Used after OAuth/password redirect when we already have a Supabase session user. */
-export function postLoginRouteFromAuthUser(authUser: SupabaseAuthUser): "/treinos" | "/dashboard" | "/feed" | "/cadastro" {
+export function postLoginRouteFromAuthUser(
+  authUser: SupabaseAuthUser,
+): typeof STUDENT_HOME_PATH | "/dashboard" | "/feed" | "/cadastro" {
   if (isDevRootEmail(authUser.email)) {
     return "/dashboard";
   }
@@ -39,5 +42,5 @@ export function postLoginRouteFromAuthUser(authUser: SupabaseAuthUser): "/treino
   const role = computeEffectiveRole(authUser, readDevImpersonationFromStorage());
   if (role === null) return "/cadastro";
   if (role === "visitor") return "/feed";
-  return role === "aluno" ? "/treinos" : "/dashboard";
+  return role === "aluno" ? STUDENT_HOME_PATH : "/dashboard";
 }

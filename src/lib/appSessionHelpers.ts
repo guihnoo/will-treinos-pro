@@ -27,7 +27,15 @@ export function syncWtRoleCookie(role: User["role"] | null | undefined): void {
     return;
   }
   const cookieRole =
-    role === "admin" ? "will_owner" : role === "coach" ? "professor" : role === "aluno" ? "student" : "";
+    role === "admin"
+      ? "will_owner"
+      : role === "coach"
+        ? "professor"
+        : role === "aluno"
+          ? "student"
+          : role === "visitor"
+            ? "visitor"
+            : "";
   if (!cookieRole) {
     clearWtRoleCookie();
     return;

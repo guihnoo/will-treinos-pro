@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, TrendingUp } from "lucide-react";
+import { Trophy, TrendingUp, Zap, Target } from "lucide-react";
+import Link from "next/link";
+import { STUDENT_HOME_PATH } from "@/lib/studentRoutes";
 import { useAuth } from "@/context/AuthContext";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { LeaderboardCard } from "./LeaderboardCard";
@@ -70,9 +72,34 @@ export function LeaderboardRankingPanel({ compact = false }: LeaderboardPanelPro
 
       {/* Entries */}
       {entries.length === 0 ? (
-        <p className="text-sm text-zinc-500 text-center py-8">
-          Nenhum aluno com XP ainda nesse período
-        </p>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-white/10 bg-white/5 py-10 px-6 text-center backdrop-blur-md"
+        >
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAB308]/15">
+            <Trophy className="h-7 w-7 text-[#EAB308]" />
+          </div>
+          <p className="text-base font-bold text-white">Quadra ainda sem placar</p>
+          <p className="mt-2 text-sm text-zinc-400 max-w-xs mx-auto">
+            {timeframe === "week"
+              ? "Nesta semana ninguém pontuou ainda. Check-in ou avaliação do coach colocam você no ranking."
+              : timeframe === "month"
+                ? "Neste mês ainda não há XP. Sua próxima aula pode abrir o placar."
+                : "O histórico começa quando a turma ganha XP."}
+          </p>
+          <Link
+            href={STUDENT_HOME_PATH}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-yellow-500 px-5 py-2.5 text-sm font-bold text-black hover:bg-yellow-400 transition-colors"
+          >
+            <Zap className="h-4 w-4" />
+            Ir para Início
+          </Link>
+          <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-zinc-500">
+            <Target className="h-3.5 w-3.5 text-[#EAB308]" />
+            Atualização em tempo real
+          </p>
+        </motion.div>
       ) : (
         <div className={compact ? "space-y-2" : "space-y-3"}>
           {entries.map((entry, i) => (
