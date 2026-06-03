@@ -6,7 +6,8 @@ interface Props {
 }
 
 async function fetchProfile(id: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const { getPublicAppUrl } = await import("@/lib/appUrl");
+  const base = getPublicAppUrl();
   try {
     const res = await fetch(`${base}/api/public/athlete/${id}`, {
       next: { revalidate: 60 },

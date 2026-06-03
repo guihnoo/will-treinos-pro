@@ -91,7 +91,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
       // Guard: somente 1 push por aluno
       const sentStudentIds = new Set<string>();
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://willtreinospro.com.br";
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+        "https://will-treinos-pro.vercel.app";
 
       const studentTasks = (studentSubs as { endpoint: string; p256dh: string; auth: string; student_id: string }[])
         .filter((sub) => {

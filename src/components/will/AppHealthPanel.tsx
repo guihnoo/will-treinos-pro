@@ -459,7 +459,7 @@ export default function AppHealthPanel({ onClose }: AppHealthPanelProps) {
                       {data.noLoginStudents.map((s) => {
                         const phoneDigits = s.phone?.replace(/\D/g, "") ?? "";
                         const waHref = phoneDigits
-                          ? `https://wa.me/55${phoneDigits}?text=${encodeURIComponent(`Olá ${s.name.split(" ")[0]}! Acesse o Will Treinos PRO para acompanhar sua evolução: https://willtreinospro.com/aluno`)}`
+                          ? `https://wa.me/55${phoneDigits}?text=${encodeURIComponent(`Olá ${s.name.split(" ")[0]}! Acesse o Will Treinos PRO: ${typeof window !== "undefined" ? window.location.origin : "https://will-treinos-pro.vercel.app"}/dashboard`)}`
                           : undefined;
 
                         return (

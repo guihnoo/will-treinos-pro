@@ -1,30 +1,28 @@
 # Estado atual — Will Treinos PRO
 
-**Atualizado:** 03/06/2026 · Cursor (paralelo ao Claude Code infra)
+**Atualizado:** 03/06/2026 · freemium
 
 **Produção:** https://will-treinos-pro.vercel.app
 
 ---
 
-## Última entrega (Cursor)
+## Trabalho em paralelo
 
-| Mudança | Detalhe |
-|---------|---------|
-| **Login loop (definitivo)** | Middleware lia `wt-role` → corrigido para `wt_role` |
-| **Race auth** | Mantido fix Claude `141946a` (await `applySupabaseSession`) + `SIGNED_IN` também awaited |
-| **Redirect aluno** | Login/OAuth/aguardando → `/dashboard` (Início) |
-| **Ranking vazio** | Empty state premium + CTA Início |
-| **Docs** | Checklist lançamento, QA manual, prompt infra Claude |
+| Agente | Lote | Arquivo guia |
+|--------|------|----------------|
+| **Claude Code** | A — Infra, crons, Supabase Auth, CI | `docs/CLAUDE_CODE_LOTE_A_FREEMIUM.md` |
+| **Cursor** | B — URL canônica, docs | `docs/PLANO_FREEMIUM_CURSOR_CLAUDE.md` |
+| **Will** | C — Piloto | `docs/QA_LANCAMENTO_MANUAL.md` |
 
 ---
 
-## Divisão de trabalho agora
+## Última entrega (Cursor — Lote B)
 
-| Quem | Fazendo |
-|------|---------|
-| **Claude Code** | Domínio, Supabase Auth URLs, env Vercel, smoke, runbook infra |
-| **Cursor** | Código + build + push (este lote) |
-| **Will** | Testar login após deploy; QA `docs/QA_LANCAMENTO_MANUAL.md` |
+| Mudança | Detalhe |
+|---------|---------|
+| **URL canônica** | `src/lib/appUrl.ts`; layout OG/sitemap/referral/crons usam Vercel |
+| **Sem domínio** | Plano freemium; `.com.br` adiado |
+| **Docs** | Plano + prompt Claude Lote A |
 
 ---
 
@@ -32,10 +30,10 @@
 
 | ✅ | ⚠️ Pendente |
 |----|-------------|
-| Cockpit, agenda, financeiro, gamificação (código) | Domínio `.com.br` |
-| Reset senha (rotas) | Redirect URLs Supabase (manual) |
-| Login fix | Commit `0d5f0e5` pushed — aguardar Vercel Ready |
-| | Push automático Vercel (validar com Claude) |
+| Cockpit, agenda, financeiro, gamificação | Crons orquestrador no `main` (Claude) |
+| Login fix (`wt_role`) em `main` | Supabase Auth redirects (Claude) |
+| `staff_access` + env Vercel | `NEXT_PUBLIC_APP_URL` na Vercel (Claude confirma) |
+| Runbook infra | QA piloto Will |
 
 ---
 

@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 20:00 BRT] (Cursor):** **[CONFIG/DESIGN]** Lote B freemium — `src/lib/appUrl.ts` (default `will-treinos-pro.vercel.app`); layout OG/metadataBase, sitemap, ReferralPanel, monthly-report cron, perfil público atleta, WhatsApp convite AppHealth sem domínio quebrado; `docs/PLANO_FREEMIUM_CURSOR_CLAUDE.md`, `docs/CLAUDE_CODE_LOTE_A_FREEMIUM.md` (prompt Claude Lote A), checklist/estado atualizados; `.env.example` + `NEXT_PUBLIC_APP_URL`. Domínio .com.br adiado. Status: 🔄 build+push Cursor; Claude executa Lote A em paralelo.
+
 - **[03/06/2026 19:00 BRT] (Claude):** **[CONFIG]** Crons Hobby — 9 entradas → 2 orquestradores sem custo. Criados `src/app/api/cron/orchestrator-morning/route.ts` (08h BRT: birthday, daily, onboarding, payment dias 5/20, monthly dia 1) e `orchestrator-evening/route.ts` (18h BRT: absence, fomo, post-lesson, weekly sexta). `vercel.json` atualizado para 2 crons — dentro do limite Hobby. `pnpm exec tsc --noEmit` exit 0. Nenhuma lógica de negócio alterada; crons individuais continuam como rotas sub-chamadas. Status: ✅ App 100% funcional no plano Hobby gratuito.
 
 - **[03/06/2026 18:00 BRT] (Cursor):** **[CONFIG/INFRA]** Execução parcial dos 3 passos do runbook — Vercel: domínios `willtreinospro.com.br` e `www` adicionados via CLI (DNS no registrador ainda NXDOMAIN); Supabase: `staff_access` OK (2 admins ativos, schema por `email`); env Vercel confirmadas (`CRON_SECRET`, service role, VAPID); correção doc runbook §6.2 (INSERT por email, não user_id); working tree revertida de regressão acidental no `middleware` (`wt_role`). Auth redirects: pendente painel Supabase §2.3. `git push` runbook + memory. Status: 🔄 DNS registrador + Auth URLs manuais.

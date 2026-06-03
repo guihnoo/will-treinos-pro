@@ -136,7 +136,10 @@ function formatXP(xp: number) {
 export default function AthleteProfileClient({ id, initialProfile }: Props) {
   const [profile, setProfile] = useState<Profile | null>(initialProfile);
   const [copied, setCopied]   = useState(false);
-  const url = typeof window !== "undefined" ? window.location.href : `https://willtreinospro.com/atleta/${id}`;
+  const url =
+    typeof window !== "undefined"
+      ? window.location.href
+      : `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://will-treinos-pro.vercel.app"}/atleta/${id}`;
 
   // Re-fetch client-side in case SSR missed env
   useEffect(() => {

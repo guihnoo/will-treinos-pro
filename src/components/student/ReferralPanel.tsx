@@ -71,9 +71,10 @@ export default function ReferralPanel({ studentId, onClose }: Props) {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const referralLink = typeof window !== "undefined"
-    ? `${window.location.origin}/signup?ref=${studentId}`
-    : `https://willtreinospro.com.br/signup?ref=${studentId}`;
+  const referralLink =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/signup?ref=${studentId}`
+      : `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://will-treinos-pro.vercel.app"}/signup?ref=${studentId}`;
 
   const fetchReferrals = useCallback(async () => {
     const sb = getSupabaseClient();

@@ -21,6 +21,9 @@ import AuthWrapper from "@/components/AuthWrapper";
 import { ToastProvider } from "@/components/Toast";
 import { RichToastProvider } from "@/components/ui/ToastProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { getPublicAppUrl } from "@/lib/appUrl";
+
+const appUrl = getPublicAppUrl();
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,7 +38,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://willtreinospro.com.br"),
+  metadataBase: new URL(appUrl),
   title: {
     default: "Will Treinos PRO — Vôlei de Alta Performance",
     template: "%s | Will Treinos PRO",
@@ -47,7 +50,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    url: "https://willtreinospro.com.br",
+    url: appUrl,
     siteName: "Will Treinos PRO",
     title: "Will Treinos PRO — Vôlei de Alta Performance",
     description: "Plataforma exclusiva de gestão e gamificação para vôlei. Evolua de Iniciante a Elite.",
