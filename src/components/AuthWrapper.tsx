@@ -11,7 +11,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 
-const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro", "/preview", "/signup", "/aguardando"]);
+const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro", "/preview", "/signup", "/aguardando", "/esqueci-senha", "/nova-senha"]);
 
 function isPublicRoute(pathname: string | null): boolean {
   if (!pathname) return false;

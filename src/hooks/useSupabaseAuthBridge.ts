@@ -57,8 +57,11 @@ export function useSupabaseAuthBridge(options: {
       }
       if (data.session?.user) {
         setUsingSupabaseSession(true);
-        void applySupabaseSession(data.session.user);
-        await loadSupabaseCriticalData();
+        // Fix race condition: aguardar applySupabaseSession antes de setAuthResolved
+        // Antes: void (fire-and-forget) + setAuthResolved logo depois
+        // = AuthWrapper via !user → redirect /login antes do user ser setado
+        await applySupabaseSession(data.session.user);
+        void loadSupabaseCriticalData();
       }
       setAuthResolved(true);
     });
