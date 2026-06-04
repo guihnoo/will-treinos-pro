@@ -52,7 +52,7 @@
 | Deploy | Git push → Vercel automático | ✅ Ativo (webhook GitHub App) |
 | URL canônica | `will-treinos-pro.vercel.app` | ✅ Freemium — sem domínio .com.br por ora |
 | Domínio | `willtreinospro.com.br` | ⏸️ Adiado — DNS opcional quando comprar |
-| Supabase Auth | Site URL + 4 redirects | ⚠️ **Manual Will** — seção 2.3 (~3 min) |
+| Supabase Auth | Site URL + 6 redirects | ✅ **04/06 Will** — §2.3 |
 | Env Vars | Todas as obrigatórias | ✅ Confirmado em Production |
 | Crons | 1 Vercel + evening GH Actions | ✅ orchestrators respondendo 401 em prod |
 | staff_access | 2 admins ativos | ✅ VERIFY_PRODUCTION confirmado |
