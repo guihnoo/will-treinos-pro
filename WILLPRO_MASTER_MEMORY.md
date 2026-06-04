@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 23:45 BRT] (Cursor):** **[FIX]** Crash produção — páginas admin pretas / ErrorBoundary `cannot add 'presence' callbacks for realtime:app-presence after 'subscribe()'`. Causa: `TodayView` + `OnlineStudentsPanel` chamavam `useCoachPresenceView()` em paralelo no mesmo canal Supabase. Fix: singleton compartilhado em `src/hooks/usePresenceChannel.ts` (handlers de presence antes do subscribe, um canal por client). `tsc` + `pnpm run build` OK. Status: ✅ push Vercel.
+
 - **[03/06/2026 22:15 BRT] (Cursor):** **[CONFIG]** Follow-up Lote A freemium — `NEXT_PUBLIC_APP_URL` criada na Vercel Production via CLI; workflow `.github/workflows/cron-evening.yml` (18h BRT, GitHub Actions gratuito) substitui cron-job.org manual; `VERIFY_PRODUCTION` OK via MCP (staff_access 2/2, RPCs, referrals/xp_log); runbook corrigido (Site URL freemium, 1 cron Hobby, STATUS RESUMIDO); checklists/ESTADO_ATUAL/GITHUB_ACTIONS atualizados. Pendente Will: Supabase Auth §2.3 + secret `CRON_SECRET` no GitHub. Build OK + push. Status: ✅ infra quase 100%.
 
 - **[03/06/2026 18:15 BRT] (Cursor):** **[FIX]** Login ainda bloqueado — `fetchLiveAppData` pedia `payments.proof_note`/`proof_submitted_at` (schema real: `student_proof_*`). Corrigido select de payments + lessons sem `coach_id`; `sync/process` atualiza `student_proof_note`. Auditoria SQL produção via MCP confirmou colunas. Build OK + push. Status: ✅ Desbloqueio pós-login.

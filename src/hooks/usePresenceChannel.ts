@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
 const CHANNEL_NAME = "app-presence";
 const HEARTBEAT_INTERVAL_MS = 30_000;
@@ -13,12 +13,106 @@ export type PresenceState = {
   lastSeen: string;
 };
 
+type PresenceListener = (students: PresenceState[]) => void;
+
+let sharedChannel: RealtimeChannel | null = null;
+let channelSubscribed = false;
+let presenceHandlersAttached = false;
+
+let coachListenerCount = 0;
+const coachListeners = new Set<PresenceListener>();
+
+let studentTrackCount = 0;
+let activeStudentId: string | null = null;
+let activeStudentName: string | null = null;
+
+function parsePresenceState(channel: RealtimeChannel): PresenceState[] {
+  const state = channel.presenceState<PresenceState>();
+  const students: PresenceState[] = [];
+
+  for (const key of Object.keys(state)) {
+    const entries = state[key];
+    if (!entries || entries.length === 0) continue;
+    const latest = entries.reduce((a, b) =>
+      new Date(a.lastSeen) >= new Date(b.lastSeen) ? a : b,
+    );
+    if (latest.studentId && latest.studentId !== "coach-observer") {
+      students.push(latest);
+    }
+  }
+
+  students.sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
+  return students;
+}
+
+function notifyCoachListeners() {
+  if (!sharedChannel) return;
+  const students = parsePresenceState(sharedChannel);
+  coachListeners.forEach((listener) => listener(students));
+}
+
+function attachPresenceHandlers(channel: RealtimeChannel) {
+  if (presenceHandlersAttached) return;
+  channel
+    .on("presence", { event: "sync" }, notifyCoachListeners)
+    .on("presence", { event: "join" }, notifyCoachListeners)
+    .on("presence", { event: "leave" }, notifyCoachListeners);
+  presenceHandlersAttached = true;
+}
+
+async function trackActiveStudent(channel: RealtimeChannel) {
+  if (!activeStudentId || !activeStudentName) return;
+  try {
+    await channel.track({
+      studentId: activeStudentId,
+      studentName: activeStudentName,
+      lastSeen: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("[useStudentPresence] track falhou:", error);
+  }
+}
+
+function ensureSharedChannel(sb: SupabaseClient, presenceKey: string): RealtimeChannel | null {
+  try {
+    if (!sharedChannel) {
+      sharedChannel = sb.channel(CHANNEL_NAME, {
+        config: { presence: { key: presenceKey } },
+      });
+      attachPresenceHandlers(sharedChannel);
+    }
+
+    if (!channelSubscribed) {
+      sharedChannel.subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          channelSubscribed = true;
+          await trackActiveStudent(sharedChannel!);
+          notifyCoachListeners();
+        }
+      });
+    } else if (activeStudentId) {
+      void trackActiveStudent(sharedChannel);
+    }
+
+    return sharedChannel;
+  } catch (error) {
+    console.error("[presenceChannel] Falha ao preparar canal:", error);
+    return null;
+  }
+}
+
+function maybeTeardownChannel(sb: SupabaseClient) {
+  if (coachListenerCount > 0 || studentTrackCount > 0 || !sharedChannel) return;
+  void sb.removeChannel(sharedChannel);
+  sharedChannel = null;
+  channelSubscribed = false;
+  presenceHandlersAttached = false;
+}
+
 /**
  * Hook para o ALUNO: registra presença no canal Supabase Realtime.
- * Deve ser usado em um componente invisível renderizado enquanto o aluno estiver no app.
  */
 export function useStudentPresence(studentId: string, studentName: string): void {
-  const channelRef = useRef<RealtimeChannel | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -27,101 +121,61 @@ export function useStudentPresence(studentId: string, studentName: string): void
     const sb = getSupabaseClient();
     if (!sb) return;
 
-    const presencePayload: PresenceState = {
-      studentId,
-      studentName,
-      lastSeen: new Date().toISOString(),
-    };
+    activeStudentId = studentId;
+    activeStudentName = studentName;
+    studentTrackCount += 1;
 
-    const channel = sb.channel(CHANNEL_NAME, {
-      config: { presence: { key: studentId } },
-    });
+    ensureSharedChannel(sb, studentId);
 
-    channelRef.current = channel;
-
-    channel.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        await channel.track(presencePayload);
-      }
-    });
-
-    // Heartbeat: update lastSeen every 30s to confirm still active
-    heartbeatRef.current = setInterval(async () => {
-      if (channelRef.current) {
-        await channelRef.current.track({
-          ...presencePayload,
-          lastSeen: new Date().toISOString(),
-        });
-      }
+    heartbeatRef.current = setInterval(() => {
+      if (!sharedChannel || !activeStudentId || !activeStudentName) return;
+      void sharedChannel.track({
+        studentId: activeStudentId,
+        studentName: activeStudentName,
+        lastSeen: new Date().toISOString(),
+      });
     }, HEARTBEAT_INTERVAL_MS);
 
     return () => {
+      studentTrackCount = Math.max(0, studentTrackCount - 1);
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
         heartbeatRef.current = null;
       }
-      if (channelRef.current) {
-        void channelRef.current.untrack().then(() => {
-          if (channelRef.current) {
-            void sb.removeChannel(channelRef.current);
-            channelRef.current = null;
-          }
-        });
+      if (studentTrackCount === 0) {
+        activeStudentId = null;
+        activeStudentName = null;
+        if (sharedChannel) {
+          void sharedChannel.untrack().finally(() => maybeTeardownChannel(sb));
+        }
       }
     };
   }, [studentId, studentName]);
 }
 
 /**
- * Hook para o COACH: assina o canal de presença e retorna a lista de alunos online.
+ * Hook para o COACH: assina presença (singleton — TodayView + OnlineStudentsPanel compartilham).
  */
 export function useCoachPresenceView(): { onlineStudents: PresenceState[]; count: number } {
   const [onlineStudents, setOnlineStudents] = useState<PresenceState[]>([]);
-  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     const sb = getSupabaseClient();
     if (!sb) return;
 
-    const channel = sb.channel(CHANNEL_NAME, {
-      config: { presence: { key: "coach-observer" } },
-    });
+    const listener: PresenceListener = (students) => setOnlineStudents(students);
+    coachListeners.add(listener);
+    coachListenerCount += 1;
 
-    channelRef.current = channel;
-
-    const syncPresence = () => {
-      const state = channel.presenceState<PresenceState>();
-      const students: PresenceState[] = [];
-
-      for (const key of Object.keys(state)) {
-        // Each key can have multiple presence entries (multi-tab); take the latest
-        const entries = state[key];
-        if (!entries || entries.length === 0) continue;
-        const latest = entries.reduce((a, b) =>
-          new Date(a.lastSeen) >= new Date(b.lastSeen) ? a : b
-        );
-        // Skip coach-observer key itself
-        if (latest.studentId && latest.studentId !== "coach-observer") {
-          students.push(latest);
-        }
-      }
-
-      // Sort: most recently seen first
-      students.sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
-      setOnlineStudents(students);
-    };
-
-    channel
-      .on("presence", { event: "sync" }, syncPresence)
-      .on("presence", { event: "join" }, syncPresence)
-      .on("presence", { event: "leave" }, syncPresence)
-      .subscribe();
+    const channel = ensureSharedChannel(sb, "coach-observer");
+    if (channel && channelSubscribed) {
+      listener(parsePresenceState(channel));
+    }
 
     return () => {
-      if (channelRef.current) {
-        void sb.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      coachListeners.delete(listener);
+      coachListenerCount = Math.max(0, coachListenerCount - 1);
+      maybeTeardownChannel(sb);
     };
   }, []);
 
