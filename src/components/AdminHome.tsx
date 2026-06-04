@@ -23,6 +23,11 @@ import WeatherWidget from "@/components/WeatherWidget";
 import { CARD_HOVER_LIFT, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import { avatarSrc } from "@/lib/avatarSrc";
 import { formatNotificationDisplayTime } from "@/lib/dateUtils";
+import dynamic from "next/dynamic";
+const CockpitActionNotifications = dynamic(
+  () => import("@/components/notifications/CockpitActionNotifications"),
+  { ssr: false },
+);
 
 const MotionLink = motion(Link);
 const toKpiLayoutId = (label: string) =>
@@ -208,6 +213,9 @@ export default function AdminDashboardHome() {
           <KPICard icon={AlertTriangle} label="Inadimplentes" value={String(latePayments)}
             sub="Necessitam contato urgente" color="#EF4444" delay={0.25} onClick={() => { setSelectedKpiLayoutId(toKpiLayoutId("Inadimplentes")); setKpiModal("late"); }} isPulsing={latePayments > 0} />
         </div>
+
+        {/* ── ACTION NOTIFICATIONS (C) ── */}
+        <CockpitActionNotifications />
 
         {/* ── REVENUE BAR ── */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}

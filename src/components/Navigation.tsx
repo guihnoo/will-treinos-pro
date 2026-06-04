@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, CalendarRange, Wallet, Users,
@@ -12,7 +12,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
-import NotificationsDrawer from "@/components/NotificationsDrawer";
+import dynamic from "next/dynamic";
+const NotificationPulseSheet = dynamic(
+  () => import("@/components/notifications/NotificationPulseSheet"),
+  { ssr: false },
+);
+const NotificationCommandPeek = dynamic(
+  () => import("@/components/notifications/NotificationCommandPeek"),
+  { ssr: false },
+);
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
@@ -34,7 +42,21 @@ export function Navigation() {
   const { pendingStudents } = useStudents();
   const { unreadNotifications } = useNotifications();
   const { latePayments } = usePayments();
-  const [showNotifs, setShowNotifs] = useState(false);
+  const [showNotifs, setShowNotifs]   = useState(false);
+  const [showPeek,  setShowPeek]    = useState(false);
+  const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleBellEnter = useCallback(() => {
+    peekTimerRef.current = setTimeout(() => setShowPeek(true), 400);
+  }, []);
+  const handleBellLeave = useCallback(() => {
+    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+    setShowPeek(false);
+  }, []);
+
+  useEffect(() => () => {
+    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+  }, []);
 
   // Route guard — redireciona roles restritos para /dashboard
   useEffect(() => {
@@ -101,19 +123,32 @@ export function Navigation() {
           <span className="font-bold text-white tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             WILL<span className="text-[#EAB308]">PRO</span>
           </span>
-          {/* Bell */}
-          <motion.button onClick={() => setShowNotifs(true)}
-            whileTap={{ scale: 0.95 }}
-            className={`relative ml-auto flex-shrink-0 p-1.5 rounded-lg text-zinc-500 hover:text-[#EAB308] hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100 ${FOCUS_RING_GOLD}`}>
-            <Bell className="w-4 h-4" />
-            {unreadNotifications > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
-                {unreadNotifications}
-              </span>
-            )}
-          </motion.button>
+          {/* Bell — desktop: hover → peek, click → sheet */}
+          <div
+            className="relative ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100"
+            onMouseEnter={handleBellEnter}
+            onMouseLeave={handleBellLeave}
+          >
+            <motion.button
+              onClick={() => { setShowPeek(false); setShowNotifs(true); }}
+              whileTap={{ scale: 0.95 }}
+              className={`relative p-1.5 rounded-lg text-zinc-500 hover:text-[#EAB308] hover:bg-zinc-900 transition-colors ${FOCUS_RING_GOLD}`}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
+                  {unreadNotifications}
+                </span>
+              )}
+            </motion.button>
+            {/* Peek popover — aparece no hover */}
+            <NotificationCommandPeek
+              showDesktop={showPeek}
+              showMobile={false}
+              onOpenSheet={() => { setShowPeek(false); setShowNotifs(true); }}
+            />
+          </div>
         </div>
-
 
         <nav className="flex flex-col gap-1.5 p-4 flex-grow overflow-hidden">
           {navItems.map((item) => {
@@ -215,7 +250,7 @@ export function Navigation() {
           );
         })}
 
-        {/* Bell */}
+        {/* Bell — mobile: clique → PulseSheet */}
         <motion.button
           onClick={() => setShowNotifs(true)}
           whileTap={{ scale: 0.92 }}
@@ -251,8 +286,8 @@ export function Navigation() {
         </Link>
       </nav>
 
-      {/* Notifications Drawer */}
-      <NotificationsDrawer open={showNotifs} onClose={() => setShowNotifs(false)} />
+      {/* Pulse Inbox */}
+      <NotificationPulseSheet open={showNotifs} onClose={() => setShowNotifs(false)} />
 
     </>
   );
