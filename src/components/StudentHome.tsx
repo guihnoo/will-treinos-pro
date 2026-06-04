@@ -27,6 +27,7 @@ import { useToast } from "@/components/Toast";
 import { richToast } from "@/hooks/useToast";
 import WeatherWidget from "@/components/WeatherWidget";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
@@ -557,6 +558,7 @@ export default function StudentHome() {
   const { students } = useStudents();
   const { criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { notifications, markNotificationRead, coachMessagesUnread, crmStudentId, refreshCoachMessagesUnread } = useNotifications();
+  const searchParams = useSearchParams();
   const evoChartIdHome = useId().replace(/:/g, "h");
   const evoChartIdModal = useId().replace(/:/g, "m");
   const { toast } = useToast();
@@ -740,6 +742,11 @@ export default function StudentHome() {
 
   const profile = crmStudentId ? students.find((s) => s.id === crmStudentId) : undefined;
   const studentIdForData = crmStudentId ?? profile?.id ?? user?.id ?? "";
+
+  useEffect(() => {
+    if (!hydrated || searchParams.get("recados") !== "1" || !crmStudentId) return;
+    setShowMessagesPanel(true);
+  }, [hydrated, searchParams, crmStudentId]);
 
   // Sprint 104: Realtime XP via Supabase subscription
   useRealtimeXP({

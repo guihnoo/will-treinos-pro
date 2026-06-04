@@ -1,5 +1,8 @@
 import type { Notification } from "@/context/types";
 
+/** Deep link — StudentHome abre StudentMessagesPanel quando `recados=1`. */
+export const RECADOS_DASHBOARD_URL = "/dashboard?recados=1";
+
 export type ActionVariant = "gold" | "zinc" | "ghost";
 
 export interface ActionDef {
@@ -72,13 +75,20 @@ export const notificationActionMap: Record<string, NotificationActionEntry[]> = 
     {
       def: { label: "Ver recados", variant: "gold" },
       execute: ({ navigate, markRead, notif, onClose }) => {
-        navigate("/dashboard");
+        navigate(RECADOS_DASHBOARD_URL);
         markRead(notif.id);
         onClose();
       },
     },
   ],
-  broadcast: [],
+  broadcast: [
+    {
+      def: { label: "Marcar lido", variant: "ghost" },
+      execute: ({ markRead, notif }) => {
+        markRead(notif.id);
+      },
+    },
+  ],
 };
 
 /* ─── Tab categorisation ─── */

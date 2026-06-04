@@ -58,7 +58,7 @@
 | Crons | 1 Vercel + evening GH Actions | ✅ orchestrators respondendo 401 em prod |
 | staff_access | 2 admins ativos | ✅ VERIFY_PRODUCTION confirmado |
 | CI (Playwright) | GitHub Actions | ✅ Otimizado freemium |
-| CI (Cron evening) | GitHub secret | ⚠️ **Manual Will** — adicionar `CRON_SECRET` em GitHub Settings → Secrets |
+| CI (Cron evening) | GitHub secret | ✅ `CRON_SECRET` configurado (04/06 Will) |
 | Segurança | `.cron-secret-temp.txt` | ✅ No `.gitignore` — nunca commitado |
 | Smoke | 19/19 rotas | ✅ 04/06/2026 |
 | Pulse Inbox | A+B+C em produção | ✅ commits `e732249` + `4f7c026` |

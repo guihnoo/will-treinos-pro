@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useAuth } from "@/context/AuthContext";
 import CoachHome from "@/components/CoachHome";
 import StudentHome from "@/components/StudentHome";
@@ -31,7 +31,9 @@ export default function DashboardPage() {
   return (
     <ErrorBoundary>
       <StudentShell>
-        <StudentHome />
+        <Suspense fallback={<DashboardSkeleton />}>
+          <StudentHome />
+        </Suspense>
       </StudentShell>
     </ErrorBoundary>
   );

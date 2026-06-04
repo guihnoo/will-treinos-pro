@@ -13,7 +13,9 @@ import { useNotifications } from "@/context/NotificationsContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { filterNotificationsForUser } from "@/lib/notificationVisibility";
 import { buildGroups, groupLabelFor } from "@/lib/notificationGrouping";
-import { tabsByRole, typeToTabStaff, typeToTabAluno, type TabLabel } from "@/lib/notificationActions";
+import {
+  tabsByRole, typeToTabStaff, typeToTabAluno, type TabLabel, RECADOS_DASHBOARD_URL,
+} from "@/lib/notificationActions";
 import NotificationActionCard from "@/components/notifications/NotificationActionCard";
 import NotificationDetailModal from "@/components/NotificationDetailModal";
 import type { Notification } from "@/context/types";
@@ -223,7 +225,7 @@ export default function NotificationPulseSheet({ open, onClose }: Props) {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => { router.push("/dashboard"); onClose(); }}
+                    onClick={() => { router.push(RECADOS_DASHBOARD_URL); onClose(); }}
                     className="w-full mb-3 flex items-center gap-3 p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-left"
                   >
                     <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">

@@ -11,7 +11,7 @@ import React, { useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   UserPlus, AlertTriangle, Clock, TrendingUp, MessageSquare, Megaphone,
-  ArrowRight,
+  ArrowRight, X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -38,10 +38,11 @@ interface Props {
   /** Mobile: mostrar strip acima da bottom nav */
   showMobile: boolean;
   onOpenSheet: () => void;
+  onDismiss?: () => void;
 }
 
 export default function NotificationCommandPeek({
-  showDesktop, showMobile, onOpenSheet,
+  showDesktop, showMobile, onOpenSheet, onDismiss,
 }: Props) {
   const { user }   = useAuth();
   const { notifications, markNotificationRead, crmStudentId } = useNotifications();
@@ -75,9 +76,9 @@ export default function NotificationCommandPeek({
               WebkitBackdropFilter: "blur(24px)",
             }}
           >
-            <PeekList items={items} onOpenSheet={onOpenSheet}
+            <PeekList items={items} onOpenSheet={onOpenSheet} showDismiss={false}
               approveStudent={approveStudent} markRead={markNotificationRead}
-              navigate={url => router.push(url)} />
+              navigate={url => router.push(url)} onDismiss={onDismiss} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -98,9 +99,9 @@ export default function NotificationCommandPeek({
               WebkitBackdropFilter: "blur(20px)",
             }}
           >
-            <PeekList items={items} onOpenSheet={onOpenSheet}
+            <PeekList items={items} onOpenSheet={onOpenSheet} showDismiss
               approveStudent={approveStudent} markRead={markNotificationRead}
-              navigate={url => router.push(url)} />
+              navigate={url => router.push(url)} onDismiss={onDismiss} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -110,13 +111,15 @@ export default function NotificationCommandPeek({
 
 /* ── Peek list (shared between desktop + mobile) ── */
 function PeekList({
-  items, onOpenSheet, approveStudent, markRead, navigate,
+  items, onOpenSheet, showDismiss, approveStudent, markRead, navigate, onDismiss,
 }: {
   items: Notification[];
   onOpenSheet: () => void;
+  showDismiss: boolean;
   approveStudent: (id: string) => void;
   markRead: (id: string) => void;
   navigate: (url: string) => void;
+  onDismiss?: () => void;
 }) {
   return (
     <div>
@@ -125,13 +128,25 @@ function PeekList({
         <span className="text-[11px] font-black uppercase tracking-widest text-zinc-500">
           Urgentes
         </span>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={onOpenSheet}
-          className="flex items-center gap-1 text-[11px] font-bold text-[#EAB308] hover:text-yellow-300 transition-colors"
-        >
-          Ver tudo <ArrowRight className="w-3 h-3" />
-        </motion.button>
+        <div className="flex items-center gap-2">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onOpenSheet}
+            className="flex items-center gap-1 text-[11px] font-bold text-[#EAB308] hover:text-yellow-300 transition-colors"
+          >
+            Ver tudo <ArrowRight className="w-3 h-3" />
+          </motion.button>
+          {showDismiss && onDismiss && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={onDismiss}
+              aria-label="Fechar avisos"
+              className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </motion.button>
+          )}
+        </div>
       </div>
 
       {/* Items */}

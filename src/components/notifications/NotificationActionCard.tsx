@@ -133,16 +133,6 @@ export default function NotificationActionCard({
             </div>
           )}
 
-          {/* Broadcast — só marca lido */}
-          {notif.type === "broadcast" && !notif.read && !done && (
-            <motion.button
-              whileTap={{ scale: 0.93 }}
-              onClick={() => markRead(notif.id)}
-              className="mt-2 text-[11px] font-bold text-zinc-600 hover:text-zinc-400 transition-colors"
-            >
-              Marcar como lido
-            </motion.button>
-          )}
         </div>
 
         {/* Unread dot */}

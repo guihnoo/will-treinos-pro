@@ -44,7 +44,12 @@ export function Navigation() {
   const { latePayments } = usePayments();
   const [showNotifs, setShowNotifs]   = useState(false);
   const [showPeek,  setShowPeek]    = useState(false);
+  const [mobilePeekDismissed, setMobilePeekDismissed] = useState(false);
   const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevUnreadRef = useRef(unreadNotifications);
+
+  const showMobilePeek =
+    unreadNotifications > 0 && !showNotifs && !mobilePeekDismissed;
 
   const handleBellEnter = useCallback(() => {
     peekTimerRef.current = setTimeout(() => setShowPeek(true), 400);
@@ -57,6 +62,13 @@ export function Navigation() {
   useEffect(() => () => {
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
   }, []);
+
+  useEffect(() => {
+    if (unreadNotifications > prevUnreadRef.current) {
+      setMobilePeekDismissed(false);
+    }
+    prevUnreadRef.current = unreadNotifications;
+  }, [unreadNotifications]);
 
   // Route guard — redireciona roles restritos para /dashboard
   useEffect(() => {
@@ -252,7 +264,10 @@ export function Navigation() {
 
         {/* Bell — mobile: clique → PulseSheet */}
         <motion.button
-          onClick={() => setShowNotifs(true)}
+          onClick={() => {
+            setMobilePeekDismissed(true);
+            setShowNotifs(true);
+          }}
           whileTap={{ scale: 0.92 }}
           className={`flex-1 relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl text-zinc-500 hover:text-[#EAB308] transition-colors ${FOCUS_RING_GOLD}`}
         >
@@ -285,6 +300,16 @@ export function Navigation() {
           </motion.div>
         </Link>
       </nav>
+
+      <NotificationCommandPeek
+        showDesktop={false}
+        showMobile={showMobilePeek}
+        onOpenSheet={() => {
+          setMobilePeekDismissed(true);
+          setShowNotifs(true);
+        }}
+        onDismiss={() => setMobilePeekDismissed(true)}
+      />
 
       {/* Pulse Inbox */}
       <NotificationPulseSheet open={showNotifs} onClose={() => setShowNotifs(false)} />
