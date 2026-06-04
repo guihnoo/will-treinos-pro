@@ -64,7 +64,18 @@ function LoginContent() {
     window.history.replaceState(null, "", "/login");
   }, [toast]);
 
-  // Redirect após login (wt_role já setado em applySupabaseSession → middleware libera /dashboard)
+  // Já autenticado ao chegar na página (ex: bounce do middleware após OAuth) — redirecionar
+  useEffect(() => {
+    if (!authResolved || !user || awaitingRedirect) return;
+    const dest =
+      user.role === "visitor" ? "/feed"
+      : user.role === "aluno" ? "/dashboard"
+      : user.role === null ? "/cadastro"
+      : "/dashboard";
+    router.replace(nextPath ?? dest);
+  }, [authResolved, user, awaitingRedirect, router, nextPath]);
+
+  // Redirect após login com senha (wt_role já setado em applySupabaseSession → middleware libera /dashboard)
   useEffect(() => {
     if (!awaitingRedirect || !authResolved || !user) return;
     const dest =

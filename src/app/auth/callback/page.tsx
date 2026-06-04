@@ -6,9 +6,11 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { appRoleFromSupabaseUser, getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 
 
-import { isDevRootEmail, postLoginRouteFromAuthUser } from "@/lib/authPostLogin";
+import { isDevRootEmail, postLoginRouteFromAuthUser, readDevImpersonationFromStorage } from "@/lib/authPostLogin";
 import { STUDENT_HOME_PATH } from "@/lib/studentRoutes";
 import { fetchStaffAccessRole } from "@/lib/supabasePersistence";
+import { resolveEffectiveSupabaseRole } from "@/lib/resolveEffectiveSupabaseRole";
+import { syncWtRoleCookie } from "@/lib/appSessionHelpers";
 import { clearStaffOAuthGate, getStoredInviteToken } from "@/lib/enrollmentSession";
 
 import { WT_SESSION_POST_LOGIN_NEXT_KEY, wtSessionGet, wtSessionRemove } from "@/lib/willLocalStorage";
@@ -123,10 +125,34 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // JWT não carrega role para alunos OAuth — verificar students table para roteamento correto.
-        let dest = postLoginRouteFromAuthUser(user);
-        if (dest === "/cadastro") {
-          dest = await resolveApprovedStudentRoute(supabase, user);
+        // Resolver papel efetivo completo (JWT + staff_access + students table).
+        // postLoginRouteFromAuthUser não consulta staff_access, por isso usamos resolveEffectiveSupabaseRole.
+        const effectiveRole = await resolveEffectiveSupabaseRole(
+          user,
+          readDevImpersonationFromStorage(),
+          supabase,
+          undefined,
+        );
+
+        // Setar cookie ANTES do redirect — sem isso o middleware rejeita /dashboard
+        syncWtRoleCookie(effectiveRole);
+
+        const dest =
+          effectiveRole === "visitor" ? "/feed"
+          : effectiveRole === "admin" || effectiveRole === "coach" ? "/dashboard"
+          : effectiveRole === "aluno" ? STUDENT_HOME_PATH
+          : "/cadastro";
+
+        // Linkar auth_user_id para alunos adicionados manualmente (fire-and-forget, seguro)
+        if (effectiveRole === "aluno" && user.email) {
+          const session = await supabase.auth.getSession();
+          const token = session.data.session?.access_token;
+          if (token) {
+            fetch("/api/auth/link-student", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            }).catch(() => {});
+          }
         }
 
         router.replace(preferredNext ?? dest);
