@@ -20,16 +20,29 @@
 
 | Item | Ação | Resultado |
 |------|------|-----------|
-| Crons Hobby | 9 → 1 Vercel + cron-job.org | ✅ `vercel.json` com 1 cron (`orchestrator-morning` 08h BRT) |
-| Cron evening 18h | GitHub Actions | ✅ Workflow no repo — secret `CRON_SECRET` no GitHub (§4.4) |
+| Crons Hobby | 9 → 1 Vercel + GitHub Actions | ✅ `vercel.json` 1 cron (`orchestrator-morning` 08h BRT) |
+| Cron evening 18h | GitHub Actions | ✅ `.github/workflows/cron-evening.yml` — chama orchestrator-evening 21h UTC |
 | CI workflow | Otimizado free tier | ✅ Playwright só main + só chromium + `NEXT_PUBLIC_APP_URL` |
 | CRON_SECRET | Auditado 11 rotas | ✅ Todos os arquivos protegidos |
 | TypeScript | `pnpm run typecheck` | ✅ Exit 0 |
-| Smoke 15 rotas | curl vs produção | ✅ 13/15 · 307 nas protegidas (correto) · 404 orchestrators (pré-deploy) |
-| NEXT_PUBLIC_APP_URL | Vercel env Production | ✅ Cursor 03/06 — `https://will-treinos-pro.vercel.app` |
+| Smoke 19 rotas | curl vs produção | ✅ 19/19 — 04/06/2026 |
+| NEXT_PUBLIC_APP_URL | Vercel env Production | ✅ `https://will-treinos-pro.vercel.app` |
 | Supabase Auth redirects | URL Configuration | ⚠️ **Manual Will** — ver seção 2.3 (~3 min) |
-| VERIFY_PRODUCTION.sql | SQL Editor / MCP | ✅ Cursor 03/06 — staff_access 2/2, RPCs OK, tabelas OK |
-| Cron evening 18h | GitHub Actions | ✅ Workflow `.github/workflows/cron-evening.yml` — requer secret `CRON_SECRET` no GitHub |
+| VERIFY_PRODUCTION.sql | SQL Editor | ✅ staff_access 2/2, RPCs OK, tabelas OK |
+| GitHub secret `CRON_SECRET` | GitHub Settings → Secrets | ⚠️ **Manual Will** — mesmo valor da Vercel |
+| `.cron-secret-temp.txt` | Segurança | ✅ Adicionado ao `.gitignore` (04/06) — nunca foi commitado |
+
+## LOTE QA + INFRA (04/06/2026 — Claude)
+
+| Item | Resultado |
+|------|-----------|
+| Smoke 19/19 ✅ | 04/06 02:20 BRT — todos os endpoints respondendo corretamente |
+| Build verde | `pnpm run build` exit 0 pós-Pulse Inbox A+B+C |
+| `.cron-secret-temp.txt` | ✅ Protegido em `.gitignore` — nunca exposto |
+| Cron-evening workflow | ✅ YAML correto — requer secret manual no GitHub |
+| GitHub CLI | ⚠️ Não instalado no ambiente — verificação de secrets manual |
+| Supabase Auth redirects | ⚠️ **Pendente Manual Will** |
+| APPLY_SECURITY_AND_PERF.sql | ⚠️ Arquivo existe mas não verificado no remoto — rodar no SQL Editor |
 
 ---
 
@@ -40,14 +53,15 @@
 | Deploy | Git push → Vercel automático | ✅ Ativo (webhook GitHub App) |
 | URL canônica | `will-treinos-pro.vercel.app` | ✅ Freemium — sem domínio .com.br por ora |
 | Domínio | `willtreinospro.com.br` | ⏸️ Adiado — DNS opcional quando comprar |
-| Supabase Auth | Site URL + 4 redirects | ⚠️ Manual no painel — seção 2.3 |
-| Env Vars | `NEXT_PUBLIC_APP_URL` | ✅ Production (Vercel CLI 03/06) |
-| Env Vars | `NEXT_PUBLIC_SUPABASE_*` + service role | ✅ Confirmado |
-| Env Vars | `VAPID_*` + `CRON_SECRET` | ✅ Confirmado |
-| Crons | 1 Vercel + evening externo | ✅ `vercel.json` 1 slot · evening via GitHub Actions §4.4 |
-| staff_access | Admins ativos | ✅ 2 linhas (VERIFY_PRODUCTION) |
-| CI (Playwright) | GitHub Actions | ✅ Otimizado freemium — secrets `NEXT_PUBLIC_SUPABASE_*` |
-| CI (Cron evening) | GitHub Actions | ⚠️ Adicionar secret `CRON_SECRET` (mesmo valor da Vercel) |
+| Supabase Auth | Site URL + 4 redirects | ⚠️ **Manual Will** — seção 2.3 (~3 min) |
+| Env Vars | Todas as obrigatórias | ✅ Confirmado em Production |
+| Crons | 1 Vercel + evening GH Actions | ✅ orchestrators respondendo 401 em prod |
+| staff_access | 2 admins ativos | ✅ VERIFY_PRODUCTION confirmado |
+| CI (Playwright) | GitHub Actions | ✅ Otimizado freemium |
+| CI (Cron evening) | GitHub secret | ⚠️ **Manual Will** — adicionar `CRON_SECRET` em GitHub Settings → Secrets |
+| Segurança | `.cron-secret-temp.txt` | ✅ No `.gitignore` — nunca commitado |
+| Smoke | 19/19 rotas | ✅ 04/06/2026 |
+| Pulse Inbox | A+B+C em produção | ✅ commits `e732249` + `4f7c026` |
 
 ---
 

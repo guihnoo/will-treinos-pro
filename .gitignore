@@ -47,6 +47,13 @@ supabase/.temp/
 # next-pwa (gerados em `next build` — a Vercel recria no deploy)
 public/sw.js
 public/sw.js.map
+
+# Arquivos temporários de secrets (NUNCA commitar)
+*.secret
+*-secret-temp.*
+*-secret.*
+.cron-secret-temp.txt
+*.cron-secret*
 public/workbox-*.js
 public/workbox-*.js.map
 public/fallback-*.js
