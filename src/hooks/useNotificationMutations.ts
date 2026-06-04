@@ -25,7 +25,12 @@ export function useNotificationMutations(options: {
         return;
       }
       void insertNotificationRemote(supabase, n)
-        .then((created) => setNotifications((p) => [created, ...p]))
+        .then((created) =>
+          setNotifications((p) =>
+            // Evita duplicata quando Realtime já adicionou o item antes do .then() resolver
+            p.some((x) => x.id === created.id) ? p : [created, ...p],
+          ),
+        )
         .catch((error) =>
           setCriticalDataError(error instanceof Error ? error.message : "Falha ao gravar notificação no Supabase."),
         );

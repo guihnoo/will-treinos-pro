@@ -8,9 +8,11 @@ const COACH_TYPES: Notification["type"][] = ["lesson_soon", "performance", "mess
 
 export function studentSeesNotification(n: Notification, crmStudentId: string): boolean {
   if (n.isGlobal === true) return true;
-  const rid = n.recipientId?.trim();
-  if (!rid || !crmStudentId) return false;
-  return rid === crmStudentId;
+  if (!crmStudentId) return false;
+  // recipientId é o campo canônico; studentId é fallback (coach messages API preenche ambos)
+  const matchId = (n.recipientId ?? n.studentId)?.trim();
+  if (!matchId) return false;
+  return matchId === crmStudentId;
 }
 
 function coachSeesNotification(n: Notification): boolean {

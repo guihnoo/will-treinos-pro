@@ -91,7 +91,14 @@ export function useLoadSupabaseCriticalData(options: {
           setStudents(data.students);
           setPayments(data.payments);
           setLessons(data.lessons);
-          setNotifications(filterDemoNotifications(data.notifications));
+          // Deduplica por id — evita duplicatas na race entre addNotification e Realtime refetch
+          const seen = new Set<string>();
+          const dedupedNotifs = filterDemoNotifications(data.notifications).filter((n) => {
+            if (seen.has(n.id)) return false;
+            seen.add(n.id);
+            return true;
+          });
+          setNotifications(dedupedNotifs);
           setPosts(livePosts);
           if (authUser) {
             void applySupabaseSession(authUser, data.students);

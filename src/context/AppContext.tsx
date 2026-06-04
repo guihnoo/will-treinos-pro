@@ -276,6 +276,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         wtLegacyRoleRemove();
       }
       syncWtRoleCookie(mergedUser.role);
+
+      // Para alunos adicionados manualmente (sem signup OAuth), o auth_user_id pode estar
+      // NULL na tabela students. Isso quebra RLS de notificações e crmStudentId.
+      // Chamada fire-and-forget — cobre login por senha (OAuth já cobre via auth/callback).
+      if (effectiveRole === "aluno" && supabase) {
+        void (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) {
+              await fetch("/api/auth/link-student", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+              });
+            }
+          } catch { /* silent — non-blocking */ }
+        })();
+      }
     },
     [],
   );
