@@ -11,7 +11,7 @@
 | Passo | Ação | Resultado |
 |-------|------|-----------|
 | **1 — DNS** | `vercel domains add willtreinospro.com.br` + `www` | ✅ Domínios ligados ao projeto; **registrador ainda pendente** — `nslookup` retorna NXDOMAIN; configurar **A `@` → 76.76.21.21** e **CNAME `www` → cname.vercel-dns.com** (ou nameservers Vercel) no Registro.br |
-| **2 — Supabase Auth** | Redirect URLs no painel | ⚠️ **Manual no Dashboard** — MCP não expõe Auth URL config; copiar lista da seção 2.3 abaixo |
+| **2 — Supabase Auth** | Redirect URLs no painel | ✅ **04/06 Will** — Site URL + 6 redirects §2.3 salvos no Dashboard |
 | **3 — staff_access + Env** | SQL remoto + `vercel env ls` | ✅ `staff_access`: 2 linhas ativas (`guihmonteiro.2014@gmail.com` admin, `cityvoleicampeonatos@gmail.com` admin); env Production: `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_VAPID_*`, `VAPID_*` presentes |
 
 ## LOTE A FREEMIUM (03/06/2026 — Claude)
@@ -27,9 +27,9 @@
 | TypeScript | `pnpm run typecheck` | ✅ Exit 0 |
 | Smoke 19 rotas | curl vs produção | ✅ 19/19 — 04/06/2026 |
 | NEXT_PUBLIC_APP_URL | Vercel env Production | ✅ `https://will-treinos-pro.vercel.app` |
-| Supabase Auth redirects | URL Configuration | ⚠️ **Manual Will** — ver seção 2.3 (~3 min) |
+| Supabase Auth redirects | URL Configuration | ✅ **04/06 Will** — Site URL + 6 redirects salvos |
 | VERIFY_PRODUCTION.sql | SQL Editor | ✅ staff_access 2/2, RPCs OK, tabelas OK |
-| GitHub secret `CRON_SECRET` | GitHub Settings → Secrets | ⚠️ **Manual Will** — mesmo valor da Vercel |
+| GitHub secret `CRON_SECRET` | GitHub Settings → Secrets | ✅ **04/06 Will** — mesmo valor da Vercel |
 | `.cron-secret-temp.txt` | Segurança | ✅ Adicionado ao `.gitignore` (04/06) — nunca foi commitado |
 
 ## LOTE QA + INFRA (04/06/2026 — Claude)
@@ -39,9 +39,8 @@
 | Smoke 19/19 ✅ | 04/06 02:20 BRT — todos os endpoints respondendo corretamente |
 | Build verde | `pnpm run build` exit 0 pós-Pulse Inbox A+B+C |
 | `.cron-secret-temp.txt` | ✅ Protegido em `.gitignore` — nunca exposto |
-| Cron-evening workflow | ✅ YAML correto — requer secret manual no GitHub |
-| GitHub CLI | ⚠️ Não instalado no ambiente — verificação de secrets manual |
-| Supabase Auth redirects | ⚠️ **Pendente Manual Will** |
+| Cron-evening workflow | ✅ Secret `CRON_SECRET` no GitHub + orchestrator 200 com Bearer |
+| Supabase Auth redirects | ✅ **04/06 Will** — painel URL Configuration |
 | APPLY_SECURITY_AND_PERF.sql | ⚠️ Arquivo existe mas não verificado no remoto — rodar no SQL Editor |
 
 ---
