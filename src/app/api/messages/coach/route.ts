@@ -82,6 +82,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
 
+  const preview = message.length > 120 ? `${message.slice(0, 117)}…` : message;
+  const { error: notifErr } = await sb.from("notifications").insert({
+    type: "message",
+    title: `Recado de ${fromName}`,
+    message: preview,
+    time: inserted.created_at ?? new Date().toISOString(),
+    is_read: false,
+    recipient_id: student.id,
+    student_id: student.id,
+    is_global: false,
+    action_url: "/dashboard",
+  });
+  if (notifErr) {
+    console.warn("[coach-message] notification mirror failed:", notifErr.message);
+  }
+
   // Send push notification if student has a subscription
   const wp = initWebPush();
   let pushSent = false;

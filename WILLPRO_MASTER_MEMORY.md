@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 24:45 BRT] (Cursor):** **[FIX]** Notificações/recados invisíveis para aluno — unificação CRM id (`resolveStudentCrmId.ts`), espelho em `notifications` no POST coach, badge do sino soma `coach_messages`, botão Recados sempre visível, realtime/poll unread, migration RLS e-mail `20260603120000_student_notifications_email_rls.sql` aplicada no remoto. Build OK + push Vercel. Status: ✅ Completo.
+
 - **[03/06/2026 23:45 BRT] (Cursor):** **[FIX]** Crash produção — páginas admin pretas / ErrorBoundary `cannot add 'presence' callbacks for realtime:app-presence after 'subscribe()'`. Causa: `TodayView` + `OnlineStudentsPanel` chamavam `useCoachPresenceView()` em paralelo no mesmo canal Supabase. Fix: singleton compartilhado em `src/hooks/usePresenceChannel.ts` (handlers de presence antes do subscribe, um canal por client). `tsc` + `pnpm run build` OK. Status: ✅ push Vercel.
 
 - **[03/06/2026 22:15 BRT] (Cursor):** **[CONFIG]** Follow-up Lote A freemium — `NEXT_PUBLIC_APP_URL` criada na Vercel Production via CLI; workflow `.github/workflows/cron-evening.yml` (18h BRT, GitHub Actions gratuito) substitui cron-job.org manual; `VERIFY_PRODUCTION` OK via MCP (staff_access 2/2, RPCs, referrals/xp_log); runbook corrigido (Site URL freemium, 1 cron Hobby, STATUS RESUMIDO); checklists/ESTADO_ATUAL/GITHUB_ACTIONS atualizados. Pendente Will: Supabase Auth §2.3 + secret `CRON_SECRET` no GitHub. Build OK + push. Status: ✅ infra quase 100%.

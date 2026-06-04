@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "@/context/NotificationsContext";
+import { useStudents } from "@/context/StudentsContext";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { filterNotificationsForUser } from "@/lib/notificationVisibility";
+import { resolveStudentCrmId } from "@/lib/resolveStudentCrmId";
 import { formatNotificationDisplayTime } from "@/lib/dateUtils";
 import NotificationDetailModal from "@/components/NotificationDetailModal";
 import type { Notification } from "@/context/types";
@@ -27,14 +29,17 @@ const iconMap: Record<string, { icon: React.ElementType; color: string; bg: stri
 
 export default function NotificationsDrawer({ open, onClose }: Props) {
   const { user } = useAuth();
-  const { notifications, markNotificationRead } = useNotifications();
+  const { students } = useStudents();
+  const { notifications, markNotificationRead, coachMessagesUnread } = useNotifications();
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   useBodyScrollLock(open);
 
+  const crmStudentId = React.useMemo(() => resolveStudentCrmId(user, students), [user, students]);
+
   const visibleNotifications = React.useMemo(
-    () => filterNotificationsForUser(notifications, user),
-    [notifications, user],
+    () => filterNotificationsForUser(notifications, user, crmStudentId),
+    [notifications, user, crmStudentId],
   );
 
   const unread = visibleNotifications.filter(n => !n.read).length;
@@ -93,7 +98,11 @@ export default function NotificationsDrawer({ open, onClose }: Props) {
                   <Bell className="w-10 h-10 mx-auto text-zinc-800 mb-3" />
                   <p className="text-sm text-zinc-600">Nenhuma notificação</p>
                   {user?.role === "aluno" && (
-                    <p className="text-xs text-zinc-700 mt-2">Você verá aqui alertas de aulas<br/>e mensagens do professor.</p>
+                    <p className="text-xs text-zinc-700 mt-2">
+                      {coachMessagesUnread > 0
+                        ? <>Você tem {coachMessagesUnread} recado(s) do coach.<br />Abra <strong className="text-amber-400/90">Recados</strong> na tela Início.</>
+                        : <>Alertas de aula e recados do coach aparecem aqui.<br />Recados completos ficam em <strong className="text-amber-400/90">Recados</strong> no Início.</>}
+                    </p>
                   )}
                 </div>
               )}

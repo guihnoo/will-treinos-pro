@@ -19,15 +19,21 @@ function coachSeesNotification(n: Notification): boolean {
 }
 
 /** Filtra a lista de notificações para o usuário atual. */
-export function filterNotificationsForUser(notifications: Notification[], user: User | null): Notification[] {
+export function filterNotificationsForUser(
+  notifications: Notification[],
+  user: User | null,
+  crmStudentId?: string | null,
+): Notification[] {
   if (!user || user.role === null) return [];
   switch (user.role) {
     case "admin":
       return notifications;
     case "coach":
       return notifications.filter(coachSeesNotification);
-    case "aluno":
-      return notifications.filter((n) => studentSeesNotification(n, user.id));
+    case "aluno": {
+      const sid = crmStudentId?.trim() || user.id;
+      return notifications.filter((n) => studentSeesNotification(n, sid));
+    }
     case "visitor":
       return notifications.filter((n) => n.isGlobal === true);
     default:
@@ -35,6 +41,10 @@ export function filterNotificationsForUser(notifications: Notification[], user: 
   }
 }
 
-export function unreadNotificationsCount(notifications: Notification[], user: User | null): number {
-  return filterNotificationsForUser(notifications, user).filter((n) => !n.read).length;
+export function unreadNotificationsCount(
+  notifications: Notification[],
+  user: User | null,
+  crmStudentId?: string | null,
+): number {
+  return filterNotificationsForUser(notifications, user, crmStudentId).filter((n) => !n.read).length;
 }

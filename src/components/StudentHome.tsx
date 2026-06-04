@@ -32,7 +32,6 @@ import PushPermissionBanner from "@/components/PushPermissionBanner";
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
 import LessonCountdownCard from "@/components/student/LessonCountdownCard";
 import StudentDailyMissionCard from "@/components/student/StudentDailyMissionCard";
-import { useCoachMessagesUnread } from "@/hooks/useCoachMessagesUnread";
 
 // ─── Lazy-loaded panels (code-split — zero cost at startup) ──────────────────
 const StudentGamificationDashboard = dynamic(
@@ -557,7 +556,7 @@ export default function StudentHome() {
   const { lessons } = useLessons();
   const { students } = useStudents();
   const { criticalDataError, retryCriticalDataSync } = useCriticalData();
-  const { notifications, markNotificationRead } = useNotifications();
+  const { notifications, markNotificationRead, coachMessagesUnread, crmStudentId, refreshCoachMessagesUnread } = useNotifications();
   const evoChartIdHome = useId().replace(/:/g, "h");
   const evoChartIdModal = useId().replace(/:/g, "m");
   const { toast } = useToast();
@@ -739,11 +738,12 @@ export default function StudentHome() {
     void fetchXpLogEntriesRemote(supabase, user.id, 10).then(entries => setXpLogEntries(entries));
   }, [showXpModal, user?.id]);
 
-  const profile = students.find(s => s.authUserId === user?.id || s.id === user?.id);
+  const profile = crmStudentId ? students.find((s) => s.id === crmStudentId) : undefined;
+  const studentIdForData = crmStudentId ?? profile?.id ?? user?.id ?? "";
 
   // Sprint 104: Realtime XP via Supabase subscription
   useRealtimeXP({
-    studentId: profile?.id ?? user?.id ?? null,
+    studentId: studentIdForData || null,
     initialTotalXP: totalXP,
     onXPGained: (xpAmount, event) => {
       setRealtimeXPEvent(event);
@@ -755,8 +755,8 @@ export default function StudentHome() {
     },
   });
 
-  const { count: messagesUnread, setCount: setMessagesUnread } = useCoachMessagesUnread(profile?.id ?? null);
-  const myLessons = lessons.filter(l => l.enrolledStudents.includes(user?.id || ""));
+  const messagesUnread = coachMessagesUnread;
+  const myLessons = lessons.filter(l => l.enrolledStudents.includes(studentIdForData));
   // Real count: completed lessons with presence + historical record from profile
   const completedFromLessons = myLessons.filter(l => l.presentStudents.includes(user?.id || "")).length;
   const completedCount = Math.max(completedFromLessons, profile?.totalClasses || 0);
@@ -2292,15 +2292,17 @@ export default function StudentHome() {
                 >
                   Desafios ⚡
                 </button>
-                {messagesUnread > 0 && (
+                {crmStudentId && (
                   <button
                     onClick={() => { haptic(18); setShowMessagesPanel(true); }}
                     className={`relative text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#EAB308]/40 bg-[#EAB308]/10 text-amber-300 transition-colors hover:bg-[#EAB308]/20 ${ctaClass}`}
                   >
                     💬 Recados
-                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#EAB308] text-[8px] font-black text-black">
-                      {messagesUnread}
-                    </span>
+                    {messagesUnread > 0 && (
+                      <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#EAB308] text-[8px] font-black text-black">
+                        {messagesUnread}
+                      </span>
+                    )}
                   </button>
                 )}
                 <button
@@ -3455,11 +3457,11 @@ export default function StudentHome() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showMessagesPanel && profile?.id && (
+        {showMessagesPanel && crmStudentId && (
           <StudentMessagesPanel
-            studentCrmId={profile.id}
+            studentCrmId={crmStudentId}
             onClose={() => setShowMessagesPanel(false)}
-            onUnreadCountChange={(c) => setMessagesUnread(c)}
+            onUnreadCountChange={() => { void refreshCoachMessagesUnread(); }}
           />
         )}
       </AnimatePresence>
