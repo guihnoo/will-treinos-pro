@@ -1351,13 +1351,11 @@ export default function StudentHome() {
       )}
 
       {/* 1c. Missão do dia — onboarding leve */}
-      {user?.id && (
+      {crmStudentId && (
         <motion.div variants={homeItem} className="px-1">
           <StudentDailyMissionCard
-            studentId={user.id}
-            studentName={user.name}
-            hasAvatar={Boolean(profile?.avatar || user.avatar)}
-            hasPosition={Boolean(profile?.phone?.trim() && profile?.categories?.length)}
+            crmStudentId={crmStudentId}
+            hasAvatar={Boolean(profile?.avatar && !profile.avatar.includes("dicebear"))}
             lessons={lessons}
           />
         </motion.div>
@@ -2265,13 +2263,13 @@ export default function StudentHome() {
               />
             )}
             {/* Priority 3: Onboarding (só novos atletas, não-Sex/Sáb para evitar stack) */}
-            {isOnboardingCandidate && !isSummaryDay && (
+            {isOnboardingCandidate && !isSummaryDay && profile?.id && (
               <OnboardingWidget
-                studentId={user.id}
+                studentId={profile.id}
                 totalXP={totalXP}
                 hasAvatar={!!(profile.avatar && !profile.avatar.includes("dicebear"))}
                 onOpenChallenges={() => setShowDailyChallenges(true)}
-                onOpenTwin={() => { markTwinViewed(user.id); setShowStudentTwin(true); }}
+                onOpenTwin={() => { markTwinViewed(profile.id); setShowStudentTwin(true); }}
                 onOpenFeed={() => { }}
                 onOpenProfile={() => { }}
               />

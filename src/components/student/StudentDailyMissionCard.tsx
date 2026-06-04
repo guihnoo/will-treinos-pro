@@ -1,73 +1,96 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Target, User, MapPin, MessageCircle, CheckCircle2, Circle } from "lucide-react";
+import { Target, Camera, MapPin, Rss, CheckCircle2, Circle } from "lucide-react";
 import type { Lesson } from "@/context/types";
 import { localDateISO } from "@/lib/dateUtils";
 
-type Mission = {
-  id: string;
-  label: string;
-  done: boolean;
-  href: string;
-};
+/** Chave localStorage de visita ao feed (por aluno + dia). */
+function feedVisitKey(studentId: string) {
+  return `wt_feed_visited_${studentId}_${localDateISO()}`;
+}
 
-type Props = {
-  studentId: string;
-  studentName?: string;
-  hasAvatar?: boolean;
-  hasPosition?: boolean;
-  lessons: Lesson[];
-};
+function markFeedVisited(studentId: string) {
+  try { localStorage.setItem(feedVisitKey(studentId), "1"); } catch { /* ignore */ }
+}
 
-function hasCheckInToday(lessons: Lesson[], studentId: string): boolean {
+function hasFeedVisitedToday(studentId: string): boolean {
+  try { return !!localStorage.getItem(feedVisitKey(studentId)); } catch { return false; }
+}
+
+/**
+ * Detecta check-in hoje usando o CRM id do aluno.
+ * IMPORTANTE: presentStudents e checkInRequests.studentId guardam o CRM id,
+ * NÃO o auth UUID — sempre passar `crmStudentId` neste componente.
+ */
+function hasCheckInToday(lessons: Lesson[], crmStudentId: string): boolean {
   const today = localDateISO();
   return lessons.some((lesson) => {
     if (lesson.date !== today) return false;
-    if (lesson.presentStudents?.includes(studentId)) return true;
-    const req = lesson.checkInRequests?.find((r) => r.studentId === studentId);
+    if (lesson.presentStudents?.includes(crmStudentId)) return true;
+    const req = lesson.checkInRequests?.find((r) => r.studentId === crmStudentId);
     return req?.status === "approved" || req?.status === "pending";
   });
 }
 
+type Props = {
+  /** CRM id do aluno (students.id) — NÃO o auth UUID */
+  crmStudentId: string;
+  hasAvatar: boolean;
+  lessons: Lesson[];
+};
+
 export default function StudentDailyMissionCard({
-  studentId,
-  studentName,
+  crmStudentId,
   hasAvatar,
-  hasPosition,
   lessons,
 }: Props) {
-  const missions = useMemo<Mission[]>(() => {
-    const profileDone = Boolean(studentName?.trim()) && Boolean(hasAvatar) && Boolean(hasPosition);
-    const checkInDone = hasCheckInToday(lessons, studentId);
-    return [
+  const [feedDone, setFeedDone] = useState(false);
+
+  // Hidrata estado do feed no client (localStorage)
+  useEffect(() => {
+    setFeedDone(hasFeedVisitedToday(crmStudentId));
+  }, [crmStudentId]);
+
+  const checkInDone = useMemo(
+    () => hasCheckInToday(lessons, crmStudentId),
+    [lessons, crmStudentId],
+  );
+
+  const missions = useMemo(
+    () => [
       {
-        id: "profile",
-        label: "Completar perfil (foto + contato)",
-        done: profileDone,
+        id: "avatar",
+        label: "Adicionar foto de perfil",
+        done: hasAvatar,
         href: "/perfil",
+        icon: Camera,
       },
       {
         id: "checkin",
         label: "Check-in na quadra hoje",
         done: checkInDone,
         href: "/dashboard",
+        icon: MapPin,
       },
       {
         id: "feed",
         label: "Ver novidades no feed",
-        done: false,
+        done: feedDone,
         href: "/feed",
+        icon: Rss,
       },
-    ];
-  }, [studentId, studentName, hasAvatar, hasPosition, lessons]);
+    ],
+    [hasAvatar, checkInDone, feedDone],
+  );
 
   const doneCount = missions.filter((m) => m.done).length;
-  const profileDone = missions.find((m) => m.id === "profile")?.done ?? false;
-  const checkInDone = missions.find((m) => m.id === "checkin")?.done ?? false;
-  if (profileDone && checkInDone) return null;
+  const allDone   = doneCount === missions.length;
+
+  // Esconde o card quando tudo está concluído
+  if (allDone) return null;
 
   return (
     <motion.div
@@ -81,20 +104,28 @@ export default function StudentDailyMissionCard({
           <Target className="h-4 w-4 text-[#EAB308]" />
         </div>
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-[#EAB308]">Missão do dia</p>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-[#EAB308]">
+            Missão do dia
+          </p>
           <p className="text-[10px] text-zinc-500">
             {doneCount}/{missions.length} concluídas · +XP na quadra
           </p>
         </div>
       </div>
+
       <ul className="space-y-2">
         {missions.map((mission) => {
-          const Icon =
-            mission.id === "profile" ? User : mission.id === "checkin" ? MapPin : MessageCircle;
+          const Icon = mission.icon;
           return (
             <li key={mission.id}>
               <Link
                 href={mission.href}
+                onClick={() => {
+                  if (mission.id === "feed") {
+                    markFeedVisited(crmStudentId);
+                    setFeedDone(true);
+                  }
+                }}
                 className="flex min-h-11 items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 transition-colors hover:border-[#EAB308]/25 hover:bg-[#EAB308]/5"
               >
                 {mission.done ? (
