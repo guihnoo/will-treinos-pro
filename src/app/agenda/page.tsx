@@ -1,31 +1,40 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Calendar as CalendarIcon, CalendarPlus, Clock, MapPin, Lock, CheckCircle2, Users, Zap } from "lucide-react";
 import { useCheckIn } from "@/context/CheckInContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useCoaching } from "@/context/CoachingContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLessons } from "@/context/LessonsContext";
+import { useStudents } from "@/context/StudentsContext";
 import type { Lesson } from "@/context/types";
 import { lessonLocalDateTime, localDateISO } from "@/lib/dateUtils";
+import { resolveStudentCrmId } from "@/lib/resolveStudentCrmId";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import AppEmptyState from "@/components/ui/AppEmptyState";
 import CreateLessonModal from "@/components/CreateLessonModal";
+import LessonDetailModal from "@/components/LessonDetailModal";
+import StudentLessonAgendaSheet from "@/components/student/StudentLessonAgendaSheet";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
 export default function AgendaPage() {
   const { user } = useAuth();
   const { lessons } = useLessons();
+  const { students } = useStudents();
   const { getCategory, getVenue } = useCatalog();
   const { feedbacks } = useCoaching();
   const { requestCheckIn } = useCheckIn();
   const [selectedDate, setSelectedDate] = useState(localDateISO());
   const [localNow, setLocalNow] = useState<Date>(new Date());
   const [showCreateLesson, setShowCreateLesson] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const CTA_BUTTON_CLASS = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
+
+  const crmStudentId = useMemo(() => resolveStudentCrmId(user, students), [user, students]);
+  const studentIdForData = crmStudentId ?? user?.id ?? "";
 
   React.useEffect(() => {
     const id = setInterval(() => setLocalNow(new Date()), 30_000);
@@ -54,8 +63,8 @@ export default function AgendaPage() {
   const calendarLessons = useMemo(() => {
     if (!user) return [];
     if (isStaff) return lessons;
-    return lessons.filter((l) => l.enrolledStudents.includes(user.id));
-  }, [lessons, user, isStaff]);
+    return lessons.filter((l) => l.enrolledStudents.includes(studentIdForData));
+  }, [lessons, user, isStaff, studentIdForData]);
 
   const dateStrip = useMemo(() => {
     const start = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate() - 3);
@@ -92,8 +101,8 @@ export default function AgendaPage() {
     const lessonEnd = lessonLocalDateTime(lesson.date, lesson.endTime);
     const unlockAt = new Date(lessonStart.getTime() - 60 * 60 * 1000);
     const sameDay = lesson.date === localDateISO(localNow);
-    const pending = lesson.checkInRequests?.find((r) => r.studentId === user?.id);
-    const approved = lesson.presentStudents.includes(user?.id || "") || pending?.status === "approved";
+    const pending = lesson.checkInRequests?.find((r) => r.studentId === studentIdForData);
+    const approved = lesson.presentStudents.includes(studentIdForData) || pending?.status === "approved";
 
     if (approved) return { state: "approved" as const, label: "Check-in confirmado", reason: "" };
     if (pending?.status === "pending") return { state: "pending" as const, label: "Aguardando confirmação", reason: "" };
@@ -110,10 +119,10 @@ export default function AgendaPage() {
       const matriculas = dayLessons.reduce((acc, l) => acc + l.enrolledStudents.length, 0);
       return { count: matriculas, avg: 0, staffMatriculas: true as const };
     }
-    const evals = feedbacks.filter((f) => f.studentId === user?.id && ids.has(f.lessonId));
+    const evals = feedbacks.filter((f) => f.studentId === studentIdForData && ids.has(f.lessonId));
     const avg = evals.length ? evals.reduce((acc, item) => acc + item.rating, 0) / evals.length : 0;
     return { count: evals.length, avg, staffMatriculas: false as const };
-  }, [dayLessons, feedbacks, user, isStaff]);
+  }, [dayLessons, feedbacks, user, isStaff, studentIdForData]);
 
   if (!user) return null;
 
@@ -251,7 +260,7 @@ export default function AgendaPage() {
             const isOngoing = lesson.status === "in-progress";
             const isDone = lesson.status === "completed";
             const gate = checkInGate(lesson);
-            const feedback = !isStaff ? feedbacks.find((f) => f.studentId === user.id && f.lessonId === lesson.id) : undefined;
+            const feedback = !isStaff ? feedbacks.find((f) => f.studentId === studentIdForData && f.lessonId === lesson.id) : undefined;
 
             return (
               <motion.div key={lesson.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
@@ -264,7 +273,18 @@ export default function AgendaPage() {
                     style={{ background: isDone ? "#52525B" : isOngoing ? "#EF4444" : cat?.color, boxShadow: isOngoing ? "0 0 10px #EF4444" : `0 0 8px ${cat?.color}50` }} />
                 </div>
 
-                <motion.div whileHover={{ scale: 1.01 }}
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedLesson(lesson)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedLesson(lesson);
+                    }
+                  }}
                   style={{ borderLeftColor: isDone ? "#52525B" : isOngoing ? "#EF4444" : cat?.color, borderLeftWidth: "4px" }}
                   className={`flex-1 min-w-0 p-3 sm:p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
                     isOngoing ? "border-[#EF4444]/50 bg-[#EF4444]/5 shadow-[0_0_20px_rgba(239,68,68,0.1)]" :
@@ -315,8 +335,9 @@ export default function AgendaPage() {
                       {!isStaff ? (
                         gate.state === "open" ? (
                           <motion.button whileTap={{ scale: 0.96 }}
-                            onClick={() => {
-                              requestCheckIn(lesson.id, user.id);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              requestCheckIn(lesson.id, studentIdForData);
                               haptic([80, 40, 120]);
                             }}
                             className={`px-4 py-2 min-h-11 rounded-xl text-[11px] font-black bg-[#EAB308] text-black shadow-[0_0_14px_rgba(234,179,8,0.3)] flex items-center gap-1.5 ${CTA_BUTTON_CLASS}`}>
@@ -346,6 +367,20 @@ export default function AgendaPage() {
         onClose={() => setShowCreateLesson(false)}
         defaultDate={selectedDate}
       />
+
+      <AnimatePresence>
+        {isStaff && selectedLesson ? (
+          <LessonDetailModal lesson={selectedLesson} onClose={() => setSelectedLesson(null)} />
+        ) : null}
+      </AnimatePresence>
+
+      {!isStaff && selectedLesson && studentIdForData ? (
+        <StudentLessonAgendaSheet
+          lesson={selectedLesson}
+          studentCrmId={studentIdForData}
+          onClose={() => setSelectedLesson(null)}
+        />
+      ) : null}
     </div>
   );
 }

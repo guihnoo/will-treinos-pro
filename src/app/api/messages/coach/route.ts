@@ -40,16 +40,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .from("staff_access")
     .select("role")
     .eq("auth_user_id", user.id)
+    .eq("is_active", true)
     .maybeSingle();
 
-  const { data: adminRow } = await sb
+  const { data: professorRow } = await sb
     .from("students")
     .select("student_role")
     .eq("auth_user_id", user.id)
     .eq("student_role", "professor")
     .maybeSingle();
 
-  const isStaff = Boolean(staffRow) || Boolean(adminRow);
+  const isStaff = Boolean(staffRow) || Boolean(professorRow);
   if (!isStaff) return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
 
   const body: CoachMessageBody = await req.json().catch(() => null);

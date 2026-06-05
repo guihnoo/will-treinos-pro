@@ -391,22 +391,22 @@ export default function StudentHome() {
   const messagesUnread = coachMessagesUnread;
   const myLessons = lessons.filter(l => l.enrolledStudents.includes(studentIdForData));
   // Real count: completed lessons with presence + historical record from profile
-  const completedFromLessons = myLessons.filter(l => l.presentStudents.includes(user?.id || "")).length;
+  const completedFromLessons = myLessons.filter(l => l.presentStudents.includes(studentIdForData)).length;
   const completedCount = Math.max(completedFromLessons, profile?.totalClasses || 0);
   const frequency = profile?.frequency || Math.min(100, completedFromLessons > 0 ? Math.round((completedFromLessons / Math.max(profile?.totalClasses || completedFromLessons, 1)) * 100) : 0);
   const freqColor = frequency >= 80 ? "#22C55E" : frequency >= 60 ? "#EAB308" : "#EF4444";
   // Use student profile avatar (updated via perfil page)
   const avatarSeed = profile?.avatar || user?.avatar || "Ricardo";
 
-  const myFeedbacks = useMemo(() => feedbacks.filter(f => f.studentId === user?.id).sort((a,b) => b.date.localeCompare(a.date)), [feedbacks, user?.id]);
+  const myFeedbacks = useMemo(() => feedbacks.filter(f => f.studentId === studentIdForData).sort((a,b) => b.date.localeCompare(a.date)), [feedbacks, studentIdForData]);
   const myLessonRatings = useMemo(
-    () => lessonRatings.filter((r) => r.studentId === user?.id).sort((a, b) => b.date.localeCompare(a.date)),
-    [lessonRatings, user?.id],
+    () => lessonRatings.filter((r) => r.studentId === studentIdForData).sort((a, b) => b.date.localeCompare(a.date)),
+    [lessonRatings, studentIdForData],
   );
 
   // Completed lessons in last 7 days where student was present and hasn't rated yet
   const unratedLessons = useMemo(() => {
-    if (!user?.id) return [];
+    if (!studentIdForData) return [];
     const since = new Date();
     since.setDate(since.getDate() - 7);
     const sinceStr = localDateISO(since);
@@ -414,12 +414,12 @@ export default function StudentHome() {
     return myLessons
       .filter(l =>
         l.status === "completed" &&
-        l.presentStudents.includes(user.id) &&
+        l.presentStudents.includes(studentIdForData) &&
         l.date >= sinceStr &&
         !ratedIds.has(l.id)
       )
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [myLessons, myLessonRatings, user]);
+  }, [myLessons, myLessonRatings, studentIdForData]);
   const latest = myFeedbacks[0] ?? null;
   const avgRating = useMemo(() => {
     if (myFeedbacks.length === 0) return 0;
@@ -469,7 +469,7 @@ export default function StudentHome() {
   const streak = useMemo(() => {
     let s = 0;
     const sorted = [...myLessons].filter(l => l.status === "completed").sort((a,b) => b.date.localeCompare(a.date));
-    for (const l of sorted) { if (l.presentStudents.includes(user?.id || "")) s++; else break; }
+    for (const l of sorted) { if (l.presentStudents.includes(studentIdForData)) s++; else break; }
     // If no completed lessons in data but profile shows totalClasses, use a calculated streak
     return s > 0 ? s : Math.min(profile?.totalClasses || 0, 5);
   }, [myLessons, user, profile]);
@@ -480,7 +480,7 @@ export default function StudentHome() {
     let best = 0;
     let current = 0;
     for (const l of completed) {
-      if (l.presentStudents.includes(user?.id || "")) {
+      if (l.presentStudents.includes(studentIdForData)) {
         current += 1;
         best = Math.max(best, current);
       } else {
@@ -495,7 +495,7 @@ export default function StudentHome() {
       .filter((l) => l.status === "completed")
       .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime))
       .slice(0, 7)
-      .map((l) => l.presentStudents.includes(user?.id || ""));
+      .map((l) => l.presentStudents.includes(studentIdForData));
     while (completed.length < 7) completed.push(false);
     return completed.reverse();
   }, [myLessons, user]);
@@ -512,7 +512,7 @@ export default function StudentHome() {
       return d >= monday && d <= sunday;
     });
     const scheduledThisWeek = inWeek.filter((l) => l.status === "scheduled" || l.status === "in-progress" || l.status === "completed").length;
-    const attendedThisWeek = inWeek.filter((l) => l.status === "completed" && l.presentStudents.includes(user?.id || "")).length;
+    const attendedThisWeek = inWeek.filter((l) => l.status === "completed" && l.presentStudents.includes(studentIdForData)).length;
     return { scheduledThisWeek, attendedThisWeek };
   }, [myLessons, localNow, user]);
   const weeklyConsistency = useMemo(() => {
@@ -583,7 +583,7 @@ export default function StudentHome() {
   }, [myLessons, week7]);
   const weekCompletedCount = useMemo(() => {
     const weekSet = new Set(week7);
-    return myLessons.filter((l) => weekSet.has(l.date) && l.status === "completed" && l.presentStudents.includes(user?.id || "")).length;
+    return myLessons.filter((l) => weekSet.has(l.date) && l.status === "completed" && l.presentStudents.includes(studentIdForData)).length;
   }, [myLessons, week7, user]);
 
   const nextLesson = myLessons.filter(l => l.status==="scheduled"||l.status==="in-progress")
@@ -665,7 +665,7 @@ export default function StudentHome() {
   }, [fundamentalsTrend]);
 
   const getLessonExecutionStage = (lesson: Lesson) => {
-    const userId = user?.id || "";
+    const userId = studentIdForData;
     const myCheckIn = lesson.checkInRequests?.find((r) => r.studentId === userId);
     const hasCheckInRequest = Boolean(myCheckIn);
     const checkedIn = lesson.presentStudents.includes(userId) || myCheckIn?.status === "approved";
@@ -683,14 +683,14 @@ export default function StudentHome() {
     if (role === "admin" || role === "coach") return notifications;
     return notifications.filter((n) => studentSeesNotification(n, userId));
   };
-  const visibleNotifications = myNotifications(user?.role, user?.id || "");
+  const visibleNotifications = myNotifications(user?.role, studentIdForData);
   const unread = visibleNotifications.filter(n => !n.read).length;
   const fundamentalsAverage = Math.round(
     fundamentalsTrend.length ? fundamentalsTrend.reduce((acc, item) => acc + item.score, 0) / fundamentalsTrend.length : 0,
   );
   const executionRate = Math.round((weekCompletedCount / Math.max(1, weekScheduledCount)) * 100);
   const attendedLessons = useMemo(
-    () => myLessons.filter((l) => l.status === "completed" && l.presentStudents.includes(user?.id || "")),
+    () => myLessons.filter((l) => l.status === "completed" && l.presentStudents.includes(studentIdForData)),
     [myLessons, user],
   );
   const attendanceDiagnostics = useMemo(() => {
@@ -698,7 +698,7 @@ export default function StudentHome() {
       .filter((l) => l.status === "completed")
       .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime))
       .slice(0, 8);
-    const attended = recent.filter((l) => l.presentStudents.includes(user?.id || "")).length;
+    const attended = recent.filter((l) => l.presentStudents.includes(studentIdForData)).length;
     const rate = recent.length ? Math.round((attended / recent.length) * 100) : 0;
     const cause = rate >= 80 ? "Boa regularidade nas últimas sessões." : rate >= 60 ? "Oscilação de presença nas últimas semanas." : "Ritmo de comparecimento abaixo do ideal.";
     const impact = rate >= 80 ? "Mantém ganho técnico contínuo e previsível." : "Evolução técnica fica menos estável entre sessões." ;
@@ -1083,7 +1083,7 @@ export default function StudentHome() {
           <StudentGoalsCard
             studentCrmId={profile.id}
             totalXP={totalXP}
-            checkinCount={myLessons.filter(l => l.presentStudents.includes(user?.id || "")).length}
+            checkinCount={myLessons.filter(l => l.presentStudents.includes(studentIdForData)).length}
           />
         </motion.div>
       )}

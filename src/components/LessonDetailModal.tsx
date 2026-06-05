@@ -14,6 +14,7 @@ import { useStudents } from "@/context/StudentsContext";
 import { useCheckIn } from "@/context/CheckInContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useNotifications } from "@/context/NotificationsContext";
+import { buildLessonBroadcastNotification } from "@/lib/notifyStudent";
 import { useToast } from "@/components/Toast";
 import FeedbackModal from "./FeedbackModal";
 import TrainingPlanEditor from "./TrainingPlanEditor";
@@ -422,15 +423,9 @@ export default function LessonDetailModal({ lesson, onClose, layoutId }: Props) 
                 onClick={() => {
                   if (!broadcastMsg) return;
                   if (enrolledCount === 0) { toast("Nenhum aluno inscrito."); return; }
-                  // In a real app we'd attach studentId to the notification.
-                  // For now, it pushes to global notifications panel.
-                  addNotification({
-                    type: "message",
-                    title: `Aviso: ${lesson.title}`,
-                    message: broadcastMsg,
-                    time: "agora",
-                    read: false
-                  });
+                  for (const sid of lesson.enrolledStudents) {
+                    addNotification(buildLessonBroadcastNotification(sid, lesson.title, broadcastMsg));
+                  }
                   toast("✅ Aviso enviado para a turma toda!");
                   setBroadcastMsg("");
                 }}

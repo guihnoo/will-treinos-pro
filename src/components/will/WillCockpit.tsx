@@ -3282,6 +3282,9 @@ export default function WillCockpit() {
                             setMessageSentId(selectedStudent.id);
                             toast(`💬 Recado enviado para ${selectedStudent.name.split(" ")[0]}!`);
                             setTimeout(() => setMessageSentId(null), 4000);
+                          } else {
+                            const err = await res.json().catch(() => ({}));
+                            toast((err as { error?: string }).error ?? "Erro ao enviar recado.", "error");
                           }
                         } catch {
                           toast("Erro ao enviar recado.");

@@ -4,8 +4,10 @@ import { X, Check, Search, RefreshCw } from "lucide-react";
 import { useCatalog } from "@/context/CatalogContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
-import { useToast } from "@/components/Toast";
+import { useNotifications } from "@/context/NotificationsContext";
+import { buildLessonScheduledNotification } from "@/lib/notifyStudent";
 import UserAvatar from "@/components/ui/UserAvatar";
+import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { localDateISO } from "@/lib/dateUtils";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
@@ -46,6 +48,7 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
   const { lessons, addLesson } = useLessons();
   const { categories, venues } = useCatalog();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   useBodyScrollLock(isOpen);
   const prevIsOpen = useRef(false);
   const [lessonDate, setLessonDate] = useState(() => defaultDate || localDateISO());
@@ -188,7 +191,17 @@ export default function CreateLessonModal({ isOpen, onClose, defaultDate }: Prop
     };
 
     for (let i = 0; i <= weeksCount; i++) {
-      addLesson({ ...lessonBase, date: addDays(lessonDate, i * 7) });
+      const date = addDays(lessonDate, i * 7);
+      addLesson({ ...lessonBase, date });
+      for (const sid of newLesson.enrolledStudents) {
+        addNotification(
+          buildLessonScheduledNotification(sid, {
+            title: newLesson.title.trim(),
+            date,
+            startTime: newLesson.startTime,
+          }),
+        );
+      }
     }
 
     if (weeksCount > 0) {

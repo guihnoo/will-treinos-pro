@@ -147,7 +147,16 @@ export default function WeeklyScheduleView({
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className={`relative rounded-xl border p-2 ${
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onSelectLesson(lesson.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onSelectLesson(lesson.id);
+                            }
+                          }}
+                          className={`relative rounded-xl border p-2 cursor-pointer transition-colors hover:border-zinc-600/60 ${
                             lesson.status === "cancelled"
                               ? "border-red-500/20 bg-red-500/5 opacity-60"
                               : "border-zinc-700/40 bg-zinc-800/30"
@@ -205,7 +214,10 @@ export default function WeeklyScheduleView({
                           <div className="mt-2 flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => onSelectLesson(lesson.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectLesson(lesson.id);
+                              }}
                               data-testid={`btn-lesson-detail-${lesson.id}`}
                               className="flex h-6 w-6 items-center justify-center rounded-lg border border-zinc-600/40 bg-zinc-700/40 text-zinc-400 hover:text-white transition-colors"
                               aria-label="Detalhes da aula"
@@ -216,7 +228,10 @@ export default function WeeklyScheduleView({
                             {lesson.status === "scheduled" && (
                               <button
                                 type="button"
-                                onClick={() => onCancelLesson(lesson.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCancelLesson(lesson.id);
+                                }}
                                 data-testid={`btn-cancel-lesson-${lesson.id}`}
                                 className="flex h-6 w-6 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:text-red-300 transition-colors"
                                 aria-label="Cancelar aula"
@@ -228,7 +243,10 @@ export default function WeeklyScheduleView({
                             {lesson.status === "cancelled" && (
                               <button
                                 type="button"
-                                onClick={() => onReopenLesson(lesson.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onReopenLesson(lesson.id);
+                                }}
                                 data-testid={`btn-reopen-lesson-${lesson.id}`}
                                 className="flex h-6 w-6 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:text-emerald-300 transition-colors"
                                 aria-label="Reabrir aula"

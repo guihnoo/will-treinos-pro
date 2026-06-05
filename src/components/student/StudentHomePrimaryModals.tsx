@@ -468,21 +468,21 @@ export function StudentHomePrimaryModals({
                   <p
                     className="text-xs font-bold mt-0.5"
                     style={{
-                      color: lessonModal.presentStudents.includes(user?.id || "") ? "#22C55E" : "#EAB308",
+                      color: lessonModal.presentStudents.includes(crmStudentId || "") ? "#22C55E" : "#EAB308",
                     }}
                   >
-                    {lessonModal.presentStudents.includes(user?.id || "")
+                    {lessonModal.presentStudents.includes(crmStudentId || "")
                       ? "✓ Check-in feito"
                       : "Aguardando check-in"}
                   </p>
                 </div>
               </div>
-              {lessonModal.enrolledStudents.filter((id) => id !== user?.id).length > 0 && (
+              {lessonModal.enrolledStudents.filter((id) => id !== crmStudentId).length > 0 && (
                 <div className="mb-4">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold mb-2">Colegas de Turma</p>
                   <div className="flex gap-2 flex-wrap">
                     {lessonModal.enrolledStudents
-                      .filter((id) => id !== user?.id)
+                      .filter((id) => id !== crmStudentId)
                       .map((sid) => {
                         const st = students.find((s) => s.id === sid);
                         return (
@@ -506,9 +506,9 @@ export function StudentHomePrimaryModals({
               <div className="sticky bottom-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-sm pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 {(() => {
                   const isCompleted = lessonModal.status === "completed";
-                  const alreadyCheckedIn = lessonModal.presentStudents.includes(user?.id || "");
-                  const myCheckIn = lessonModal.checkInRequests?.find((r) => r.studentId === user?.id);
-                  const existingRating = getLessonRating(lessonModal.id, user?.id || "");
+                  const alreadyCheckedIn = lessonModal.presentStudents.includes(crmStudentId || "");
+                  const myCheckIn = lessonModal.checkInRequests?.find((r) => r.studentId === crmStudentId);
+                  const existingRating = getLessonRating(lessonModal.id, crmStudentId || "");
 
                   if (isCompleted)
                     return (
@@ -576,8 +576,8 @@ export function StudentHomePrimaryModals({
                     <motion.button
                       whileTap={{ scale: 0.96 }}
                       onClick={() => {
-                        if (!user?.id) return;
-                        requestCheckIn(lessonModal.id, user.id);
+                        if (!crmStudentId) return;
+                        requestCheckIn(lessonModal.id, crmStudentId);
                         toast("📍 Chegada registrada!");
                         setLessonModal(null);
                       }}
