@@ -33,6 +33,7 @@ import PushPermissionBanner from "@/components/PushPermissionBanner";
 import GeoCheckInButton from "@/components/student/GeoCheckInButton";
 import LessonCountdownCard from "@/components/student/LessonCountdownCard";
 import StudentDailyMissionCard from "@/components/student/StudentDailyMissionCard";
+import { studentHasRealAvatar } from "@/lib/avatarSrc";
 
 // ─── Lazy-loaded panels (code-split — zero cost at startup) ──────────────────
 const StudentGamificationDashboard = dynamic(
@@ -742,6 +743,10 @@ export default function StudentHome() {
 
   const profile = crmStudentId ? students.find((s) => s.id === crmStudentId) : undefined;
   const studentIdForData = crmStudentId ?? profile?.id ?? user?.id ?? "";
+  const hasRealAvatar = useMemo(
+    () => studentHasRealAvatar(profile?.avatar, user?.avatar),
+    [profile?.avatar, user?.avatar],
+  );
 
   useEffect(() => {
     if (!hydrated || searchParams.get("recados") !== "1" || !crmStudentId) return;
@@ -1355,7 +1360,7 @@ export default function StudentHome() {
         <motion.div variants={homeItem} className="px-1">
           <StudentDailyMissionCard
             crmStudentId={crmStudentId}
-            hasAvatar={Boolean(profile?.avatar && !profile.avatar.includes("dicebear"))}
+            hasAvatar={hasRealAvatar}
             lessons={lessons}
           />
         </motion.div>
@@ -2267,7 +2272,7 @@ export default function StudentHome() {
               <OnboardingWidget
                 studentId={profile.id}
                 totalXP={totalXP}
-                hasAvatar={!!(profile.avatar && !profile.avatar.includes("dicebear"))}
+                hasAvatar={hasRealAvatar}
                 onOpenChallenges={() => setShowDailyChallenges(true)}
                 onOpenTwin={() => { markTwinViewed(profile.id); setShowStudentTwin(true); }}
                 onOpenFeed={() => { }}

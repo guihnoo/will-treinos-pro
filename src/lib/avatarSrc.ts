@@ -12,6 +12,13 @@ export function isDirectUserAvatar(avatar: string | null | undefined): boolean {
   );
 }
 
+/** Foto real enviada (Storage/data/URL) — ignora seeds Dicebear usados só na UI. */
+export function studentHasRealAvatar(
+  ...sources: (string | null | undefined)[]
+): boolean {
+  return sources.some((s) => isDirectUserAvatar(s));
+}
+
 export function avatarSrc(
   avatar: string | undefined | null,
   fallbackSeed: string = "default"

@@ -3,7 +3,7 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Target, Camera, MapPin, Rss, CheckCircle2, Circle } from "lucide-react";
+import { Target, Camera, MapPin, Rss, Circle } from "lucide-react";
 import type { Lesson } from "@/context/types";
 import { localDateISO } from "@/lib/dateUtils";
 
@@ -63,7 +63,7 @@ export default function StudentDailyMissionCard({
     () => [
       {
         id: "avatar",
-        label: "Adicionar foto de perfil",
+        label: "Enviar sua foto de perfil",
         done: hasAvatar,
         href: "/perfil",
         icon: Camera,
@@ -86,11 +86,10 @@ export default function StudentDailyMissionCard({
     [hasAvatar, checkInDone, feedDone],
   );
 
-  const doneCount = missions.filter((m) => m.done).length;
-  const allDone   = doneCount === missions.length;
+  const pendingMissions = missions.filter((m) => !m.done);
 
-  // Esconde o card quando tudo está concluído
-  if (allDone) return null;
+  // Esconde o card quando não há pendências (não repete missões já concluídas)
+  if (pendingMissions.length === 0) return null;
 
   return (
     <motion.div
@@ -108,13 +107,13 @@ export default function StudentDailyMissionCard({
             Missão do dia
           </p>
           <p className="text-[10px] text-zinc-500">
-            {doneCount}/{missions.length} concluídas · +XP na quadra
+            {pendingMissions.length} pendente{pendingMissions.length === 1 ? "" : "s"} · +XP na quadra
           </p>
         </div>
       </div>
 
       <ul className="space-y-2">
-        {missions.map((mission) => {
+        {pendingMissions.map((mission) => {
           const Icon = mission.icon;
           return (
             <li key={mission.id}>
@@ -128,24 +127,14 @@ export default function StudentDailyMissionCard({
                 }}
                 className="flex min-h-11 items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 transition-colors hover:border-[#EAB308]/25 hover:bg-[#EAB308]/5"
               >
-                {mission.done ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                ) : (
-                  <Circle className="h-4 w-4 shrink-0 text-zinc-600" />
-                )}
+                <Circle className="h-4 w-4 shrink-0 text-zinc-600" />
                 <Icon className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
-                <span
-                  className={`flex-1 text-xs font-semibold ${
-                    mission.done ? "text-zinc-500 line-through" : "text-zinc-200"
-                  }`}
-                >
+                <span className="flex-1 text-xs font-semibold text-zinc-200">
                   {mission.label}
                 </span>
-                {!mission.done && (
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-[#EAB308]">
-                    Ir
-                  </span>
-                )}
+                <span className="text-[10px] font-bold uppercase tracking-wide text-[#EAB308]">
+                  Ir
+                </span>
               </Link>
             </li>
           );
