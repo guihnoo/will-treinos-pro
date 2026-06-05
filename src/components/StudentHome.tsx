@@ -1824,145 +1824,136 @@ export default function StudentHome() {
         )}
       </AnimatePresence>
 
-      {/* Minha Evolução — CLICÁVEL */}
+      {/* Minha Evolução — colapsável (P2) */}
       {myLessons.length > 0 && (
         <motion.div variants={homeItem} className="mb-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2"><TrendingUp className="w-5 h-5 text-[#EAB308]"/> Checkpoint Técnico</h2>
-            <div className="flex items-center gap-2">
-              <motion.button whileTap={{scale:0.9}} onClick={()=>setShowPillarPanel(true)}
-                className={`text-[10px] font-bold text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-colors ${ctaClass}`}>
-                Notas do Coach
-              </motion.button>
-              <motion.button whileTap={{scale:0.9}} onClick={()=>setShowAttendanceCalendar(true)}
-                className={`text-[10px] font-bold text-zinc-300 bg-zinc-800/60 px-3 py-1.5 rounded-lg border border-zinc-700/40 hover:bg-zinc-700/60 transition-colors ${ctaClass}`}>
-                📅 Histórico
-              </motion.button>
-              <motion.button whileTap={{scale:0.9}} onClick={()=>setShowLessonHistory(true)}
-                data-testid="btn-lesson-history"
-                className={`text-[10px] font-bold text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/25 hover:bg-amber-500/20 transition-colors ${ctaClass}`}>
-                📋 Histórico de Treinos
-              </motion.button>
-              <motion.button whileTap={{scale:0.9}} onClick={()=>setEvolModal(true)}
-                className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
-                Ver relatório
-              </motion.button>
-            </div>
-          </div>
-          <motion.div whileTap={{scale:0.98}} whileHover={{ y: -2, borderColor: "rgba(234,179,8,0.35)" }}
-            className="rounded-2xl border border-white/[0.07] bg-zinc-950/45 backdrop-blur-xl p-4 cursor-pointer hover:border-[#EAB308]/25 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
-            onClick={()=>setEvolModal(true)}>
-            {myFeedbacks.length === 0 ? (
-              <div className="text-center py-6">
-                <TrendingUp className="w-10 h-10 text-zinc-700 mx-auto mb-2"/>
-                <p className="text-sm font-bold text-zinc-400">Ainda sem avaliações</p>
-                <p className="text-xs text-zinc-600 mt-1">Após as aulas, o professor enviará feedbacks técnicos que aparecerão aqui.</p>
+          <div className="rounded-2xl border border-white/[0.07] bg-zinc-950/45 backdrop-blur-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
+            <button
+              type="button"
+              onClick={() => { haptic(8); setEvolutionExpanded((v) => !v); }}
+              className={`w-full p-4 text-left ${ctaClass}`}
+              aria-expanded={evolutionExpanded}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-[#EAB308]" />
+                  Minha Evolução
+                </h2>
+                <ChevronRight className={`w-5 h-5 flex-shrink-0 text-zinc-500 transition-transform duration-200 ${evolutionExpanded ? "rotate-90" : ""}`} />
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  {[
-                    { label: "Disciplina", value: `${disciplineScore}`, color: "#22C55E" },
-                    { label: "Técnica", value: `${performanceScore}`, color: "#EAB308" },
-                    { label: "Feedback", value: `${coachTrustScore}`, color: "#60A5FA" },
-                  ].map((m) => (
-                    <div key={m.label} className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
-                      <p className="text-sm font-black" style={{ color: m.color }}>{m.value}</p>
-                      <p className="text-[9px] text-zinc-500">{m.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-2 rounded-xl border border-zinc-800 bg-zinc-950/60 p-2.5">
-                  <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Fonte das notas</p>
-                  <p className="text-[11px] text-zinc-300 mt-0.5">
-                    Avaliação oficial por <span className="text-[#EAB308] font-bold">prof/admin</span> + percepção do aluno como apoio.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-2 py-1.5">
-                      <p className="text-[8px] text-zinc-500">Coach oficial</p>
-                      <p className="text-[12px] font-black text-[#EAB308]">{avgRating ? avgRating.toFixed(1) : "—"}/10</p>
-                    </div>
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-2 py-1.5">
-                      <p className="text-[8px] text-zinc-500">Autoavaliação aluno</p>
-                      <p className="text-[12px] font-black text-[#60A5FA]">{selfSessionAvg ? selfSessionAvg.toFixed(1) : "—"}/10</p>
-                    </div>
+              {!evolutionExpanded && (
+                <div className="grid grid-cols-3 gap-2 mt-3">
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
+                    <p className="text-[9px] text-zinc-500">Disciplina</p>
+                    <p className="text-sm font-black text-[#22C55E]">{disciplineScore}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
+                    <p className="text-[9px] text-zinc-500">Nota coach</p>
+                    <p className="text-sm font-black text-[#EAB308]">{avgRating ? avgRating.toFixed(1) : "—"}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
+                    <p className="text-[9px] text-zinc-500">Fundamentos</p>
+                    <p className="text-sm font-black text-white">{fundamentalsAverage}</p>
                   </div>
                 </div>
-                {evolutionLineChart ? (
-                  <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-3">
-                    <p className="text-[9px] text-zinc-500 mb-1">Linha de evolução técnica</p>
-                    <svg viewBox={`0 0 ${evolutionLineChart.w} ${evolutionLineChart.h}`} className="w-full h-20" preserveAspectRatio="none">
-                      <path d={evolutionLineChart.areaD} fill="rgba(234,179,8,0.18)" opacity="0.35" />
-                      <motion.path d={evolutionLineChart.d} fill="none" stroke="#EAB308" strokeWidth="2.2" strokeLinecap="round"
-                        initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1 }} />
-                    </svg>
-                  </div>
-                ) : null}
-                <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-3 mt-2">
-                  <p className="text-[9px] text-zinc-500 mb-1">Timeline das últimas avaliações</p>
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                    {myFeedbacks.slice(0, 6).reverse().map((fb, idx, arr) => {
-                      const tone = scoreColor(fb.rating);
-                      return (
-                        <div key={fb.id} className="flex items-center flex-shrink-0">
-                          <div className="rounded-full border px-2 py-1 bg-zinc-900/70" style={{ borderColor: `${tone}66` }}>
-                            <p className="text-[9px] font-bold" style={{ color: tone }}>{fb.rating.toFixed(1)}</p>
-                            <p className="text-[8px] text-zinc-600">{new Date(fb.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</p>
-                          </div>
-                          {idx < arr.length - 1 && <div className="w-4 h-px bg-zinc-700 mx-1" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="bg-zinc-900/60 rounded-xl border border-zinc-800 p-3 mt-3">
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Meta atual: {nextTier ? `subir para ${nextTier.label}` : "manter elite"} com execução técnica consistente nas próximas sessões.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-3 mt-2">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 mb-1">Próxima sessão — plano de execução</p>
-                  <div className="space-y-1.5">
-                    {nextSessionPlan.map((item, idx) => (
-                      <div key={`plan-${idx}`} className="flex items-start gap-2">
-                        <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-zinc-700 text-[9px] text-zinc-400">{idx + 1}</span>
-                        <p className="text-[11px] text-zinc-300 leading-relaxed">{item}</p>
+              )}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {evolutionExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-white/[0.06] px-4 pb-4 pt-3 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowPillarPanel(true)}
+                        className={`text-[10px] font-bold text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-colors ${ctaClass}`}>
+                        Notas do Coach
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowAttendanceCalendar(true)}
+                        className={`text-[10px] font-bold text-zinc-300 bg-zinc-800/60 px-3 py-1.5 rounded-lg border border-zinc-700/40 hover:bg-zinc-700/60 transition-colors ${ctaClass}`}>
+                        📅 Histórico
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowLessonHistory(true)}
+                        data-testid="btn-lesson-history"
+                        className={`text-[10px] font-bold text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/25 hover:bg-amber-500/20 transition-colors ${ctaClass}`}>
+                        📋 Treinos
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEvolModal(true)}
+                        className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
+                        Relatório completo
+                      </motion.button>
+                    </div>
+
+                    {myFeedbacks.length === 0 ? (
+                      <div className="text-center py-6 rounded-xl border border-dashed border-zinc-800">
+                        <TrendingUp className="w-10 h-10 text-zinc-700 mx-auto mb-2" />
+                        <p className="text-sm font-bold text-zinc-400">Ainda sem avaliações</p>
+                        <p className="text-xs text-zinc-600 mt-1">Após as aulas, o professor enviará feedbacks técnicos que aparecerão aqui.</p>
                       </div>
-                    ))}
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { label: "Disciplina", value: `${disciplineScore}`, color: "#22C55E" },
+                            { label: "Técnica", value: `${performanceScore}`, color: "#EAB308" },
+                            { label: "Feedback", value: `${coachTrustScore}`, color: "#60A5FA" },
+                          ].map((m) => (
+                            <div key={m.label} className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2 text-center">
+                              <p className="text-sm font-black" style={{ color: m.color }}>{m.value}</p>
+                              <p className="text-[9px] text-zinc-500">{m.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {evolutionLineChart ? (
+                          <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-3">
+                            <p className="text-[9px] text-zinc-500 mb-1">Linha de evolução técnica</p>
+                            <svg viewBox={`0 0 ${evolutionLineChart.w} ${evolutionLineChart.h}`} className="w-full h-20" preserveAspectRatio="none">
+                              <path d={evolutionLineChart.areaD} fill="rgba(234,179,8,0.18)" opacity="0.35" />
+                              <motion.path d={evolutionLineChart.d} fill="none" stroke="#EAB308" strokeWidth="2.2" strokeLinecap="round"
+                                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1 }} />
+                            </svg>
+                          </div>
+                        ) : null}
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-3">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 mb-2 flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-[#EAB308]" /> Fundamentos
+                          </p>
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2">
+                              <p className="text-[9px] text-zinc-500">Média</p>
+                              <p className="text-[12px] font-black text-white">{fundamentalsAverage}</p>
+                            </div>
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2">
+                              <p className="text-[9px] text-zinc-500">Em alta</p>
+                              <p className="text-[12px] font-black text-[#22C55E]">{fundamentalsTrend.filter((f) => f.trend === "up").length}</p>
+                            </div>
+                            <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2">
+                              <p className="text-[9px] text-zinc-500">Atenção</p>
+                              <p className="text-[12px] font-black text-[#EF4444]">{fundamentalsTrend.filter((f) => f.trend === "down").length}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEvolModal(true)}
+                          className={`w-full rounded-xl border border-[#EAB308]/25 bg-[#EAB308]/8 py-2.5 text-[11px] font-bold text-[#EAB308] hover:bg-[#EAB308]/12 transition-colors ${ctaClass}`}
+                        >
+                          Ver gráfico completo e histórico de notas →
+                        </button>
+                      </>
+                    )}
                   </div>
-                </div>
-                <div className="flex items-center justify-center mt-3 gap-1.5 text-[10px] text-zinc-600 font-bold">
-                  <ChevronRight className="w-3 h-3"/>Ver gráfico completo e histórico de notas
-                </div>
-              </>
-            )}
-          </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </motion.div>
       )}
-
-      {/* Evolução por fundamentos */}
-      <motion.div variants={homeItem} className="mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2"><Target className="w-5 h-5 text-[#EAB308]"/> Evolução por Fundamentos</h2>
-          <button onClick={() => setEvolModal(true)} className={`text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg ${ctaClass}`}>Ver detalhe</button>
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/55 p-3">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2">
-              <p className="text-[9px] text-zinc-500">Média técnica</p>
-              <p className="text-[12px] font-black text-white">{fundamentalsAverage}</p>
-            </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2">
-              <p className="text-[9px] text-zinc-500">Em alta</p>
-              <p className="text-[12px] font-black text-[#22C55E]">{fundamentalsTrend.filter((f) => f.trend === "up").length}</p>
-            </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/55 p-2">
-              <p className="text-[9px] text-zinc-500">Atenção</p>
-              <p className="text-[12px] font-black text-[#EF4444]">{fundamentalsTrend.filter((f) => f.trend === "down").length}</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
 
       {/* ── Banners suplementares: prioridade única ──
            Regra: máx 1 de cada vez.
@@ -2151,8 +2142,7 @@ export default function StudentHome() {
         )}
       </AnimatePresence>
 
-      {/* Payment Sheet */}
-      <StudentPaymentSheet open={showPayments} onClose={() => setShowPayments(false)} />
+      {/* Payment Sheet + sheets secundários → StudentHomeModals */}
 
       {/* Notifications Drawer */}
       <AnimatePresence>
@@ -3201,132 +3191,46 @@ export default function StudentHome() {
         onQRScan={() => setShowQRScanner(true)}
       />
 
-      <AnimatePresence>
-        {showAttendanceCalendar && user?.id && (
-          <AttendanceCalendarPanel
-            lessons={lessons}
-            studentId={user.id}
-            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
-            streak={streak}
-            bestStreak={bestStreak}
-            onClose={() => setShowAttendanceCalendar(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showLessonHistory && profile?.id && (
-          <LessonHistoryPanel
-            studentId={profile.id}
-            getCategory={getCategory}
-            onClose={() => setShowLessonHistory(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showStudentSchedule && user?.id && (
-          <StudentSchedulePanel
-            studentId={user.id}
-            lessons={lessons}
-            getCategory={getCategory}
-            onClose={() => setShowStudentSchedule(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showAbsenceSheet && user?.id && (
-          <AbsenceRequestSheet
-            lessons={lessons}
-            studentId={user.id}
-            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
-            onClose={() => setShowAbsenceSheet(false)}
-            onRequestReposition={() => setShowRepositionSheet(true)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showRepositionSheet && (
-          <RepositionSheet
-            getCategoryName={(id) => getCategory(id)?.name ?? "Aula"}
-            onClose={() => setShowRepositionSheet(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showTimeline && profile?.id && (
-          <AthleteTimelinePanel
-            studentCrmId={profile.id}
-            studentName={profile.name ?? user?.name ?? "Atleta"}
-            onClose={() => setShowTimeline(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showNotificationCenter && user?.id && (
-          <NotificationCenterPanel
-            studentId={user.id}
-            onClose={() => setShowNotificationCenter(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showPushSettings && (
-          <PushSettingsPanel
-            role="aluno"
-            onClose={() => setShowPushSettings(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showFreeTraining && profile?.id && (
-          <FreeTrainingSheet
-            studentCrmId={profile.id}
-            onClose={() => setShowFreeTraining(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showAchievementFeed && user?.id && (
-          <AchievementFeedPanel
-            studentId={user.id}
-            onClose={() => setShowAchievementFeed(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showReferralPanel && profile?.id && (
-          <ReferralPanel
-            studentId={profile.id}
-            onClose={() => setShowReferralPanel(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showTrainingPlan && user?.id && (
-          <StudentTrainingPlanPanel
-            studentId={user.id}
-            onClose={() => setShowTrainingPlan(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showQRScanner && (
-          <QRScannerSheet
-            onClose={() => setShowQRScanner(false)}
-          />
-        )}
-      </AnimatePresence>
+      <StudentHomeModals
+        showAttendanceCalendar={showAttendanceCalendar}
+        showLessonHistory={showLessonHistory}
+        showStudentSchedule={showStudentSchedule}
+        showAbsenceSheet={showAbsenceSheet}
+        showRepositionSheet={showRepositionSheet}
+        showTimeline={showTimeline}
+        showNotificationCenter={showNotificationCenter}
+        showPushSettings={showPushSettings}
+        showFreeTraining={showFreeTraining}
+        showAchievementFeed={showAchievementFeed}
+        showReferralPanel={showReferralPanel}
+        showTrainingPlan={showTrainingPlan}
+        showQRScanner={showQRScanner}
+        showPayments={showPayments}
+        setShowAttendanceCalendar={setShowAttendanceCalendar}
+        setShowLessonHistory={setShowLessonHistory}
+        setShowStudentSchedule={setShowStudentSchedule}
+        setShowAbsenceSheet={setShowAbsenceSheet}
+        setShowRepositionSheet={setShowRepositionSheet}
+        setShowTimeline={setShowTimeline}
+        setShowNotificationCenter={setShowNotificationCenter}
+        setShowPushSettings={setShowPushSettings}
+        setShowFreeTraining={setShowFreeTraining}
+        setShowAchievementFeed={setShowAchievementFeed}
+        setShowReferralPanel={setShowReferralPanel}
+        setShowTrainingPlan={setShowTrainingPlan}
+        setShowQRScanner={setShowQRScanner}
+        setShowPayments={setShowPayments}
+        lessons={lessons}
+        profile={profile}
+        user={user}
+        streak={streak}
+        bestStreak={bestStreak}
+        getCategory={getCategory}
+        sessionExpired={sessionExpired}
+        sessionRecovering={sessionRecovering}
+        recoverSession={recoverSession}
+        sessionForceLogout={sessionForceLogout}
+      />
 
       {/* Invisible presence tracker — registra o aluno no canal Realtime de presença */}
       {profile?.id && profile?.name && (
@@ -3482,14 +3386,6 @@ export default function StudentHome() {
         )}
       </AnimatePresence>
     </motion.div>
-
-      {/* ===== SESSION EXPIRED MODAL ===== */}
-      <SessionExpiredModal
-        isOpen={sessionExpired}
-        onReconnect={recoverSession}
-        onLogout={sessionForceLogout}
-        recovering={sessionRecovering}
-      />
     </>
   );
 }
