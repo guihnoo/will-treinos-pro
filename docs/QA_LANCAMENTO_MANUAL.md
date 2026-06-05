@@ -2,6 +2,14 @@
 
 Base: https://will-treinos-pro.vercel.app
 
+## Auth (Will — infra já configurada 04/06)
+| # | Teste | ✅/❌ |
+|---|--------|------|
+| L1 | Login email/senha aluno → **Início** (não loop login) | |
+| L2 | Login Google admin → **Cockpit** | |
+| L3 | Esqueci senha → e-mail → link abre `/nova-senha` | |
+| L4 | Logout → login de novo | |
+
 ## Aluno
 | # | Teste | ✅/❌ |
 |---|--------|------|
@@ -12,6 +20,8 @@ Base: https://will-treinos-pro.vercel.app
 | A5 | Config / Perfil / Check-in | |
 | A6 | Indicação — link copiado usa `will-treinos-pro.vercel.app` | |
 | A7 | Esqueci senha → nova senha | |
+| A8 | Sino → abas Avisos/Recados; CTA recados abre painel (`?recados=1`) | |
+| A9 | Mensagem do coach → notificação aparece (sem duplicata) | |
 
 ## Admin
 | # | Teste | ✅/❌ |
@@ -19,3 +29,4 @@ Base: https://will-treinos-pro.vercel.app
 | C1 | Google → Cockpit | |
 | C2 | Aprovar pendente | |
 | C3 | Criar aula + financeiro | |
+| C4 | Sino → Pulse sheet; peek desktop; strip ações pendentes no Cockpit | |

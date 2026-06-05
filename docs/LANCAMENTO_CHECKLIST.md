@@ -4,26 +4,30 @@
 
 | Agente | Foco |
 |--------|------|
-| **Claude Code** | Lote A — `docs/CLAUDE_CODE_LOTE_A_FREEMIUM.md` |
-| **Cursor** | Lote B — código + UX |
-| **Will** | Piloto real |
+| **Claude Code** | Lote C — `docs/CLAUDE_CODE_LOTE_C_HARDENING.md` |
+| **Cursor** | Lote D — piloto + polish UX |
+| **Will** | Piloto real + login produção |
 
-## Infra (Claude — Lote A + Cursor follow-up)
+## Infra
 - [x] `vercel.json` + orchestrator(es) no `main` + deploy Ready
-- [ ] Supabase Auth: site URL + 4 redirect URLs (vercel.app + localhost) — **Will ~3 min**
+- [x] Supabase Auth: Site URL + redirect URLs (vercel.app + localhost) — **04/06 Will**
 - [x] `NEXT_PUBLIC_APP_URL` na Vercel Production
-- [x] Smoke 15 rotas (runbook)
+- [x] Smoke rotas produção (`scripts/smoke-production.ps1`)
 - [x] VERIFY_PRODUCTION OK (MCP)
 - [x] CI Playwright otimizado freemium
-- [ ] Secret `CRON_SECRET` no GitHub Actions (mesmo valor Vercel) — **Will ~1 min**
+- [x] Secret `CRON_SECRET` no GitHub Actions — **04/06 Will**
+- [ ] `supabase/APPLY_SECURITY_AND_PERF.sql` no remoto — **Claude Lote C**
 - [ ] ~~Domínio .com.br~~ adiado
 
-## Produto (Cursor — Lote B)
-- [x] `src/lib/appUrl.ts` + links sem `willtreinospro.com.br`
-- [x] Docs plano freemium + prompt Claude
-- [x] Build + push (parcial — ver git)
-- [ ] QA manual preenchido
+## Produto (Cursor)
+- [x] `src/lib/appUrl.ts` + links sem domínio pago
+- [x] Pulse Inbox A+B+C + polish mobile/deep link recados
+- [x] Fix missão do dia (CRM id + conclusão real)
+- [x] Fix notificações aluno (dedup + link-student)
+- [ ] QA manual preenchido (Will)
 
 ## Piloto (Will)
+- [ ] Login produção: email, Google, esqueci senha
 - [ ] 1 aluno: cadastro → aprovação → login → check-in → XP
 - [ ] 1 fluxo admin: aprovar + criar aula
+- [ ] Sino / recados: aluno vê mensagem do coach
