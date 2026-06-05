@@ -16,7 +16,7 @@
 - [x] VERIFY_PRODUCTION OK (MCP)
 - [x] CI Playwright otimizado freemium
 - [x] Secret `CRON_SECRET` no GitHub Actions — **04/06 Will**
-- [ ] `supabase/APPLY_SECURITY_AND_PERF.sql` no remoto — **Claude Lote C**
+- [x] `supabase/APPLY_SECURITY_AND_PERF.sql` no remoto — **05/06 Cursor MCP** (migration `apply_security_and_perf_launch` + trigger)
 - [ ] ~~Domínio .com.br~~ adiado
 
 ## Produto (Cursor)

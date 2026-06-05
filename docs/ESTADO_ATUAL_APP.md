@@ -19,7 +19,7 @@
 | Notificações (dedup + aluno) | ✅ fix b2ece34 |
 | Missões diárias (CRM id correto) | ✅ fix 30524aa |
 | `/api/health` endpoint | ✅ criado (Lote C) |
-| `APPLY_SECURITY_AND_PERF.sql` | ⚠️ **Pendente — rodar no Supabase SQL Editor** |
+| `APPLY_SECURITY_AND_PERF.sql` | ✅ **05/06** — MCP migration + trigger + índices |
 | Playwright CI | ⚠️ 4 secrets faltando no GitHub |
 
 ---
