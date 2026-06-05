@@ -17,7 +17,23 @@ Smoke E2E roda contra a URL pública do app (sem login real com credenciais no C
 
 Não é necessário `SUPABASE_SERVICE_ROLE_KEY` no workflow de smoke E2E.
 
-## Comandos locais
+## Configurar secrets automaticamente (Windows)
+
+Com Git Credential Manager já autenticado no GitHub:
+
+```powershell
+cd c:\Users\monte\Desktop\will-treinos-pro
+node scripts/set-github-ci-secrets.mjs
+```
+
+O script resolve `NEXT_PUBLIC_SUPABASE_ANON_KEY` do bundle de produção e gera VAPID para CI se a chave da Vercel não estiver acessível via CLI. Para forçar a chave VAPID de produção:
+
+```powershell
+$env:CI_SECRET_VAPID_PUBLIC_KEY = "<copiar do painel Vercel Production>"
+node scripts/set-github-ci-secrets.mjs
+```
+
+Verificar: `gh secret list --repo guihnoo/will-treinos-pro`
 
 ```powershell
 cd c:\Users\monte\Desktop\will-treinos-pro

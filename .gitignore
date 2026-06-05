@@ -49,6 +49,9 @@ public/sw.js
 public/sw.js.map
 
 # Arquivos temporários de secrets (NUNCA commitar)
+.env.ci-secrets.tmp
+.env.vercel.pull
+.env.vercel.production
 *.secret
 *-secret-temp.*
 *-secret.*
