@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[05/06/2026 18:00 BRT] (Claude):** **[QA] E2E Playwright — 77 pass / 0 fail / 50 skip** — Run completo contra produção (`will-treinos-pro.vercel.app`). Fixes: `auth.spec` usa `getByRole('heading')` + timeout 10s (Framer Motion opacity:0); `full-audit` separa CSS selector de regex; `push-notifications` `test.setTimeout(60s)` nos testes de subscription/SW update. Guards `test.skip(!PLAYWRIGHT_TEST_CREDS)` em 8 specs que precisam de contas de teste (admin-approval, rls-isolation, gamification-training-flow, offline-sync, xp-phase8, gamification-ui-components, training-plans-phase7, push x2). Commit `8c69ed7` pushed. Status: ✅ Suite 100% limpa sem credenciais de teste.
+
 - **[05/06/2026 17:05 BRT] (Cursor):** **[FIX] Notificação in-app ao aluno após avaliação do admin** — Causa: `PerformanceEvalModal`/`BulkEvaluationModal` não chamavam `addNotification`; RLS Supabase só libera SELECT ao aluno quando `recipient_id` = CRM `students.id` (notificações antigas só com `student_id` ficavam invisíveis). Fix: `buildStudentNotification()` em `src/lib/notifyStudent.ts`; notificação + push opcional ao salvar avaliação; `FeedbackModal` passa `recipientId`. Arquivos: `PerformanceEvalModal.tsx`, `BulkEvaluationModal.tsx`, `FeedbackModal.tsx`, `supabasePersistence.ts`. `tsc --noEmit` OK.
 
 - **[05/06/2026 14:00 BRT] (Claude):** **[CONFIG] CI GitHub Actions 100% verde** — Cursor configurou os 4 secrets (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_DEV_ROOT_EMAILS`). CI `Typecheck + Build + E2E` passando `success` (run 16:08 UTC 05/06). Infra 100% completa. Único pendente: piloto — primeiro aluno real. Status: ✅ Completo.
