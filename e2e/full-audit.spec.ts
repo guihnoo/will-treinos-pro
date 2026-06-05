@@ -107,7 +107,8 @@ test.describe("01 — Páginas Públicas", () => {
     // Deve permanecer no login E mostrar algum feedback de erro
     const url = page.url();
     const stillOnLogin = url.includes("login");
-    const hasError = await page.locator('[class*="error"], [class*="red"], [class*="danger"], text=/inválid|incorret|erro|failed|wrong/i').count() > 0;
+    const hasError = await page.locator('[class*="error"], [class*="red"], [class*="danger"]').count() > 0
+      || await page.getByText(/inválid|incorret|erro|failed|wrong/i).count() > 0;
 
     if (!stillOnLogin) logError("/login", "Após credencial inválida, redirecionou para outra página", "bug");
     if (!hasError) logError("/login", "Nenhuma mensagem de erro visível após credencial inválida", "warning");

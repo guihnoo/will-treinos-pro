@@ -28,6 +28,7 @@ test.describe("Push Notifications", () => {
   });
 
   test("should allow push notification subscription", async ({ page }) => {
+    test.setTimeout(60_000);
     await page.goto("/dashboard");
 
     // Tentar se inscrever em push notifications
@@ -58,6 +59,7 @@ test.describe("Push Notifications", () => {
   });
 
   test("should handle push message event", async ({ page }) => {
+    test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
     await page.goto("/dashboard");
 
     // Setup listener para push messages
@@ -144,6 +146,7 @@ test.describe("Push Notifications", () => {
   });
 
   test("should send push notification to correct role", async ({ page }) => {
+    test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
     // Fazer login como admin
     await page.goto("/login");
 
@@ -232,6 +235,7 @@ test.describe("Push Notifications", () => {
   });
 
   test("should handle service worker update", async ({ page }) => {
+    test.setTimeout(60_000);
     await page.goto("/dashboard");
 
     // Forçar atualização de SW

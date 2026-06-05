@@ -12,6 +12,8 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("RLS Isolation", () => {
+  test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
+
   test("student A cannot view student B data", async ({ page, context }) => {
     // Este teste requer 2 usuários logados em contextos diferentes
     // Aluno A faz login

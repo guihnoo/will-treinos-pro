@@ -7,6 +7,8 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Gamification UI Components', () => {
+  test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
+
   test('XPBadge renders with correct structure', async ({ page }) => {
     // Navigate to a page with XPBadge (dashboard or any student-facing page)
     // For this test, we assume the dev server is running

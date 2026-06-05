@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Gamification + Training Flow E2E', () => {
+  test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
+
   test.beforeEach(async ({ page }) => {
     // Login como aluno de teste
     await page.goto('/login');

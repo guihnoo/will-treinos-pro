@@ -11,6 +11,8 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Offline-First Sync", () => {
+  test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
+
   test("should queue action when offline and sync when back online", async ({
     page,
     context,

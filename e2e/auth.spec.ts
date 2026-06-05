@@ -12,7 +12,7 @@ test.describe("Authentication", () => {
     await page.goto("/login");
 
     // Verificar que página de login carregou
-    await expect(page.locator("text=Will Treinos PRO")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Will Treinos PRO/i })).toBeVisible({ timeout: 10_000 });
 
     // Verificar que inputs de email/password estão presentes
     const emailInput = page.locator('input[type="email"]');

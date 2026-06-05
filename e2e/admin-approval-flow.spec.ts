@@ -13,6 +13,8 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Admin Approval Flow", () => {
+  test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
+
   test("new student signup triggers admin notification", async ({ page }) => {
     // Fazer signup como novo aluno
     await page.goto("/signup");

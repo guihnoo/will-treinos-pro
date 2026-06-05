@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Phase 7 — Training Plans (Complete Flow)', () => {
+  test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
+
   test.beforeEach(async ({ page }) => {
     // Start from home
     await page.goto('/');
@@ -197,6 +199,7 @@ test.describe('Phase 7 — Type Safety & Compilation', () => {
 
 test.describe('Phase 7 — RLS Security Validation', () => {
   test('Unauthorized user cannot read other student plans', async ({ page, context }) => {
+    test.skip(!process.env.PLAYWRIGHT_TEST_CREDS, 'Requer PLAYWRIGHT_TEST_CREDS — contas de teste não configuradas');
     // Create a separate browser context for different user
     const otherContext = await context.browser()?.newContext();
     if (!otherContext) return;
