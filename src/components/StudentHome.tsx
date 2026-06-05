@@ -30,26 +30,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
-import GeoCheckInButton from "@/components/student/GeoCheckInButton";
-import LessonCountdownCard from "@/components/student/LessonCountdownCard";
+import NextLessonCard from "@/components/student/NextLessonCard";
 import StudentDailyMissionCard from "@/components/student/StudentDailyMissionCard";
-import { studentHasRealAvatar } from "@/lib/avatarSrc";
+import { XPFloatNotification } from "@/components/XPFloatNotification";
 
 // ─── Lazy-loaded panels (code-split — zero cost at startup) ──────────────────
 const StudentGamificationDashboard = dynamic(
   () => import("@/components/StudentGamificationDashboard").then((m) => ({ default: m.StudentGamificationDashboard })),
-  { ssr: false, loading: () => null }
-);
-const GamificationPanel = dynamic(
-  () => import("@/components/gamification/GamificationPanel").then((m) => ({ default: m.GamificationPanel })),
-  { ssr: false, loading: () => null }
-);
-const LeaderboardRankingPanel = dynamic(
-  () => import("@/components/leaderboard/LeaderboardRankingPanel").then((m) => ({ default: m.LeaderboardRankingPanel })),
-  { ssr: false, loading: () => null }
-);
-const TurmaLeaderboardCard = dynamic(
-  () => import("@/components/leaderboard/TurmaLeaderboardCard"),
   { ssr: false, loading: () => null }
 );
 const StudentTwinCard = dynamic(
@@ -75,7 +62,6 @@ const WeeklyChallengeCard = dynamic(
 // Modal panels — only loaded when first opened
 const LessonRatingSheet      = dynamic(() => import("@/components/LessonRatingSheet"), { ssr: false, loading: () => null });
 const Confetti                = dynamic(() => import("@/components/Confetti"), { ssr: false, loading: () => null });
-const LeaderboardPanel        = dynamic(() => import("@/components/LeaderboardPanel").then((m) => ({ default: m.LeaderboardPanel })), { ssr: false, loading: () => null });
 const DailyChallengesPanel    = dynamic(() => import("@/components/gamification/DailyChallengesPanel"), { ssr: false, loading: () => null });
 const AthleteTwinPanel        = dynamic(() => import("@/components/will/AthleteTwinPanel"), { ssr: false, loading: () => null });
 const StudentPillarPanel      = dynamic(() => import("@/components/student/StudentPillarPanel"), { ssr: false, loading: () => null });
@@ -107,7 +93,6 @@ import AppSectionCard from "@/components/ui/AppSectionCard";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { FloatingActionMenu } from "@/components/FloatingActionMenu";
-import { YourDayCard } from "@/components/YourDayCard";
 import WelcomeModal from "@/components/student/WelcomeModal";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import SessionExpiredModal from "@/components/SessionExpiredModal";
@@ -552,7 +537,7 @@ export default function StudentHome() {
   const { appConfig } = useAppConfig();
   const { lessonRatings, addLessonRating, getLessonRating } = useLessonRatings();
   const { user, usingSupabaseSession } = useAuth();
-  const { totalXP, xpFloatEvents } = useGamification();
+  const { totalXP, xpFloatEvents, removeXPFloat } = useGamification();
   const { addPost } = useFeed();
   const { requestReposition } = useApp();
   const { lessons } = useLessons();
@@ -642,8 +627,8 @@ export default function StudentHome() {
   const [kpiCount, setKpiCount] = useState({ aulas: 0, streak: 0, nota: 0, freq: 0 });
   const [showDailyQuote, setShowDailyQuote] = useState(false);
   const [showXpModal, setShowXpModal] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
+  const [showConquistasMore, setShowConquistasMore] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [showStudentTwin, setShowStudentTwin] = useState(false);
   const [showPillarPanel, setShowPillarPanel] = useState(false);
@@ -683,7 +668,7 @@ export default function StudentHome() {
       ratingLesson ||
       showDailyQuote ||
       showXpModal ||
-      showLeaderboard ||
+      showConquistasMore ||
       showGamificationDashboard ||
       showDailyChallenges ||
       showStudentTwin ||
@@ -743,10 +728,6 @@ export default function StudentHome() {
 
   const profile = crmStudentId ? students.find((s) => s.id === crmStudentId) : undefined;
   const studentIdForData = crmStudentId ?? profile?.id ?? user?.id ?? "";
-  const hasRealAvatar = useMemo(
-    () => studentHasRealAvatar(profile?.avatar, user?.avatar),
-    [profile?.avatar, user?.avatar],
-  );
 
   useEffect(() => {
     if (!hydrated || searchParams.get("recados") !== "1" || !crmStudentId) return;
@@ -1057,24 +1038,6 @@ export default function StudentHome() {
     };
   };
 
-  // Countdown to next lesson
-  const [countdown, setCountdown] = React.useState("");
-  React.useEffect(() => {
-    if (!nextLesson) return;
-    const tick = () => {
-      const now = new Date();
-      const target = lessonLocalDateTime(nextLesson.date, nextLesson.startTime);
-      const diff = target.getTime() - now.getTime();
-      if (diff <= 0) { setCountdown("Agora!"); return; }
-      const h = Math.floor(diff/3600000);
-      const m = Math.floor((diff%3600000)/60000);
-      setCountdown(h > 0 ? `${h}h ${m}min` : `${m}min`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [nextLesson]);
-
   // SECURITY: same rule as financeiro CRM id (recipientId === user.id) + globals; staff sees all
   const myNotifications = (role: string | null | undefined, userId: string) => {
     if (role === "admin" || role === "coach") return notifications;
@@ -1333,14 +1296,36 @@ export default function StudentHome() {
         </motion.div>
       )}
 
-      {/* 1. Countdown da próxima aula — destaque máximo */}
-      {user?.id && (
+      {/* 1. Próxima aula — card único (countdown + check-in) */}
+      {user?.id && studentIdForData && (
         <motion.div variants={homeItem} className="px-1">
-          <LessonCountdownCard
-            lessons={lessons}
-            studentId={user.id}
-            getCategoryFn={getCategory}
-            onCheckIn={() => toast("Vá até a quadra e pressione o botão de check-in da turma 🏐", "info")}
+          <NextLessonCard
+            lessons={myLessons}
+            studentId={studentIdForData}
+            userId={user.id}
+            localNow={localNow}
+            courtLocation={appConfig.courtLocation}
+            getCategory={getCategory}
+            onOpenLesson={(lesson) => setLessonModal(lesson)}
+            onOpenAgenda={() => {
+              setSelectedDay(week7[0] ?? null);
+              setShowAgendaPanel(true);
+            }}
+            onCheckIn={(lessonId, uid) => {
+              haptic([18, 12, 20]);
+              requestCheckIn(lessonId, uid);
+              richToast.success("Chegada registrada!", "Aguardando confirmação do professor.");
+            }}
+            onGeoCheckIn={(lessonId, uid, isAtCourt) => {
+              requestCheckIn(lessonId, uid);
+              toast(
+                isAtCourt
+                  ? "📍 Check-in na quadra confirmado! +50 XP aguardando professor."
+                  : "🏠 Treino externo registrado! +10 XP anti-cheat.",
+                "success",
+              );
+            }}
+            ctaClass={ctaClass}
           />
         </motion.div>
       )}
@@ -1355,12 +1340,12 @@ export default function StudentHome() {
         </motion.div>
       )}
 
-      {/* 1c. Missão do dia — onboarding leve */}
-      {crmStudentId && (
+      {/* 1c. Missão do dia — só após onboarding (XP ≥ 400) */}
+      {crmStudentId && totalXP >= 400 && (
         <motion.div variants={homeItem} className="px-1">
           <StudentDailyMissionCard
             crmStudentId={crmStudentId}
-            hasAvatar={hasRealAvatar}
+            hasAvatar={Boolean(profile?.avatar && !profile.avatar.includes("dicebear"))}
             lessons={lessons}
           />
         </motion.div>
@@ -1440,51 +1425,6 @@ export default function StudentHome() {
         </button>
       </motion.div>
 
-      {/* 3. Próximas Aulas — Bloco "Hoje" — 3 upcoming with quick actions */}
-      {user?.id && (() => {
-        const today = localDateISO();
-        const upcoming = myLessons
-          .filter(l => l.status === "scheduled" && l.date >= today)
-          .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
-          .slice(0, 3);
-        if (upcoming.length === 0) return null;
-        return (
-          <motion.div variants={homeItem} className="px-1">
-            <div className="space-y-1.5">
-              {upcoming.map(lesson => {
-                const title = lesson.title || getCategory(lesson.categoryId)?.name || "Aula";
-                const d = new Date(`${lesson.date}T00:00:00`);
-                const today2 = new Date(); today2.setHours(0,0,0,0);
-                const diff = Math.round((d.getTime() - today2.getTime()) / 86400000);
-                const dayLabel = diff === 0 ? "Hoje" : diff === 1 ? "Amanhã" : d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
-                return (
-                  <div key={lesson.id} className="flex items-center gap-3 rounded-2xl border border-zinc-800/60 bg-zinc-900/30 px-3 py-2.5">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{title}</p>
-                      <p className="text-[10px] text-zinc-500">{dayLabel} · {lesson.startTime}</p>
-                    </div>
-                    <div className="flex gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={() => { haptic(8); setShowAbsenceSheet(true); }}
-                        className="rounded-lg border border-orange-500/30 bg-orange-500/8 px-2 py-1 text-[9px] font-black text-orange-400 hover:bg-orange-500/15 transition-colors"
-                      >
-                        Faltar
-                      </button>
-                      <button
-                        onClick={() => { haptic(8); setShowRepositionSheet(true); }}
-                        className="rounded-lg border border-teal-500/30 bg-teal-500/8 px-2 py-1 text-[9px] font-black text-teal-400 hover:bg-teal-500/15 transition-colors"
-                      >
-                        Repor
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        );
-      })()}
-
       {/* Alerta de Frequência */}
       {user?.id && profile?.frequency && (
         <motion.div variants={homeItem} className="px-1">
@@ -1529,98 +1469,6 @@ export default function StudentHome() {
             </div>
             <span className="text-xs font-black text-amber-400 flex-shrink-0">Avaliar →</span>
           </motion.button>
-        </motion.div>
-      )}
-
-      {/* Your Day Card */}
-      <motion.div variants={homeItem}>
-        <YourDayCard />
-      </motion.div>
-
-      {/* BLOCO 1: Próxima Aula + Check-in */}
-      {nextLesson ? (
-        <motion.div variants={homeItem}>
-          <div
-            onClick={() => setLessonModal(nextLesson)}
-            className="rounded-2xl border border-[#EAB308]/30 bg-zinc-950/60 backdrop-blur-xl p-4 cursor-pointer hover:border-[#EAB308]/50 transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#EAB308]">Próxima aula</span>
-                  {countdown && (
-                    <span className="flex items-center gap-1 rounded-full border border-[#EAB308]/25 bg-[#EAB308]/10 px-2 py-0.5 text-[10px] font-bold text-[#EAB308]">
-                      <Clock className="h-3 w-3" />{countdown}
-                    </span>
-                  )}
-                  {nextLesson.status === "in-progress" && (
-                    <span className="flex animate-pulse items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[9px] font-black text-red-400">
-                      <Radio className="h-2.5 w-2.5" />Ao vivo
-                    </span>
-                  )}
-                </div>
-                <p className="truncate text-base font-bold text-white">{nextLesson.title}</p>
-                <p className="mt-0.5 text-[11px] text-zinc-500">{nextLesson.startTime}–{nextLesson.endTime} · {nextLesson.enrolledStudents.length} alunos</p>
-              </div>
-              {(() => {
-                const gate = checkInGate(nextLesson);
-                if (nextLesson.presentStudents.includes(user?.id || "")) {
-                  return (
-                    <div className="flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl border border-[#22C55E]/35 bg-[#22C55E]/10 px-3 py-2 text-[#22C55E]">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <span className="text-[10px] font-bold">Confirmado</span>
-                    </div>
-                  );
-                }
-                if (nextLesson.checkInRequests?.find(r => r.studentId === user?.id)?.status === "pending") {
-                  return (
-                    <div className="flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 px-3 py-2">
-                      <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-                        <Clock className="h-5 w-5 text-[#EAB308]" />
-                      </motion.div>
-                      <span className="text-[10px] font-bold text-[#EAB308]">Aguardando</span>
-                    </div>
-                  );
-                }
-                if (gate.locked) {
-                  return (
-                    <div className="flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl border border-zinc-700 bg-zinc-900/80 px-3 py-2 text-center">
-                      <Lock className="h-5 w-5 text-zinc-500" />
-                      <span className="text-[10px] font-bold text-zinc-500">Bloqueado</span>
-                      <span className="max-w-[64px] text-[9px] text-zinc-600">{gate.unlockLabel}</span>
-                    </div>
-                  );
-                }
-                return (
-                  <motion.button
-                    whileTap={{ scale: 0.92 }}
-                    onClick={e => {
-                      e.stopPropagation();
-                      haptic([18, 12, 20]);
-                      if (!user?.id) return;
-                      requestCheckIn(nextLesson.id, user.id);
-                      richToast.success("Chegada registrada!", "Aguardando confirmação do professor.");
-                    }}
-                    className={`flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl bg-[#EAB308] px-3 py-2 font-bold text-black shadow-[0_0_16px_rgba(234,179,8,0.3)] ${ctaClass}`}
-                  >
-                    <MapPin className="h-5 w-5" />
-                    <span className="text-[10px]">Check-in</span>
-                  </motion.button>
-                );
-              })()}
-            </div>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div variants={homeItem} className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 p-5 text-center">
-          <CalendarIcon className="mx-auto mb-2 h-8 w-8 text-zinc-700" />
-          <p className="text-sm text-zinc-500">Nenhum treino agendado no momento.</p>
-          <button
-            onClick={() => { setSelectedDay(week7[0] ?? null); setShowAgendaPanel(true); }}
-            className={`mt-2 text-[11px] font-bold text-[#EAB308] ${ctaClass}`}
-          >
-            Ver agenda completa
-          </button>
         </motion.div>
       )}
 
@@ -1710,8 +1558,9 @@ export default function StudentHome() {
             <p className="text-sm font-black text-[#EAB308]">{executionRate}%</p>
           </div>
         </div>
-        <button
-          onClick={() => { haptic([22, 16, 22]); setShowLeaderboard(true); }}
+        <Link
+          href="/ranking"
+          onClick={() => haptic([22, 16, 22])}
           className={`mt-3 w-full rounded-xl border border-yellow-500/20 bg-yellow-500/8 p-2.5 flex items-center justify-between ${ctaClass}`}
         >
           <div className="flex items-center gap-2">
@@ -1719,7 +1568,7 @@ export default function StudentHome() {
             <span className="text-[11px] font-bold text-yellow-400">Ranking — ver minha posição</span>
           </div>
           <ChevronRight className="h-4 w-4 text-yellow-600" />
-        </button>
+        </Link>
       </motion.div>
 
       {/* BLOCO 4: Meus Pagamentos */}
@@ -1988,106 +1837,6 @@ export default function StudentHome() {
         )}
       </AnimatePresence>
 
-      {/* Próximo Treino — CLICÁVEL */}
-      {false && nextLesson ? (
-        (() => {
-          const gate = checkInGate(nextLesson);
-          return (
-        <motion.div variants={homeItem}
-          onClick={() => setLessonModal(nextLesson)}
-          className="mb-5 rounded-3xl border border-[#EAB308]/35 bg-zinc-950/50 backdrop-blur-xl p-5 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.08)] cursor-pointer hover:border-[#EAB308]/55 transition-all active:scale-[0.99]">
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-[#EAB308] rounded-r-full"/>
-          <div className="flex justify-between items-start gap-2 sm:gap-4 pl-1 sm:pl-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-bold text-black bg-[#EAB308] px-2 py-0.5 rounded-md uppercase inline-flex items-center gap-1.5">
-                  {nextLesson.status === "in-progress" ? (
-                    <>
-                      <span className="inline-flex h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.25)] animate-pulse" />
-                      AO VIVO
-                    </>
-                  ) : (
-                    "Próximo treino"
-                  )}
-                </span>
-                {countdown && (
-                  <span className="text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                    <Clock className="w-3 h-3 opacity-80" />
-                    {countdown}
-                  </span>
-                )}
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-1 truncate">{nextLesson.title}</h3>
-              <div className="flex items-center gap-4 text-sm text-zinc-400 flex-wrap">
-                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5 text-[#EAB308]"/>{nextLesson.startTime}–{nextLesson.endTime}</span>
-                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5"/>{nextLesson.enrolledStudents.length} alunos</span>
-              </div>
-              {nextLesson.enrolledStudents.filter(id=>id!==user?.id).length>0 && (
-                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                  {nextLesson.enrolledStudents.filter(id=>id!==user?.id).slice(0,5).map((sid,idx)=>{
-                    const s = students.find(st=>st.id===sid);
-                    return (
-                      <div key={sid} className="flex items-center gap-1 bg-zinc-900/60 border border-zinc-800 rounded-full pl-0.5 pr-2 py-0.5 min-w-0" title={s?.name}>
-                        <img src={resolveAvatarSrc(s?.avatar, sid)}
-                          className="w-5 h-5 rounded-full object-cover border border-zinc-700 flex-shrink-0"/>
-                        <span className="text-[10px] text-zinc-400 font-medium truncate max-w-[60px]">{s?.name?.split(" ")[0] || "Aluno"}</span>
-                      </div>
-                    );
-                  })}
-                  {nextLesson.enrolledStudents.filter(id=>id!==user?.id).length>5 && (
-                    <span className="text-[10px] text-zinc-500">+{nextLesson.enrolledStudents.filter(id=>id!==user?.id).length-5}</span>
-                  )}
-                </div>
-              )}
-            </div>
-            {nextLesson.presentStudents.includes(user?.id||"") ? (
-              <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 text-[#22C55E] px-4 py-3 rounded-2xl flex flex-col items-center gap-1 flex-shrink-0">
-                <CheckCircle2 className="w-6 h-6"/><span className="text-xs font-bold">Confirmado</span>
-              </div>
-            ) : (nextLesson.checkInRequests?.find(r=>r.studentId===user?.id)?.status==="pending") ? (
-              <div className="bg-[#EAB308]/10 border border-[#EAB308]/30 px-4 py-3 rounded-2xl flex flex-col items-center gap-1 flex-shrink-0">
-                <motion.div animate={{scale:[1,1.2,1]}} transition={{repeat:Infinity,duration:1.5}}>
-                  <Clock className="w-6 h-6 text-[#EAB308]"/>
-                </motion.div>
-                <span className="text-xs font-bold text-[#EAB308]">Aguardando Prof.</span>
-                <span className="text-[9px] text-[#EAB308]/60">
-                  {new Date(nextLesson.checkInRequests!.find(r=>r.studentId===user?.id)!.arrivedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}
-                </span>
-              </div>
-            ) : gate.locked ? (
-              <div className="flex-shrink-0 flex flex-col items-center gap-1.5 bg-zinc-900/80 border border-zinc-700 text-zinc-400 px-4 py-3 rounded-2xl text-center">
-                <Lock className="w-5 h-5"/>
-                <span className="text-xs font-bold">Check-in bloqueado</span>
-                <span className="text-[9px] text-zinc-500">{gate.reason}</span>
-              </div>
-            ) : (
-              <GeoCheckInButton
-                courtLocation={appConfig.courtLocation}
-                onCheckIn={(isAtCourt) => {
-                  requestCheckIn(nextLesson.id, user!.id);
-                  toast(isAtCourt
-                    ? "📍 Check-in na quadra confirmado! +50 XP aguardando professor."
-                    : "🏠 Treino externo registrado! +10 XP anti-cheat."
-                  );
-                }}
-                className="flex-shrink-0 flex flex-col items-center gap-1.5 bg-[#EAB308] text-black px-4 py-3 rounded-2xl font-bold text-xs shadow-[0_0_15px_rgba(234,179,8,0.25)] text-center"
-              >
-                <MapPin className="w-5 h-5"/>
-                <span>Registrar</span>
-                <span className="opacity-70 font-normal">Chegada</span>
-              </GeoCheckInButton>
-            )}
-          </div>
-        </motion.div>
-          );
-        })()
-      ) : (
-        <motion.div variants={homeItem} className="mb-5 rounded-3xl border border-dashed border-zinc-700/50 bg-zinc-950/30 backdrop-blur-md p-8 text-center">
-          <CalendarIcon className="w-10 h-10 text-zinc-700 mx-auto mb-2"/>
-          <p className="text-zinc-500 text-sm">Nenhum treino agendado no momento.</p>
-        </motion.div>
-      )}
-
       {/* Minha Evolução — CLICÁVEL */}
       {myLessons.length > 0 && (
         <motion.div variants={homeItem} className="mb-5">
@@ -2272,7 +2021,7 @@ export default function StudentHome() {
               <OnboardingWidget
                 studentId={profile.id}
                 totalXP={totalXP}
-                hasAvatar={hasRealAvatar}
+                hasAvatar={!!(profile.avatar && !profile.avatar.includes("dicebear"))}
                 onOpenChallenges={() => setShowDailyChallenges(true)}
                 onOpenTwin={() => { markTwinViewed(profile.id); setShowStudentTwin(true); }}
                 onOpenFeed={() => { }}
@@ -2294,93 +2043,32 @@ export default function StudentHome() {
                 {unlockedTracksCount}/{achievementTracks.length} · nível {equippedTier.label}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 justify-end">
+              <button
+                onClick={() => { haptic([16, 12, 24]); setShowDailyChallenges(true); }}
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-violet-500/40 bg-violet-500/12 text-violet-300 transition-colors hover:bg-violet-500/20 ${ctaClass}`}
+              >
+                Desafios ⚡
+              </button>
+              {crmStudentId && (
                 <button
-                  onClick={() => { haptic([16, 12, 24]); setShowDailyChallenges(true); }}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-violet-500/40 bg-violet-500/12 text-violet-300 transition-colors hover:bg-violet-500/20 ${ctaClass}`}
+                  onClick={() => { haptic(18); setShowMessagesPanel(true); }}
+                  className={`relative text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#EAB308]/40 bg-[#EAB308]/10 text-amber-300 transition-colors hover:bg-[#EAB308]/20 ${ctaClass}`}
                 >
-                  Desafios ⚡
+                  💬 Recados
+                  {messagesUnread > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#EAB308] text-[8px] font-black text-black">
+                      {messagesUnread}
+                    </span>
+                  )}
                 </button>
-                {crmStudentId && (
-                  <button
-                    onClick={() => { haptic(18); setShowMessagesPanel(true); }}
-                    className={`relative text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#EAB308]/40 bg-[#EAB308]/10 text-amber-300 transition-colors hover:bg-[#EAB308]/20 ${ctaClass}`}
-                  >
-                    💬 Recados
-                    {messagesUnread > 0 && (
-                      <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#EAB308] text-[8px] font-black text-black">
-                        {messagesUnread}
-                      </span>
-                    )}
-                  </button>
-                )}
-                <button
-                  onClick={() => { haptic([16, 12, 24]); setShowGamificationDashboard(true); }}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${ctaClass}`}
-                  style={{ color: equippedTier.color, borderColor: `${equippedTier.color}40`, background: `${equippedTier.color}12` }}
-                >
-                  Progresso 🎯
-                </button>
-                {profile?.id && (
-                  <a
-                    href={`/atleta/${profile.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-                    onClick={() => haptic(8)}
-                  >
-                    🔗 Perfil
-                  </a>
-                )}
-                {profile?.id && (
-                  <button
-                    onClick={() => { haptic(8); setShowTimeline(true); }}
-                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-                  >
-                    🕐 Jornada
-                  </button>
-                )}
-                <button
-                  onClick={() => { haptic(8); setShowNotificationCenter(true); }}
-                  className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-                >
-                  🔔 Notifs
-                </button>
-                <button
-                  onClick={() => { haptic(8); setShowPushSettings(true); }}
-                  className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-                >
-                  📲 Push
-                </button>
-                <button
-                  onClick={() => { haptic([16, 12, 24]); setShowAchievementFeed(true); }}
-                  data-testid="btn-achievement-feed"
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-amber-500/35 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors ${ctaClass}`}
-                >
-                  🏆 Turma
-                </button>
-                <button
-                  onClick={() => { haptic([16, 12, 24]); setShowTrainingPlan(true); }}
-                  data-testid="btn-training-plan"
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-500/35 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-colors ${ctaClass}`}
-                >
-                  💪 Meu Plano
-                </button>
-                <button
-                  onClick={() => { haptic([16, 12, 24]); setShowReferralPanel(true); }}
-                  data-testid="btn-referral-panel"
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-violet-500/35 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors ${ctaClass}`}
-                >
-                  👥 Indicar Amigo
-                </button>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] text-zinc-500">Meta competitiva</p>
-                <p className="text-[11px] font-bold text-zinc-300">
-                  {nextTier ? `${nextTier.label} em ${Math.max(0, nextTier.min - meritScore)} pts` : "Tier máximo"}
-                </p>
-              </div>
+              )}
+              <button
+                onClick={() => { haptic(8); setShowConquistasMore(true); }}
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-300 hover:text-white hover:border-zinc-600 transition-colors ${ctaClass}`}
+              >
+                Mais ···
+              </button>
             </div>
           </div>
           <div className="mt-2 h-2 rounded-full bg-zinc-900 overflow-hidden">
@@ -2393,6 +2081,14 @@ export default function StudentHome() {
             />
           </div>
           <p className="mt-1 text-[10px] text-zinc-600">Conquistas por trilha: consistência, técnica, fundamentos e execução competitiva.</p>
+          <button
+            type="button"
+            onClick={() => { haptic([16, 12, 24]); setShowGamificationDashboard(true); }}
+            className={`mt-3 w-full rounded-xl border border-[#EAB308]/25 bg-[#EAB308]/8 px-3 py-2.5 text-left hover:bg-[#EAB308]/12 transition-colors ${ctaClass}`}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#EAB308]">XP e progresso</p>
+            <p className="text-xs font-bold text-white mt-0.5">Ver detalhes · histórico · cards desbloqueados →</p>
+          </button>
 
           {/* Student Digital Twin Card */}
           {user?.id && (
@@ -2416,6 +2112,57 @@ export default function StudentHome() {
       </motion.div>
 
       {/* Neural removido por prioridade de produto */}
+
+      {/* Sheet: mais ações de Conquistas */}
+      <AnimatePresence>
+        {showConquistasMore && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            data-modal-overlay
+            aria-label="Mais conquistas e atalhos"
+            className="fixed inset-0 z-[85] bg-black/80 backdrop-blur-sm flex flex-col justify-end"
+            onClick={() => setShowConquistasMore(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl mx-auto rounded-t-3xl border-t border-zinc-800 bg-[#0A0A0A] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+            >
+              <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-4" />
+              <h3 className="text-sm font-black text-white mb-3">Mais opções</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Progresso 🎯", action: () => setShowGamificationDashboard(true) },
+                  { label: "🔗 Perfil público", action: () => profile?.id && window.open(`/atleta/${profile.id}`, "_blank") },
+                  { label: "🕐 Jornada", action: () => setShowTimeline(true) },
+                  { label: "🔔 Notificações", action: () => setShowNotificationCenter(true) },
+                  { label: "📲 Push", action: () => setShowPushSettings(true) },
+                  { label: "🏆 Feed da turma", action: () => setShowAchievementFeed(true), testId: "btn-achievement-feed" },
+                  { label: "💪 Meu plano", action: () => setShowTrainingPlan(true), testId: "btn-training-plan" },
+                  { label: "👥 Indicar amigo", action: () => setShowReferralPanel(true), testId: "btn-referral-panel" },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    data-testid={item.testId}
+                    onClick={() => { haptic(8); item.action(); setShowConquistasMore(false); }}
+                    className={`rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 text-left text-[11px] font-bold text-zinc-300 hover:border-zinc-700 hover:text-white transition-colors ${ctaClass}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Payment Sheet */}
       <StudentPaymentSheet open={showPayments} onClose={() => setShowPayments(false)} />
@@ -3414,28 +3161,7 @@ export default function StudentHome() {
         })()}
       </AnimatePresence>
 
-      {/* Gamification Panel — XP, Awards, History */}
-      <motion.div variants={homeItem} className="mb-2">
-        <GamificationPanel />
-      </motion.div>
-
-      {/* Ranking da Turma — semanal por categoria */}
-      {user?.id && (
-        <motion.div variants={homeItem} className="mb-2">
-          <TurmaLeaderboardCard studentId={user.id} />
-        </motion.div>
-      )}
-
-      {/* Leaderboard Global */}
-      <motion.div variants={homeItem} className="mb-2">
-        <LeaderboardRankingPanel compact={true} />
-      </motion.div>
-
-      <LeaderboardPanel
-        isOpen={showLeaderboard}
-        onClose={() => setShowLeaderboard(false)}
-        timeframe="all"
-      />
+      <XPFloatNotification events={xpFloatEvents} onAnimationComplete={removeXPFloat} />
 
       <StudentGamificationDashboard
         isOpen={showGamificationDashboard}

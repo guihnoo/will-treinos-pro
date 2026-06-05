@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[05/06/2026 04:10 BRT] (Cursor):** **[DESIGN] Área do Aluno P0+P1 — dedup scroll** — `NextLessonCard.tsx` (próxima aula única: countdown + check-in geo/manual); removidos `LessonCountdownCard`, `YourDayCard`, BLOCO 1 duplicado, lista 3 aulas, bloco morto `{false && nextLesson}`; missão única (`OnboardingWidget` XP&lt;400 vs `StudentDailyMissionCard` ≥400); rankings inline removidos (`GamificationPanel`, `TurmaLeaderboardCard`, `LeaderboardRankingPanel`) — Minha Semana → `/ranking`; Conquistas 3 chips + sheet "Mais" + CTA XP; `XPFloatNotification` direto; `StudentDailyMissionCard` mostra todas missões com check; `avatarSrc` sem `studentHasRealAvatar`. Build OK.
+
 - **[05/06/2026 02:15 BRT] (Cursor):** **[SECURITY] APPLY_SECURITY_AND_PERF aplicado no remoto** — Supabase MCP migration `apply_security_and_perf_launch`: `wt_is_staff()` app_metadata, trigger `students_check_sensitive_fields_trigger` ativo, 10 índices. Repo sync `supabase/migrations/20260605020000_apply_security_and_perf_launch.sql`. Checklist infra 100%. Pendente: piloto + 4 secrets GitHub CI.
 
 - **[05/06/2026 01:35 BRT] (Cursor):** **[FIX] Missões diárias — foto real + card só pendentes** — `studentHasRealAvatar()`; push `c02a4c1`.
