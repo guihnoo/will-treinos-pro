@@ -45,11 +45,6 @@ jobs:
           NEXT_PUBLIC_DEV_ROOT_EMAILS: ${{ secrets.NEXT_PUBLIC_DEV_ROOT_EMAILS }}
           NEXT_PUBLIC_APP_URL: https://will-treinos-pro.vercel.app
           NEXT_PUBLIC_POSTHOG_HOST: https://us.posthog.com
-      - uses: actions/upload-artifact@v4
-        with:
-          name: next-build
-          path: .next
-          retention-days: 3
 
   playwright:
     name: E2E (chromium)
@@ -65,10 +60,9 @@ jobs:
         with: { node-version: "20.x", cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      - uses: actions/download-artifact@v4
-        with: { name: next-build, path: .next }
-      - run: pnpm exec playwright test --project=chromium
+      - run: pnpm exec playwright test e2e/student-journey.spec.ts --project=chromium
         env:
+          PLAYWRIGHT_BASE_URL: https://will-treinos-pro.vercel.app
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}

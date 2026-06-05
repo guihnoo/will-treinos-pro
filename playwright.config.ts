@@ -11,6 +11,9 @@ import { defineConfig, devices } from "@playwright/test";
  * - Aprovação de aluno
  */
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+const useRemoteBaseUrl = Boolean(process.env.PLAYWRIGHT_BASE_URL);
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
@@ -23,7 +26,7 @@ export default defineConfig({
   reporter: "html",
 
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -53,10 +56,14 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  ...(useRemoteBaseUrl
+    ? {}
+    : {
+        webServer: {
+          command: "pnpm dev",
+          url: "http://localhost:3000",
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+        },
+      }),
 });
