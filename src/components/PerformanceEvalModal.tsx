@@ -14,6 +14,9 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { avatarSrc } from "@/lib/avatarSrc";
 import { useXPMutations } from "@/hooks/useXPMutations";
 import { useEvaluations } from "@/hooks/useEvaluations";
+import { useNotifications } from "@/context/NotificationsContext";
+import { buildStudentNotification } from "@/lib/notifyStudent";
+import { sendPushToUser } from "@/lib/pushRoleBroadcast";
 
 /** XP calc with optional template weight per pillar */
 export function xpFromEval(
@@ -49,6 +52,7 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
   const { addFeedback } = useCoaching();
   const { logXP, checkAchievementUnlock, getStudentTotalXP } = useXPMutations();
   const { saveEvaluation } = useEvaluations();
+  const { addNotification } = useNotifications();
   const { toast } = useToast();
   useBodyScrollLock(true);
 
@@ -151,6 +155,25 @@ export default function PerformanceEvalModal({ student, lessonId, lessonTitle, o
       },
       notes: generalNote || undefined,
     });
+
+    addNotification(
+      buildStudentNotification(student.id, {
+        type: "performance",
+        title: "📋 Nova avaliação recebida",
+        message: `Nota ${avg}/10 em ${lessonTitle}. +${totalPoints} XP creditados.`,
+        time: "agora",
+        read: false,
+        actionUrl: "/dashboard",
+      }),
+    );
+
+    if (student.authUserId) {
+      void sendPushToUser(student.authUserId, {
+        title: "📋 Nova avaliação",
+        body: `Nota ${avg}/10 em ${lessonTitle}. Confira sua evolução.`,
+        url: "/dashboard",
+      });
+    }
 
     // Check for achievement unlock (async, fire and forget)
     getStudentTotalXP(student.id).then((total) => {

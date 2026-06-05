@@ -17,6 +17,10 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[05/06/2026 17:05 BRT] (Cursor):** **[FIX] Notificação in-app ao aluno após avaliação do admin** — Causa: `PerformanceEvalModal`/`BulkEvaluationModal` não chamavam `addNotification`; RLS Supabase só libera SELECT ao aluno quando `recipient_id` = CRM `students.id` (notificações antigas só com `student_id` ficavam invisíveis). Fix: `buildStudentNotification()` em `src/lib/notifyStudent.ts`; notificação + push opcional ao salvar avaliação; `FeedbackModal` passa `recipientId`. Arquivos: `PerformanceEvalModal.tsx`, `BulkEvaluationModal.tsx`, `FeedbackModal.tsx`, `supabasePersistence.ts`. `tsc --noEmit` OK.
+
+- **[05/06/2026 14:00 BRT] (Claude):** **[CONFIG] CI GitHub Actions 100% verde** — Cursor configurou os 4 secrets (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_DEV_ROOT_EMAILS`). CI `Typecheck + Build + E2E` passando `success` (run 16:08 UTC 05/06). Infra 100% completa. Único pendente: piloto — primeiro aluno real. Status: ✅ Completo.
+
 - **[05/06/2026 13:25 BRT] (Cursor):** **[DOCS] Piloto primeiro aluno — guia operacional** — Criado `docs/PILOTO_PRIMEIRO_ALUNO.md` (pré-flight smoke, cadastro→aguardando→aprovação→dashboard→check-in→XP, troubleshooting SQL). Atualizados `LANCAMENTO_CHECKLIST.md` (CI secrets ✅ + link piloto) e `QA_LANCAMENTO_MANUAL.md`. Lote A infra fechado; pendente execução piloto Will.
 
 - **[05/06/2026 13:10 BRT] (Cursor):** **[FIX] CI E2E — smoke contra produção** — `test.yml`: removido upload/download `.next` (gitignore bloqueava artefato); Playwright roda `e2e/student-journey.spec.ts` com `PLAYWRIGHT_BASE_URL=https://will-treinos-pro.vercel.app`. `playwright.config.ts`: `webServer` só quando URL local. **CI run 27025609872 ✅ verde** (TypeScript + Build + E2E + RLS Audit). Lote A infra CI: completo.

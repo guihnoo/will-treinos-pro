@@ -72,7 +72,9 @@ export default function FeedbackModal({ lessonId, student, onClose }: Props) {
       message: `Will Monteiro avaliou sua performance com ${rating} estrelas!`,
       time: "agora",
       read: false,
-      studentId: student.id
+      studentId: student.id,
+      recipientId: student.id,
+      actionUrl: "/dashboard",
     });
 
     // Log XP for feedback based on rating and send push

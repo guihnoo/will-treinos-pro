@@ -213,6 +213,8 @@ export async function insertNotificationRemote(
     (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `nf_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
+  // Aluno enxerga via RLS apenas com recipient_id = students.id (student_id sozinho não basta).
+  const recipientId = payload.recipientId ?? null;
   const { data, error } = await supabase
     .from("notifications")
     .insert({
@@ -222,8 +224,8 @@ export async function insertNotificationRemote(
       message: payload.message,
       time: payload.time || new Date().toISOString(),
       is_read: payload.read,
-      student_id: payload.studentId ?? null,
-      recipient_id: payload.recipientId ?? null,
+      student_id: payload.studentId ?? recipientId ?? null,
+      recipient_id: recipientId,
       is_global: payload.isGlobal ?? false,
       action_url: payload.actionUrl ?? null,
     })

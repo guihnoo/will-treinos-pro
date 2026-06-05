@@ -11,6 +11,9 @@ import { useEvaluations, type EvaluationScores } from "@/hooks/useEvaluations";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useToast } from "@/components/Toast";
+import { useNotifications } from "@/context/NotificationsContext";
+import { buildStudentNotification } from "@/lib/notifyStudent";
+import { sendPushToUser } from "@/lib/pushRoleBroadcast";
 
 const PILLARS: { key: keyof EvaluationScores; label: string; short: string }[] = [
   { key: "fisico",   label: "Físico",   short: "FIS" },
@@ -63,6 +66,7 @@ interface Props {
 export default function BulkEvaluationModal({ lesson, students, onClose, onSaved }: Props) {
   const { toast } = useToast();
   const { saveEvaluation } = useEvaluations();
+  const { addNotification } = useNotifications();
 
   const enrolled = lesson.presentStudents.length > 0
     ? lesson.presentStudents
@@ -160,6 +164,26 @@ export default function BulkEvaluationModal({ lesson, students, onClose, onSaved
             }),
           }).catch(() => {});
         }
+
+        addNotification(
+          buildStudentNotification(student.id, {
+            type: "performance",
+            title: "📋 Nova avaliação recebida",
+            message: `Nota ${avg.toFixed(1)}/10 em ${lessonTitle}. +${xp} XP creditados.`,
+            time: "agora",
+            read: false,
+            actionUrl: "/dashboard",
+          }),
+        );
+
+        if (student.authUserId) {
+          void sendPushToUser(student.authUserId, {
+            title: "📋 Nova avaliação",
+            body: `Nota ${avg.toFixed(1)}/10 em ${lessonTitle}.`,
+            url: "/dashboard",
+          });
+        }
+
         saved++;
       }
 
@@ -171,7 +195,7 @@ export default function BulkEvaluationModal({ lesson, students, onClose, onSaved
     } finally {
       setSaving(false);
     }
-  }, [scores, enrolledStudents, lesson.id, lessonTitle, saveEvaluation, onClose, onSaved, toast]);
+  }, [scores, enrolledStudents, lesson.id, lessonTitle, saveEvaluation, onSaved, toast, addNotification]);
 
   const avgAll = enrolledStudents.length > 0
     ? (enrolledStudents.reduce((sum, s) => {
