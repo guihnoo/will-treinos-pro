@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will Treinos PRO — Apresentação Comercial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --card: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.1);
+      --gold: #EAB308;
+      --gold-dim: rgba(234,179,8,0.15);
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --emerald: #34d399;
+      --violet: #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Lexend', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+    /* ── Layout ── */
+    .page {
+      min-height: 100vh;
+      padding: 3rem 2.5rem;
+      max-width: 920px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page:last-child { page-break-after: avoid; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--gold-dim);
+      color: var(--gold);
+      border: 1px solid rgba(234,179,8,0.35);
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin: 1rem 0;
+    }
+    h1 .gold { color: var(--gold); }
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 0.35rem;
+    }
+    p.lead {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 36rem;
+      margin-bottom: 1.5rem;
+    }
+    .subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 0.5rem; }
+
+    /* ── Cover ── */
+    .cover-glow {
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(234,179,8,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cover-logo {
+      font-size: 4rem;
+      margin-bottom: 0.5rem;
+    }
+    .cover-meta {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* ── Cards grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    @media (max-width: 640px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .page { padding: 2rem 1.25rem; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      backdrop-filter: blur(8px);
+    }
+    .card-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .card p { color: var(--muted); font-size: 0.88rem; margin-top: 0.35rem; }
+
+    .card-gold { border-color: rgba(234,179,8,0.25); }
+    .card-gold h3 { color: var(--gold); }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--gold); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { color: var(--muted); }
+    td strong { color: var(--text); }
+
+    /* ── Feature list ── */
+    ul.features {
+      list-style: none;
+      margin-top: 1rem;
+    }
+    ul.features li {
+      padding: 0.5rem 0 0.5rem 1.5rem;
+      position: relative;
+      color: var(--muted);
+      font-size: 0.9rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    ul.features li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-weight: 700;
+    }
+    ul.features li strong { color: var(--text); }
+
+    /* ── Role pills ── */
+    .roles {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 1.25rem 0;
+    }
+    .role {
+      flex: 1;
+      min-width: 140px;
+      padding: 1rem;
+      border-radius: 0.875rem;
+      text-align: center;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .role-emoji { font-size: 2rem; }
+    .role-name { font-weight: 700; margin-top: 0.35rem; font-size: 0.95rem; }
+    .role-desc { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* ── Stats strip ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+    }
+    @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat {
+      text-align: center;
+      padding: 1rem 0.5rem;
+      border-radius: 0.75rem;
+      background: var(--gold-dim);
+      border: 1px solid rgba(234,179,8,0.2);
+    }
+    .stat-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .stat-label { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ── Flow diagram ── */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 1.25rem 0;
+      font-size: 0.82rem;
+    }
+    .flow-step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.85rem;
+      border-radius: 0.5rem;
+      color: var(--muted);
+    }
+    .flow-arrow { color: var(--gold); font-weight: 700; }
+
+    /* ── CTA ── */
+    .cta-box {
+      margin-top: 2rem;
+      padding: 1.75rem;
+      border-radius: 1.25rem;
+      background: linear-gradient(135deg, rgba(234,179,8,0.12) 0%, rgba(234,179,8,0.03) 100%);
+      border: 1px solid rgba(234,179,8,0.35);
+      text-align: center;
+    }
+    .cta-box h2 { color: var(--gold); margin-bottom: 0.5rem; }
+    .cta-box p { color: var(--muted); font-size: 0.95rem; }
+
+    /* ── Footer bar ── */
+    .page-footer {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 2.5rem;
+      right: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: #52525b;
+    }
+
+    /* ── Print / PDF ── */
+    @media print {
+      body { background: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { min-height: auto; padding: 2rem; }
+      .no-print { display: none !important; }
+    }
+
+    /* ── Download bar (screen only) ── */
+    .download-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0.85rem 1.5rem;
+      background: rgba(0,0,0,0.92);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .download-bar span { color: var(--muted); font-size: 0.85rem; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 0.625rem;
+      font-family: 'Lexend', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+    }
+    .btn-gold { background: var(--gold); color: #000; }
+    .btn-gold:hover { background: #facc15; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid rgba(234,179,8,0.5);
+    }
+    body { padding-bottom: 4rem; }
+  </style>
+</head>
+<body>
+
+<div class="download-bar no-print">
+  <span>Will Treinos PRO — Material comercial</span>
+  <button class="btn btn-gold" onclick="window.print()">⬇ Salvar como PDF</button>
+  <button class="btn btn-ghost" onclick="document.documentElement.requestFullscreen?.()">⛶ Tela cheia</button>
+</div>
+
+<!-- ═══════════════ PÁGINA 1 — CAPA ═══════════════ -->
+<section class="page">
+  <div class="cover-glow"></div>
+  <span class="badge">Apresentação Comercial · 2026</span>
+  <div class="cover-logo">🏐</div>
+  <h1 class="font-display">Will Treinos <span class="gold">PRO</span></h1>
+  <p class="lead">A plataforma exclusiva de gestão esportiva para vôlei de alta performance — operação, financeiro e gamificação em um único ecossistema premium.</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-num font-display">3</div><div class="stat-label">Papéis integrados</div></div>
+    <div class="stat"><div class="stat-num font-display">4</div><div class="stat-label">Pilares do produto</div></div>
+    <div class="stat"><div class="stat-num font-display">52+</div><div class="stat-label">Telas e fluxos</div></div>
+    <div class="stat"><div class="stat-num font-display">PWA</div><div class="stat-label">App instalável</div></div>
+  </div>
+  <div class="cover-meta">
+    <span>Stack: Next.js 15 · Supabase · Vercel</span>
+    <span>Identidade: Dark + Gold #EAB308</span>
+    <span>Confidencial — uso comercial autorizado</span>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>01 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 2 — PROBLEMA ═══════════════ -->
+<section class="page">
+  <span class="badge">O Desafio</span>
+  <h2 class="font-display">Por que academias perdem dinheiro e engajamento?</h2>
+  <p class="lead">A maioria das escolas de vôlei ainda opera com ferramentas fragmentadas — e paga o preço em inadimplência, desorganização e alunos desmotivados.</p>
+  <div class="grid-2" style="margin-top:1.5rem">
+    <div class="card">
+      <div class="card-icon">📱</div>
+      <h3>WhatsApp como CRM</h3>
+      <p>Aprovações perdidas, mensagens sem histórico, zero controle de quem leu o quê.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <h3>Planilha como ERP</h3>
+      <p>Financeiro manual, inadimplência descoberta tarde demais, sem visão de caixa.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📋</div>
+      <h3>Papel como prancheta</h3>
+      <p>Presença anotada à mão, avaliações sem histórico, reposições caóticas.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">😴</div>
+      <h3>Zero gamificação</h3>
+      <p>Aluno não vê evolução, não compete, não compartilha — churn silencioso.</p>
+    </div>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>02 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 3 — SOLUÇÃO ═══════════════ -->
+<section class="page">
+  <span class="badge">A Solução</span>
+  <h2 class="font-display">Um ecossistema. Três experiências. <span style="color:var(--gold)">Um cockpit.</span></h2>
+  <p class="lead">Will Treinos PRO unifica gestão da turma, agenda inteligente, controle financeiro e gamificação nativa — com sensação de app premium instalável no celular.</p>
+  <div class="roles">
+    <div class="role">
+      <div class="role-emoji">👑</div>
+      <div class="role-name">Admin (Will)</div>
+      <div class="role-desc">Cockpit total · KPIs · Financeiro · IA estratégica</div>
+    </div>
+    <div class="role">
+      <div class="role-emoji">👨‍🏫</div>
+      <div class="role-name">Coach</div>
+      <div class="role-desc">Quadra · Presença · Avaliação · Feedback em tempo real</div>
+    </div>
+    <div class="role">
+      <div class="role-emoji">⚡</div>
+      <div class="role-name">Aluno</div>
+      <div class="role-desc">XP · Ranking · Feed · Pagamentos · Perfil público</div>
+    </div>
+  </div>
+  <div class="flow">
+    <span class="flow-step">Cadastro</span><span class="flow-arrow">→</span>
+    <span class="flow-step">Aprovação + Push</span><span class="flow-arrow">→</span>
+    <span class="flow-step">Check-in Geo</span><span class="flow-arrow">→</span>
+    <span class="flow-step">Avaliação + XP</span><span class="flow-arrow">→</span>
+    <span class="flow-step">PIX + Comprovante</span><span class="flow-arrow">→</span>
+    <span class="flow-step">Ranking + Share</span>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>03 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 4 — 4 PILARES ═══════════════ -->
+<section class="page">
+  <span class="badge">Arquitetura de Produto</span>
+  <h2 class="font-display">Quatro pilares operacionais</h2>
+  <div class="grid-2" style="margin-top:1.25rem">
+    <div class="card card-gold">
+      <h3>🏐 Turma & CRM</h3>
+      <ul class="features">
+        <li><strong>Cadastro e aprovação</strong> com fila e push automático</li>
+        <li><strong>Tags inteligentes:</strong> VIP, em risco, iniciante, trial</li>
+        <li><strong>Importação CSV</strong> em lote para matrícula rápida</li>
+        <li><strong>Ficha 360°</strong> do atleta: avaliação, financeiro, recados</li>
+        <li><strong>Relatório WhatsApp</strong> formatado para CRM</li>
+      </ul>
+    </div>
+    <div class="card card-gold">
+      <h3>📅 Agenda Inteligente</h3>
+      <ul class="features">
+        <li><strong>Aulas recorrentes</strong> (2 a 12 semanas de uma vez)</li>
+        <li><strong>Inscrição online</strong> com controle de vagas</li>
+        <li><strong>Faltas e reposição</strong> — aluno avisa, sistema sugere aula</li>
+        <li><strong>Clima integrado</strong> — alerta de chuva + cancelar com push</li>
+        <li><strong>Check-in geolocalizado</strong> anti-fraude na quadra</li>
+      </ul>
+    </div>
+    <div class="card card-gold">
+      <h3>💰 Financeiro</h3>
+      <ul class="features">
+        <li><strong>Mensalidades</strong> — pago, pendente, inadimplente</li>
+        <li><strong>PIX EMV real</strong> (QR Code Banco Central) no app</li>
+        <li><strong>Comprovante</strong> — aluno envia, admin recebe push na hora</li>
+        <li><strong>Cron de cobrança</strong> automático (dias 5 e 20)</li>
+        <li><strong>Previsão financeira IA</strong> — tendência e ações sugeridas</li>
+      </ul>
+    </div>
+    <div class="card card-gold">
+      <h3>🏆 Gamificação</h3>
+      <ul class="features">
+        <li><strong>XP por fundamento</strong> — ataque 2.0×, recepção 1.3×…</li>
+        <li><strong>Tiers:</strong> Bronze → Prata → Ouro → Diamante → Elite</li>
+        <li><strong>Ranking + Modo TV</strong> — placar fullscreen na quadra</li>
+        <li><strong>Perfil público</strong> compartilhável no Instagram Stories</li>
+        <li><strong>Indicação +200 XP</strong> — growth orgânico</li>
+      </ul>
+    </div>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>04 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 5 — COCKPIT ADMIN ═══════════════ -->
+<section class="page">
+  <span class="badge">Área Admin</span>
+  <h2 class="font-display">Will Cockpit — controle total do negócio</h2>
+  <p class="subtitle">Dashboard modal-first com 3 abas: Hoje · Turma · Arsenal</p>
+  <table>
+    <thead><tr><th>Aba / Ferramenta</th><th>O que faz</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Hoje — Today View</strong></td><td>Alertas do dia: aprovações, inadimplência, aniversários, alunos online</td></tr>
+      <tr><td><strong>Alunos online</strong></td><td>Realtime — quem está no app agora (Supabase Presence)</td></tr>
+      <tr><td><strong>Clima da quadra</strong></td><td>Previsão + cancelar aula com notificação automática</td></tr>
+      <tr><td><strong>Turma — Aprovações</strong></td><td>Fila de cadastros pendentes + badge de comprovantes</td></tr>
+      <tr><td><strong>Oráculo IA</strong></td><td>Insights estratégicos sobre operação e turma</td></tr>
+      <tr><td><strong>Arsenal — Analytics</strong></td><td>KPIs executivos, funil, receita 6 meses, alertas de negócio</td></tr>
+      <tr><td><strong>Busca global ⌘K</strong></td><td>Encontra aluno, aula ou pagamento em segundos</td></tr>
+    </tbody>
+  </table>
+  <div class="card" style="margin-top:1.25rem">
+    <h3>Ficha do atleta (modal 360°)</h3>
+    <p>Avaliar · Recado + push · Financeiro · Destaque da semana (+150 XP) · Plano IA · Scout Mode · Comparar períodos · Tags · Relatório WhatsApp</p>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>05 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 6 — COACH ═══════════════ -->
+<section class="page">
+  <span class="badge">Área Coach</span>
+  <h2 class="font-display">Prancheta digital de quadra</h2>
+  <p class="lead">Projetado para o professor com as mãos ocupadas — targets grandes, feedback imediato, zero planilha.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Presença & Check-in</h3>
+      <ul class="features">
+        <li>Lista de inscritos por aula do dia</li>
+        <li>Check-in manual ou via QR Code</li>
+        <li>Check-in geo do aluno (+50 XP na quadra)</li>
+        <li>Presença rápida em lote</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Avaliação oficial</h3>
+      <ul class="features">
+        <li>5 pilares: físico, técnico, tático, atitude, evolução</li>
+        <li>XP calculado por fundamento de vôlei</li>
+        <li>Templates de peso por categoria</li>
+        <li>Feedback IA gerado e enviado por push</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Comunicação</h3>
+      <ul class="features">
+        <li>Recado individual 1:1 com push</li>
+        <li>Anúncio broadcast para turma/categoria</li>
+        <li>Destaque da semana (+150 XP + post oficial)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Copiloto IA</h3>
+      <ul class="features">
+        <li>Alertas operacionais automáticos</li>
+        <li>Fadiga preditiva (anti-lesão)</li>
+        <li>Plano de treino gerado por IA</li>
+      </ul>
+    </div>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>06 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 7 — ALUNO ═══════════════ -->
+<section class="page">
+  <span class="badge">Área do Aluno</span>
+  <h2 class="font-display">Experiência gamificada premium</h2>
+  <p class="subtitle">PWA instalável · sensação de app nativo · dark + gold</p>
+  <div class="grid-3" style="margin-top:1rem">
+    <div class="card">
+      <div class="card-icon">⏱️</div>
+      <h3>Countdown ao vivo</h3>
+      <p>Contagem regressiva para a próxima aula — estados: ao vivo, iminente, hoje, amanhã.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">✨</div>
+      <h3>Ambient XP Pulse</h3>
+      <p>Tela pulsa dourado ao ganhar XP — feedback visceral instantâneo.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📸</div>
+      <h3>Share Stories</h3>
+      <p>Card 9:16 + perfil público `/atleta/[id]` para Instagram e WhatsApp.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">💳</div>
+      <h3>PIX no app</h3>
+      <p>QR Code real + upload de comprovante + push ao admin.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔄</div>
+      <h3>Reposição</h3>
+      <p>Comunica falta → sistema sugere aulas → confirma em 1 toque.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📶</div>
+      <h3>Modo offline</h3>
+      <p>Cache local de aulas e XP; sync automático ao reconectar.</p>
+    </div>
+  </div>
+  <p style="margin-top:1.25rem;color:var(--muted);font-size:0.88rem"><strong style="color:var(--text)">Menu flutuante (FAB):</strong> Comunicar falta · Solicitar reposição · Pagamento · Agenda de inscrição</p>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>07 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 8 — AUTOMAÇÕES ═══════════════ -->
+<section class="page">
+  <span class="badge">Inteligência & Automação</span>
+  <h2 class="font-display">O app trabalha enquanto você dorme</h2>
+  <table>
+    <thead><tr><th>Automação</th><th>Quando</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Lembrete diário</strong></td><td>08h BRT</td><td>Push com aula do dia (se houver)</td></tr>
+      <tr><td><strong>Cobrança</strong></td><td>Dias 5 e 20</td><td>Mensalidade pendente/atrasada</td></tr>
+      <tr><td><strong>Resumo semanal</strong></td><td>Sexta 18h</td><td>XP da semana vs anterior</td></tr>
+      <tr><td><strong>Resumo mensal IA</strong></td><td>Dia 1 do mês</td><td>Texto personalizado por aluno</td></tr>
+      <tr><td><strong>FOMO inatividade</strong></td><td>19h diário</td><td>Reengajamento 3–7+ dias parado</td></tr>
+      <tr><td><strong>Feedback pós-aula</strong></td><td>2–3h depois</td><td>"Como foi o treino?" 😤😊😴</td></tr>
+      <tr><td><strong>Aniversário</strong></td><td>07h</td><td>+50 XP + push parabéns</td></tr>
+      <tr><td><strong>Ausência</strong></td><td>18h</td><td>Sugere reposição para quem faltou</td></tr>
+      <tr><td><strong>Comprovante</strong></td><td>Instantâneo</td><td>Push ao admin ao receber PIX</td></tr>
+    </tbody>
+  </table>
+  <div class="card card-gold" style="margin-top:1.25rem">
+    <h3>IA integrada (Claude)</h3>
+    <p>Oráculo admin · Copiloto coach · Previsão financeira · Plano de treino · Relatório mensal · Feedback pós-avaliação — com fallback local se IA indisponível.</p>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>08 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 9 — TECNOLOGIA ═══════════════ -->
+<section class="page">
+  <span class="badge">Tecnologia & Segurança</span>
+  <h2 class="font-display">Infraestrutura de produto Tier-1</h2>
+  <div class="grid-2" style="margin-top:1rem">
+    <div class="card">
+      <h3>Stack moderna</h3>
+      <ul class="features">
+        <li><strong>Next.js 15</strong> — App Router, Server Components</li>
+        <li><strong>Supabase</strong> — PostgreSQL + Auth + Realtime + RLS</li>
+        <li><strong>Vercel</strong> — deploy global, crons, edge</li>
+        <li><strong>PWA</strong> — instalável, service worker, push</li>
+        <li><strong>Sentry + PostHog</strong> — observabilidade</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Segurança by design</h3>
+      <ul class="features">
+        <li><strong>RLS Supabase</strong> — cada papel vê só o seu</li>
+        <li><strong>JWT + staff_access</strong> — admin não depende de metadata editável</li>
+        <li><strong>xp_log imutável</strong> — auditoria anti-cheat</li>
+        <li><strong>Headers HTTP</strong> — HSTS, X-Frame-Options, nosniff</li>
+        <li><strong>Turnstile</strong> — proteção anti-bot no cadastro</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid-4" style="margin-top:1rem">
+    <div class="card" style="text-align:center"><div class="font-display" style="font-size:1.5rem;color:var(--gold)">52+</div><p>Rotas</p></div>
+    <div class="card" style="text-align:center"><div class="font-display" style="font-size:1.5rem;color:var(--gold)">16</div><p>Context providers</p></div>
+    <div class="card" style="text-align:center"><div class="font-display" style="font-size:1.5rem;color:var(--gold)">8+</div><p>Crons ativos</p></div>
+    <div class="card" style="text-align:center"><div class="font-display" style="font-size:1.5rem;color:var(--gold)">100%</div><p>Dark + Gold DS</p></div>
+  </div>
+  <div class="page-footer"><span>Will Treinos PRO</span><span>09 / 10</span></div>
+</section>
+
+<!-- ═══════════════ PÁGINA 10 — CTA ═══════════════ -->
+<section class="page">
+  <span class="badge">Próximo Passo</span>
+  <h2 class="font-display">Pronto para transformar sua operação?</h2>
+  <p class="lead">Will Treinos PRO já está em produção — funcional, auditado e preparado para escalar com a sua academia.</p>
+  <div class="grid-2" style="margin-top:1.5rem">
+    <div class="card card-gold">
+      <h3>✅ O que você ganha</h3>
+      <ul class="features">
+        <li>Cockpit único — fim do WhatsApp + planilha</li>
+        <li>Alunos engajados com XP e ranking</li>
+        <li>Financeiro visível com cobrança automática</li>
+        <li>Decisões baseadas em dados e IA</li>
+        <li>Marca premium — app que parece nativo</li>
+      </ul>
+    </div>
+    <div class="card card-gold">
+      <h3>🚀 Piloto recomendado</h3>
+      <ul class="features">
+        <li><strong>Semana 1:</strong> Configuração academia + import alunos</li>
+        <li><strong>Semana 2:</strong> Agenda + check-in geo na quadra</li>
+        <li><strong>Semana 3:</strong> Financeiro PIX + gamificação ativa</li>
+        <li><strong>Semana 4:</strong> Métricas — retenção, check-in rate, NPS</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cta-box">
+    <h2 class="font-display">Will Treinos PRO</h2>
+    <p>Gestão esportiva de alta performance · Vôlei · Brasil</p>
+    <p style="margin-top:0.75rem;font-size:0.85rem">Demo ao vivo disponível · Material confidencial · Junho 2026</p>
+  </div>
+  <div class="page-footer"><span>willtreinospro.com.br</span><span>10 / 10</span></div>
+</section>
+
+</body>
+</html>
