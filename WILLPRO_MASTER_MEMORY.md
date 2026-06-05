@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[05/06/2026 13:25 BRT] (Cursor):** **[DOCS] Piloto primeiro aluno — guia operacional** — Criado `docs/PILOTO_PRIMEIRO_ALUNO.md` (pré-flight smoke, cadastro→aguardando→aprovação→dashboard→check-in→XP, troubleshooting SQL). Atualizados `LANCAMENTO_CHECKLIST.md` (CI secrets ✅ + link piloto) e `QA_LANCAMENTO_MANUAL.md`. Lote A infra fechado; pendente execução piloto Will.
+
 - **[05/06/2026 13:10 BRT] (Cursor):** **[FIX] CI E2E — smoke contra produção** — `test.yml`: removido upload/download `.next` (gitignore bloqueava artefato); Playwright roda `e2e/student-journey.spec.ts` com `PLAYWRIGHT_BASE_URL=https://will-treinos-pro.vercel.app`. `playwright.config.ts`: `webServer` só quando URL local. **CI run 27025609872 ✅ verde** (TypeScript + Build + E2E + RLS Audit). Lote A infra CI: completo.
 
 - **[05/06/2026 13:00 BRT] (Cursor):** **[CONFIG] GitHub Actions — 4 secrets CI configurados + script** — `scripts/set-github-ci-secrets.mjs` (token Git Credential Manager → `gh secret set`): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (bundle produção), `NEXT_PUBLIC_DEV_ROOT_EMAILS`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (gerada para CI — Vercel sensitive não decripta via CLI; alinhar manualmente no painel se quiser paridade push). `.gitignore` ignora `.env.ci-secrets.tmp` / `.env.vercel.*`. Lote A checklist infra: ✅ secrets CI. Pendente: piloto primeiro aluno real + opcional alinhar VAPID CI↔Vercel.

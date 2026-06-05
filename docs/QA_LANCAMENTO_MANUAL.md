@@ -2,6 +2,8 @@
 
 Base: https://will-treinos-pro.vercel.app
 
+**Piloto guiado (primeiro aluno real):** [`PILOTO_PRIMEIRO_ALUNO.md`](./PILOTO_PRIMEIRO_ALUNO.md)
+
 ## Auth (Will — infra já configurada 04/06)
 | # | Teste | ✅/❌ |
 |---|--------|------|
