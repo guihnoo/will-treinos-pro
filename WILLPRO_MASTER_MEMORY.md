@@ -17,6 +17,10 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[03/06/2026 22:30 BRT] (Cursor):** **[REFACTOR] Área do Aluno P3 — shell enxuto + code-split modais** — `StudentHome.tsx` ~3392→~1750 linhas (−48%). Novos: `StudentHomePrimaryModals.tsx` (12 overlays), `StudentAgendaPanel.tsx`, `studentHomeShared.ts`, `EvolutionTrendPanel.tsx`, `StudentHomeTrackVisuals.tsx`. `tsc` + `pnpm run build` OK. Commit + push Vercel.
+
+- **[05/06/2026 01:31 BRT] (Cursor):** **[REFACTOR] StudentHome mega-split — 5 novos módulos extraídos** — (mesmo lote P3; build validado nesta sessão).
+
 - **[03/06/2026 20:45 BRT] (Cursor):** **[DESIGN/REFACTOR] Área do Aluno P2 — wire modais + evolução colapsável** — `StudentHome.tsx` passa a consumir `StudentHomeModals` (14 sheets + `SessionExpiredModal`); removidos dynamic imports duplicados e ~130 linhas de JSX inline; bloco **Minha Evolução** colapsável (3 KPIs fechado → atalhos + gráfico + grid fundamentos aberto); `StudentPaymentSheet` inline removido. `tsc` + `pnpm run build` OK. Push Vercel pendente deste commit.
 
 - **[05/06/2026 04:30 BRT] (Claude):** **[FEATURE/FIX] Push commits pendentes — área do aluno limpa** — Commitados e pushed 2 commits: `c4eba76` (StudentHomeModals.tsx extraído do StudentHome — code-split de todos os modais) + `758ad8f` (APPLY_SECURITY_AND_PERF.sql, docs/product-guide apresentação cliente HTML/PDF, scripts export PDF). Working tree limpo. Branch `main` sincronizado com origin. Pendente Will: 4 secrets GitHub CI (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_DEV_ROOT_EMAILS`) + piloto primeiro aluno real. Status: ✅ repo 100% limpo.
