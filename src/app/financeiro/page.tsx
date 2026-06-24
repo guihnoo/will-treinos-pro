@@ -689,14 +689,27 @@ function AdminFinanceiro() {
           />
         ))}
       </div>
-      <div className="mb-6 rounded-2xl border border-sky-500/25 bg-sky-500/[0.06] p-4">
-        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-sky-300">Validação de comprovantes</p>
-        <p className="mt-1 text-sm text-zinc-300">
-          {proofPendingCount > 0
-            ? `${proofPendingCount} comprovante${proofPendingCount > 1 ? "s" : ""} aguardando validação do Will.`
-            : "Nenhum comprovante aguardando validação no momento."}
-        </p>
-      </div>
+      {proofPendingCount > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-sky-500/30 bg-sky-500/[0.07] px-4 py-3"
+        >
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 shrink-0 text-sky-300" />
+            <p className="text-sm font-bold text-sky-200">
+              {proofPendingCount} comprovante{proofPendingCount > 1 ? "s" : ""} aguardando validação
+            </p>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setFilter("proof_pending")}
+            className={`shrink-0 rounded-xl border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-500/20 transition-colors ${ctaClass}`}
+          >
+            Ver
+          </motion.button>
+        </motion.div>
+      )}
       {total>0&&(
         <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.3}} className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-5 mb-6">
           <div className="flex justify-between text-sm mb-3"><span className="text-zinc-500">Composição</span><span className="text-zinc-400 font-mono">R$ {total.toLocaleString("pt-BR")}</span></div>

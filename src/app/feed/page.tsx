@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, MessageCircle, Share2, Camera, Image as ImageIcon,
-  BadgeCheck, Send, X, Bookmark, SmilePlus, Plus, CheckCircle2, MoreVertical, Pin, Trash2, Trophy, AlertTriangle
+  BadgeCheck, Send, X, Bookmark, SmilePlus, Plus, CheckCircle2, MoreVertical, Pin, Trash2, Trophy, AlertTriangle, Pencil
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -432,7 +432,7 @@ export default function FeedPage() {
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowComposer(true)}
           className={`flex items-center gap-2 px-4 py-2 bg-[#EAB308] text-black rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(234,179,8,0.2)] ${ctaClass}`}>
-          <Camera className="w-4 h-4" /> Postar
+          <Pencil className="w-4 h-4" /> Postar
         </motion.button>
       </header>
 
@@ -745,15 +745,6 @@ export default function FeedPage() {
       </div>
         </AppSectionCard>
       </div>
-
-      {/* FAB — floating post button */}
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        whileHover={{ scale: 1.05 }}
-        onClick={() => setShowComposer(true)}
-        className={`fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] right-5 w-14 h-14 bg-[#EAB308] rounded-full shadow-[0_0_25px_rgba(234,179,8,0.4)] flex items-center justify-center z-30 ${FOCUS_RING_GOLD}`}>
-        <Plus className="w-7 h-7 text-black" />
-      </motion.button>
 
       {/* Post Composer Modal */}
       <AnimatePresence>

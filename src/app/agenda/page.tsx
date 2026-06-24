@@ -167,7 +167,7 @@ export default function AgendaPage() {
               <p className="text-xs text-zinc-500">{nextLesson.date.split("-").reverse().join("/")} · {nextLesson.startTime} - {nextLesson.endTime}</p>
             </div>
             <button onClick={() => setSelectedDate(nextLesson.date)} className={`px-4 rounded-xl bg-[#EAB308] text-black text-xs font-black flex-shrink-0 ${CTA_BUTTON_CLASS}`}>
-              Ver dia
+              {nextLesson.date === todayISO ? "Ver hoje" : `Ver ${nextLesson.date.split("-").slice(2, 3)[0]}/${nextLesson.date.split("-").slice(1, 2)[0]}`}
             </button>
           </div>
         ) : (
@@ -184,8 +184,14 @@ export default function AgendaPage() {
               <circle cx="110" cy="45" r="5" fill="rgba(234,179,8,0.5)" />
               <circle cx="188" cy="36" r="5" fill="rgba(234,179,8,0.35)" />
             </svg>
-            <p className="text-sm font-bold text-white">Nenhum treino agendado no momento</p>
-            <p className="text-xs text-zinc-500 mt-1">Dia de recuperação ativa. Foco em mobilidade e preparação para a próxima sessão.</p>
+            <p className="text-sm font-bold text-white">
+              {isStaff ? "Grade vazia nos próximos dias" : "Nenhum treino agendado no momento"}
+            </p>
+            <p className="text-xs text-zinc-500 mt-1">
+              {isStaff
+                ? "Nenhuma aula cadastrada nos próximos dias. Crie sessões para sua turma."
+                : "Dia de recuperação ativa. Foco em mobilidade e preparação para a próxima sessão."}
+            </p>
           </div>
         )}
         </AppSectionCard>
@@ -196,17 +202,23 @@ export default function AgendaPage() {
         {dateStrip.map((item) => {
           const total = calendarLessons.filter((l) => l.date === item.iso).length;
           const selected = item.iso === selectedDate;
+          const isToday = item.iso === todayISO;
           return (
             <motion.button key={item.iso} whileTap={{ scale: 0.95 }} onClick={() => setSelectedDate(item.iso)}
               className={`min-h-11 min-w-[64px] px-2.5 py-2 rounded-xl border flex-shrink-0 transition-all ${CTA_BUTTON_CLASS} ${
                 selected
                   ? "bg-[#EAB308] text-black border-[#EAB308] shadow-[0_0_14px_rgba(234,179,8,0.35)]"
+                  : isToday
+                  ? "bg-[#EAB308]/10 border-[#EAB308]/50 text-white"
                   : "bg-zinc-950/55 border-zinc-800 text-zinc-300"
               }`}>
               <div className="text-center leading-tight">
                 <p className="text-[10px] uppercase font-bold">{item.weekDay.replace(".", "")}</p>
                 <p className="text-sm font-black">{item.day}</p>
-                <p className="text-[9px] opacity-80">{total > 0 ? `${total} aula${total > 1 ? "s" : ""}` : "livre"}</p>
+                {isToday && !selected
+                  ? <div className="flex justify-center mt-0.5"><div className="w-1 h-1 rounded-full bg-[#EAB308]" /></div>
+                  : <p className="text-[9px] opacity-80">{total > 0 ? `${total} aula${total > 1 ? "s" : ""}` : "livre"}</p>
+                }
               </div>
             </motion.button>
           );
@@ -215,15 +227,15 @@ export default function AgendaPage() {
 
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-2.5">
-          <p className="text-[9px] text-zinc-500">Aulas no dia</p>
+          <p className="text-[11px] text-zinc-500">Aulas</p>
           <p className="text-sm font-black text-white mt-0.5">{dayLessons.length}</p>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-2.5">
-          <p className="text-[9px] text-zinc-500">{isStaff ? "Matrículas no dia" : "Avaliadas"}</p>
+          <p className="text-[11px] text-zinc-500">{isStaff ? "Matrículas" : "Avaliadas"}</p>
           <p className="text-sm font-black text-[#60A5FA] mt-0.5">{dayPerformance.count}</p>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/55 p-2.5">
-          <p className="text-[9px] text-zinc-500">{isStaff ? "Turmas ativas" : "Score oficial"}</p>
+          <p className="text-[11px] text-zinc-500">{isStaff ? "Ativas" : "Score"}</p>
           <p className="text-sm font-black text-[#EAB308] mt-0.5">
             {isStaff ? dayLessons.filter((l) => l.status !== "cancelled").length : dayPerformance.avg ? dayPerformance.avg.toFixed(1) : "—"}
           </p>
@@ -239,20 +251,10 @@ export default function AgendaPage() {
                 ? "Crie uma sessão com categoria, horário, local e alunos na turma."
                 : "Use este espaço para recuperação, mobilidade e revisão tática."
             }
+            actionLabel={isStaff ? `Criar aula em ${selectedDate.split("-").reverse().join("/")}` : undefined}
+            onAction={isStaff ? () => setShowCreateLesson(true) : undefined}
           />
         )}
-        {isStaff && dayLessons.length === 0 ? (
-          <motion.button
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            type="button"
-            onClick={() => setShowCreateLesson(true)}
-              className={`mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EAB308]/40 bg-[#EAB308]/12 py-3 text-sm font-black text-[#EAB308] ${CTA_BUTTON_CLASS}`}
-          >
-            <CalendarPlus className="h-4 w-4" />
-            Criar aula em {selectedDate.split("-").reverse().join("/")}
-          </motion.button>
-        ) : null}
 
         <div className="relative space-y-3 sm:space-y-4">
           {dayLessons.map((lesson, i) => {
