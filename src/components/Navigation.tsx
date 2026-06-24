@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, CalendarRange, Wallet, Users,
-  LogOut, Bell, User, Zap, Trophy, Home, Rss
+  LogOut, Bell, User, Zap, Trophy, Home, Rss, Search
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -21,6 +21,8 @@ const NotificationCommandPeek = dynamic(
   () => import("@/components/notifications/NotificationCommandPeek"),
   { ssr: false },
 );
+const ProfileSheet = dynamic(() => import("@/components/ProfileSheet"), { ssr: false });
+const CommandPalette = dynamic(() => import("@/components/CommandPalette"), { ssr: false });
 import OfflineStatusBanner from "@/components/ui/OfflineStatusBanner";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
@@ -42,8 +44,10 @@ export function Navigation() {
   const { pendingStudents } = useStudents();
   const { unreadNotifications } = useNotifications();
   const { latePayments } = usePayments();
-  const [showNotifs, setShowNotifs]   = useState(false);
-  const [showPeek,  setShowPeek]    = useState(false);
+  const [showNotifs, setShowNotifs]     = useState(false);
+  const [showProfile, setShowProfile]   = useState(false);
+  const [showCommand, setShowCommand]   = useState(false);
+  const [showPeek,  setShowPeek]        = useState(false);
   const [mobilePeekDismissed, setMobilePeekDismissed] = useState(false);
   const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevUnreadRef = useRef(unreadNotifications);
@@ -61,6 +65,18 @@ export function Navigation() {
 
   useEffect(() => () => {
     if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+  }, []);
+
+  // ⌘K / Ctrl+K global shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowCommand(v => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   useEffect(() => {
@@ -135,9 +151,19 @@ export function Navigation() {
           <span className="font-bold text-white tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             WILL<span className="text-[#EAB308]">PRO</span>
           </span>
+          {/* ⌘K search — desktop */}
+          <button
+            type="button"
+            onClick={() => setShowCommand(true)}
+            className={`ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-600 hover:text-[#EAB308] hover:bg-zinc-900 transition-colors ${FOCUS_RING_GOLD}`}
+            title="Busca global (⌘K)"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
           {/* Bell — desktop: hover → peek, click → sheet */}
           <div
-            className="relative ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100"
+            className="relative flex-shrink-0 opacity-0 group-hover:opacity-100"
             onMouseEnter={handleBellEnter}
             onMouseLeave={handleBellLeave}
           >
@@ -203,7 +229,11 @@ export function Navigation() {
 
         {/* USER INFO + LOGOUT */}
         <div className="mt-auto p-4 border-t border-zinc-900 flex flex-col gap-3">
-          <Link href="/perfil" className={`flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100 whitespace-nowrap cursor-pointer outline-none ${FOCUS_RING_GOLD}`}>
+          <button
+            type="button"
+            onClick={() => setShowProfile(true)}
+            className={`flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100 whitespace-nowrap cursor-pointer outline-none w-full text-left ${FOCUS_RING_GOLD}`}
+          >
             <UserAvatar name={user.name} photo={user.avatar} size="sm" className="h-8 w-8 border border-zinc-800" />
             <div className="flex flex-col">
               <span className="text-white font-bold text-sm leading-tight">{user.name}</span>
@@ -211,7 +241,7 @@ export function Navigation() {
                 {user.role === "admin" ? "Administrador" : user.role}
               </span>
             </div>
-          </Link>
+          </button>
 
           <motion.button
             onClick={logout}
@@ -282,23 +312,17 @@ export function Navigation() {
           <span className="text-[9px] font-bold">Avisos</span>
         </motion.button>
 
-        {/* Profile */}
-        <Link href="/perfil" className={`flex-1 outline-none ${FOCUS_RING_GOLD}`}>
-          <motion.div
-            whileTap={{ scale: 0.92 }}
-            className="relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl"
-          >
-            {pathname === "/perfil" && (
-              <motion.div
-                layoutId="mobile-nav-active"
-                className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-[#EAB308]/12 border border-[#EAB308]/20"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-            )}
-            <User className={`w-5 h-5 z-10 transition-colors ${pathname === "/perfil" ? "text-[#EAB308]" : "text-zinc-500"}`} />
-            <span className={`text-[9px] font-bold z-10 ${pathname === "/perfil" ? "text-[#EAB308]" : "text-zinc-600"}`}>Perfil</span>
-          </motion.div>
-        </Link>
+        {/* Profile — abre sheet, não navega para /perfil */}
+        <motion.button
+          type="button"
+          onClick={() => setShowProfile(true)}
+          whileTap={{ scale: 0.92 }}
+          className={`flex-1 outline-none flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl ${FOCUS_RING_GOLD}`}
+          aria-label="Abrir perfil"
+        >
+          <User className="w-5 h-5 text-zinc-500" />
+          <span className="text-[9px] font-bold text-zinc-600">Perfil</span>
+        </motion.button>
       </nav>
 
       <NotificationCommandPeek
@@ -313,6 +337,28 @@ export function Navigation() {
 
       {/* Pulse Inbox */}
       <NotificationPulseSheet open={showNotifs} onClose={() => setShowNotifs(false)} />
+
+      {/* Profile Sheet */}
+      <ProfileSheet open={showProfile} onClose={() => setShowProfile(false)} />
+
+      {/* Command Palette */}
+      <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} />
+
+      {/* FAB ⌘K — mobile (só quando não há modal aberto) */}
+      {!showNotifs && !showProfile && !showCommand && (
+        <motion.button
+          type="button"
+          onClick={() => setShowCommand(true)}
+          whileTap={{ scale: 0.92 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5 }}
+          className="lg:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 h-11 w-11 rounded-full bg-[#EAB308] text-black shadow-[0_4px_24px_rgba(234,179,8,0.45)] flex items-center justify-center"
+          aria-label="Abrir busca global"
+        >
+          <Search className="h-5 w-5" />
+        </motion.button>
+      )}
 
     </>
   );
