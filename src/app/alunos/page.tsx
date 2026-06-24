@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Fuse from "fuse.js";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Search, CheckCircle2, XCircle, AlertTriangle,
@@ -81,16 +82,20 @@ export default function AlunosPage() {
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   useBodyScrollLock(Boolean(selectedStudent || trainingStudent || evalStudent));
 
+  const fuse = useMemo(
+    () => new Fuse(students, { keys: ["name", "email", "phone"], threshold: 0.35, minMatchCharLength: 2 }),
+    [students],
+  );
+
   const filtered = useMemo(() => {
-    return students
-      .filter(s => filter === "all" || s.status === filter)
-      .filter(s => !tagFilter || (s.tags ?? []).includes(tagFilter))
-      .filter(s => {
-        const normalize = (str: string) =>
-          str.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-        return normalize(s.name).includes(normalize(search));
-      });
-  }, [students, filter, tagFilter, search]);
+    const byStatus = students.filter(s => filter === "all" || s.status === filter);
+    const byTag = byStatus.filter(s => !tagFilter || (s.tags ?? []).includes(tagFilter));
+    if (!search.trim()) return byTag;
+    const ids = new Set(fuse.search(search).map(r => r.item.id));
+    return byTag.filter(s => ids.has(s.id));
+  }, [students, fuse, filter, tagFilter, search]);
+
+  const hasTaggedStudents = useMemo(() => students.some(s => (s.tags ?? []).length > 0), [students]);
 
   const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     active: { label: "Ativo", color: "#22C55E", bg: "rgba(34,197,94,0.1)" },
@@ -180,28 +185,23 @@ export default function AlunosPage() {
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-5 flex flex-col gap-2 rounded-2xl border border-[#EAB308]/30 bg-[#EAB308]/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-[#EAB308]/25 bg-[#EAB308]/8 px-4 py-3"
         >
-          <div className="flex min-w-0 items-start gap-2">
-            <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-[#EAB308]" aria-hidden />
-            <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-wider text-[#EAB308]">Link de matrícula (convite)</p>
-              <p className="mt-0.5 truncate font-mono text-[11px] text-zinc-300" title={cadastroInviteUrl}>
-                {cadastroInviteUrl}
-              </p>
-              <p className="mt-1 text-[10px] text-zinc-500">Mesmo link configurado no cockpit; inclui código ?invite= para controle de acesso.</p>
-            </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <Link2 className="h-4 w-4 shrink-0 text-[#EAB308]" aria-hidden />
+            <p className="text-xs font-bold text-[#EAB308]">Link de matrícula</p>
+            <span className="text-[10px] text-zinc-500 truncate hidden sm:block">(compartilhe para novos alunos se cadastrarem)</span>
           </div>
           <button
             type="button"
             onClick={() => {
               void navigator.clipboard.writeText(cadastroInviteUrl);
-              toast("Link copiado.");
+              toast("Link copiado!");
             }}
-            className={`inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border border-[#EAB308]/45 bg-black/30 px-4 py-2 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/15 sm:self-center ${ctaClass}`}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#EAB308]/40 bg-black/30 px-3 py-1.5 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/15 transition-colors ${ctaClass}`}
           >
             <Copy className="h-3.5 w-3.5" />
-            Copiar
+            Copiar link
           </button>
         </motion.div>
       ) : null}
@@ -236,12 +236,21 @@ export default function AlunosPage() {
       {/* Search + Filters */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="space-y-4 mb-6">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar aluno por nome..."
-            className="w-full bg-[#0A0A0A] border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-white text-sm outline-none focus:border-[#EAB308]/50 transition-colors placeholder-zinc-600"
+            placeholder="Buscar aluno por nome, e-mail ou telefone..."
+            className="w-full bg-[#0A0A0A] border border-zinc-800 rounded-xl py-3 pl-11 pr-10 text-white text-sm outline-none focus:border-[#EAB308]/50 transition-colors placeholder-zinc-600"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-white transition-colors rounded-md"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
@@ -260,8 +269,8 @@ export default function AlunosPage() {
           ))}
         </div>
 
-        {/* Tag filters */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        {/* Tag filters — só exibe quando há alunos com tags cadastradas */}
+        {hasTaggedStudents && <div className="flex gap-2 overflow-x-auto no-scrollbar">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setTagFilter(null)}
@@ -288,8 +297,17 @@ export default function AlunosPage() {
               {tag.icon} {tag.label}
             </motion.button>
           ))}
-        </div>
+        </div>}
       </motion.div>
+
+      {/* Result count */}
+      {(search || filter !== "all" || tagFilter) && filtered.length > 0 && (
+        <p className="text-[11px] text-zinc-500 mb-3 font-medium">
+          {filtered.length === students.length
+            ? `${students.length} alunos`
+            : `${filtered.length} de ${students.length} alunos`}
+        </p>
+      )}
 
       {/* Student List */}
       <div className="space-y-2">
@@ -666,16 +684,18 @@ export default function AlunosPage() {
                     <RotateCcw className="w-4 h-4" /> Reativar Aluno
                   </motion.button>
                 )}
-                <motion.button whileTap={{ scale: 0.97 }}
-                  onClick={() => openWhatsApp(selectedStudent.phone, selectedStudent.name)}
-                  className={`w-full py-3 rounded-xl bg-[#22C55E] text-white font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
-                  <PhoneCall className="w-4 h-4" /> Abrir WhatsApp
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.97 }}
-                  onClick={() => setShowMessage(!showMessage)}
-                  className={`w-full py-3 rounded-xl bg-[#EAB308] text-black font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
-                  <MessageSquare className="w-4 h-4" /> Enviar Mensagem via WA
-                </motion.button>
+                <div className="flex gap-2">
+                  <motion.button whileTap={{ scale: 0.97 }}
+                    onClick={() => openWhatsApp(selectedStudent.phone, selectedStudent.name)}
+                    className={`flex-1 py-3 rounded-xl bg-[#22C55E] text-white font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
+                    <PhoneCall className="w-4 h-4" /> WhatsApp
+                  </motion.button>
+                  <motion.button whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowMessage(!showMessage)}
+                    className={`flex-1 py-3 rounded-xl border font-bold flex items-center justify-center gap-2 transition-colors ${ctaClass} ${showMessage ? "bg-[#EAB308]/15 border-[#EAB308]/60 text-[#EAB308]" : "bg-zinc-900 border-zinc-800 text-white"}`}>
+                    <MessageSquare className="w-4 h-4" /> Mensagem
+                  </motion.button>
+                </div>
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setEvalStudent(selectedStudent)}
                   className={`w-full py-3 rounded-xl bg-[#8B5CF6] text-white font-bold flex items-center justify-center gap-2 ${ctaClass}`}>
