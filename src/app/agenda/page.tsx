@@ -81,12 +81,13 @@ export default function AgendaPage() {
     [calendarLessons, selectedDate],
   );
 
+  const todayISO = localDateISO(localNow);
   const nextLesson = useMemo(
     () =>
       calendarLessons
-        .filter((l) => l.status === "scheduled" || l.status === "in-progress")
+        .filter((l) => (l.status === "scheduled" || l.status === "in-progress") && l.date >= todayISO)
         .sort((a, b) => lDate(lDateKey(a)).localeCompare(lDate(lDateKey(b))) || a.startTime.localeCompare(b.startTime))[0] ?? null,
-    [calendarLessons],
+    [calendarLessons, todayISO],
   );
 
   function lDateKey(lesson: Lesson) {
@@ -205,7 +206,7 @@ export default function AgendaPage() {
               <div className="text-center leading-tight">
                 <p className="text-[10px] uppercase font-bold">{item.weekDay.replace(".", "")}</p>
                 <p className="text-sm font-black">{item.day}</p>
-                <p className="text-[9px] opacity-80">{total > 0 ? `${total} aula${total > 1 ? "s" : ""}` : "descanso"}</p>
+                <p className="text-[9px] opacity-80">{total > 0 ? `${total} aula${total > 1 ? "s" : ""}` : "livre"}</p>
               </div>
             </motion.button>
           );

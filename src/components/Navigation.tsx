@@ -90,7 +90,7 @@ export function Navigation() {
           { name: "Hoje", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
           { name: "Turma", href: "/alunos", icon: Users, badge: pendingStudents },
           { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
-          { name: "Gestão", href: "/financeiro", icon: Wallet, badge: latePayments },
+          { name: "Finanças", href: "/financeiro", icon: Wallet, badge: latePayments },
         ];
       case "coach":
         return [

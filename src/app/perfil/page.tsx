@@ -316,10 +316,14 @@ export default function PerfilPage() {
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#EAB308]/90 mb-1">Athlete ID</p>
             <h2 className="text-2xl font-bold text-white truncate">{user?.name}</h2>
-            <p className="text-zinc-500 text-sm mt-0.5">{profile?.plan || "Aluno"} · Desde {profile?.joinedAt ? new Date(profile.joinedAt+"T12:00:00").toLocaleDateString("pt-BR",{month:"short",year:"numeric"}) : "—"}</p>
+            <p className="text-zinc-500 text-sm mt-0.5">
+              {user?.role === "admin" ? "Administrador" : user?.role === "coach" ? "Coach" : profile?.plan || "Aluno"}
+              {" · Desde "}
+              {profile?.joinedAt ? new Date(profile.joinedAt+"T12:00:00").toLocaleDateString("pt-BR",{month:"short",year:"numeric"}) : "—"}
+            </p>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="text-[10px] font-bold text-black bg-[#EAB308] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                {profile?.status === "active" ? "✓ Ativo" : profile?.status === "pending" ? "⏳ Pendente" : profile?.status || "Aluno"}
+                {user?.role === "admin" ? "⚡ Admin" : user?.role === "coach" ? "Coach" : profile?.status === "active" ? "✓ Ativo" : profile?.status === "pending" ? "⏳ Pendente" : profile?.status || "Aluno"}
               </span>
               {profile?.categories?.[0] && (
                 <span className="text-[10px] font-bold text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">{profile.categories[0]}</span>

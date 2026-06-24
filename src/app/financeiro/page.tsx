@@ -718,10 +718,10 @@ function AdminFinanceiro() {
         {filtered.length === 0 ? (
           <AppEmptyState
             icon={Wallet}
-            title="Nenhum pagamento neste filtro"
-            description="Altere o status selecionado para ampliar a visão financeira."
-            actionLabel="Ver todos os pagamentos"
-            onAction={() => setFilter("all")}
+            title={filter === "all" ? "Nenhum pagamento cadastrado" : "Nenhum pagamento neste filtro"}
+            description={filter === "all" ? "Quando alunos tiverem mensalidades geradas, elas aparecerão aqui." : "Tente outro filtro ou veja todos os pagamentos."}
+            actionLabel={filter !== "all" ? "Ver todos" : undefined}
+            onAction={filter !== "all" ? () => setFilter("all") : undefined}
           />
         ) : null}
         {filtered.map((pay,i)=>{const st=getStudent(pay.studentId);const cfg=statusCfg[pay.status];const Icon=cfg.icon;if(!st)return null;return(
