@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   ChevronRight,
+  ChevronDown,
   BarChart3,
   Bot,
   CalendarPlus,
@@ -221,6 +222,7 @@ export default function WillCockpit() {
   const [showLivePanel, setShowLivePanel] = useState(false);
   const [showTrainingPlans, setShowTrainingPlans] = useState(false);
   const [showXPModeration, setShowXPModeration] = useState(false);
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [showXPAnalytics, setShowXPAnalytics] = useState(false);
   const [showCoachCopilot, setShowCoachCopilot] = useState(false);
   const [showAthleteTwin, setShowAthleteTwin] = useState(false);
@@ -1374,6 +1376,18 @@ export default function WillCockpit() {
             Retenção
           </button>
 
+          {/* Toggle para ferramentas avançadas */}
+          <button
+            type="button"
+            onClick={() => setShowAdvancedTools(v => !v)}
+            className="col-span-2 mt-1 flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-[11px] font-bold text-zinc-500 hover:text-zinc-300 hover:border-white/15 transition-colors"
+          >
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAdvancedTools ? "rotate-180" : ""}`} />
+            {showAdvancedTools ? "Ocultar ferramentas avançadas" : `Ver ferramentas avançadas (${16})`}
+          </button>
+
+          <AnimatePresence>
+          {showAdvancedTools && <>
           {/* ── Inteligência & Analytics ── */}
           <p className="col-span-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 pt-2">Inteligência</p>
           <button
@@ -1597,6 +1611,8 @@ export default function WillCockpit() {
             <FileSpreadsheet className="h-5 w-5 text-teal-400" />
             Importar CSV
           </button>
+          </>}
+          </AnimatePresence>
           </div>
         </AppSectionCard>
       </motion.div>}  {/* closed "turma" Ferramentas BLOCO 3 */}

@@ -75,72 +75,45 @@ export default function CoachHome() {
 
       <PushPermissionBanner role="professor" />
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className="mb-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-[#EAB308]/25 bg-[#EAB308]/8 p-4">
-          <div className="flex items-center gap-2 text-[#EAB308]">
-            <UserPlus className="h-5 w-5" />
-            <p className="text-xs font-black uppercase tracking-wider">Novo aluno</p>
-          </div>
-          <p className="mt-2 text-[11px] text-zinc-500">Mesmo convite do cockpit (?invite). Aprovações em Alunos.</p>
-          <div className="mt-3 flex flex-col gap-2">
-            {cadastroInviteUrl ? (
-              <button
-                type="button"
-                onClick={() => {
-                  void navigator.clipboard.writeText(cadastroInviteUrl);
-                  toast("Link de matrícula copiado.");
-                }}
-                className={`w-full rounded-xl border border-[#EAB308]/40 bg-black/30 py-2.5 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/10 ${ctaClass}`}
-              >
-                <span className="inline-flex items-center justify-center gap-2">
-                  <Copy className="h-3.5 w-3.5" />
-                  Copiar link
-                </span>
-              </button>
-            ) : null}
-            <Link
-              href="/alunos"
-              className={`flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-zinc-200 hover:border-[#EAB308]/35 hover:text-[#EAB308] ${ctaClass}`}
-            >
-              Gestão
-            </Link>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-4">
-          <div className="flex items-center gap-2 text-[#EAB308]">
-            <CalendarPlus className="h-5 w-5" />
-            <p className="text-xs font-black uppercase tracking-wider">Nova aula</p>
-          </div>
-          <p className="mt-2 text-[11px] text-zinc-500">Categoria, horário, local e alunos.</p>
+      {/* Ações rápidas — compactas, sem redundância */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+        className="mb-5 flex gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setShowCreateLesson(true)}
+          className={`flex items-center gap-2 rounded-xl border border-[#EAB308]/50 bg-[#EAB308]/10 px-4 py-2.5 text-sm font-black text-[#EAB308] hover:bg-[#EAB308]/18 transition-colors ${ctaClass}`}
+        >
+          <CalendarPlus className="h-4 w-4" />
+          Nova Aula
+        </button>
+        <Link
+          href="/alunos"
+          className={`flex items-center gap-2 rounded-xl border border-white/12 bg-white/5 px-4 py-2.5 text-sm font-bold text-zinc-300 hover:border-white/25 hover:text-white transition-colors ${ctaClass}`}
+        >
+          <UserPlus className="h-4 w-4" />
+          Alunos
+        </Link>
+        <button
+          type="button"
+          onClick={() => setTrainingEditorStudent("select")}
+          className={`flex items-center gap-2 rounded-xl border border-purple-700/40 bg-purple-700/10 px-4 py-2.5 text-sm font-bold text-purple-300 hover:bg-purple-700/20 transition-colors ${ctaClass}`}
+        >
+          <Dumbbell className="h-4 w-4" />
+          Planos
+        </button>
+        {cadastroInviteUrl ? (
           <button
             type="button"
-            onClick={() => setShowCreateLesson(true)}
-            className={`mt-3 w-full rounded-xl border border-[#EAB308]/45 bg-gradient-to-r from-[#EAB308]/18 to-transparent py-3 text-sm font-black text-[#EAB308] hover:border-[#EAB308] ${ctaClass}`}
+            onClick={() => { void navigator.clipboard.writeText(cadastroInviteUrl); toast("Link de matrícula copiado."); }}
+            className={`flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-bold text-zinc-500 hover:text-zinc-300 hover:border-white/20 transition-colors ${ctaClass}`}
           >
-            Montar aula
+            <Copy className="h-4 w-4" />
+            Copiar link
           </button>
-          <Link href="/agenda" className={`mt-2 block text-center text-[10px] font-bold uppercase tracking-wide text-zinc-600 hover:text-zinc-400 ${FOCUS_RING_GOLD}`}>
-            Calendário
-          </Link>
-        </div>
-        <div className="rounded-2xl border border-purple-900/30 bg-purple-950/10 p-4">
-          <div className="flex items-center gap-2 text-purple-400">
-            <Dumbbell className="h-5 w-5" />
-            <p className="text-xs font-black uppercase tracking-wider">Treino</p>
-          </div>
-          <p className="mt-2 text-[11px] text-zinc-500">Prescrever treino personalizado.</p>
-          <button
-            type="button"
-            onClick={() => setTrainingEditorStudent("select")}
-            className={`mt-3 w-full rounded-xl border border-purple-700/40 bg-purple-700/15 py-2.5 text-xs font-bold text-purple-300 hover:bg-purple-700/25 ${ctaClass}`}
-          >
-            Prescrever
-          </button>
-        </div>
+        ) : null}
       </motion.div>
 
-      {/* Quick Stats */}
+      {/* Stats do dia */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="bg-[#0A0A0A] border border-zinc-800/60 rounded-xl p-4 text-center">
