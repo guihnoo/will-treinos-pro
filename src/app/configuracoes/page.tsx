@@ -367,7 +367,7 @@ export default function ConfigPage() {
                       {cat.isCustom && <span className="text-[9px] font-bold text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">CUSTOM</span>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">
-                      <span>Máx: {cat.maxStudents} alunos</span>
+                      <span>Máx: {cat.maxStudents} {cat.maxStudents === 1 ? "aluno" : "alunos"}</span>
                       <span>R$ {cat.defaultPrice}</span>
                     </div>
                   </div>
