@@ -112,7 +112,6 @@ const AdminSettingsPanel          = dynamic(() => import("./AdminSettingsPanel")
 const GlobalSearchModal           = dynamic(() => import("./GlobalSearchModal"),           { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import EmptyCockpitGuide from "./EmptyCockpitGuide";
-import TodayView from "./TodayView";
 const ImportStudentsModal = dynamic(() => import("./ImportStudentsModal"), { ssr: false, loading: () => null });
 import StudentTagsEditor from "./StudentTagsEditor";
 import { STUDENT_TAGS } from "@/lib/studentTags";
@@ -258,7 +257,7 @@ export default function WillCockpit() {
   const [showExportData, setShowExportData] = useState(false);
   const [showImportStudents, setShowImportStudents] = useState(false);
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
-  const [activeTab, setActiveTab] = useState<"hoje" | "turma" | "arsenal">("hoje");
+  const [activeTab, setActiveTab] = useState<"hoje" | "alertas" | "turma" | "feed">("hoje");
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
   const [messageSentId, setMessageSentId] = useState<string | null>(null);
@@ -807,36 +806,42 @@ export default function WillCockpit() {
         <div className="relative flex rounded-2xl border border-zinc-800/60 bg-zinc-950/70 p-1 gap-1">
           {([
             { id: "hoje",    label: "Hoje",    icon: LayoutDashboard },
+            { id: "alertas", label: "Alertas", icon: ShieldAlert },
             { id: "turma",   label: "Turma",   icon: Users },
-            { id: "arsenal", label: "Arsenal", icon: Zap },
-          ] as const).map(({ id, label, icon: Icon }) => (
-            <motion.button
-              key={id}
-              type="button"
-              onClick={() => setActiveTab(id)}
-              whileTap={{ scale: 0.96 }}
-              className={`relative flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-black transition-colors ${
-                activeTab === id
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              {activeTab === id && (
-                <motion.div
-                  layoutId="cockpit-tab-pill"
-                  className="absolute inset-0 rounded-xl bg-[#EAB308]/12 border border-[#EAB308]/25"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              <Icon size={14} className={`relative z-10 ${activeTab === id ? "text-[#EAB308]" : ""}`} />
-              <span className="relative z-10">{label}</span>
-              {id === "turma" && proofPendingCount > 0 && (
-                <span className="relative z-10 ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
-                  {proofPendingCount}
-                </span>
-              )}
-            </motion.button>
-          ))}
+            { id: "feed",    label: "Feed",     icon: Newspaper },
+          ] as const).map(({ id, label, icon: Icon }) => {
+            const alertCount = id === "alertas"
+              ? awaitingApproval + pendingPaymentsCount
+              : id === "turma"
+              ? proofPendingCount
+              : 0;
+            return (
+              <motion.button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                whileTap={{ scale: 0.96 }}
+                className={`relative flex-1 flex items-center justify-center gap-1 rounded-xl py-2.5 text-[11px] font-black transition-colors ${
+                  activeTab === id ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                {activeTab === id && (
+                  <motion.div
+                    layoutId="cockpit-tab-pill"
+                    className="absolute inset-0 rounded-xl bg-[#EAB308]/12 border border-[#EAB308]/25"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <Icon size={13} className={`relative z-10 ${activeTab === id ? "text-[#EAB308]" : ""}`} />
+                <span className="relative z-10">{label}</span>
+                {alertCount > 0 && (
+                  <span className="relative z-10 ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
+                    {alertCount > 9 ? "9+" : alertCount}
+                  </span>
+                )}
+              </motion.button>
+            );
+          })}
         </div>
       </motion.div>
 
@@ -846,23 +851,6 @@ export default function WillCockpit() {
           <EmptyCockpitGuide
             onCreateLesson={() => setShowCreateLesson(true)}
             onInviteStudent={() => {}}
-          />
-        </motion.div>
-      )}
-
-      {/* BLOCO Today View — resumo executivo do dia */}
-      {activeTab === "hoje" && (
-        <motion.div variants={itemV}>
-          <TodayView
-            lessons={lessons}
-            students={students}
-            payments={payments}
-            pendingStudents={approvalQueue}
-            latePayments={payments.filter((p) => p.status === "late" || p.status === "pending")}
-            birthdayStudents={birthdayStudents}
-            todayLessons={todayLessons}
-            onNavigate={(tab) => setActiveTab(tab)}
-            onCreateLesson={() => setShowCreateLesson(true)}
           />
         </motion.div>
       )}
@@ -1052,7 +1040,7 @@ export default function WillCockpit() {
       </motion.div>}  {/* closed "hoje" BLOCO 1 */}
 
       {/* BLOCO 1.5: Reposições Pendentes */}
-      {activeTab === "hoje" && pendingRepositions.length > 0 && (
+      {activeTab === "alertas" && pendingRepositions.length > 0 && (
         <motion.div variants={itemV}>
           <AppSectionCard
             title={`Reposições Pendentes (${pendingRepositions.length})`}
@@ -1109,7 +1097,7 @@ export default function WillCockpit() {
       )}
 
       {/* BLOCO 1.5: Faltas Comunicadas */}
-      {activeTab === "hoje" && absenceRequests.length > 0 && (
+      {activeTab === "alertas" && absenceRequests.length > 0 && (
         <motion.div variants={itemV}>
           <AppSectionCard
             title={`Faltas Comunicadas (${absenceRequests.length})`}
@@ -1151,7 +1139,7 @@ export default function WillCockpit() {
       )}
 
       {/* BLOCO 1.6: Reposições Solicitadas */}
-      {activeTab === "hoje" && repositionRequests.length > 0 && (
+      {activeTab === "alertas" && repositionRequests.length > 0 && (
         <motion.div variants={itemV}>
           <AppSectionCard
             title={`Reposições Solicitadas (${repositionRequests.length})`}
@@ -1192,7 +1180,7 @@ export default function WillCockpit() {
       )}
 
       {/* BLOCO 1.7: NPS de Aulas — avaliações dos alunos */}
-      {activeTab === "hoje" && lessonNps.length > 0 && (
+      {activeTab === "alertas" && lessonNps.length > 0 && (
         <motion.div variants={itemV}>
           <AppSectionCard
             title={`Avaliações dos Alunos (${lessonNps.length} aula${lessonNps.length !== 1 ? "s" : ""})`}
@@ -1230,7 +1218,7 @@ export default function WillCockpit() {
       )}
 
       {/* BLOCO 2: Financeiro + Aprovações — gestão crítica */}
-      {activeTab === "turma" && <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">
+      {activeTab === "alertas" && <motion.div variants={itemV} className="grid gap-3 lg:grid-cols-2">
         <KpiActionCard
           accent="emerald"
           title="Saúde Financeira - Mês Atual"
@@ -1299,12 +1287,12 @@ export default function WillCockpit() {
         </KpiActionCard>
       </motion.div>}  {/* closed "turma" BLOCO 2 */}
 
-      {/* BLOCO 3: Ações rápidas */}
-      {activeTab === "arsenal" && <motion.div variants={itemV}>
+      {/* BLOCO 3: Ferramentas do Coach */}
+      {activeTab === "turma" && <motion.div variants={itemV}>
         <AppSectionCard
-          title="Ações rápidas"
-          subtitle="Atalhos operacionais para acelerar o dia."
-          rightSlot={<Coins className="h-4 w-4 text-[#EAB308]" />}
+          title="Ferramentas"
+          subtitle="Recursos avançados de operação e análise."
+          rightSlot={<Zap className="h-4 w-4 text-[#EAB308]" />}
           className="relative overflow-hidden border-white/[0.08] bg-[#050505]/80 backdrop-blur-2xl"
           contentClassName="pt-3"
         >
@@ -1333,18 +1321,6 @@ export default function WillCockpit() {
           >
             <PlusCircle className="h-5 w-5 text-[#EAB308]" />
             Nova Aula
-          </Link>
-          <Link
-            href="/feed"
-            onClick={() => {
-              haptic(20);
-              setActionFeedback("A Rede aberta com moderação do dono.");
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-yellow-500/35 bg-yellow-500/10 px-4 py-3 text-sm font-black text-yellow-200 transition-all hover:border-yellow-400/60 hover:bg-yellow-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir A Rede com moderação ativa"
-          >
-            <Newspaper className="h-5 w-5 text-[#EAB308]" />
-            A Rede (Moderação Ativa)
           </Link>
           <button
             type="button"
@@ -1434,18 +1410,6 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowBroadcast(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Enviar anúncio para grupo de alunos"
-          >
-            <Megaphone className="h-5 w-5 text-violet-400" />
-            Anúncio
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(20);
               setShowTurmaAnalytics(true);
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 px-4 py-3 text-sm font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15 ${INTERACTIVE_FOCUS_RING}`}
@@ -1519,19 +1483,6 @@ export default function WillCockpit() {
           >
             <LayoutGrid className="h-5 w-5 text-amber-400" />
             Mapa de Calor
-          </button>
-          <button
-            type="button"
-            data-testid="btn-weekly-challenge"
-            onClick={() => {
-              haptic(20);
-              setShowWeeklyChallenge(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Gerenciar desafio semanal da turma"
-          >
-            <Target className="h-5 w-5 text-violet-400" />
-            Desafio da Semana
           </button>
           <button
             type="button"
@@ -1639,7 +1590,7 @@ export default function WillCockpit() {
           </button>
           </div>
         </AppSectionCard>
-      </motion.div>}  {/* closed "arsenal" BLOCO 3 */}
+      </motion.div>}  {/* closed "turma" Ferramentas BLOCO 3 */}
 
       {/* BLOCO 4: Grade semanal */}
       {activeTab === "hoje" && <motion.div variants={itemV}>
@@ -1834,27 +1785,6 @@ export default function WillCockpit() {
       </motion.div>
 
       <motion.div variants={itemV}>
-        <Link
-          href="/feed"
-          onClick={() => haptic(12)}
-          className={`flex items-center justify-between gap-3 rounded-2xl border border-yellow-500/40 bg-gradient-to-r from-yellow-500/12 via-black/40 to-black/60 px-4 py-3.5 shadow-[0_0_28px_rgba(234,179,8,0.08)] transition hover:border-yellow-400/55 hover:from-yellow-500/18 ${INTERACTIVE_FOCUS_RING}`}
-          aria-label="Abrir A Rede para moderação"
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-yellow-500/35 bg-yellow-500/10">
-              <Newspaper className="h-5 w-5 text-[#EAB308]" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-200/95">A Rede</p>
-              <p className="truncate text-sm font-bold text-white">Moderar posts, comunicados e visibilidade</p>
-              <p className="text-[11px] text-zinc-500">Você é o moderador oficial da comunidade.</p>
-            </div>
-          </div>
-          <ArrowUpRight className="h-5 w-5 flex-shrink-0 text-yellow-400/90" />
-        </Link>
-      </motion.div>
-
-      <motion.div variants={itemV}>
         <AppSectionCard
           title="Cadastro e grade"
           subtitle="Convide novos atletas e monte aulas com categoria, horário e matrícula na turma."
@@ -1945,6 +1875,90 @@ export default function WillCockpit() {
         </AppSectionCard>
       </motion.div>
       </>}  {/* closed Fragment "turma" BLOCO 5 */}
+
+      {/* BLOCO FEED: A Rede — comunidade e moderação */}
+      {activeTab === "feed" && (
+        <motion.div variants={itemV} className="space-y-4">
+          {/* Hero de entrada */}
+          <Link
+            href="/feed"
+            onClick={() => haptic(15)}
+            className={`group flex items-center justify-between gap-3 rounded-2xl border border-[#EAB308]/35 bg-gradient-to-r from-[#EAB308]/10 via-black/60 to-black/80 px-5 py-5 shadow-[0_0_32px_rgba(234,179,8,0.1)] transition hover:border-[#EAB308]/55 hover:from-[#EAB308]/16 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir A Rede com moderação ativa"
+          >
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl border border-[#EAB308]/40 bg-[#EAB308]/12 shadow-[0_0_18px_rgba(234,179,8,0.18)]">
+                <Newspaper className="h-6 w-6 text-[#EAB308]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]/90">A Rede</p>
+                <p className="text-base font-black text-white">Feed da Comunidade</p>
+                <p className="text-[11px] text-zinc-500">Posts, stories e comunicados da turma</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              <ArrowUpRight className="h-5 w-5 text-[#EAB308]/80 transition group-hover:text-[#EAB308]" />
+              <span className="rounded-full border border-[#EAB308]/30 bg-[#EAB308]/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#EAB308]">Mod. Ativa</span>
+            </div>
+          </Link>
+
+          {/* Ações do Feed */}
+          <AppSectionCard
+            title="Publicar na Rede"
+            subtitle="Crie comunicados, anúncios e posts para a turma."
+            contentClassName="pt-3"
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link
+                href="/feed"
+                onClick={() => haptic(18)}
+                className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/10 px-4 py-3 text-sm font-black text-[#EAB308] transition hover:border-[#EAB308]/65 hover:bg-[#EAB308]/18 ${INTERACTIVE_FOCUS_RING}`}
+              >
+                <Send className="h-5 w-5" />
+                Novo post / Comunicado
+              </Link>
+              <Link
+                href="/feed"
+                onClick={() => haptic(12)}
+                className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-zinc-200 transition hover:border-white/25 hover:bg-white/10 ${INTERACTIVE_FOCUS_RING}`}
+              >
+                <Newspaper className="h-5 w-5 text-zinc-400" />
+                Ver feed completo
+              </Link>
+            </div>
+            <p className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-200/80">
+              👑 Como admin, você tem moderação total — pode fixar posts, marcar comunicados oficiais e remover conteúdo inadequado.
+            </p>
+          </AppSectionCard>
+
+          {/* Desafio semanal + Destaque */}
+          <AppSectionCard
+            title="Engajamento da Turma"
+            subtitle="Ferramentas para motivar e reconhecer atletas."
+            contentClassName="pt-3"
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => { haptic(18); setShowWeeklyChallenge(true); }}
+                className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/8 px-4 py-3 text-sm font-black text-violet-200 transition hover:border-violet-400/55 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
+              >
+                <Target className="h-5 w-5 text-violet-400" />
+                Desafio da Semana
+              </button>
+              <button
+                type="button"
+                onClick={() => { haptic(18); setShowBroadcast(true); }}
+                className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/8 px-4 py-3 text-sm font-black text-amber-200 transition hover:border-amber-400/55 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
+              >
+                <Megaphone className="h-5 w-5 text-amber-400" />
+                Anúncio Push
+              </button>
+            </div>
+          </AppSectionCard>
+        </motion.div>
+      )}
+
       </motion.div>
 
       <AnimatePresence>

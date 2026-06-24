@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarRange, CalendarPlus, Check, Copy, X, ShieldAlert, UserCheck,
-  Clock, MapPin, Star, ChevronRight, UserPlus, Dumbbell, Edit2,
+  Clock, MapPin, Star, ChevronRight, UserPlus, Dumbbell, Edit2, Newspaper,
 } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useStudents } from "@/context/StudentsContext";
@@ -21,7 +22,6 @@ import TrainingPlanEditor from "@/components/TrainingPlanEditor";
 import InlineEvalPanel from "@/components/InlineEvalPanel";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 import { useToast } from "@/components/Toast";
-import Link from "next/link";
 import WeatherWidget from "@/components/WeatherWidget";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import CreateLessonModal from "@/components/CreateLessonModal";
@@ -161,6 +161,27 @@ export default function CoachHome() {
           <p className="text-[11px] text-zinc-500 font-medium">Faltas</p>
         </motion.div>
       </div>
+
+      {/* A Rede — Feed da turma (acesso rápido antes das aulas) */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+        className="mb-6 rounded-2xl border border-[#EAB308]/25 bg-[#EAB308]/[0.06] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EAB308]/15 text-[#EAB308]">
+              <Newspaper className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white">A Rede</p>
+              <p className="text-[11px] text-zinc-500">Feed social da turma · comunicados · engajamento</p>
+            </div>
+          </div>
+          <Link href="/feed"
+            className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl border border-[#EAB308]/40 bg-black/30 px-3 py-2 text-xs font-bold text-[#EAB308] hover:bg-[#EAB308]/10 transition ${FOCUS_RING_GOLD} ${TOUCH_TARGET_MIN}`}>
+            Abrir
+            <ChevronRight className="h-3.5 w-3.5 opacity-60" />
+          </Link>
+        </div>
+      </motion.div>
 
       {/* Lesson Cards */}
       <div className="space-y-4">

@@ -19,7 +19,7 @@ import { CARD_TIER_THRESHOLDS } from "@/context/types";
 import { useGamification } from "@/context/GamificationContext";
 import { useFeed } from "@/context/FeedContext";
 import { useApp } from "@/context/AppContext";
-import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award, CreditCard, AlertTriangle as AlertIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Trophy, Bell, CheckCircle2, Play, Star, TrendingUp, TrendingDown, Users, X, Lock, MapPin, User, ChevronRight, Target, Medal, Radio, Flame, Heart, MessageCircle, Award, CreditCard, AlertTriangle as AlertIcon, Newspaper } from "lucide-react";
 import dynamic from "next/dynamic";
 import { fetchXpLogEntriesRemote, type XpLogEntry } from "@/lib/supabasePersistence";
 import { getSupabaseClient } from "@/lib/supabaseClient";
@@ -1211,6 +1211,23 @@ export default function StudentHome() {
         </Link>
       </motion.div>
 
+      {/* A Rede — Feed social (elevado para zona social, antes de pagamentos) */}
+      <motion.div variants={homeItem}>
+        <Link href="/feed"
+          className="flex items-center justify-between gap-4 rounded-2xl border border-[#EAB308]/25 bg-[#EAB308]/[0.06] p-4 hover:bg-[#EAB308]/[0.09] transition-colors active:scale-[0.98]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#EAB308]/15 text-[#EAB308]">
+              <Newspaper className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white">A Rede</p>
+              <p className="text-[11px] text-zinc-500 truncate">Feed social · desafios · novidades da turma</p>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 flex-shrink-0 text-[#EAB308]/60" />
+        </Link>
+      </motion.div>
+
       {/* BLOCO 4: Meus Pagamentos */}
       {(() => {
         const currentPay = getStudentCurrentPayment(user?.id ?? "");
@@ -1653,8 +1670,6 @@ export default function StudentHome() {
           <p className="text-[10px] text-zinc-500 mt-1">{unlockedTracksCount}/{achievementTracks.length} trilhas liberadas</p>
         </button>
       </motion.div>
-
-      {/* Neural removido por prioridade de produto */}
 
       <StudentHomePrimaryModals
         showConquistasMore={showConquistasMore}
