@@ -1298,6 +1298,8 @@ export default function WillCockpit() {
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_120%_at_100%_0%,rgba(234,179,8,0.12),transparent_65%)]" />
           <div className="grid gap-3 sm:grid-cols-2">
+          {/* ── Ações Principais ── */}
+          <p className="col-span-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 pt-1">Ações</p>
           <Link
             href={cadastroPath}
             onClick={() => {
@@ -1338,13 +1340,53 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowXPModeration(true);
+              setShowAbsenceTracker(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-orange-500/35 bg-orange-500/10 px-4 py-3 text-sm font-black text-orange-200 transition-all hover:border-orange-400/60 hover:bg-orange-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver ausências e notificar alunos para reposição"
+          >
+            <CalendarX className="h-5 w-5 text-orange-400" />
+            Ausências
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowAttention(true);
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Revisar transações de XP bloqueadas"
+            aria-label="Ver alunos que precisam de atenção"
           >
             <AlertTriangle className="h-5 w-5 text-red-400" />
-            Moderar XP
+            Requer Atenção
+          </button>
+          <button
+            type="button"
+            data-testid="btn-churn-prevention"
+            onClick={() => {
+              haptic(20);
+              setShowChurnPrevention(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 text-sm font-black text-rose-200 transition-all hover:border-rose-400/60 hover:bg-rose-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver alunos em risco de churn e acionar retenção"
+          >
+            <HeartHandshake className="h-5 w-5 text-rose-400" />
+            Retenção
+          </button>
+
+          {/* ── Inteligência & Analytics ── */}
+          <p className="col-span-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 pt-2">Inteligência</p>
+          <button
+            type="button"
+            onClick={() => {
+              haptic(20);
+              setShowCoachCopilot(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir copiloto do coach com IA"
+          >
+            <Cpu className="h-5 w-5 text-cyan-400" />
+            Copiloto IA
           </button>
           <button
             type="button"
@@ -1357,18 +1399,6 @@ export default function WillCockpit() {
           >
             <BarChart3 className="h-5 w-5 text-amber-400" />
             Análise de XP
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(20);
-              setShowCoachCopilot(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir copiloto do coach com IA"
-          >
-            <Cpu className="h-5 w-5 text-cyan-400" />
-            Copiloto IA
           </button>
           <button
             type="button"
@@ -1398,18 +1428,6 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowAbsenceTracker(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-orange-500/35 bg-orange-500/10 px-4 py-3 text-sm font-black text-orange-200 transition-all hover:border-orange-400/60 hover:bg-orange-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Ver ausências e notificar alunos para reposição"
-          >
-            <CalendarX className="h-5 w-5 text-orange-400" />
-            Ausências
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              haptic(20);
               setShowTurmaAnalytics(true);
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 px-4 py-3 text-sm font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15 ${INTERACTIVE_FOCUS_RING}`}
@@ -1431,17 +1449,99 @@ export default function WillCockpit() {
             <BarChart3 className="h-5 w-5 text-violet-400" />
             Analytics
           </button>
+          {/* Mapa de Calor e Scout Mode completam Inteligência */}
+          <button
+            type="button"
+            data-testid="btn-heatmap"
+            onClick={() => {
+              haptic(20);
+              setShowHeatmap(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver mapa de calor de presença"
+          >
+            <LayoutGrid className="h-5 w-5 text-amber-400" />
+            Mapa de Calor
+          </button>
+          <button
+            type="button"
+            data-testid="btn-scout-mode"
+            onClick={() => {
+              haptic(20);
+              setShowScoutMode(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Comparar dois atletas lado a lado"
+          >
+            <ScanSearch className="h-5 w-5 text-cyan-400" />
+            Scout Mode
+          </button>
+
+          {/* ── Admin & Dados ── */}
+          <p className="col-span-2 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 pt-2">Admin & Dados</p>
           <button
             type="button"
             onClick={() => {
               haptic(20);
-              setShowAttention(true);
+              setShowXPModeration(true);
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Ver alunos que precisam de atenção"
+            aria-label="Revisar transações de XP bloqueadas"
           >
             <AlertTriangle className="h-5 w-5 text-red-400" />
-            Requer Atenção
+            Moderar XP
+          </button>
+          <button
+            type="button"
+            data-testid="btn-eval-templates"
+            onClick={() => {
+              haptic(18);
+              setShowEvalTemplates(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Gerenciar templates de avaliação por categoria"
+          >
+            <ClipboardList className="h-5 w-5 text-emerald-400" />
+            Templates de Avaliação
+          </button>
+          <button
+            type="button"
+            data-testid="btn-category-manager"
+            onClick={() => {
+              haptic(18);
+              setShowCategoryManager(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Gerenciar turmas e categorias"
+          >
+            <Layers className="h-5 w-5 text-violet-400" />
+            Turmas
+          </button>
+          <button
+            type="button"
+            data-testid="btn-app-health"
+            onClick={() => {
+              haptic(16);
+              setShowAppHealth(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 px-4 py-3 text-sm font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Ver painel de saúde e métricas do app"
+          >
+            <Activity className="h-5 w-5 text-teal-400" />
+            Saúde do App
+          </button>
+          <button
+            type="button"
+            data-testid="btn-admin-settings"
+            onClick={() => {
+              haptic(14);
+              setShowAdminSettings(true);
+            }}
+            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-600/40 bg-zinc-800/40 px-4 py-3 text-sm font-black text-zinc-300 transition-all hover:border-zinc-400/50 hover:bg-zinc-700/40 ${INTERACTIVE_FOCUS_RING}`}
+            aria-label="Abrir configurações do admin"
+          >
+            <LayoutList className="h-5 w-5 text-zinc-400" />
+            Configurações do Admin
           </button>
           <button
             type="button"
@@ -1470,97 +1570,6 @@ export default function WillCockpit() {
           >
             <ArrowUpRight className="h-5 w-5 text-zinc-400" />
             Exportar Pagamentos
-          </button>
-          <button
-            type="button"
-            data-testid="btn-heatmap"
-            onClick={() => {
-              haptic(20);
-              setShowHeatmap(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Ver mapa de calor de presença"
-          >
-            <LayoutGrid className="h-5 w-5 text-amber-400" />
-            Mapa de Calor
-          </button>
-          <button
-            type="button"
-            data-testid="btn-churn-prevention"
-            onClick={() => {
-              haptic(20);
-              setShowChurnPrevention(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 text-sm font-black text-rose-200 transition-all hover:border-rose-400/60 hover:bg-rose-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Ver alunos em risco de churn e acionar retenção"
-          >
-            <HeartHandshake className="h-5 w-5 text-rose-400" />
-            Retenção
-          </button>
-          <button
-            type="button"
-            data-testid="btn-scout-mode"
-            onClick={() => {
-              haptic(20);
-              setShowScoutMode(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Comparar dois atletas lado a lado"
-          >
-            <ScanSearch className="h-5 w-5 text-cyan-400" />
-            Scout Mode
-          </button>
-          <button
-            type="button"
-            data-testid="btn-eval-templates"
-            onClick={() => {
-              haptic(18);
-              setShowEvalTemplates(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Gerenciar templates de avaliação por categoria"
-          >
-            <ClipboardList className="h-5 w-5 text-emerald-400" />
-            Templates de Avaliação
-          </button>
-          <button
-            type="button"
-            data-testid="btn-app-health"
-            onClick={() => {
-              haptic(16);
-              setShowAppHealth(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 px-4 py-3 text-sm font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Ver painel de saúde e métricas do app"
-          >
-            <Activity className="h-5 w-5 text-teal-400" />
-            Saúde do App
-          </button>
-          <button
-            type="button"
-            data-testid="btn-admin-settings"
-            onClick={() => {
-              haptic(14);
-              setShowAdminSettings(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-600/40 bg-zinc-800/40 px-4 py-3 text-sm font-black text-zinc-300 transition-all hover:border-zinc-400/50 hover:bg-zinc-700/40 sm:col-span-2 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Abrir configurações do admin"
-          >
-            <LayoutList className="h-5 w-5 text-zinc-400" />
-            Configurações do Admin
-          </button>
-          <button
-            type="button"
-            data-testid="btn-category-manager"
-            onClick={() => {
-              haptic(18);
-              setShowCategoryManager(true);
-            }}
-            className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
-            aria-label="Gerenciar turmas e categorias"
-          >
-            <Layers className="h-5 w-5 text-violet-400" />
-            Turmas
           </button>
           <button
             type="button"
