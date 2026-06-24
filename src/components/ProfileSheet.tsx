@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import {
   LogOut, Settings, ChevronRight, User, Shield, Star,
-  CalendarCheck, Zap,
+  CalendarCheck, Zap, Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,7 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
 
-interface Props { open: boolean; onClose: () => void; }
+interface Props { open: boolean; onClose: () => void; onOpenNotifs?: () => void; unreadCount?: number; }
 
 const ROLE_LABEL: Record<string, string> = {
   admin:   "Administrador",
@@ -31,7 +31,7 @@ const ROLE_COLOR: Record<string, string> = {
   visitor: "#A1A1AA",
 };
 
-export default function ProfileSheet({ open, onClose }: Props) {
+export default function ProfileSheet({ open, onClose, onOpenNotifs, unreadCount = 0 }: Props) {
   const { user, logout } = useAuth();
   const { students } = useStudents();
   const { lessons } = useLessons();
@@ -164,6 +164,25 @@ export default function ProfileSheet({ open, onClose }: Props) {
 
               {/* Quick actions */}
               <div className="flex flex-col gap-1">
+                {onOpenNotifs && (
+                  <button
+                    type="button"
+                    onClick={() => { onClose(); onOpenNotifs(); }}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold text-white hover:bg-white/5 transition-colors w-full ${FOCUS_RING_GOLD}`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Bell className="h-4 w-4 text-zinc-400" />
+                      Notificações
+                    </span>
+                    {unreadCount > 0 ? (
+                      <span className="flex items-center gap-2">
+                        <span className="bg-[#EF4444] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">{unreadCount}</span>
+                        <ChevronRight className="h-4 w-4 text-zinc-600" />
+                      </span>
+                    ) : <ChevronRight className="h-4 w-4 text-zinc-600" />}
+                  </button>
+                )}
+
                 <Link
                   href="/perfil"
                   onClick={onClose}

@@ -30,7 +30,7 @@ import { FOCUS_RING_GOLD } from "@/components/ui/interactionTokens";
 // Rotas permitidas por role
 const ALLOWED_ROUTES: Record<string, string[]> = {
   admin:   ["/dashboard", "/agenda", "/alunos", "/financeiro", "/feed", "/configuracoes", "/cadastro", "/perfil", "/will"],
-  coach:   ["/dashboard", "/agenda", "/alunos", "/perfil", "/will"],
+  coach:   ["/dashboard", "/agenda", "/alunos", "/feed", "/perfil", "/will"],
   aluno:   ["/dashboard", "/agenda", "/ranking", "/feed", "/perfil", "/configuracoes", "/treinos"],
   visitor: ["/feed", "/perfil"],
   /** Conta Google/e-mail sem linha de aluno: só cadastro público + login. */
@@ -103,16 +103,18 @@ export function Navigation() {
     switch (user.role) {
       case "admin":
         return [
-          { name: "Hoje", href: "/dashboard", icon: LayoutDashboard, badge: 0 },
-          { name: "Turma", href: "/alunos", icon: Users, badge: pendingStudents },
-          { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
-          { name: "Finanças", href: "/financeiro", icon: Wallet, badge: latePayments },
+          { name: "Hoje",    href: "/dashboard",  icon: LayoutDashboard, badge: 0 },
+          { name: "Turma",   href: "/alunos",      icon: Users,           badge: pendingStudents },
+          { name: "Agenda",  href: "/agenda",      icon: CalendarRange,   badge: 0 },
+          { name: "Finanças",href: "/financeiro",  icon: Wallet,          badge: latePayments },
+          { name: "Feed",    href: "/feed",        icon: Rss,             badge: 0 },
         ];
       case "coach":
         return [
-          { name: "Hoje", href: "/will/court", icon: Zap, badge: 0 },
-          { name: "Turma", href: "/alunos", icon: Users, badge: 0 },
-          { name: "Agenda", href: "/agenda", icon: CalendarRange, badge: 0 },
+          { name: "Hoje",   href: "/will/court", icon: Zap,         badge: 0 },
+          { name: "Turma",  href: "/alunos",     icon: Users,        badge: 0 },
+          { name: "Agenda", href: "/agenda",     icon: CalendarRange, badge: 0 },
+          { name: "Feed",   href: "/feed",       icon: Rss,          badge: 0 },
         ];
       case "aluno":
         return [
@@ -131,8 +133,8 @@ export function Navigation() {
   };
 
   const navItems = getNavItems();
-  /** Itens da barra inferior: todos os itens de nav (sem Perfil duplicado — já há atalho dedicado). */
-  const mobileBottomItems = navItems.filter((item) => item.href !== "/perfil").slice(0, 4);
+  /** Barra inferior: todos os itens de nav (sem fatiar — Bell/Perfil removidos do bar). */
+  const mobileBottomItems = navItems;
   const showOfflineBanner = !pathname.startsWith("/will");
 
   return (
@@ -292,36 +294,23 @@ export function Navigation() {
           );
         })}
 
-        {/* Bell — mobile: clique → PulseSheet */}
+        {/* Avatar tab — consolida Perfil + Notificações. Badge vermelho se houver não lidos. */}
         <motion.button
-          onClick={() => {
-            setMobilePeekDismissed(true);
-            setShowNotifs(true);
-          }}
+          type="button"
+          onClick={() => unreadNotifications > 0 ? (setMobilePeekDismissed(true), setShowNotifs(true)) : setShowProfile(true)}
           whileTap={{ scale: 0.92 }}
-          className={`flex-1 relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl text-zinc-500 hover:text-[#EAB308] transition-colors ${FOCUS_RING_GOLD}`}
+          className={`flex-1 outline-none flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl ${FOCUS_RING_GOLD}`}
+          aria-label={unreadNotifications > 0 ? `${unreadNotifications} notificações` : "Abrir perfil"}
         >
           <div className="relative">
-            <Bell className="w-5 h-5" />
+            <UserAvatar name={user.name} photo={user.avatar} size="sm" className="h-6 w-6 !ring-0 !shadow-none !border-zinc-700" />
             {unreadNotifications > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 bg-[#EF4444] text-white text-[7px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center animate-pulse z-10">
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}
               </span>
             )}
           </div>
-          <span className="text-[9px] font-bold">Avisos</span>
-        </motion.button>
-
-        {/* Profile — abre sheet, não navega para /perfil */}
-        <motion.button
-          type="button"
-          onClick={() => setShowProfile(true)}
-          whileTap={{ scale: 0.92 }}
-          className={`flex-1 outline-none flex flex-col items-center justify-center gap-0.5 min-h-[52px] py-1 rounded-xl ${FOCUS_RING_GOLD}`}
-          aria-label="Abrir perfil"
-        >
-          <User className="w-5 h-5 text-zinc-500" />
-          <span className="text-[9px] font-bold text-zinc-600">Perfil</span>
+          <span className="text-[9px] font-bold text-zinc-600">Eu</span>
         </motion.button>
       </nav>
 
@@ -339,7 +328,12 @@ export function Navigation() {
       <NotificationPulseSheet open={showNotifs} onClose={() => setShowNotifs(false)} />
 
       {/* Profile Sheet */}
-      <ProfileSheet open={showProfile} onClose={() => setShowProfile(false)} />
+      <ProfileSheet
+        open={showProfile}
+        onClose={() => setShowProfile(false)}
+        onOpenNotifs={() => { setMobilePeekDismissed(true); setShowNotifs(true); }}
+        unreadCount={unreadNotifications}
+      />
 
       {/* Command Palette */}
       <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} />
@@ -353,7 +347,7 @@ export function Navigation() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5 }}
-          className="lg:hidden fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 h-11 w-11 rounded-full bg-[#EAB308] text-black shadow-[0_4px_24px_rgba(234,179,8,0.45)] flex items-center justify-center"
+          className="lg:hidden fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 h-11 w-11 rounded-full bg-[#EAB308] text-black shadow-[0_4px_24px_rgba(234,179,8,0.45)] flex items-center justify-center"
           aria-label="Abrir busca global"
         >
           <Search className="h-5 w-5" />
