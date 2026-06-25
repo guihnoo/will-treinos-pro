@@ -327,6 +327,9 @@ export type LiveAppData = {
   notifications: Notification[];
 };
 
+/** Limite defensivo no bootstrap — suficiente para piloto; evita payload ilimitado. */
+export const LIVE_STUDENTS_BOOTSTRAP_LIMIT = 500;
+
 export async function fetchLiveAppData(supabase: SupabaseClient): Promise<LiveAppData> {
   // Perf: campos específicos + limites reduzem payload em ~60%
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -335,10 +338,12 @@ export async function fetchLiveAppData(supabase: SupabaseClient): Promise<LiveAp
     supabase
       .from("students")
       .select("id, name, email, phone, avatar, status, role, student_role, plan, monthly_value, payment_day, categories, frequency, joined_at, auth_user_id, notes, tags, birthdate, position")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(LIVE_STUDENTS_BOOTSTRAP_LIMIT),
     supabase
       .from("payments")
-      .select("id, student_id, amount, due_date, paid_date, status, method, reference, student_proof_note, student_proof_submitted_at, student_proof_data_url, student_proof_file_name, student_proof_mime")
+      // Perf: student_proof_data_url (base64/storage) carregado sob demanda — ver fetchPaymentProofRemote
+      .select("id, student_id, amount, due_date, paid_date, status, method, reference, student_proof_note, student_proof_submitted_at, student_proof_file_name, student_proof_mime")
       .order("due_date", { ascending: false })
       .limit(300),
     supabase
@@ -511,6 +516,36 @@ export async function getPaymentProofSignedUrl(
     throw new Error(`Falha ao gerar URL do comprovante: ${error?.message || "sem URL assinada"}`);
   }
   return data.signedUrl;
+}
+
+export type PaymentProofPayload = {
+  dataUrl: string;
+  fileName: string;
+  mime: string;
+};
+
+/** Carrega comprovante PIX de um pagamento sob demanda (fora do bootstrap). */
+export async function fetchPaymentProofRemote(
+  supabase: SupabaseClient,
+  paymentId: string,
+): Promise<PaymentProofPayload | null> {
+  const { data, error } = await supabase
+    .from("payments")
+    .select("student_proof_data_url, student_proof_file_name, student_proof_mime")
+    .eq("id", paymentId)
+    .maybeSingle();
+  if (error || !data?.student_proof_data_url) return null;
+
+  const raw = asString(data.student_proof_data_url);
+  const fileName = asString(data.student_proof_file_name, "comprovante");
+  const mime = asString(data.student_proof_mime, "image/jpeg");
+
+  if (raw.startsWith("data:") || raw.startsWith("http")) {
+    return { dataUrl: raw, fileName, mime };
+  }
+
+  const signedUrl = await getPaymentProofSignedUrl(supabase, raw);
+  return { dataUrl: signedUrl, fileName, mime };
 }
 
 export async function submitStudentProofRemote(

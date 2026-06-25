@@ -12,7 +12,7 @@ import { useAppConfig } from "@/context/AppConfigContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import { getSupabaseClient } from "@/lib/supabaseClient";
-import { getPaymentProofSignedUrl } from "@/lib/supabasePersistence";
+import { fetchPaymentProofRemote, getPaymentProofSignedUrl } from "@/lib/supabasePersistence";
 import { sendPushToUser } from "@/lib/pushRoleBroadcast";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import StatCard from "@/components/ui/StatCard";
@@ -124,7 +124,13 @@ function PaymentModal({
             fileName: pay.studentProofFileName || "comprovante",
             mime: proofIsStoragePath ? "application/pdf" : (pay.studentProofMime || "image/jpeg"),
           }
-        : null;
+        : hasProof
+          ? {
+              previewUrl: "",
+              fileName: pay.studentProofFileName || "comprovante",
+              mime: pay.studentProofMime || "application/octet-stream",
+            }
+          : null;
   const isPdf = (a: StudentPaymentProofAttachment | null) =>
     Boolean(a && (a.mime === "application/pdf" || a.fileName.toLowerCase().endsWith(".pdf")));
   return (
@@ -368,7 +374,7 @@ function AlunoFinanceiro() {
               const hasAnexo =
                 !removedFile &&
                 (Boolean(attachment?.previewUrl) ||
-                  (attachment === undefined && Boolean(selObj.studentProofDataUrl)));
+                  (attachment === undefined && Boolean(selObj.studentProofSubmittedAt)));
               const body = `Ola! Sou ${user.name}. Registrei no app o comprovante PIX da mensalidade ${selObj.reference} (R$ ${selObj.amount}).${hasAnexo ? " Arquivo anexado no app (professor pode abrir em Financeiro)." : ""}${note.trim() ? ` Obs: ${note.trim()}.` : ""}`;
               if (phone) {
                 window.open(`https://wa.me/${phone}?text=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
@@ -588,23 +594,47 @@ function AdminFinanceiro() {
   const [busyPayId, setBusyPayId] = useState<string | null>(null);
   const [loadingProofId, setLoadingProofId] = useState<string | null>(null);
 
-  const openProofViewer = async (pay: { id: string; studentProofDataUrl?: string; studentProofFileName?: string }) => {
-    const raw = pay.studentProofDataUrl;
-    if (!raw) return;
+  const openProofViewer = async (pay: {
+    id: string;
+    studentProofDataUrl?: string;
+    studentProofFileName?: string;
+    studentProofSubmittedAt?: string | null;
+  }) => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    let raw = pay.studentProofDataUrl;
     const fileName = pay.studentProofFileName || "comprovante";
-    // data: URLs and http(s) URLs can be used directly; storage paths need a signed URL
+
+    if (!raw && pay.studentProofSubmittedAt) {
+      setLoadingProofId(pay.id);
+      try {
+        const proof = await fetchPaymentProofRemote(supabase, pay.id);
+        if (!proof) {
+          toast("Comprovante não encontrado ou indisponível.");
+          return;
+        }
+        setProofViewer({ dataUrl: proof.dataUrl, fileName: proof.fileName });
+      } catch {
+        toast("Não foi possível abrir o comprovante. Tente novamente.");
+      } finally {
+        setLoadingProofId(null);
+      }
+      return;
+    }
+
+    if (!raw) return;
+
     if (raw.startsWith("data:") || raw.startsWith("http")) {
       setProofViewer({ dataUrl: raw, fileName });
       return;
     }
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
+
     setLoadingProofId(pay.id);
     try {
       const signedUrl = await getPaymentProofSignedUrl(supabase, raw);
       setProofViewer({ dataUrl: signedUrl, fileName });
     } catch {
-      // fallback: let the lightbox try to render it anyway
       setProofViewer({ dataUrl: raw, fileName });
     } finally {
       setLoadingProofId(null);
@@ -754,7 +784,7 @@ function AdminFinanceiro() {
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <span className="text-lg font-bold text-white">{formatBRL(pay.amount)}</span>
-              {pay.studentProofDataUrl ? (
+              {pay.studentProofSubmittedAt ? (
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   type="button"
