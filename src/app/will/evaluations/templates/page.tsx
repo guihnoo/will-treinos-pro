@@ -298,13 +298,10 @@ export default function WillEvaluationTemplatesPage() {
         />
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]/90">Sprint 6.1 — Evaluation Engine</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]/90">Motor de Avaliação</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl">Templates & Critérios</h1>
             <p className="mt-1 max-w-xl text-sm text-zinc-400">
-              Rubrica clínica oficial: cada critério alimenta <span className="font-bold text-zinc-200">SessionEvaluation</span> e itens
-              ponderados. Dados 100% aderentes aos contratos{" "}
-              <span className="font-mono text-[11px] text-[#EAB308]">EvaluationTemplateV1</span> /{" "}
-              <span className="font-mono text-[11px] text-[#EAB308]">EvaluationCriterionV1</span>.
+              Configure os templates de avaliação técnica e os critérios por dimensão para cada sessão.
             </p>
           </div>
           <div className="flex items-center gap-2">

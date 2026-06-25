@@ -166,9 +166,9 @@ export default function WillCourtPage() {
         />
         <div className="relative flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]/90">Sprint 6.3</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#EAB308]/90">Sessão ao vivo</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl">Prancheta da Quadra</h1>
-            <p className="mt-1 text-sm text-zinc-400">Class Session / Roster com abertura imediata da CEM por atleta.</p>
+            <p className="mt-1 text-sm text-zinc-400">Gerencie presença e avalie atletas em tempo real por sessão.</p>
           </div>
           <div className="relative h-20 w-20 flex-shrink-0">
             {!clipboardImgError ? (
