@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
+import { useAppConfig } from "@/context/AppConfigContext";
 import { STUDENT_HOME_PATH } from "@/lib/studentRoutes";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -32,13 +33,13 @@ const FEATURE_CARDS = [
   },
 ];
 
-const WA_URL =
-  "https://wa.me/?text=Ol%C3%A1!%20Acabei%20de%20me%20cadastrar%20no%20Will%20Treinos%20PRO%20e%20gostaria%20de%20confirmar%20meu%20acesso.";
-
 export default function AguardandoPage() {
   const router = useRouter();
   const { user, authResolved, logout } = useAuth();
   const { students } = useStudents();
+  const { appConfig } = useAppConfig();
+  const coachPhone = appConfig.whatsappNumber.replace(/\D/g, "");
+  const WA_URL = `https://wa.me/${coachPhone}?text=${encodeURIComponent("Olá! Acabei de me cadastrar no Will Treinos PRO e gostaria de confirmar meu acesso.")}`;
   const [pollingActive, setPollingActive] = useState(true);
   const [dotCount, setDotCount] = useState(1);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);

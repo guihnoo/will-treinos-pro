@@ -130,7 +130,7 @@ export default function LandingPage() {
         >
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-            AO VIVO — Vagas abertas para Junho 2026
+            AO VIVO — Vagas abertas para Julho 2026
           </span>
         </motion.div>
 
