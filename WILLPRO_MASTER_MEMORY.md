@@ -17,7 +17,11 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[24/06/2026 BRT] (Cursor):** **[PERF] P2 — N+1 admin + avatares next/image** — `fetchStudentsByXpStudentIds` batch helper em `supabasePersistence.ts`; `XPModerationPanel` (100 queries → 3); `HallOfFamePanel` (12 queries → 3); `/financeiro` e `/alunos` usam `UserAvatar` (`next/image`) em listas. Build OK. Status: ✅ Completo.
+
 - **[24/06/2026 BRT] (Cursor):** **[PERF] Quick wins P0/P1 — bootstrap + bundle** — `fetchLiveAppData`: removido `student_proof_data_url` do bootstrap (base64/storage via `fetchPaymentProofRemote` sob demanda); `students` com `.limit(500)`; `/financeiro`: "Ver anexo" lazy; `next.config.mjs`: `optimizePackageImports` lucide + framer-motion. `/aguardando`: WhatsApp dinâmico via `appConfig`. Landing: vagas Julho 2026. Build OK. Status: ✅ Completo.
+
+- **[24/06/2026 BRT] (Claude):** **[DESIGN] UX Audit — /configuracoes polida** — Tab Notificações: 3 textos sem acento corrigidos ("Preferências de Notificação", "você", "não encontrado"); botões Trash de categoria/local: `opacity-0 group-hover` → `md:opacity-0 md:group-hover` (visíveis no mobile touch). Commit `8b5b354`. Status: ✅ Completo.
 
 - **[24/06/2026 BRT] (Claude):** **[DESIGN] UX Audit — /ranking, /treinos, /perfil polidos** — `/ranking`: `AppPageHeader` com título + subtitle adicionado; botão "Modo TV" movido para `rightSlot` (eliminado o `<div />` spacer vazio); `/treinos`: XP da barra "Will Rank" alinhado ao `totalXP` real do `GamificationContext` (era `completedSets * 12` local desconectado); fórmula de nível alinhada a 1000 XP/level (igual ao resto do app); `openWhatsApp` usa `appConfig.whatsappNumber` em vez de número hardcoded `5511999999999`; `/perfil`: label "Progressão semanal" → "Progressão de nível" (a barra mostra progresso dentro do nível, não semanal). TypeScript 0 erros. Build verde. Commit `0062698`. Status: ✅ Completo.
 

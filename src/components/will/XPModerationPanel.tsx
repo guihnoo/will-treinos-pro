@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, CheckCircle, Trash2, Eye } from "lucide-react";
 import type { XPLog } from "@/context/types";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { fetchStudentsByXpStudentIds } from "@/lib/supabasePersistence";
 import { useToast } from "@/components/Toast";
 
 interface XPModerationRecord extends XPLog {
@@ -52,32 +53,26 @@ export default function XPModerationPanel({ onClose }: XPModerationPanelProps) {
         return;
       }
 
-      // Enrich with student info
-      if (xpLogs) {
-        const enriched = await Promise.all(
-          xpLogs.map(async (log) => {
-            let student = null;
-            try {
-              const { data } = await supabase
-                .from("students")
-                .select("name, email")
-                .eq("auth_user_id", log.student_id)
-                .single();
-              student = data;
-            } catch (err) {
-              // Student not found, use null
-            }
-
-            return {
-              ...log,
-              studentName: student?.name || log.student_id,
-              studentEmail: student?.email,
-              flagReason: log.validation_notes,
-            };
-          })
+      // Enrich with student info (batch — evita N+1)
+      if (xpLogs?.length) {
+        const studentMap = await fetchStudentsByXpStudentIds(
+          supabase,
+          xpLogs.map((log) => log.student_id as string),
         );
 
+        const enriched = xpLogs.map((log) => {
+          const student = studentMap.get(log.student_id as string);
+          return {
+            ...log,
+            studentName: student?.name || log.student_id,
+            studentEmail: student?.email,
+            flagReason: log.validation_notes,
+          };
+        });
+
         setRecords(enriched);
+      } else {
+        setRecords([]);
       }
 
       setLoading(false);

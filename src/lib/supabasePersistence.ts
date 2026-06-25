@@ -1051,6 +1051,37 @@ export async function fetchXpLogEntriesRemote(
   return (data || []).map((row) => mapXpLogEntry(row as DbRow));
 }
 
+export type XpStudentLookup = {
+  name: string;
+  email?: string;
+};
+
+/** Resolve student display fields from xp_log.student_id (student UUID or auth_user_id). */
+export async function fetchStudentsByXpStudentIds(
+  supabase: SupabaseClient,
+  studentIds: string[],
+): Promise<Map<string, XpStudentLookup>> {
+  const unique = [...new Set(studentIds.filter(Boolean))];
+  const map = new Map<string, XpStudentLookup>();
+  if (unique.length === 0) return map;
+
+  const [byAuthRes, byIdRes] = await Promise.all([
+    supabase.from("students").select("id, auth_user_id, name, email").in("auth_user_id", unique),
+    supabase.from("students").select("id, auth_user_id, name, email").in("id", unique),
+  ]);
+
+  const rows = [...(byAuthRes.data ?? []), ...(byIdRes.data ?? [])];
+  for (const row of rows) {
+    const entry = { name: asString(row.name), email: asString(row.email) || undefined };
+    const id = asString(row.id);
+    const authUserId = asString(row.auth_user_id);
+    if (authUserId) map.set(authUserId, entry);
+    if (id) map.set(id, entry);
+  }
+
+  return map;
+}
+
 // Phase 5: Live Lesson Panel
 
 export type CoachMessage = {

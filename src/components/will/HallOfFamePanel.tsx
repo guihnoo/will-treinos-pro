@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Crown } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { fetchStudentsByXpStudentIds } from "@/lib/supabasePersistence";
 import { CARD_TIER_THRESHOLDS } from "@/context/types";
 
 interface MonthChampion {
@@ -85,56 +86,68 @@ export default function HallOfFamePanel({ onClose }: HallOfFamePanelProps) {
           return;
         }
 
-        // For each month, find the student with most XP
-        const results: (MonthChampion | null)[] = await Promise.all(
-          months.map(async (yearMonth) => {
-            const startDate = `${yearMonth}-01T00:00:00.000Z`;
-            const [year, month] = yearMonth.split("-");
-            const nextMonth = parseInt(month, 10) + 1;
-            const nextYear = nextMonth > 12 ? parseInt(year, 10) + 1 : parseInt(year, 10);
-            const endDate = `${nextYear}-${String(nextMonth > 12 ? 1 : nextMonth).padStart(2, "0")}-01T00:00:00.000Z`;
+        const firstMonth = months[0];
+        const [lastYear, lastMonthNum] = months[months.length - 1].split("-");
+        const nextMonthNum = parseInt(lastMonthNum, 10) + 1;
+        const endYear = nextMonthNum > 12 ? parseInt(lastYear, 10) + 1 : parseInt(lastYear, 10);
+        const endMonth = nextMonthNum > 12 ? 1 : nextMonthNum;
+        const startDate = `${firstMonth}-01T00:00:00.000Z`;
+        const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01T00:00:00.000Z`;
 
-            const { data: xpData } = await supabase
-              .from("xp_log")
-              .select("student_id, points")
-              .eq("validation_passed", true)
-              .gte("created_at", startDate)
-              .lt("created_at", endDate);
+        const { data: xpData } = await supabase
+          .from("xp_log")
+          .select("student_id, points, created_at")
+          .eq("validation_passed", true)
+          .gte("created_at", startDate)
+          .lt("created_at", endDate);
 
-            if (!xpData || xpData.length === 0) return null;
+        const monthAgg = new Map<string, Map<string, number>>();
+        for (const month of months) {
+          monthAgg.set(month, new Map());
+        }
 
-            // Aggregate
-            const xpMap = new Map<string, number>();
-            xpData.forEach((row: { student_id: string; points: number }) => {
-              xpMap.set(row.student_id, (xpMap.get(row.student_id) ?? 0) + (row.points ?? 0));
-            });
+        for (const row of xpData ?? []) {
+          const monthKey = String(row.created_at ?? "").slice(0, 7);
+          if (!monthAgg.has(monthKey)) continue;
+          const bucket = monthAgg.get(monthKey)!;
+          const sid = String(row.student_id ?? "");
+          bucket.set(sid, (bucket.get(sid) ?? 0) + (row.points ?? 0));
+        }
 
-            // Find top student
-            let topId = "";
-            let topXP = 0;
-            xpMap.forEach((xp, sid) => {
-              if (xp > topXP) { topXP = xp; topId = sid; }
-            });
+        const monthTops = months.map((yearMonth) => {
+          const bucket = monthAgg.get(yearMonth);
+          if (!bucket || bucket.size === 0) return null;
 
-            if (!topId || topXP === 0) return null;
+          let topId = "";
+          let topXP = 0;
+          bucket.forEach((xp, sid) => {
+            if (xp > topXP) {
+              topXP = xp;
+              topId = sid;
+            }
+          });
 
-            // Fetch student name
-            const { data: student } = await supabase
-              .from("students")
-              .select("name")
-              .eq("auth_user_id", topId)
-              .maybeSingle();
+          if (!topId || topXP === 0) return null;
+          return { yearMonth, topId, topXP };
+        });
 
-            return {
-              month: yearMonth,
-              label: monthLabel(yearMonth),
-              studentId: topId,
-              name: student?.name ?? "Atleta",
-              xp: topXP,
-              tier: calculateTier(topXP),
-            } satisfies MonthChampion;
-          })
+        const studentMap = await fetchStudentsByXpStudentIds(
+          supabase,
+          monthTops.filter(Boolean).map((t) => t!.topId),
         );
+
+        const results: (MonthChampion | null)[] = monthTops.map((top) => {
+          if (!top) return null;
+          const student = studentMap.get(top.topId);
+          return {
+            month: top.yearMonth,
+            label: monthLabel(top.yearMonth),
+            studentId: top.topId,
+            name: student?.name ?? "Atleta",
+            xp: top.topXP,
+            tier: calculateTier(top.topXP),
+          } satisfies MonthChampion;
+        });
 
         setChampions(results);
       } catch (err) {

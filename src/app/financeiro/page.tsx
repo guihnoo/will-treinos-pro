@@ -16,6 +16,7 @@ import { fetchPaymentProofRemote, getPaymentProofSignedUrl } from "@/lib/supabas
 import { sendPushToUser } from "@/lib/pushRoleBroadcast";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import StatCard from "@/components/ui/StatCard";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { avatarSrc } from "@/lib/avatarSrc";
 import AppEmptyState from "@/components/ui/AppEmptyState";
 import AppSectionCard from "@/components/ui/AppSectionCard";
@@ -770,7 +771,7 @@ function AdminFinanceiro() {
         {filtered.map((pay,i)=>{const st=getStudent(pay.studentId);const cfg=statusCfg[pay.status];const Icon=cfg.icon;if(!st)return null;return(
           <motion.div key={pay.id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.03}} className="flex items-center justify-between p-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-all">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <img src={avatarSrc(st.avatar)} className="w-9 h-9 rounded-full border-2 border-zinc-800 flex-shrink-0 object-cover"/>
+              <UserAvatar name={st.name} photo={avatarSrc(st.avatar, st.name)} size="sm" className="flex-shrink-0 !border-zinc-800" />
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap"><span className="font-bold text-white text-sm truncate">{st.name}</span><span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{color:cfg.color,background:`${cfg.color}15`}}><Icon className="w-3 h-3"/>{cfg.label}</span>{pay.studentProofSubmittedAt && pay.status !== "paid" ? <span className="text-[9px] font-bold uppercase tracking-wide rounded-full border border-sky-500/40 bg-sky-500/15 px-2 py-0.5 text-sky-300">Comprovante do aluno</span> : null}</div>
                 <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">

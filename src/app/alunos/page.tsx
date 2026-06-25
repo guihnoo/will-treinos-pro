@@ -24,6 +24,7 @@ import { avatarSrc } from "@/lib/avatarSrc";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppPageHeader from "@/components/ui/AppPageHeader";
 import StatCard from "@/components/ui/StatCard";
+import UserAvatar from "@/components/ui/UserAvatar";
 import AppEmptyState from "@/components/ui/AppEmptyState";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
@@ -371,8 +372,12 @@ export default function AlunosPage() {
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="relative flex-shrink-0">
-                    <img src={avatarSrc(student.avatar)}
-                      className="w-10 h-10 rounded-full border-2 border-zinc-800 object-cover" />
+                    <UserAvatar
+                      name={student.name}
+                      photo={avatarSrc(student.avatar, student.name)}
+                      size="md"
+                      className="!border-zinc-800"
+                    />
                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0A0A0A]"
                       style={{ background: status.color }} />
                   </div>
@@ -472,8 +477,12 @@ export default function AlunosPage() {
 
               {/* Profile Header */}
               <div className="text-center mb-6 pt-4">
-                <img src={avatarSrc(selectedStudent.avatar)}
-                  className="w-20 h-20 rounded-full mx-auto border-4 border-[#EAB308]/30 mb-3 object-cover" />
+                <UserAvatar
+                  name={selectedStudent.name}
+                  photo={avatarSrc(selectedStudent.avatar, selectedStudent.name)}
+                  size="lg"
+                  className="mx-auto mb-3 !h-20 !w-20 !border-[#EAB308]/30 !border-4"
+                />
                 <h2 className="text-xl font-bold text-white">{selectedStudent.name}</h2>
                 <div className="flex items-center justify-center gap-2 mt-1">
                   <span className="text-xs font-bold px-3 py-1 rounded-full"
