@@ -12,7 +12,7 @@ export function EnrollmentInviteBlocked({ reason }: { reason?: Reason }) {
 
   return (
     <div
-      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#050505] p-6"
+      className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-[#050505] p-6"
       style={{ fontFamily: "'Lexend', sans-serif" }}
     >
       <div className="pointer-events-none absolute inset-0">

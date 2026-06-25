@@ -161,7 +161,7 @@ export default function QRCheckInPage() {
   }, [state, lessonId, ts, router]);
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center px-6 text-center gap-6">
+    <div className="min-h-[100dvh] bg-[#050505] flex flex-col items-center justify-center px-6 text-center gap-6">
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

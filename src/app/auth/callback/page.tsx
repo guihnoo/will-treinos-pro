@@ -262,7 +262,7 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center gap-3 p-6">
+    <div className="min-h-[100dvh] bg-[#0A0A0A] flex flex-col items-center justify-center gap-3 p-6">
       <div className="h-8 w-8 rounded-full border-2 border-[#EAB308]/40 border-t-[#EAB308] animate-spin" aria-hidden />
       <p className="text-sm text-zinc-400">Concluindo login…</p>
     </div>

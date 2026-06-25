@@ -147,7 +147,7 @@ function LoginContent() {
 
   if (awaitingRedirect && !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#EAB308]/30 border-t-[#EAB308]" />
           <p className="text-xs text-zinc-500">Entrando…</p>
@@ -157,7 +157,7 @@ function LoginContent() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden bg-black px-4 py-12">
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-x-hidden bg-black px-4 py-12">
 
       {/* Background glows */}
       <div className="pointer-events-none fixed -left-32 -top-32 h-[500px] w-[500px] rounded-full"
@@ -339,7 +339,7 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-black">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-black">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-800 border-t-[#EAB308]" />
       </div>
     }>

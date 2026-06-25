@@ -146,7 +146,7 @@ export default function SystemStatusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white px-4 py-8 max-w-lg mx-auto space-y-5">
+    <div className="min-h-[100dvh] bg-[#050505] text-white px-4 py-8 max-w-lg mx-auto space-y-5 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

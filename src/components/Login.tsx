@@ -175,7 +175,7 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#050505]">
+    <div className="relative min-h-[100dvh] w-full overflow-hidden bg-[#050505]">
       <VolleyballCourtSVG />
 
       {/* Parallax Gold Spotlight */}
@@ -202,7 +202,7 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-12 md:px-8">
+      <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center px-4 py-12 md:px-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}

@@ -171,7 +171,7 @@ export default function AthleteProfileClient({ id, initialProfile }: Props) {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 px-6">
+      <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center gap-4 px-6">
         <span className="text-4xl">🏐</span>
         <p className="text-zinc-500 text-sm text-center">Perfil não encontrado ou não está ativo.</p>
         <Link href="/" className="text-xs text-[#EAB308] font-bold underline">Ir para o Will Treinos PRO</Link>
@@ -186,7 +186,7 @@ export default function AthleteProfileClient({ id, initialProfile }: Props) {
     : 100;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center py-10 px-4">
+    <div className="min-h-[100dvh] bg-[#050505] text-white flex flex-col items-center py-10 px-4">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}

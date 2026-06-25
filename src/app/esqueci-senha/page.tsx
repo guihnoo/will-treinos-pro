@@ -38,7 +38,7 @@ export default function EsqueciSenhaPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-black px-4 py-12">
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-black px-4 py-12">
       <div
         className="pointer-events-none fixed -left-32 -top-32 h-96 w-96 rounded-full"
         style={{ background: "radial-gradient(circle, rgba(234,179,8,0.12) 0%, transparent 70%)", filter: "blur(80px)" }}

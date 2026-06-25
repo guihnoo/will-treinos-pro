@@ -26,7 +26,7 @@ export default function RouteGuard({ area, children, fallback }: RouteGuardProps
   if (!canAccess) {
     return (
       fallback || (
-        <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="min-h-[100dvh] bg-black flex items-center justify-center p-6">
           <div className="max-w-md text-center">
             <AlertTriangle className="w-12 h-12 text-[#EF4444] mx-auto mb-4" />
             <h1 className="text-lg font-bold text-white mb-2">Acesso Restrito</h1>

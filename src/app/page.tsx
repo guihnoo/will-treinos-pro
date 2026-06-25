@@ -73,7 +73,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden selection:bg-[#EAB308] selection:text-black">
+    <div className="min-h-[100dvh] bg-black text-white overflow-x-hidden selection:bg-[#EAB308] selection:text-black">
 
       {/* Navbar */}
       <motion.nav
@@ -116,7 +116,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <main
         ref={heroRef}
-        className="relative pt-36 pb-24 px-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-screen text-center"
+        className="relative pt-36 pb-24 px-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[100dvh] text-center"
       >
         {/* Background glow */}
         <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#EAB308] opacity-[0.04] blur-[140px] rounded-full" />

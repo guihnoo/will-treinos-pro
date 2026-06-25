@@ -5,7 +5,7 @@ export const metadata = {
 
 export default function PrivacidadePage() {
   return (
-    <main className="min-h-screen bg-black text-zinc-200 px-4 py-12 max-w-2xl mx-auto">
+    <main className="min-h-[100dvh] bg-black text-zinc-200 px-4 py-12 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-amber-400 mb-2">Política de Privacidade</h1>
       <p className="text-zinc-500 text-sm mb-8">Última atualização: junho de 2026</p>
 

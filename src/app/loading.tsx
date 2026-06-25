@@ -1,6 +1,6 @@
 export default function GlobalLoading() {
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+    <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center gap-4">
       {/* Spinner dourado */}
       <div className="relative w-12 h-12">
         <div className="absolute inset-0 rounded-full border-2 border-[#EAB308]/10" />
