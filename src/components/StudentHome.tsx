@@ -905,7 +905,7 @@ export default function StudentHome() {
       )}
     </AnimatePresence>
     <motion.div
-      className="w-full space-y-5 pt-2 sm:pt-3 pb-[calc(7rem+env(safe-area-inset-bottom))] relative"
+      className="w-full space-y-5 pt-2 sm:pt-3 pb-4 relative"
       variants={homeList}
       initial="hidden"
       animate="show"

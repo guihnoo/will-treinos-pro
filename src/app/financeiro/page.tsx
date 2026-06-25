@@ -312,17 +312,28 @@ function AlunoFinanceiro() {
   const firstPendingOrLate = myPayments.find((payment) => payment.status === "late" || payment.status === "pending");
   const selObj = myPayments.find(p=>p.id===selectedPay)||null;
   if (usingSupabaseSession && criticalDataLoading) {
-    return <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]"><div className="rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-5 text-sm text-zinc-300">Sincronizando financeiro...</div></div>;
+    return (
+      <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <AppPageHeader title="Financeiro" subtitle="Carregando seus pagamentos..." icon={Wallet} className="mb-6" />
+        <div className="space-y-3">
+          <SkeletonLoader className="h-16" lines={1} />
+          <SkeletonLoader className="h-20" lines={2} />
+          <SkeletonLoader className="h-48" lines={5} />
+        </div>
+      </div>
+    );
   }
   if (usingSupabaseSession && criticalDataError) {
-    return <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]"><div className="rounded-2xl border border-red-500/35 bg-red-500/10 p-5 text-sm text-zinc-200">{criticalDataError}</div></div>;
+    return (
+      <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <AppPageHeader title="Financeiro" subtitle="Falha de sincronização." icon={Wallet} className="mb-6" />
+        <div className="rounded-2xl border border-red-500/35 bg-red-500/10 p-5 text-sm text-zinc-200">{criticalDataError}</div>
+      </div>
+    );
   }
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} className="mb-6">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Wallet className="w-8 h-8 text-[#EAB308]"/>Meu Financeiro</h1>
-        <p className="text-zinc-500 mt-1">Toque em um pagamento para ver detalhes.</p>
-      </motion.div>
+      <AppPageHeader title="Financeiro" subtitle="Toque em um pagamento para ver detalhes." icon={Wallet} className="mb-6" />
       {pendingOrLatePaymentsCount>0&&(
         <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="mb-5 p-4 rounded-2xl border border-[#EF4444]/40 bg-[#EF4444]/5 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-[#EF4444] flex-shrink-0 mt-0.5"/>
@@ -403,10 +414,7 @@ function CoachFinanceiro() {
   const allCompleted = lessons.filter(l=>l.status==="completed");
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} className="mb-6">
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3"><Wallet className="w-8 h-8 text-[#EAB308]"/>Meu Cache</h1>
-        <p className="text-zinc-500 mt-1">Suas aulas dadas e ganhos estimados.</p>
-      </motion.div>
+      <AppPageHeader title="Meu Cachê" subtitle="Aulas dadas e ganhos estimados do mês." icon={Wallet} className="mb-6" />
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[{label:"Aulas este mês",value:monthLessons.length,color:"#EAB308",icon:CalendarRange},{label:"Alunos atendidos",value:totalStudentsMonth,color:"#06B6D4",icon:CheckCircle2},{label:"Cache estimado",value:`R$ ${estimatedCache}`,color:"#22C55E",icon:DollarSign},{label:"Total de aulas",value:allCompleted.length,color:"#8B5CF6",icon:TrendingUp}].map((s,i)=>(
           <motion.div key={i} initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:i*0.07}} className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-4 relative overflow-hidden">

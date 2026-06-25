@@ -765,7 +765,7 @@ export default function WillCockpit() {
   return (
     <LayoutGroup id="cockpit-shared-layout">
     <PushPermissionBanner role={(user?.role === "coach" ? "professor" : "admin")} />
-    <div className="relative isolate max-w-full min-w-0 space-y-5 overflow-x-hidden px-3 pb-12 pt-1 sm:px-4 md:px-5">
+    <div className="relative isolate max-w-full min-w-0 space-y-5 overflow-x-hidden px-3 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-1 sm:px-4 md:px-5">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-black" />
       <motion.div
         aria-hidden
