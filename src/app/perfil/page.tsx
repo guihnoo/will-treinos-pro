@@ -347,7 +347,7 @@ export default function PerfilPage() {
         </div>
         <div className="mt-3">
           <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">
-            <span>Progressão semanal</span>
+            <span>Progressão de nível</span>
             <span className="text-[#EAB308]">{xpCurrent}/1000 XP</span>
           </div>
           <div className="h-2.5 rounded-full bg-zinc-900 overflow-hidden">

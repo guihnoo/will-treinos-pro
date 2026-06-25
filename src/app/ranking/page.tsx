@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Tv } from "lucide-react";
+import { Tv, Trophy } from "lucide-react";
 import { LeaderboardRankingPanel } from "@/components/leaderboard/LeaderboardRankingPanel";
 import { useAuth } from "@/context/AuthContext";
+import AppPageHeader from "@/components/ui/AppPageHeader";
 import dynamic from "next/dynamic";
 
 const TVLeaderboard = dynamic(() => import("@/components/TVLeaderboard"), {
@@ -21,9 +22,7 @@ export default function RankingPage() {
   const enterTVMode = useCallback(() => {
     setTvMode(true);
     if (typeof document !== "undefined" && document.documentElement.requestFullscreen) {
-      void document.documentElement.requestFullscreen().catch(() => {
-        // Fullscreen may be blocked — TV mode still works without it
-      });
+      void document.documentElement.requestFullscreen().catch(() => {});
     }
   }, []);
 
@@ -40,20 +39,24 @@ export default function RankingPage() {
 
       <div className="min-h-screen bg-black px-4 py-6 pb-24">
         <div className="mx-auto max-w-xl">
-          {/* Header com botão Modo TV */}
-          {canAccessTVMode && (
-            <div className="flex items-center justify-between mb-4">
-              <div /> {/* spacer */}
-              <button
-                onClick={enterTVMode}
-                data-testid="tv-mode-btn"
-                className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
-              >
-                <Tv className="h-4 w-4 text-[#EAB308]" />
-                Modo TV
-              </button>
-            </div>
-          )}
+          <AppPageHeader
+            title="Ranking"
+            subtitle="Classificação por XP acumulado na temporada."
+            icon={Trophy}
+            className="mb-6"
+            rightSlot={
+              canAccessTVMode ? (
+                <button
+                  onClick={enterTVMode}
+                  data-testid="tv-mode-btn"
+                  className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+                >
+                  <Tv className="h-4 w-4 text-[#EAB308]" />
+                  Modo TV
+                </button>
+              ) : undefined
+            }
+          />
 
           <LeaderboardRankingPanel />
         </div>

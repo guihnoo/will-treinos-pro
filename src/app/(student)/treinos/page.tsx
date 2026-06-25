@@ -12,6 +12,7 @@ import { useCriticalData } from "@/context/CriticalDataContext";
 import { useCoaching } from "@/context/CoachingContext";
 import { useTraining } from "@/context/TrainingContext";
 import { useGamification } from "@/context/GamificationContext";
+import { useAppConfig } from "@/context/AppConfigContext";
 import { useToast } from "@/components/Toast";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppPageHeader from "@/components/ui/AppPageHeader";
@@ -213,7 +214,8 @@ export default function TreinosPage() {
   const { user, usingSupabaseSession } = useAuth();
   const { criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
-  const { logXP, calculateXP } = useGamification();
+  const { logXP, calculateXP, totalXP: accountXP } = useGamification();
+  const { appConfig } = useAppConfig();
   const storageHydrated = useRef(false);
   /** Stable while CRM user.id switches from JWT id to students.id after Supabase link */
   const treinosStorageUserKey = user?.authSubjectId ?? user?.id;
@@ -239,10 +241,10 @@ export default function TreinosPage() {
     () => Object.values(done).filter(Boolean).length,
     [done]
   );
-  const xp = completedSets * 12;
-  const level = Math.floor(xp / 120) + 1;
-  const levelStartXp = (level - 1) * 120;
-  const nextLevelXp = level * 120;
+  const xp = accountXP > 0 ? accountXP : completedSets * 12;
+  const level = Math.max(1, Math.floor(xp / 1000) + 1);
+  const levelStartXp = (level - 1) * 1000;
+  const nextLevelXp = level * 1000;
   const levelProgressPct = Math.round(((xp - levelStartXp) / Math.max(nextLevelXp - levelStartXp, 1)) * 100);
 
   React.useEffect(() => {
@@ -352,8 +354,10 @@ export default function TreinosPage() {
   const planProgress = (planId: string, exercises: any[]) =>
     planProgressFromState(planId, exercises, done);
 
-  const openWhatsApp = () =>
-    window.open(`https://wa.me/5511999999999?text=${encodeURIComponent("Oi Will! Ainda não tenho um plano de treino. Pode criar um pra mim?")}`, "_blank");
+  const openWhatsApp = () => {
+    const phone = appConfig.whatsappNumber.replace(/\D/g, "");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent("Oi Will! Ainda não tenho um plano de treino. Pode criar um pra mim?")}`, "_blank");
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto py-1 sm:py-2">
