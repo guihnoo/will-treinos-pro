@@ -17,6 +17,8 @@
 
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
+- **[24/06/2026 BRT] (Cursor):** **[PERF] P3 — LazyMotion + offline sync + feed images** — `MotionProvider` (`LazyMotion` + `domAnimation`) no root layout; design-system Modal/Button/Card + `PageTransition` migrados para `m` via `@/lib/motion`; `AppSyncLayer` wired em `AuthWrapper` (`useSyncQueue` fix processor + JWT session); `SyncQueueStatus` com retry e safe-area acima da bottom nav; `/feed`: `UserAvatar` + `next/image` em mídia remota. Build OK (clean + build). Status: ✅ Completo.
+
 - **[24/06/2026 BRT] (Cursor):** **[PERF] P2 — N+1 admin + avatares next/image** — `fetchStudentsByXpStudentIds` batch helper em `supabasePersistence.ts`; `XPModerationPanel` (100 queries → 3); `HallOfFamePanel` (12 queries → 3); `/financeiro` e `/alunos` usam `UserAvatar` (`next/image`) em listas. Build OK. Status: ✅ Completo.
 
 - **[24/06/2026 BRT] (Cursor):** **[PERF] Quick wins P0/P1 — bootstrap + bundle** — `fetchLiveAppData`: removido `student_proof_data_url` do bootstrap (base64/storage via `fetchPaymentProofRemote` sob demanda); `students` com `.limit(500)`; `/financeiro`: "Ver anexo" lazy; `next.config.mjs`: `optimizePackageImports` lucide + framer-motion. `/aguardando`: WhatsApp dinâmico via `appConfig`. Landing: vagas Julho 2026. Build OK. Status: ✅ Completo.

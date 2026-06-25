@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion, MotionProps } from "framer-motion";
+import { m, MotionProps } from "@/lib/motion";
 import { ColorTokens } from "../tokens/colors";
 import { MotionTokens } from "../tokens/motionTokens";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -111,7 +111,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       : {};
 
     return (
-      <motion.div
+      <m.div
         ref={ref}
         className={cn(baseClass, className)}
         whileHover={hover ? { scale: 1.02, y: -4 } : undefined}
@@ -121,7 +121,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       >
         {/* Gradient overlay for interactive feedback */}
         {interactive && theme !== "admin" && (
-          <motion.div
+          <m.div
             className={cn(
               "absolute inset-0 rounded-2xl opacity-0 transition-opacity",
               {
@@ -134,7 +134,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 
         {/* Children wrapper */}
         <div className="relative z-10">{children}</div>
-      </motion.div>
+      </m.div>
     );
   }
 );

@@ -11,7 +11,7 @@ import SyncQueue from "@/lib/syncQueue";
  * - Permite retry manual
  */
 
-export function SyncQueueStatus() {
+export function SyncQueueStatus({ onRetry }: { onRetry?: () => void }) {
   const [status, setStatus] = useState({ total: 0, pending: 0, failed: 0 });
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -52,9 +52,10 @@ export function SyncQueueStatus() {
   const hasFailed = status.failed > 0;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 lg:bottom-6 lg:right-6">
       <div
-        className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+        role="status"
+        className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 max-w-[min(100vw-2rem,20rem)] ${
           isOnline
             ? hasPending
               ? "bg-blue-500/20 border border-blue-500/50 text-blue-300"
@@ -85,6 +86,15 @@ export function SyncQueueStatus() {
             <span className="text-sm font-medium">Sincronizado ✓</span>
           </>
         )}
+        {(hasFailed || (!isOnline && status.total > 0)) && onRetry ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="ml-1 rounded-md border border-white/20 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide hover:bg-white/10"
+          >
+            Retry
+          </button>
+        ) : null}
       </div>
     </div>
   );

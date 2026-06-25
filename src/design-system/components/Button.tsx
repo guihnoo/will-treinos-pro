@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion, MotionProps } from "framer-motion";
+import { m, MotionProps } from "@/lib/motion";
 import { ColorTokens } from "../tokens/colors";
 import { MotionTokens } from "../tokens/motionTokens";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -225,7 +225,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const isInteractive = !disabled && !isLoading;
 
     return (
-      <motion.button
+      <m.button
         ref={ref}
         className={cn(baseClass, className)}
         whileHover={isInteractive ? getHoverScale() : undefined}
@@ -237,7 +237,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {isLoading ? (
           <>
-            <motion.div
+            <m.div
               animate={{ rotate: 360 }}
               transition={{
                 duration: 1,
@@ -251,7 +251,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           children
         )}
-      </motion.button>
+      </m.button>
     );
   }
 );

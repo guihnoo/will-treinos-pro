@@ -17,6 +17,7 @@ import { CheckInProvider } from "@/context/CheckInContext";
 import { LessonRatingsProvider } from "@/context/LessonRatingsContext";
 import { TrainingProvider } from "@/context/TrainingContext";
 import { GamificationProvider } from "@/context/GamificationContext";
+import { MotionProvider } from "@/components/MotionProvider";
 import AuthWrapper from "@/components/AuthWrapper";
 import { ToastProvider } from "@/components/Toast";
 import { RichToastProvider } from "@/components/ui/ToastProvider";
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} bg-black text-zinc-100 min-h-screen font-sans antialiased selection:bg-[#EAB308]/30 overflow-x-hidden overflow-y-auto flex`}>
         <ErrorBoundary>
+        <MotionProvider>
         <AppProvider>
             <AuthProvider>
               <CriticalDataProvider>
@@ -129,6 +131,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </CriticalDataProvider>
             </AuthProvider>
         </AppProvider>
+        </MotionProvider>
         </ErrorBoundary>
       </body>
     </html>

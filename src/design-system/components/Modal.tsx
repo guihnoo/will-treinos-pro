@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import { ColorTokens } from "../tokens/colors";
 import { MotionTokens } from "../tokens/motionTokens";
 import { cn } from "@/lib/utils";
@@ -102,7 +102,7 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
+        <m.div
           className={backdropClass}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -110,7 +110,7 @@ export const Modal: React.FC<ModalProps> = ({
           onClick={dismissible ? onClose : undefined}
           transition={{ duration: 0.2 }}
         >
-          <motion.div
+          <m.div
             className={modalContentClass}
             variants={animationVariants}
             initial="hidden"
@@ -135,22 +135,22 @@ export const Modal: React.FC<ModalProps> = ({
                   </h2>
                 )}
                 {dismissible && (
-                  <motion.button
+                  <m.button
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={onClose}
                     className="ml-auto p-1 hover:bg-white/10 rounded-lg transition-colors"
                   >
                     <X size={20} className="text-white/60" />
-                  </motion.button>
+                  </m.button>
                 )}
               </div>
             )}
 
             {/* Content */}
             <div className="px-6 py-6">{children}</div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

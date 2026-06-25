@@ -6,6 +6,7 @@ import { useCriticalData } from "@/context/CriticalDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useStudents } from "@/context/StudentsContext";
 import { Navigation } from "@/components/Navigation";
+import { AppSyncLayer } from "@/components/AppSyncLayer";
 import PageTransition from "@/components/PageTransition";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
@@ -249,10 +250,11 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       <Navigation />
       <main
         data-app-scroll-root
-        className="flex-1 lg:pl-20 h-screen overflow-y-auto pb-24 lg:pb-0 relative min-w-0"
+        className="flex-1 lg:pl-20 h-[100dvh] overflow-y-auto pb-24 lg:pb-0 relative min-w-0"
       >
         <PageTransition>{children}</PageTransition>
       </main>
+      <AppSyncLayer />
     </>
   );
 }

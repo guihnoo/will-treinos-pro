@@ -20,14 +20,20 @@ export function useSyncQueue(options: {
   const processorRef = useRef<SyncQueueProcessor | null>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Processar fila quando volta online
-  const processPending = useCallback(async () => {
-    if (!options.jwt) return;
+  if (!processorRef.current) {
+    processorRef.current = new SyncQueueProcessor();
+  }
 
-    processor.processAll(options.jwt).catch((error) => {
+  const processPending = useCallback(async () => {
+    if (!options.jwt || !processorRef.current) return;
+
+    try {
+      await processorRef.current.processAll(options.jwt);
+      options.onSyncComplete?.();
+    } catch (error) {
       options.onSyncError?.(error instanceof Error ? error.message : String(error));
-    });
-  }, [options.jwt, options.onSyncError]);
+    }
+  }, [options.jwt, options.onSyncComplete, options.onSyncError]);
 
   // Configurar listener de conectividade
   useEffect(() => {
@@ -56,9 +62,7 @@ export function useSyncQueue(options: {
     };
   }, [processPending]);
 
-  // Criar processor instance
-  const processor = processorRef.current ?? new SyncQueueProcessor();
-  processorRef.current = processor;
+  const processor = processorRef.current;
 
   return {
     queue: SyncQueue,
