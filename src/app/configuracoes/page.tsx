@@ -376,7 +376,7 @@ export default function ConfigPage() {
                 {cat.isCustom && (
                   <motion.button whileTap={{ scale: 0.9 }}
                     onClick={() => deleteCategory(cat.id)}
-                    className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100">
+                    className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors md:opacity-0 md:group-hover:opacity-100">
                     <Trash2 className="w-4 h-4" />
                   </motion.button>
                 )}
@@ -497,7 +497,7 @@ export default function ConfigPage() {
                       <Globe className="w-4 h-4" />
                     </a>
                     <motion.button whileTap={{ scale: 0.9 }} onClick={() => deleteVenue(v.id)}
-                      className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors opacity-0 group-hover:opacity-100">
+                      className="p-2 rounded-lg text-zinc-600 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors md:opacity-0 md:group-hover:opacity-100">
                       <Trash2 className="w-4 h-4" />
                     </motion.button>
                   </div>
@@ -613,14 +613,14 @@ export default function ConfigPage() {
       {tab === "notificacoes" && isStudentAccount && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <AppSectionCard
-            title="Preferencias de Notificacao"
-            subtitle="Escolha quais pushes voce quer receber. As alteracoes sao salvas automaticamente."
+            title="Preferências de Notificação"
+            subtitle="Escolha quais pushes você quer receber. As alterações são salvas automaticamente."
             rightSlot={<Bell className="w-5 h-5 text-amber-400" />}
           >
             {studentProfile?.id ? (
               <NotificationPreferencesPanel studentId={studentProfile.id} />
             ) : (
-              <p className="text-sm text-zinc-500">Perfil de aluno nao encontrado.</p>
+              <p className="text-sm text-zinc-500">Perfil de aluno não encontrado.</p>
             )}
           </AppSectionCard>
         </motion.div>
