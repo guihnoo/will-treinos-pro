@@ -37,7 +37,7 @@ export default function RankingPage() {
     <>
       {tvMode && <TVLeaderboard onExit={exitTVMode} />}
 
-      <div className="min-h-screen bg-black px-4 py-6 pb-24">
+      <div className="min-h-[100dvh] bg-black px-4 py-6 pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-xl">
           <AppPageHeader
             title="Ranking"

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, MessageCircle, Share2, Camera, Image as ImageIcon,
@@ -16,6 +17,7 @@ import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import AppEmptyState from "@/components/ui/AppEmptyState";
 import AppSectionCard from "@/components/ui/AppSectionCard";
 import AppPageHeader from "@/components/ui/AppPageHeader";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { compressImageFileToDataUrl } from "@/lib/imageCompress";
 
@@ -30,6 +32,22 @@ function resolveStoryAvatarSrc(avatar: string): string {
     return avatar;
   }
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(avatar)}`;
+}
+
+function FeedPostMedia({ src }: { src: string }) {
+  if (src.startsWith("data:")) {
+    return <img src={src} alt="" className="w-full max-h-[450px] object-cover" />;
+  }
+  return (
+    <Image
+      src={src}
+      alt=""
+      width={800}
+      height={450}
+      className="w-full max-h-[450px] h-auto object-cover"
+      sizes="(max-width: 768px) 100vw, 720px"
+    />
+  );
 }
 
 // ─── New Post Composer ───────────────────────────────────────────────────────
@@ -390,7 +408,7 @@ export default function FeedPage() {
 
   if (usingSupabaseSession && criticalDataError) {
     return (
-      <div className="max-w-2xl mx-auto min-h-screen border-x border-zinc-900 px-4 pb-28 pt-[max(1rem,env(safe-area-inset-top))]">
+      <div className="max-w-2xl mx-auto min-h-[100dvh] border-x border-zinc-900 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
         <AppPageHeader
           title="Rede Will Treinos"
           subtitle="Falha de sincronização. Tente novamente sem recarregar."
@@ -411,7 +429,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto border-x border-zinc-900 min-h-screen relative pb-28" onClick={() => reactionPicker && setReactionPicker(null)}>
+    <div className="max-w-2xl mx-auto border-x border-zinc-900 min-h-[100dvh] relative pb-[calc(7rem+env(safe-area-inset-bottom))]" onClick={() => reactionPicker && setReactionPicker(null)}>
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-black/90 backdrop-blur-xl border-b border-zinc-900 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] flex items-center justify-between">
@@ -448,8 +466,13 @@ export default function FeedPage() {
         {/* My story */}
         <motion.div whileTap={{ scale: 0.95 }} onClick={() => setShowComposer(true)}
           className="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0">
-          <div className="w-16 h-16 rounded-full bg-zinc-900 border-2 border-dashed border-zinc-700 flex items-center justify-center relative">
-            <img src={myAvatarSrc} className="w-full h-full rounded-full object-cover" />
+          <div className="w-16 h-16 rounded-full bg-zinc-900 border-2 border-dashed border-zinc-700 flex items-center justify-center relative overflow-hidden">
+            <UserAvatar
+              name={user?.name ?? "Você"}
+              photo={myAvatarSrc}
+              size="lg"
+              className="!h-full !w-full !border-0 !ring-0 !shadow-none"
+            />
             <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-[#EAB308] rounded-full flex items-center justify-center text-black text-xs font-bold shadow-lg">
               <Plus className="w-3 h-3" />
             </div>
@@ -467,9 +490,12 @@ export default function FeedPage() {
             aria-label={`Ver post de ${s.name}`}
           >
             <div className={`w-16 h-16 rounded-full p-[2px] ${s.hasNew ? "bg-gradient-to-br from-[#EAB308] to-[#F97316]" : "bg-zinc-800"}`}>
-              <img src={resolveStoryAvatarSrc(s.avatar)}
-                alt={s.name}
-                className="w-full h-full rounded-full border-2 border-black object-cover" />
+              <UserAvatar
+                name={s.name}
+                photo={resolveStoryAvatarSrc(s.avatar)}
+                size="lg"
+                className="!h-full !w-full !border-2 !border-black !ring-0"
+              />
             </div>
             <span className={`text-[10px] font-medium ${s.hasNew ? "text-white" : "text-zinc-500"}`}>{s.name}</span>
           </motion.div>
@@ -512,10 +538,11 @@ export default function FeedPage() {
             <div className="flex items-center justify-between p-4 pb-2">
               <div className="flex items-center gap-2.5">
                 <div className={`w-10 h-10 rounded-full p-[1.5px] ${post.user.isPro ? "bg-gradient-to-br from-[#EAB308] to-[#F97316]" : "bg-zinc-800"}`}>
-                  <img
-                    src={resolveStoryAvatarSrc(post.user.avatar || "")}
-                    alt=""
-                    className="w-full h-full rounded-full border border-black object-cover"
+                  <UserAvatar
+                    name={post.user.name}
+                    photo={resolveStoryAvatarSrc(post.user.avatar || "")}
+                    size="md"
+                    className="!h-full !w-full !border !border-black !ring-0"
                   />
                 </div>
                 <div>
@@ -584,7 +611,7 @@ export default function FeedPage() {
             {/* Media */}
             {post.media && (
               <div className="relative cursor-pointer" onClick={() => handleTap(post.id)}>
-                <img src={post.media} alt="" className="w-full max-h-[450px] object-cover" />
+                <FeedPostMedia src={post.media} />
                 <AnimatePresence>
                   {doubleTapId === post.id && (
                     <motion.div
@@ -694,10 +721,11 @@ export default function FeedPage() {
                     )}
                     {post.comments.map((c, ci) => (
                       <div key={ci} className="flex gap-2.5">
-                        <img
-                          src={resolveStoryAvatarSrc(c.avatar || "")}
-                          alt=""
-                          className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 object-cover"
+                        <UserAvatar
+                          name={c.user}
+                          photo={resolveStoryAvatarSrc(c.avatar || "")}
+                          size="sm"
+                          className="!h-7 !w-7 flex-shrink-0 mt-0.5 !ring-0"
                         />
                         <div>
                           <div className="flex items-center gap-2">
@@ -711,7 +739,12 @@ export default function FeedPage() {
 
                     {/* Comment input */}
                     <div className="flex items-center gap-2 pt-2 border-t border-zinc-900/50">
-                      <img src={myAvatarSrc} className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
+                      <UserAvatar
+                        name={user?.name ?? "Você"}
+                        photo={myAvatarSrc}
+                        size="sm"
+                        className="!h-7 !w-7 flex-shrink-0 !ring-0"
+                      />
                       <input
                         value={commentInputs[post.id] || ""}
                         onChange={e => setCommentInputs(p => ({ ...p, [post.id]: e.target.value }))}
