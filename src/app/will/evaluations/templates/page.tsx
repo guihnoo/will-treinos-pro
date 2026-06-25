@@ -315,7 +315,7 @@ export default function WillEvaluationTemplatesPage() {
               disabled={isSaving}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm font-black text-green-400 disabled:opacity-60"
             >
-              {isSaving ? "Salvando…" : "💾 Salvar no banco"}
+              {isSaving ? "Salvando…" : "Salvar no banco"}
             </motion.button>
             <motion.button
               type="button"
