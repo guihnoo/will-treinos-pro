@@ -124,12 +124,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 }
 
 // Valida o JWT de verdade contra o Supabase Auth e confere se o usuário é
-// staff (admin/coach/professor) — mesmos critérios de wt_is_staff() (ver
+// staff — mesmos critérios de wt_is_staff() (ver
 // supabase/migrations/20260602030000_fix_wt_is_staff_metadata.sql), já que
 // esta rota usa SERVICE_ROLE_KEY e portanto não passa pelo RLS.
 // Nunca confiar apenas na presença do header (vulnerabilidade anterior:
 // qualquer string não vazia era aceita como token válido).
 type StaffCheck = { authenticated: boolean; staff: boolean };
+
+const STAFF_APP_METADATA_ROLES = ["admin", "will_owner", "owner", "coach", "professor", "teacher"];
 
 async function verifyStaff(jwt: string): Promise<StaffCheck> {
   if (!jwt) return { authenticated: false, staff: false };
@@ -137,6 +139,11 @@ async function verifyStaff(jwt: string): Promise<StaffCheck> {
   const anon = createClient(SUPABASE_URL, ANON_KEY);
   const { data: { user }, error } = await anon.auth.getUser(jwt);
   if (error || !user) return { authenticated: false, staff: false };
+
+  const appMetadataRole = (user.app_metadata?.role ?? "").toString().toLowerCase().trim();
+  if (STAFF_APP_METADATA_ROLES.includes(appMetadataRole)) {
+    return { authenticated: true, staff: true };
+  }
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
   const normalizedEmail = (user.email ?? "").toLowerCase().trim();
@@ -146,18 +153,12 @@ async function verifyStaff(jwt: string): Promise<StaffCheck> {
     .select("role, is_active")
     .eq("email", normalizedEmail)
     .maybeSingle();
-  const { data: studentRow } = await sb
-    .from("students")
-    .select("student_role")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
 
   const staffRoleOk =
     staffRow?.is_active !== false &&
     ["admin", "coach"].includes((staffRow?.role ?? "").toLowerCase().trim());
-  const isProfessor = studentRow?.student_role === "professor";
 
-  return { authenticated: true, staff: Boolean(staffRoleOk || isProfessor) };
+  return { authenticated: true, staff: Boolean(staffRoleOk) };
 }
 
 // GET — staff fetches ratings for a specific lesson or recent ratings
