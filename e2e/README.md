@@ -28,18 +28,26 @@ Base URL padrão: `http://localhost:3000` (sobe `pnpm dev` via `webServer` se `P
 
 ## Suites
 
-| Arquivo | Auth? | No CI PR (1A)? |
-|---|---|---|
-| `student-journey.spec.ts` | Não | ✅ Sim |
-| `auth.spec.ts` | Não (UI / redirect / erro) | ✅ Sim |
-| `admin-approval-flow.spec.ts` | Sim (`PLAYWRIGHT_TEST_CREDS`) | ❌ Manual / 1B |
-| `rls-isolation.spec.ts` | Sim | ❌ Manual / 1B |
-| `offline-sync.spec.ts` | Sim | ❌ Manual / 1B |
-| `gamification-*.spec.ts` / `xp-*` / `training-plans-*` | Sim | ❌ |
-| `push-notifications.spec.ts` | Parcial | ❌ |
-| `full-audit.spec.ts` | Híbrido | ❌ Nightly futuro |
+| Arquivo | Auth? | Secrets server-side? | No CI PR (1A)? |
+|---|---|---|---|
+| `student-journey.spec.ts` | Não | Não | ✅ Sim |
+| `auth.spec.ts` | Não (UI / redirect / erro) | Não | ✅ Sim |
+| `server-integration.spec.ts` | Não | **Sim** (`SUPABASE_SERVICE_ROLE_KEY`) | ❌ Não roda em nenhum workflow hoje — Fase 1B / staging |
+| `lesson-ratings-security.spec.ts` | Não (401/403) | Não | ❌ Manual (validação local) |
+| `admin-approval-flow.spec.ts` | Sim (`PLAYWRIGHT_TEST_CREDS`) | Não | ❌ Manual / 1B |
+| `rls-isolation.spec.ts` | Sim | Não | ❌ Manual / 1B |
+| `offline-sync.spec.ts` | Sim | Não | ❌ Manual / 1B |
+| `gamification-*.spec.ts` / `xp-*` / `training-plans-*` | Sim | Não | ❌ |
+| `push-notifications.spec.ts` | Parcial | Não | ❌ |
+| `full-audit.spec.ts` | Híbrido | Não | ❌ Nightly futuro |
 
 Specs autenticados usam `test.skip` sem `PLAYWRIGHT_TEST_CREDS` — isso **não** é falso-verde no job de smoke (essas suites simplesmente não são invocadas no PR).
+
+### Por que `server-integration.spec.ts` é separado
+
+O job **E2E Smoke** do PR sobe a aplicação com `next start` **sem** `SUPABASE_SERVICE_ROLE_KEY` — de propósito, para não expor a service role em um workflow público que roda em qualquer Pull Request. Rotas que instanciam o client do Supabase com a service role no servidor (ex.: `src/app/api/leaderboard/route.ts`) por isso retornam 500 nesse ambiente — não é uma regressão do código, é um descompasso entre o escopo do teste e o ambiente do job.
+
+Esses testes ficam em `server-integration.spec.ts`, fora do smoke público, e não são referenciados em nenhum workflow de CI hoje. Rodar essa suíte fica para a Fase 1B / staging, contra um ambiente controlado com as credenciais server-side apropriadas — **nunca** adicionando `SUPABASE_SERVICE_ROLE_KEY` ao workflow de PR público só para fazer o teste passar ali.
 
 ## CI (Fase 1A)
 
