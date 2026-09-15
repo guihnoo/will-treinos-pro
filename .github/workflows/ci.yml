@@ -149,8 +149,52 @@ jobs:
             | tar -xz gitleaks
           sudo mv gitleaks /usr/local/bin/gitleaks
           gitleaks version
-      - name: Scan de secrets
-        run: gitleaks detect --source . --verbose --redact --config .gitleaks.toml
+      # Gate obrigatório: somente commits NOVOS do PR/push.
+      # Histórico legado NÃO derruba o merge — ver workflow gitleaks-full-history.yml.
+      - name: Definir range de commits
+        id: range
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            echo "log_opts=${BASE}..${HEAD}" >> "$GITHUB_OUTPUT"
+            echo "Escopo PR: ${BASE}..${HEAD}"
+          else
+            BEFORE="${{ github.event.before }}"
+            AFTER="${{ github.sha }}"
+            ZERO="0000000000000000000000000000000000000000"
+            if [ -z "${BEFORE}" ] || [ "${BEFORE}" = "${ZERO}" ]; then
+              echo "log_opts=${AFTER}^!" >> "$GITHUB_OUTPUT"
+              echo "Escopo push (sem before): commit único ${AFTER}"
+            else
+              echo "log_opts=${BEFORE}..${AFTER}" >> "$GITHUB_OUTPUT"
+              echo "Escopo push: ${BEFORE}..${AFTER}"
+            fi
+          fi
+      - name: Scan de secrets novos (range)
+        run: |
+          set -euo pipefail
+          gitleaks detect \
+            --source . \
+            --verbose \
+            --redact \
+            --config .gitleaks.toml \
+            --log-opts="${{ steps.range.outputs.log_opts }}"
+      - name: Self-test — secret fake novo deve falhar
+        run: |
+          set -euo pipefail
+          FIXTURE="$(mktemp -d)"
+          # Payload em base64 (JWT de exemplo jwt.io) — evita versionar o token no Git.
+          echo 'VE9LRU49ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnpkV0lpT2lJeE1qTTBOVFkzT0Rrd0lpd2libUZ0WlNJNklrcHZhRzRnUkc5bElpd2lhV0YwSWpveE5URTJNak01TURJeWZRLlNmbEt4d1JKU01lS0tGMlFUNGZ3cE1lSmYzNlBPazZ5SlZfYWRRc3N3NWMK' \
+            | base64 -d > "${FIXTURE}/fake-secret.env"
+          if gitleaks detect --source "${FIXTURE}" --no-git --redact --config .gitleaks.toml; then
+            echo "::error::Self-test falhou: Gitleaks deveria detectar secret fake novo"
+            rm -rf "${FIXTURE}"
+            exit 1
+          fi
+          rm -rf "${FIXTURE}"
+          echo "OK: gate detecta secret novo (fixture sintética JWT)"
 
   dependency-audit:
     name: Dependency Audit
@@ -165,8 +209,22 @@ jobs:
           node-version: "20.x"
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Auditoria de dependências (high+)
-        run: pnpm audit --audit-level=high
+      # O exit code nativo do `pnpm audit` NÃO decide o gate sozinho — ele
+      # sempre é != 0 quando há qualquer vulnerabilidade (mesmo as baseline
+      # conhecidas de @ducanh2912/next-pwa), por isso capturamos o JSON aqui
+      # e quem decide passa/falha é o checker abaixo.
+      - name: Gerar relatório de auditoria (JSON)
+        run: pnpm audit --json > dependency-audit-report.json || true
+      - name: Gate de auditoria de dependências (baseline-aware)
+        run: node scripts/ci/check-dependency-audit.mjs dependency-audit-report.json security/dependency-audit-allowlist.json
+      - name: Self-tests do gate de auditoria
+        run: node scripts/ci/check-dependency-audit.selftest.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-report
+          path: dependency-audit-report.json
+          retention-days: 14
 
   rls-audit:
     name: RLS Audit (experimental)

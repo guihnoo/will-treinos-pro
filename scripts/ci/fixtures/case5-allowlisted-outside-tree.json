@@ -1,0 +1,15 @@
+{
+  "_fixture_purpose": "Caso 5 — reaproveita um GHSA/pacote que ESTÁ na allowlist real (serialize-javascript / GHSA-5c6j-r48x-rmvq), mas com um caminho que não passa por @ducanh2912/next-pwa (ex.: entrou por uma dependência direta nova). Estar na allowlist não é suficiente se o caminho de dependência mudou — deve FALHAR (cause: allowlisted-but-outside-tree).",
+  "metadata": { "vulnerabilities": { "info": 0, "low": 0, "moderate": 0, "high": 1, "critical": 0 } },
+  "advisories": {
+    "9000004": {
+      "id": 9000004,
+      "severity": "high",
+      "module_name": "serialize-javascript",
+      "github_advisory_id": "GHSA-5c6j-r48x-rmvq",
+      "findings": [
+        { "paths": [".>some-new-direct-dependency>serialize-javascript"] }
+      ]
+    }
+  }
+}

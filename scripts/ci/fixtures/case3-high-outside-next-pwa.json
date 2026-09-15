@@ -1,0 +1,15 @@
+{
+  "_fixture_purpose": "Caso 3 — HIGH sintético totalmente novo, com caminho que não passa por @ducanh2912/next-pwa e não está na allowlist. Deve FALHAR (cause: high-not-allowlisted).",
+  "metadata": { "vulnerabilities": { "info": 0, "low": 0, "moderate": 0, "high": 1, "critical": 0 } },
+  "advisories": {
+    "9000002": {
+      "id": 9000002,
+      "severity": "high",
+      "module_name": "fixture-pkg-outside",
+      "github_advisory_id": "GHSA-fake-0002-out",
+      "findings": [
+        { "paths": [".>some-other-lib>fixture-pkg-outside"] }
+      ]
+    }
+  }
+}

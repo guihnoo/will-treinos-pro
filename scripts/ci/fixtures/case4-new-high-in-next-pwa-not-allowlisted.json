@@ -1,0 +1,15 @@
+{
+  "_fixture_purpose": "Caso 4 — HIGH novo, com caminho que ENTRA pela árvore @ducanh2912/next-pwa, mas cujo GHSA ainda não está na allowlist. Estar dentro da árvore não basta — precisa de allowlisting explícito. Deve FALHAR (cause: high-not-allowlisted).",
+  "metadata": { "vulnerabilities": { "info": 0, "low": 0, "moderate": 0, "high": 1, "critical": 0 } },
+  "advisories": {
+    "9000003": {
+      "id": 9000003,
+      "severity": "high",
+      "module_name": "fixture-pkg-new-in-tree",
+      "github_advisory_id": "GHSA-fake-0003-new",
+      "findings": [
+        { "paths": [".>@ducanh2912/next-pwa>workbox-build>fixture-pkg-new-in-tree"] }
+      ]
+    }
+  }
+}

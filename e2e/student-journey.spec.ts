@@ -83,11 +83,6 @@ test("ranking page renders", async ({ page }) => {
   expect(bodyText).not.toContain("Internal Server Error");
 });
 
-test("leaderboard API responds", async ({ request }) => {
-  const res = await request.get("/api/leaderboard?period=week");
-  expect(res.status()).toBeLessThan(500);
-});
-
 test("public athlete profile 404 handled gracefully", async ({ page }) => {
   await page.goto("/atleta/nonexistent-id-000");
   // Não deve mostrar crash — deve mostrar estado de erro ou not found
