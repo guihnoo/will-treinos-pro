@@ -27,7 +27,7 @@ jobs:
     name: TypeScript
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
@@ -68,7 +68,7 @@ jobs:
     needs: build
     # Roda em todo PR e em push na main — sem apontar writes para produção.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
@@ -137,7 +137,7 @@ jobs:
     name: Gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # Binário oficial (sem licença da Action comercial em repo privado).
@@ -200,7 +200,7 @@ jobs:
     name: Dependency Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
@@ -233,7 +233,7 @@ jobs:
     # job marcado experimental até migrations reais no CI (Fase 1B).
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ankane/setup-postgres@v1
         with:
           postgres-version: 15
