@@ -1,7 +1,11 @@
-# Will Treinos PRO — Gitleaks (Fase 1A)
-# Estende o ruleset padrão. Allowlist só com justificativa em PR.
+# Will Treinos PRO — Gitleaks (Sprint 0D-A)
+# Estende o ruleset padrão.
+# Sem allowlist ampla. Fingerprints exatos só com justificativa documentada.
 
 title = "Will Treinos PRO"
 
 [extend]
 useDefault = true
+
+# Allowlist vazia de propósito: o gate de CI escaneia só o range do PR/push.
+# Findings históricos NÃO são mascarados aqui — ficam na auditoria full-history.

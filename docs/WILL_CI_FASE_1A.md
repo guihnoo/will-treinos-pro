@@ -15,7 +15,8 @@ Criar gates reais antes de qualquer código chegar em `main`: typecheck, build, 
 | `TypeScript` | `ci.yml` | ✅ Sim | `pnpm run typecheck` |
 | `Build` | `ci.yml` | ✅ Sim | `pnpm run build` |
 | `E2E Smoke (chromium)` | `ci.yml` | ✅ Sim | `student-journey` + `auth` em `127.0.0.1:3000` |
-| `Gitleaks` | `ci.yml` | ✅ Sim | Scan de secrets |
+| `Gitleaks` | `ci.yml` | ✅ Sim | **Range** PR/push apenas (Sprint 0D-A) — ver `docs/WILL_GITLEAKS_SPRINT_0D.md` |
+| `Gitleaks Full History (legado)` | `gitleaks-full-history.yml` | ❌ Manual | Full-history; não required |
 | `Dependency Audit` | `ci.yml` | ✅ Sim | `pnpm audit --audit-level=high` |
 | `RLS Audit (experimental)` | `ci.yml` | ❌ Não | Postgres sem migrations; `continue-on-error` |
 | `Production Health` | `smoke-production.yml` | Alerta | GET `/api/health` após push em `main` |
