@@ -21,12 +21,18 @@ const REPO = "guihnoo/will-treinos-pro";
 const PROD_BASE = "https://will-treinos-pro.vercel.app";
 
 const PUBLISHABLE_KEY_PREFIX = "sb_publishable_";
-// Corpo da chave: payload não vazio, só caracteres esperados (alfanumérico,
-// underscore, hífen). Fonte única — o padrão "ancorado" (match da string
-// inteira, usado para validar) e o padrão "de busca" (usado para procurar a
-// chave dentro do texto de um bundle) derivam dos MESMOS PUBLISHABLE_KEY_PREFIX
-// e PUBLISHABLE_KEY_BODY, para nunca divergir entre si.
-const PUBLISHABLE_KEY_BODY = "[A-Za-z0-9_-]+";
+// Estrutura documentada pelo Supabase: prefixo + 22 chars random + "_" +
+// 8 chars de checksum, ambos os segmentos em [A-Za-z0-9_-]. Fonte única —
+// o padrão "ancorado" (match da string inteira, usado para validar) e o
+// padrão "de busca" (usado para procurar a chave dentro do texto de um
+// bundle) derivam dos MESMOS PUBLISHABLE_KEY_PREFIX/PUBLISHABLE_KEY_BODY,
+// para nunca divergir entre si.
+const PUBLISHABLE_KEY_CHARSET = "[A-Za-z0-9_-]";
+const PUBLISHABLE_KEY_RANDOM_LENGTH = 22;
+const PUBLISHABLE_KEY_CHECKSUM_LENGTH = 8;
+const PUBLISHABLE_KEY_BODY =
+  `${PUBLISHABLE_KEY_CHARSET}{${PUBLISHABLE_KEY_RANDOM_LENGTH}}` +
+  `_${PUBLISHABLE_KEY_CHARSET}{${PUBLISHABLE_KEY_CHECKSUM_LENGTH}}`;
 const PUBLISHABLE_KEY_PATTERN = new RegExp(`^${PUBLISHABLE_KEY_PREFIX}${PUBLISHABLE_KEY_BODY}$`);
 export const PUBLISHABLE_KEY_SEARCH_PATTERN = new RegExp(`${PUBLISHABLE_KEY_PREFIX}${PUBLISHABLE_KEY_BODY}`);
 
@@ -37,12 +43,14 @@ export function isLegacyJwtFormat(value) {
 }
 
 /**
- * Match ANCORADO da string inteira: exige o prefixo exato "sb_publishable_",
- * um payload não vazio, e somente os caracteres esperados — nada de prefixo
- * sozinho, sufixo inválido, ou caracteres fora do conjunto permitido. Não faz
- * trim: espaços antes/depois (ou embutidos) fazem a validação falhar, em vez
- * de serem silenciosamente ignorados — política deliberada de rejeitar
- * whitespace em vez de normalizá-lo.
+ * Match ANCORADO da string inteira contra a estrutura exata documentada pelo
+ * Supabase: prefixo "sb_publishable_" + 22 caracteres random + "_" + 8
+ * caracteres de checksum. Rejeita prefixo sem payload, segmento random com
+ * tamanho diferente de 22, checksum com tamanho diferente de 8, separador
+ * "_" ausente entre os segmentos, e caracteres fora de [A-Za-z0-9_-]. Não
+ * faz trim: espaços antes/depois (ou embutidos) fazem a validação falhar,
+ * em vez de serem silenciosamente ignorados — política deliberada de
+ * rejeitar whitespace em vez de normalizá-lo.
  */
 export function isPublishableKeyFormat(value) {
   return typeof value === "string" && PUBLISHABLE_KEY_PATTERN.test(value);
@@ -69,8 +77,10 @@ export function assertPublishableKey(value, source) {
   }
   if (!isPublishableKeyFormat(value)) {
     throw new Error(
-      `Valor resolvido para a Supabase Publishable Key (origem: ${source}) não está no formato ` +
-        `esperado ("${PUBLISHABLE_KEY_PREFIX}..."). Abortando para não configurar um secret incorreto.`,
+      `Valor resolvido para a Supabase Publishable Key (origem: ${source}) não está na estrutura ` +
+        `documentada pelo Supabase ("${PUBLISHABLE_KEY_PREFIX}" + ${PUBLISHABLE_KEY_RANDOM_LENGTH} ` +
+        `caracteres + "_" + ${PUBLISHABLE_KEY_CHECKSUM_LENGTH} caracteres de checksum). ` +
+        `Abortando para não configurar um secret incorreto.`,
     );
   }
 }
