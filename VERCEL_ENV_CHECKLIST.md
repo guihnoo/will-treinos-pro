@@ -1,7 +1,12 @@
 # ✅ Vercel Environment Variables Checklist
 
-**Last Updated:** 2026-05-03  
+**Last Updated:** 2026-05-03
 **Status:** Required before production deployment
+
+> ⚠️ **Aviso de segurança:** Valores de produção nunca devem ser armazenados
+> neste repositório. Use apenas os nomes definidos em `.env.example`. Valores
+> reais ficam exclusivamente no painel da Vercel ou no `.env.local` ignorado
+> pelo Git.
 
 ---
 
@@ -40,17 +45,18 @@ No seu computador, abra o arquivo `.env.local`:
 cat .env.local
 ```
 
-Você vai ver algo assim:
+Você vai ver algo assim (nomes de exemplo — nunca copie valores reais para
+documentação ou commits):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://armrortldtqxmgvvcbko.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=BEj_W...
-VAPID_PRIVATE_KEY=...
-VAPID_SUBJECT=guihmonteiro.2014@gmail.com
-NEXT_PUBLIC_DEV_ROOT_EMAILS=guihmonteiro.2014@gmail.com
-ANTHROPIC_API_KEY=sk-ant-...
+NEXT_PUBLIC_SUPABASE_URL=<configurar no painel>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<configurar no painel>
+SUPABASE_SERVICE_ROLE_KEY=<NUNCA VERSIONAR>
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<configurar no painel>
+VAPID_PRIVATE_KEY=<NUNCA VERSIONAR>
+VAPID_SUBJECT=<seu-email-de-contato>
+NEXT_PUBLIC_DEV_ROOT_EMAILS=<email(s) admin, separados por vírgula>
+ANTHROPIC_API_KEY=<NUNCA VERSIONAR>
 ```
 
 ### **Passo 3: Settar na Vercel**
@@ -85,19 +91,14 @@ Se `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` não existem em `.env.lo
 npx web-push generate-vapid-keys
 ```
 
-Output:
+O comando imprime um par `Public Key` / `Private Key` no terminal.
+
+Copie e cole em `.env.local` (nunca em documentação ou commits):
 
 ```
-Public Key: BEj_W1G-dQ7vPK5e...
-Private Key: u3q2h8fJ0kP9_Lm4...
-```
-
-Copie e cole em `.env.local`:
-
-```
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=BEj_W1G-dQ7vPK5e...
-VAPID_PRIVATE_KEY=u3q2h8fJ0kP9_Lm4...
-VAPID_SUBJECT=seu-email@example.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<valor gerado pelo comando acima>
+VAPID_PRIVATE_KEY=<NUNCA VERSIONAR>
+VAPID_SUBJECT=<seu-email-de-contato>
 ```
 
 Depois, repita **Passo 3** para settar na Vercel.
