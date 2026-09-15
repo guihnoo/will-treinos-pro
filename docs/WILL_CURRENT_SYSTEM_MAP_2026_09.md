@@ -5,6 +5,8 @@
 **Escopo:** documentação e auditoria read-only. Nenhum código, banco, Supabase, Vercel, auth, RLS, API, UI ou PWA foi alterado para produzir este documento.
 
 > Este documento descreve o sistema **como ele existe hoje**, extraído do código-fonte, migrations e documentação interna do repositório (`CLAUDE.md`, `WILLPRO_MASTER_MEMORY.md`, `docs/WILL_STACK_SSOT.md`, `docs/WILL_RELEASE_PIPELINE_PLAN_2026_09.md`, `docs/WILL_SECRET_ROTATION_RUNBOOK.md`, `.claude/skills/will-treinos-core/SKILL.md`). Onde uma afirmação não pôde ser confirmada diretamente pelo código, está marcada como **"não confirmado pelo código"** — nada foi inventado.
+>
+> **Nota — estado do Git vs. estado operacional:** algumas informações de infraestrutura (chaves ativas no painel do Supabase, secrets do GitHub Actions, env vars da Vercel, configurações de dashboard) **não são representadas pelo Git** e não podem ser confirmadas só lendo este repositório. Onde este documento descreve um desses estados, ele é marcado explicitamente como **"validado operacionalmente em 2026-09-15"** — para não induzir um agente futuro, que leia só o código, a concluir algo desatualizado (por exemplo, que chaves legadas do Supabase ainda estariam ativas depois de já terem sido desativadas no painel).
 
 ---
 
@@ -14,7 +16,7 @@
 
 O produto nasceu de uma sequência muito intensa de sprints nomeados individualmente (o log em `WILLPRO_MASTER_MEMORY.md` chega a "Sprint 110"), entregues por agentes de IA (Claude Code + Cursor) em colaboração direta com o dono do produto, sem um processo formal de arquitetura prévia — o que explica boa parte da dívida técnica mapeada na Seção 12.
 
-Em 2026-09-14/15, o projeto passou por uma sequência de sprints de segurança (0A a 0D-C, já mescladas em `main`) que corrigiram: autenticação real no endpoint de `lesson_ratings`, política de câmera do QR Scanner, dependências vulneráveis do `pnpm audit` (2 críticas → 0), um gate de CI real para auditoria de dependências, escaneamento de segredos por Gitleaks restrito a commits novos, remoção de credenciais versionadas (`check_second_admin.js`, `VERCEL_ENV_CHECKLIST.md`) e um runbook de rotação de chaves Supabase/VAPID (rotação ainda não executada). Esta Sprint 1 é a primeira etapa **não relacionada a incidente de segurança** — é o ponto em que o produto para para se auto-mapear antes de continuar crescendo por acréscimo.
+Em 2026-09-14/15, o projeto passou por uma sequência de sprints de segurança (0A a 0D-C, já mescladas em `main`) que corrigiram: autenticação real no endpoint de `lesson_ratings`, política de câmera do QR Scanner, dependências vulneráveis do `pnpm audit` (2 críticas → 0), um gate de CI real para auditoria de dependências, escaneamento de segredos por Gitleaks restrito a commits novos, remoção de credenciais versionadas (`check_second_admin.js`, `VERCEL_ENV_CHECKLIST.md`) e um runbook de rotação de chaves Supabase/VAPID. **Validado operacionalmente em 2026-09-15:** a migração das chaves Supabase para o formato moderno (Publishable Key + Secret Key) foi **concluída** — Preview e Production migrados nos dois lados (Vercel env vars server-side e client-side) e no GitHub Actions (`NEXT_PUBLIC_SUPABASE_ANON_KEY`), as legacy `anon`/`service_role` foram desativadas no painel do Supabase, e produção (incluindo `/api/health` e login real) continuou funcionando normalmente após a desativação. **A rotação do par de chaves VAPID continua pendente** — não tem a mesma urgência de segurança (a chave pública é... pública por definição), mas precisa de um plano próprio porque invalida `push_subscriptions` existentes e exige re-subscribe dos usuários (ver `docs/WILL_SECRET_ROTATION_RUNBOOK.md`, Seção 2, e a Sprint 4 no roadmap do documento de arquitetura). Esta Sprint 1 é a primeira etapa **não relacionada a incidente de segurança** — é o ponto em que o produto para para se auto-mapear antes de continuar crescendo por acréscimo.
 
 ---
 
@@ -262,8 +264,8 @@ A regra "nenhum usuário livre" é deliberada: cadastro exclusivamente via **lin
 
 - `vercel.json` só declara **um** cron nativo: `orchestrator-morning` às `0 11 * * *` (11h UTC = 8h BRT) — limite do plano Vercel Hobby (1 cron).
 - O slot da noite é coberto por **workaround via GitHub Actions**: `.github/workflows/cron-evening.yml` dispara `POST /api/cron/orchestrator-evening` às 21h UTC (18h BRT), autenticado com `Authorization: Bearer ${{ secrets.CRON_SECRET }}`.
-- As outras 9 rotas de cron **não têm agendamento próprio confirmado** — presumivelmente chamadas internamente pelos dois orquestradores (padrão "orchestrator"), mas **não confirmado pelo código** nesta auditoria (exigiria ler o corpo dos dois arquivos orchestrator).
-- As rotas de `cron/*` não mostraram, no grep desta auditoria, checagem de `auth.getUser`/`staff_access` — a proteção (se existir) é presumivelmente por `CRON_SECRET`/header, **não confirmado pelo código**.
+- **Confirmado pelo código** (correção desta revisão — a versão anterior deste documento continha uma afirmação não verificada): as outras 9 rotas de cron são de fato chamadas internamente pelos dois orquestradores. `orchestrator-morning` despacha (com `fetch` + `Authorization: Bearer ${CRON_SECRET}`) para `birthday-reminder`, `daily-reminder`, `onboarding-reminder` (diários), `payment-reminder` (dias 5 e 20) e `monthly-report` (dia 1). `orchestrator-evening` despacha para `absence-reminder`, `fomo-reminder`, `post-lesson-feedback` (diários) e `weekly-report` (condicional).
+- **Confirmado pelo código:** todas as 11 rotas de `cron/*` (incluindo os dois orquestradores) validam `req.headers.get("authorization") === \`Bearer ${CRON_SECRET}\`` (ou `Authorization`, variando a capitalização entre arquivos) no início do handler, retornando `401` se o header não bater — cada rota faz a checagem inline (não há um helper compartilhado, mas a proteção existe e está presente em 100% das rotas inspecionadas). Não há rota de `cron/*` sem essa checagem.
 
 ---
 
@@ -278,35 +280,47 @@ A regra "nenhum usuário livre" é deliberada: cadastro exclusivamente via **lin
 
 ## 16. Problemas e dívida técnica (P0–P3)
 
-Classificação: **P0** risco crítico · **P1** alto impacto · **P2** dívida técnica importante · **P3** melhoria. Nada foi corrigido nesta auditoria — apenas identificado.
+Classificação (revisada nesta correção, com critério mais estrito para P0):
+
+- **P0** — risco crítico **confirmado**: vazamento de dados real, autorização contornável com impacto real, risco de perda/corrupção de dados, produção indisponível, credencial privada ativa exposta, ou vulnerabilidade explorável confirmada.
+- **P1** — alto risco/alto impacto, mas sem incidente crítico confirmado (inclui itens que exigem "revisão de segurança necessária" quando a evidência não confirma exposição real).
+- **P2** — dívida técnica importante / manutenibilidade / arquitetura.
+- **P3** — melhoria.
+
+Nada foi corrigido nesta auditoria — apenas identificado. Dois itens desta lista foram **investigados a fundo e corrigidos/reclassificados** nesta revisão (ver notas em cada um).
 
 ### P0 — Risco crítico
 
-1. **`WillCockpit.tsx` como God Component (3687 linhas)** — concentra a maior parte da lógica/UI do painel admin; qualquer mudança nesse arquivo tem alto risco de regressão cruzada e é difícil de revisar/testar isoladamente.
-2. **Ausência de helper Supabase server-side compartilhado** — 44 rotas de API recriam inline o padrão "client anon para validar JWT + client service role para consultar", com pequenas variações entre elas. Qualquer correção de segurança nesse padrão (como a feita no Sprint 0A) precisa ser replicada rota a rota, com risco real de inconsistência (ver item 3).
-3. **`leaderboard` e `leaderboard/tv` usam `SERVICE_ROLE_KEY` sem qualquer `auth.getUser()`** — endpoints públicos com bypass total de RLS. Pode ser intencional (leaderboard/TV pública), mas é um padrão que merece revisão explícita de segurança, não uma decisão implícita por omissão.
+Nenhum item confirmado nesta auditoria atende ao critério de P0 (vazamento de dados real, autorização contornável com impacto real, ou vulnerabilidade explorável confirmada). Os dois candidatos investigados nesta correção (`WillCockpit.tsx` e a ausência de helper Supabase compartilhado) foram reclassificados para P2 abaixo — são riscos de arquitetura/manutenibilidade, não vulnerabilidades ativas por si só.
 
-### P1 — Alto impacto
+### P1 — Alto impacto / revisão de segurança necessária
 
-4. **Rotas de `cron/*` sem checagem de auth visível no código** — proteção presumida via `CRON_SECRET`, mas não confirmada por rota nesta auditoria; caminho de menor esforço para engano é assumir que "é cron, logo é seguro" sem verificar.
-5. **Middleware baseado em cookie não-verificado criptograficamente** (`wt_role`) — funciona como roteamento de UX, mas pode confundir desenvolvedores futuros sobre onde está a "fronteira de segurança real" (RLS + API) se não for documentado explicitamente (este documento faz essa marcação).
-6. **`docs/WILL_RELEASE_PIPELINE_PLAN_2026_09.md` Fase 1B ainda pendente** — sem staging Supabase dedicado, sem contas de teste, RLS audit no CI é "experimental" contra schema vazio (`continue-on-error`), branch protection ainda depende de ação humana.
+1. **`GET /api/leaderboard` e `GET /api/leaderboard/tv` usam `SERVICE_ROLE_KEY` sem `auth.getUser()`** — **investigado nesta correção, com leitura do código de ambas as rotas**. Achados objetivos:
+   - Ambas são **intencionalmente públicas**: o código de `leaderboard/route.ts` tem o comentário explícito `// Use service role to bypass RLS for leaderboard (public data)`, e `leaderboard/tv/route.ts` tem o cabeçalho `// Endpoint público (sem auth) para o Modo TV da academia`.
+   - Dados retornados por `leaderboard/tv`: posição, **nome abreviado** (`formatDisplayName` reduz para "Primeiro Nome + Inicial do Sobrenome", ex. "Maria S."), XP da semana, tier — sem `auth_user_id`, sem e-mail.
+   - Dados retornados por `leaderboard`: posição, **nome completo** (`name`, sem abreviação), `studentId` (que é o `auth_user_id`, um UUID — não um segredo), XP total/por período, tier. O campo `email` é consultado do banco (`select("auth_user_id, name, email")`) mas **não é incluído na resposta** (só `name` é mapeado para o objeto retornado).
+   - Parâmetros do cliente (`page`, `limit` até 50, `period`/`timeframe`) só afetam paginação e janela de tempo — não ampliam o escopo de dados além do que a rota já expõe por design (ranking público).
+   - **Não há exposição de dado privado confirmada** (sem e-mail, telefone, dado financeiro ou de saúde na resposta). Existe, sim, um ponto de atenção de produto/privacidade legítimo: `leaderboard` (diferente de `leaderboard/tv`) expõe **nome completo** de aluno de forma pública e paginável sem autenticação, o que pode ser sensível tratando-se de menores de idade — isso é uma decisão de produto que merece revisão explícita (ex.: aplicar o mesmo `formatDisplayName` abreviado também em `leaderboard`), não um bug de segurança confirmado.
+   - **Classificação final: P1 — revisão de segurança/privacidade necessária**, não P0. O padrão de usar `SERVICE_ROLE_KEY` sem autenticação é deliberado e documentado em comentário no próprio código; o item que precisa de decisão de produto é especificamente a exposição de nome completo (não abreviado) em `GET /api/leaderboard`.
+2. **Middleware baseado em cookie não-verificado criptograficamente** (`wt_role`) — funciona como roteamento de UX, mas pode confundir desenvolvedores futuros sobre onde está a "fronteira de segurança real" (RLS + API) se não for documentado explicitamente (este documento faz essa marcação). Sem evidência de que esse cookie seja hoje explorado para bypass de autorização real (a autorização de dados continua sendo decidida por RLS + checagem server-side nas rotas de API, não pelo middleware).
+3. **`docs/WILL_RELEASE_PIPELINE_PLAN_2026_09.md` Fase 1B ainda pendente** — sem staging Supabase dedicado, sem contas de teste, RLS audit no CI é "experimental" contra schema vazio (`continue-on-error`), branch protection ainda depende de ação humana.
 
 ### P2 — Dívida técnica importante
 
-7. **~40 arquivos `.md` legados na raiz do repositório** (auditorias, resumos de fase, prompts de outras ferramentas — `ANALISE_COMPLETA_PROJETO.md`, `PHASE7_VALIDATION_REPORT.md`, `STITCH_*`, etc.) sem curadoria — dificulta saber qual documentação é a fonte de verdade atual (`CLAUDE.md` e `WILLPRO_MASTER_MEMORY.md` são, mas isso não é óbvio para quem chega agora).
-8. **`fix.js` na raiz** — script de patch avulso com caminho absoluto hardcoded para `C:\Users\monte\Desktop\will-treinos-pro\...` (repositório-irmão, fora deste worktree) — código morto, mas mostra o padrão de "scripts de debug soltos no repo" que já gerou o incidente de segurança do Sprint 0D-C.
-9. **Duplicação de nome/responsabilidade:** `LiveLessonCoachPanel.tsx` existe em dois locais (`src/components/` e `src/components/will/`, 443 e 378 linhas); `csvExport.ts` e `exportCsv.ts` como libs paralelas; subsistema de XP fragmentado em 4 arquivos lib (`xpAntiCheat`, `xpEventLogger`, `xpIntegration`, `xpLogger`) com sobreposição de nome — todos candidatos a consolidação, não confirmado o grau real de sobreposição sem leitura de conteúdo linha a linha.
-10. **`CLAUDE.md` desatualizado em relação ao código real** — lista de contexts incompleta (faltam `TrainingProvider` e `GamificationProvider`); é o tipo de deriva que se acumula quando a documentação não é atualizada no mesmo commit que o código.
-11. **`vercel.json` só cobre 1 de 11 rotas de cron** de forma explícita — o mecanismo real de disparo das outras 9 depende de um padrão "orchestrator" não documentado em nenhum lugar visível.
-12. **`@ducanh2912/next-pwa` com 15 vulnerabilidades "high" conhecidas** (dependência transitiva de workbox/webpack) — dívida já documentada e com gate de CI, mas ainda pendente de resolução via migração para Serwist.
-13. **`docs/product-guide/` contém material comercial (apresentação para cliente), não documentação técnica de produto** — pode confundir quem procura "guia do produto" esperando specs técnicas.
+4. **`WillCockpit.tsx` como God Component (3687 linhas)** — **reclassificado nesta correção** (estava listado como P0). Justificativa: concentra a maior parte da lógica/UI do painel admin, o que aumenta o risco de regressão cruzada e dificulta revisão/teste isolado — mas isso é um risco de **manutenibilidade e velocidade de desenvolvimento futuro**, não uma vulnerabilidade ativa, vazamento de dado ou indisponibilidade hoje. Não há evidência de que o tamanho do arquivo, por si só, cause um incidente em produção.
+5. **Ausência de helper Supabase server-side compartilhado** — **reclassificado nesta correção** (estava listado como P0). 44 rotas de API recriam inline o padrão "client anon para validar JWT + client service role para consultar", com pequenas variações entre elas. Isso é dívida arquitetural real — qualquer correção de segurança nesse padrão (como a feita no Sprint 0A) precisa ser replicada rota a rota, aumentando o risco de uma futura inconsistência — mas hoje não há evidência de que exista de fato uma rota inconsistente/vulnerável por causa dessa duplicação (o item 1 desta lista, investigado a fundo, mostrou que o padrão observado em `leaderboard` é intencional, não um esquecimento).
+6. **~40 arquivos `.md` legados na raiz do repositório** (auditorias, resumos de fase, prompts de outras ferramentas — `ANALISE_COMPLETA_PROJETO.md`, `PHASE7_VALIDATION_REPORT.md`, `STITCH_*`, etc.) sem curadoria — dificulta saber qual documentação é a fonte de verdade atual (`CLAUDE.md` e `WILLPRO_MASTER_MEMORY.md` são, mas isso não é óbvio para quem chega agora).
+7. **`fix.js` na raiz** — script de patch avulso com caminho absoluto hardcoded para `C:\Users\monte\Desktop\will-treinos-pro\...` (repositório-irmão, fora deste worktree) — código morto, mas mostra o padrão de "scripts de debug soltos no repo" que já gerou o incidente de segurança do Sprint 0D-C.
+8. **Duplicação de nome/responsabilidade:** `LiveLessonCoachPanel.tsx` existe em dois locais (`src/components/` e `src/components/will/`, 443 e 378 linhas); `csvExport.ts` e `exportCsv.ts` como libs paralelas; subsistema de XP fragmentado em 4 arquivos lib (`xpAntiCheat`, `xpEventLogger`, `xpIntegration`, `xpLogger`) com sobreposição de nome — todos candidatos a consolidação, não confirmado o grau real de sobreposição sem leitura de conteúdo linha a linha.
+9. **`CLAUDE.md` desatualizado em relação ao código real** — lista de contexts incompleta (faltam `TrainingProvider` e `GamificationProvider`); é o tipo de deriva que se acumula quando a documentação não é atualizada no mesmo commit que o código.
+10. **`@ducanh2912/next-pwa` com 15 vulnerabilidades "high" conhecidas** (dependência transitiva de workbox/webpack) — dívida já documentada e com gate de CI, mas ainda pendente de resolução via migração para Serwist.
+11. **`docs/product-guide/` contém material comercial (apresentação para cliente), não documentação técnica de produto** — pode confundir quem procura "guia do produto" esperando specs técnicas.
 
 ### P3 — Melhoria
 
-14. **Dois arquivos com nome de hook em `src/lib/`** (`useAbsenceStreak.ts`, `useBodyScrollLock.ts`) em vez de `src/hooks/` — inconsistência de convenção, baixo risco mas confunde navegação do repo.
-15. **`AGENTS.md` e `CLAUDE.md` têm o mesmo conteúdo (428 linhas cada)** — não confirmado se é intencional (compatibilidade com uma ferramenta que só lê `AGENTS.md`) ou duplicação acidental a ser consolidada.
-16. **Nenhum `screenshots` preenchido no `manifest.json` da PWA** — afeta a qualidade do prompt de instalação em alguns navegadores (melhoria de polish, não bloqueador).
+12. **Dois arquivos com nome de hook em `src/lib/`** (`useAbsenceStreak.ts`, `useBodyScrollLock.ts`) em vez de `src/hooks/` — inconsistência de convenção, baixo risco mas confunde navegação do repo.
+13. **`AGENTS.md` e `CLAUDE.md` têm o mesmo conteúdo (428 linhas cada)** — não confirmado se é intencional (compatibilidade com uma ferramenta que só lê `AGENTS.md`) ou duplicação acidental a ser consolidada.
+14. **Nenhum `screenshots` preenchido no `manifest.json` da PWA** — afeta a qualidade do prompt de instalação em alguns navegadores (melhoria de polish, não bloqueador).
 
 ---
 
@@ -316,13 +330,13 @@ Classificação: **P0** risco crítico · **P1** alto impacto · **P2** dívida 
 - **Toda rota de API → padrão duplicado de Supabase client** — mudança de política de autorização precisa tocar até 44 arquivos se não for centralizada primeiro.
 - **Middleware ↔ `AppContext`/`syncWtRoleCookie`** — o cookie que o middleware lê é escrito pelo client após resolver a sessão; qualquer mudança na lógica de resolução de role em `resolveEffectiveSupabaseRole.ts` precisa ser espelhada no entendimento do middleware sobre valores válidos de `wt_role`.
 - **PWA/Service Worker ↔ Push** — o worker customizado (`worker/index.ts`) e o `next-pwa` geram o `sw.js` final; mudanças em um exigem rebuild completo e nova validação de cache/push (não há testes automatizados desse fluxo confirmados).
-- **CI (`ci.yml`) ↔ `scripts/set-github-ci-secrets.mjs` ↔ GitHub Secrets** — o secret `NEXT_PUBLIC_SUPABASE_ANON_KEY` no GitHub Actions ainda não teve seu formato confirmado como Publishable Key moderna (ação manual pendente, ver `docs/WILL_SECRET_ROTATION_RUNBOOK.md` e o histórico de PRs #13–#15).
+- **CI (`ci.yml`) ↔ `scripts/set-github-ci-secrets.mjs` ↔ GitHub Secrets** — **validado operacionalmente em 2026-09-15:** o secret `NEXT_PUBLIC_SUPABASE_ANON_KEY` no GitHub Actions foi atualizado para a Publishable Key moderna (ver `docs/WILL_SECRET_ROTATION_RUNBOOK.md` e o histórico de PRs #13–#15). `scripts/set-github-ci-secrets.mjs` (PR #15) já valida explicitamente o formato moderno e rejeita JWT legacy caso o script precise ser rodado de novo no futuro.
 
 ---
 
 ## 18. O que este documento NÃO cobre
 
 - Mapeamento RLS tabela-a-tabela (proposto como parte da Sprint 2 — Segurança Funcional).
-- Leitura de conteúdo linha a linha para confirmar duplicações suspeitas (Seção 16, itens 9 e 12) — apenas apontadas por nome/tamanho.
+- Leitura de conteúdo linha a linha para confirmar duplicações suspeitas (Seção 16, itens 8 e 10) — apenas apontadas por nome/tamanho.
 - Auditoria de performance/capacity (Sprint 3 no roadmap de `docs/WILL_PRODUCT_SYSTEM_ARCHITECTURE_2_0.md`).
 - Auditoria de UX/navegação detalhada por tela (Sprint 5 no mesmo roadmap) — aqui só o esqueleto de rotas/fluxos foi mapeado.

@@ -183,7 +183,7 @@ Sem executar nenhuma mudança agora — a intenção documentada aqui vira a Spr
 
 ### PWA
 
-Sprint 4 dedicada. Sem migrar para Serwist nesta sprint (decisão explícita da missão), mas o roadmap já reconhece essa migração como o único caminho real para zerar as 15 vulnerabilidades "high" da árvore `@ducanh2912/next-pwa` (documentado no AS-IS e em `security/dependency-audit-allowlist.json`). Além disso, Sprint 4 deve cobrir: preencher `screenshots` no `manifest.json`, confirmar estratégia de cache do worker customizado, e formalizar o fluxo de re-subscribe de push após rotação de VAPID (já documentado em `docs/WILL_SECRET_ROTATION_RUNBOOK.md`, ainda não implementado no client).
+Sprint 4 dedicada. Sem migrar para Serwist nesta sprint (decisão explícita da missão), mas o roadmap já reconhece essa migração como o único caminho real para zerar as 15 vulnerabilidades "high" da árvore `@ducanh2912/next-pwa` (documentado no AS-IS e em `security/dependency-audit-allowlist.json`). Além disso, Sprint 4 é onde a **rotação do par de chaves VAPID** (ainda pendente — diferente da migração de chaves Supabase, já concluída, ver Seção 10) deve ser efetivamente executada, junto do fluxo de re-subscribe de push já documentado em `docs/WILL_SECRET_ROTATION_RUNBOOK.md` (ainda não implementado no client). Também deve cobrir: preencher `screenshots` no `manifest.json` e confirmar estratégia de cache do worker customizado.
 
 ---
 
@@ -191,7 +191,9 @@ Sprint 4 dedicada. Sem migrar para Serwist nesta sprint (decisão explícita da 
 
 ### Segurança
 
-Mantém os princípios já em `CLAUDE.md` (RLS + servidor como lei, chaves nunca no browser, uploads validados, sessões com TTL). O Will 2.0 adiciona como propriedade arquitetural: **um único ponto de verdade para "isso é staff?"** (Seção 5.1), eliminando o risco de duas rotas divergirem (como quase aconteceu com `leaderboard` sem auth, mapeado no AS-IS). Pendências específicas de segurança funcional (QR falsificável, rotação de chaves Supabase/VAPID ainda não executada) são o conteúdo da Sprint 2.
+Mantém os princípios já em `CLAUDE.md` (RLS + servidor como lei, chaves nunca no browser, uploads validados, sessões com TTL). O Will 2.0 adiciona como propriedade arquitetural: **um único ponto de verdade para "isso é staff?"** (Seção 5.1), reduzindo o risco de rotas futuras divergirem no padrão hoje duplicado 44x (o caso investigado de `leaderboard` sem auth se confirmou intencional e documentado no código, não um esquecimento — ver AS-IS Seção 16, item 1 — mas o princípio de centralizar continua válido para reduzir esse tipo de dúvida no futuro).
+
+**Estado da rotação de chaves (validado operacionalmente em 2026-09-15):** a migração das chaves Supabase para o formato moderno (Publishable Key + Secret Key) está **concluída** — Preview e Production, client-side e server-side, mais o secret do GitHub Actions, todos migrados; as legacy `anon`/`service_role` já foram desativadas no painel do Supabase sem indisponibilidade. **A rotação do par de chaves VAPID continua pendente** e fica sob a Sprint 4 (Seção 12), por ser uma mudança que afeta diretamente `push_subscriptions` existentes — não faz sentido tratá-la junto da segurança funcional genérica da Sprint 2. Pendências específicas de segurança funcional (QR falsificável, revisão staff/RLS tabela-a-tabela, privacidade/termos) continuam sendo o conteúdo da Sprint 2.
 
 ### Observabilidade
 
@@ -222,11 +224,11 @@ Cada sprint tem um dono único de execução (uma IA por vez, conforme regra ope
 
 | Sprint | Nome | Status | Conteúdo |
 |---|---|---|---|
-| **0** | Fundação / Segurança | ✅ **Concluído** | Sprints 0A–0D-C: JWT real em `lesson_ratings`, Permissions-Policy da câmera, dependências vulneráveis do `pnpm audit` (2 críticas → 0), gate de CI real para Dependency Audit + Gitleaks por range, remoção de credenciais versionadas (`check_second_admin.js`, `VERCEL_ENV_CHECKLIST.md`), runbook de rotação de chaves (PRs #2, #12, #13, #14, #15) |
+| **0** | Fundação / Segurança | ✅ **Concluído** | Sprints 0A–0D-C: JWT real em `lesson_ratings`, Permissions-Policy da câmera, dependências vulneráveis do `pnpm audit` (2 críticas → 0), gate de CI real para Dependency Audit + Gitleaks por range, remoção de credenciais versionadas (`check_second_admin.js`, `VERCEL_ENV_CHECKLIST.md`), runbook de rotação de chaves e **migração das chaves Supabase para Publishable/Secret Key moderna concluída** (legacy `anon`/`service_role` desativadas, produção validada) (PRs #2, #12, #13, #14, #15) |
 | **1** | Arquitetura e Mapa do Sistema | ✅ **Este documento** | AS-IS (`WILL_CURRENT_SYSTEM_MAP_2026_09.md`) + TO-BE (este arquivo) |
-| **2** | Segurança Funcional | ⏳ Pendente | QR falsificável (anti-fraude de check-in), execução da rotação Supabase/VAPID já documentada no runbook, revisão staff/RLS tabela-a-tabela, revisão de privacidade/termos |
+| **2** | Segurança Funcional | ⏳ Pendente | QR falsificável (anti-fraude de check-in), revisão staff/RLS tabela-a-tabela, revisão de privacidade/termos, revisão de exposição de nome completo em `GET /api/leaderboard` (AS-IS Seção 16, item 1). Se houver uma etapa preparatória para a rotação VAPID nesta sprint, ela é só auditoria/plano — a execução da rotação em si fica na Sprint 4 |
 | **3** | Performance e Capacity Audit | ⏳ Pendente | Bundle size real por rota, Core Web Vitals de `/dashboard`, revisão de N+1 já corrigidos, plano de capacity para crescimento de alunos/turmas |
-| **4** | PWA / Service Worker / Push | ⏳ Pendente | Plano de migração para Serwist (não executar ainda), `screenshots` do manifest, estratégia de re-subscribe de push pós-rotação VAPID |
+| **4** | PWA / Service Worker / Push | ⏳ Pendente | **Execução da rotação do par de chaves VAPID** (gerar novo par, atualizar Vercel, desativar o antigo) + estratégia de re-subscribe de `push_subscriptions` existentes (Android e iOS PWA instalado), plano de migração para Serwist (não executar ainda), `screenshots` do manifest |
 | **5** | UX / Navegação / Information Architecture | ⏳ Pendente | Navegação-alvo por papel (Seção 7) aplicada de fato, auditoria de telas contra o princípio "1 Hero + 3 sinais + 1 ação" |
 | **6** | Admin 2.0 | ⏳ Pendente | Início da decomposição do `WillCockpit.tsx` por domínio (Financeiro, Analytics primeiro — menor acoplamento) |
 | **7** | Coach 2.0 + Modo Quadra | ⏳ Pendente | Extração do domínio Presença/Training para `domains/`, revisão da experiência "execução na quadra" |
