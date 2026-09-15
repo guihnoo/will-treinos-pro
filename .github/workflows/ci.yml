@@ -56,6 +56,9 @@ jobs:
         run: pnpm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          # Nome do secret mantido por compatibilidade; o valor deve ser uma
+          # Supabase Publishable Key moderna (sb_publishable_...), nunca a
+          # legacy anon JWT — ver scripts/set-github-ci-secrets.mjs.
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
           NEXT_PUBLIC_DEV_ROOT_EMAILS: ${{ secrets.NEXT_PUBLIC_DEV_ROOT_EMAILS }}
