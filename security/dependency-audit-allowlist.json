@@ -1,0 +1,83 @@
+{
+  "$comment": "Allowlist de vulnerabilidades HIGH toleradas temporariamente pelo gate de CI (scripts/ci/check-dependency-audit.mjs). NÃO cobre CRITICAL — nenhuma crítica é tolerada em nenhuma hipótese. Gerada a partir de `pnpm audit --json` real na branch fix/dependencias-seguranca em 2026-09-15.",
+  "version": 1,
+  "generated_at": "2026-09-15",
+  "generated_from": "pnpm audit --json (fix/dependencias-seguranca, pós Sprint 0D-B)",
+  "reason": "legacy next-pwa/workbox — dívida temporária",
+  "planned_removal": "migração do Service Worker de @ducanh2912/next-pwa para Serwist (fora do escopo do Sprint 0D-B)",
+  "required_path_prefix": "@ducanh2912/next-pwa",
+  "entries": [
+    {
+      "ghsa": "GHSA-5c6j-r48x-rmvq",
+      "package": "serialize-javascript",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-fv7c-fp4j-7gwp",
+      "package": "@babel/plugin-transform-modules-systemjs",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-3jxr-9vmj-r5cp",
+      "package": "brace-expansion",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-mh99-v99m-4gvg",
+      "package": "brace-expansion",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-rgw5-rvv9-x895",
+      "package": "brace-expansion",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-v2hh-gcrm-f6hx",
+      "package": "fast-uri",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-7p8r-x3mc-p8w7",
+      "package": "fast-uri",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-q3j6-qgpj-74h6",
+      "package": "fast-uri",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-v39h-62p7-jpjc",
+      "package": "fast-uri",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-f65p-4m7j-42xc",
+      "package": "fast-uri",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-jqff-g426-hqxp",
+      "package": "fast-uri",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    },
+    {
+      "ghsa": "GHSA-4c8g-83qw-93j6",
+      "package": "fast-uri",
+      "reason": "legacy next-pwa/workbox",
+      "planned_removal": "migração Serwist"
+    }
+  ]
+}

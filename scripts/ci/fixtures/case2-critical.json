@@ -1,0 +1,15 @@
+{
+  "_fixture_purpose": "Caso 2 — qualquer CRITICAL deve FALHAR sempre, mesmo que o pacote/GHSA sejam fictícios e a allowlist esteja vazia para ele.",
+  "metadata": { "vulnerabilities": { "info": 0, "low": 0, "moderate": 0, "high": 0, "critical": 1 } },
+  "advisories": {
+    "9000001": {
+      "id": 9000001,
+      "severity": "critical",
+      "module_name": "fixture-pkg-critical",
+      "github_advisory_id": "GHSA-fake-0001-crit",
+      "findings": [
+        { "paths": [".>@ducanh2912/next-pwa>fixture-pkg-critical"] }
+      ]
+    }
+  }
+}

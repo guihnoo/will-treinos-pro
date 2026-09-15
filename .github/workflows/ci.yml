@@ -209,8 +209,22 @@ jobs:
           node-version: "20.x"
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Auditoria de dependências (high+)
-        run: pnpm audit --audit-level=high
+      # O exit code nativo do `pnpm audit` NÃO decide o gate sozinho — ele
+      # sempre é != 0 quando há qualquer vulnerabilidade (mesmo as baseline
+      # conhecidas de @ducanh2912/next-pwa), por isso capturamos o JSON aqui
+      # e quem decide passa/falha é o checker abaixo.
+      - name: Gerar relatório de auditoria (JSON)
+        run: pnpm audit --json > dependency-audit-report.json || true
+      - name: Gate de auditoria de dependências (baseline-aware)
+        run: node scripts/ci/check-dependency-audit.mjs dependency-audit-report.json security/dependency-audit-allowlist.json
+      - name: Self-tests do gate de auditoria
+        run: node scripts/ci/check-dependency-audit.selftest.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-report
+          path: dependency-audit-report.json
+          retention-days: 14
 
   rls-audit:
     name: RLS Audit (experimental)

@@ -1,0 +1,412 @@
+{
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 6,
+      "moderate": 10,
+      "high": 15,
+      "critical": 0
+    },
+    "dependencies": 708,
+    "devDependencies": 0,
+    "optionalDependencies": 0,
+    "totalDependencies": 708
+  },
+  "advisories": {
+    "1113686": {
+      "id": 1113686,
+      "severity": "high",
+      "module_name": "serialize-javascript",
+      "github_advisory_id": "GHSA-5c6j-r48x-rmvq",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>@rollup/plugin-terser>serialize-javascript"
+          ]
+        }
+      ]
+    },
+    "1119440": {
+      "id": 1119440,
+      "severity": "moderate",
+      "module_name": "serialize-javascript",
+      "github_advisory_id": "GHSA-qj8w-gfj5-8c6v",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>@rollup/plugin-terser>serialize-javascript"
+          ]
+        }
+      ]
+    },
+    "1120258": {
+      "id": 1120258,
+      "severity": "high",
+      "module_name": "@babel/plugin-transform-modules-systemjs",
+      "github_advisory_id": "GHSA-fv7c-fp4j-7gwp",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>@babel/preset-env>@babel/plugin-transform-modules-systemjs"
+          ]
+        }
+      ]
+    },
+    "1120802": {
+      "id": 1120802,
+      "severity": "moderate",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-hpcv-96wg-7vj8",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1120803": {
+      "id": 1120803,
+      "severity": "moderate",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-r47g-fvhr-h676",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1120813": {
+      "id": 1120813,
+      "severity": "moderate",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-rp9w-3fw7-7cwq",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1123528": {
+      "id": 1123528,
+      "severity": "low",
+      "module_name": "@babel/core",
+      "github_advisory_id": "GHSA-4x5r-pxfx-6jf8",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>@babel/core"
+          ]
+        }
+      ]
+    },
+    "1123896": {
+      "id": 1123896,
+      "severity": "high",
+      "module_name": "brace-expansion",
+      "github_advisory_id": "GHSA-3jxr-9vmj-r5cp",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>@surma/rollup-plugin-off-main-thread>ejs>jake>filelist>minimatch>brace-expansion"
+          ]
+        }
+      ]
+    },
+    "1123897": {
+      "id": 1123897,
+      "severity": "high",
+      "module_name": "brace-expansion",
+      "github_advisory_id": "GHSA-3jxr-9vmj-r5cp",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>glob>minimatch>brace-expansion"
+          ]
+        }
+      ]
+    },
+    "1124022": {
+      "id": 1124022,
+      "severity": "low",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-c2j3-45gr-mqc4",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1124064": {
+      "id": 1124064,
+      "severity": "high",
+      "module_name": "fast-uri",
+      "github_advisory_id": "GHSA-v2hh-gcrm-f6hx",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>webpack>schema-utils>ajv>fast-uri"
+          ]
+        }
+      ]
+    },
+    "1124233": {
+      "id": 1124233,
+      "severity": "moderate",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-cmwh-pvxp-8882",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1124234": {
+      "id": 1124234,
+      "severity": "low",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-vxr8-fq34-vvx9",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1124235": {
+      "id": 1124235,
+      "severity": "low",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-gvmj-g25r-r7wr",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1124236": {
+      "id": 1124236,
+      "severity": "low",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-x4vx-rjvf-j5p4",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1124237": {
+      "id": 1124237,
+      "severity": "moderate",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-76mc-f452-cxcm",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1130588": {
+      "id": 1130588,
+      "severity": "high",
+      "module_name": "brace-expansion",
+      "github_advisory_id": "GHSA-mh99-v99m-4gvg",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>glob>minimatch>brace-expansion"
+          ]
+        }
+      ]
+    },
+    "1130589": {
+      "id": 1130589,
+      "severity": "high",
+      "module_name": "brace-expansion",
+      "github_advisory_id": "GHSA-mh99-v99m-4gvg",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>@surma/rollup-plugin-off-main-thread>ejs>jake>filelist>minimatch>brace-expansion"
+          ]
+        }
+      ]
+    },
+    "1130720": {
+      "id": 1130720,
+      "severity": "high",
+      "module_name": "fast-uri",
+      "github_advisory_id": "GHSA-7p8r-x3mc-p8w7",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>webpack>schema-utils>ajv>fast-uri"
+          ]
+        }
+      ]
+    },
+    "1130736": {
+      "id": 1130736,
+      "severity": "high",
+      "module_name": "brace-expansion",
+      "github_advisory_id": "GHSA-rgw5-rvv9-x895",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>@surma/rollup-plugin-off-main-thread>ejs>jake>filelist>minimatch>brace-expansion"
+          ]
+        }
+      ]
+    },
+    "1130737": {
+      "id": 1130737,
+      "severity": "high",
+      "module_name": "brace-expansion",
+      "github_advisory_id": "GHSA-rgw5-rvv9-x895",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>workbox-build>glob>minimatch>brace-expansion"
+          ]
+        }
+      ]
+    },
+    "1138538": {
+      "id": 1138538,
+      "severity": "moderate",
+      "module_name": "dompurify",
+      "github_advisory_id": "GHSA-55q2-fjhq-7xh7",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>dompurify"
+          ]
+        }
+      ]
+    },
+    "1145559": {
+      "id": 1145559,
+      "severity": "high",
+      "module_name": "fast-uri",
+      "github_advisory_id": "GHSA-q3j6-qgpj-74h6",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>webpack>schema-utils>ajv>fast-uri"
+          ]
+        }
+      ]
+    },
+    "1153168": {
+      "id": 1153168,
+      "severity": "high",
+      "module_name": "fast-uri",
+      "github_advisory_id": "GHSA-v39h-62p7-jpjc",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>webpack>schema-utils>ajv>fast-uri"
+          ]
+        }
+      ]
+    },
+    "1153170": {
+      "id": 1153170,
+      "severity": "low",
+      "module_name": "postcss-selector-parser",
+      "github_advisory_id": "GHSA-w9m9-85wc-3x92",
+      "findings": [
+        {
+          "paths": [
+            ".>tailwindcss>postcss-selector-parser"
+          ]
+        }
+      ]
+    },
+    "1153174": {
+      "id": 1153174,
+      "severity": "moderate",
+      "module_name": "@opentelemetry/core",
+      "github_advisory_id": "GHSA-8988-4f7v-96qf",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>@opentelemetry/exporter-logs-otlp-http>@opentelemetry/core"
+          ]
+        },
+        {
+          "paths": [
+            ".>posthog-js>@opentelemetry/resources>@opentelemetry/core"
+          ]
+        }
+      ]
+    },
+    "1158524": {
+      "id": 1158524,
+      "severity": "high",
+      "module_name": "fast-uri",
+      "github_advisory_id": "GHSA-f65p-4m7j-42xc",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>webpack>schema-utils>ajv>fast-uri"
+          ]
+        }
+      ]
+    },
+    "1158530": {
+      "id": 1158530,
+      "severity": "high",
+      "module_name": "fast-uri",
+      "github_advisory_id": "GHSA-jqff-g426-hqxp",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>webpack>schema-utils>ajv>fast-uri"
+          ]
+        }
+      ]
+    },
+    "1164786": {
+      "id": 1164786,
+      "severity": "moderate",
+      "module_name": "fflate",
+      "github_advisory_id": "GHSA-px8p-9vwx-vf98",
+      "findings": [
+        {
+          "paths": [
+            ".>posthog-js>fflate"
+          ]
+        }
+      ]
+    },
+    "1204921": {
+      "id": 1204921,
+      "severity": "high",
+      "module_name": "fast-uri",
+      "github_advisory_id": "GHSA-4c8g-83qw-93j6",
+      "findings": [
+        {
+          "paths": [
+            ".>@ducanh2912/next-pwa>webpack>schema-utils>ajv>fast-uri"
+          ]
+        }
+      ]
+    }
+  }
+}
