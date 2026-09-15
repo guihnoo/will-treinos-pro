@@ -120,7 +120,7 @@ jobs:
           # Explicitamente ausente: suites autenticadas NÃO rodam aqui.
           # PLAYWRIGHT_TEST_CREDS / TEST_*_EMAIL → Fase 1B + staging.
           CI: "true"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-smoke
@@ -219,7 +219,7 @@ jobs:
         run: node scripts/ci/check-dependency-audit.mjs dependency-audit-report.json security/dependency-audit-allowlist.json
       - name: Self-tests do gate de auditoria
         run: node scripts/ci/check-dependency-audit.selftest.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: dependency-audit-report
