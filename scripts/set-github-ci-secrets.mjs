@@ -4,13 +4,59 @@
  *
  * Uso:
  *   node scripts/set-github-ci-secrets.mjs
+ *   CI_SECRET_SUPABASE_PUBLISHABLE_KEY=sb_publishable_... node scripts/set-github-ci-secrets.mjs
  *   CI_SECRET_VAPID_PUBLIC_KEY=... node scripts/set-github-ci-secrets.mjs  # override VAPID
+ *
+ * A chave pública do Supabase (destino: secret NEXT_PUBLIC_SUPABASE_ANON_KEY,
+ * nome mantido por compatibilidade com o código atual) SEMPRE precisa ser uma
+ * Publishable Key moderna (formato "sb_publishable_..."). Este script nunca
+ * aceita nem procura a chave legacy no formato JWT ("eyJ...") — ver
+ * assertPublishableKey() abaixo.
  */
 import { execSync } from "child_process";
 import https from "https";
+import { fileURLToPath } from "url";
 
 const REPO = "guihnoo/will-treinos-pro";
 const PROD_BASE = "https://will-treinos-pro.vercel.app";
+
+const PUBLISHABLE_KEY_PREFIX = "sb_publishable_";
+const LEGACY_JWT_PREFIX = "eyJ";
+
+export function isLegacyJwtFormat(value) {
+  return typeof value === "string" && value.startsWith(LEGACY_JWT_PREFIX);
+}
+
+export function isPublishableKeyFormat(value) {
+  return typeof value === "string" && value.startsWith(PUBLISHABLE_KEY_PREFIX);
+}
+
+/**
+ * Valida que `value` é uma Supabase Publishable Key moderna. Nunca imprime o
+ * valor — só o nome da origem (env var, bundle de produção etc.) aparece na
+ * mensagem de erro.
+ */
+export function assertPublishableKey(value, source) {
+  if (!value) {
+    throw new Error(
+      `Não foi possível resolver a Supabase Publishable Key (origem: ${source}). Valor ausente ou vazio.`,
+    );
+  }
+  if (isLegacyJwtFormat(value)) {
+    throw new Error(
+      `Valor resolvido para a Supabase Publishable Key (origem: ${source}) parece ser uma chave ` +
+        `legacy no formato JWT ("eyJ..."). Este script não aceita mais chaves legacy. ` +
+        `Configure uma Publishable Key moderna ("${PUBLISHABLE_KEY_PREFIX}...") via ` +
+        `CI_SECRET_SUPABASE_PUBLISHABLE_KEY, ou garanta que a produção já publica a chave moderna.`,
+    );
+  }
+  if (!isPublishableKeyFormat(value)) {
+    throw new Error(
+      `Valor resolvido para a Supabase Publishable Key (origem: ${source}) não está no formato ` +
+        `esperado ("${PUBLISHABLE_KEY_PREFIX}..."). Abortando para não configurar um secret incorreto.`,
+    );
+  }
+}
 
 function ghTokenFromGitCredential() {
   const input = "protocol=https\nhost=github.com\n\n";
@@ -68,16 +114,39 @@ async function findInProductionBundles(re) {
   return null;
 }
 
+/**
+ * Resolve a Supabase Publishable Key moderna, nesta ordem:
+ *   1. CI_SECRET_SUPABASE_PUBLISHABLE_KEY (override preferencial)
+ *   2. CI_SECRET_SUPABASE_ANON_KEY (nome legado da env de override, mantido
+ *      por compatibilidade temporária — mas o VALOR ainda precisa ser uma
+ *      Publishable Key moderna, nunca a anon JWT legacy)
+ *   3. Auto-descoberta no bundle de produção, procurando SOMENTE o formato
+ *      moderno ("sb_publishable_..."). Sem fallback para o header JWT
+ *      legacy ("eyJhbGci...") em nenhuma hipótese.
+ * Em qualquer caminho, o valor resolvido passa por assertPublishableKey()
+ * antes de ser usado — uma chave legacy nunca chega a ser configurada.
+ */
 async function resolveAnonKey() {
-  if (process.env.CI_SECRET_SUPABASE_ANON_KEY) {
-    return process.env.CI_SECRET_SUPABASE_ANON_KEY;
+  if (process.env.CI_SECRET_SUPABASE_PUBLISHABLE_KEY) {
+    const value = process.env.CI_SECRET_SUPABASE_PUBLISHABLE_KEY;
+    assertPublishableKey(value, "CI_SECRET_SUPABASE_PUBLISHABLE_KEY");
+    return value;
   }
-  const anon =
-    (await findInProductionBundles(
-      /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/,
-    )) ?? null;
-  if (!anon) throw new Error("Could not resolve NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  return anon;
+
+  if (process.env.CI_SECRET_SUPABASE_ANON_KEY) {
+    const value = process.env.CI_SECRET_SUPABASE_ANON_KEY;
+    assertPublishableKey(
+      value,
+      "CI_SECRET_SUPABASE_ANON_KEY (nome legado da env de override; valor precisa ser moderno)",
+    );
+    return value;
+  }
+
+  const fromProd = await findInProductionBundles(
+    new RegExp(`${PUBLISHABLE_KEY_PREFIX}[A-Za-z0-9_-]{20,}`),
+  );
+  assertPublishableKey(fromProd, "bundle de produção");
+  return fromProd;
 }
 
 async function resolveVapidPublicKey() {
@@ -107,22 +176,32 @@ function setSecret(name, value, ghToken) {
   console.log(`OK ${name} (${value.length} chars)`);
 }
 
-const ghToken = ghTokenFromGitCredential();
+async function main() {
+  const ghToken = ghTokenFromGitCredential();
 
-const secrets = {
-  NEXT_PUBLIC_SUPABASE_URL: "https://armrortldtqxmgvvcbko.supabase.co",
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: await resolveAnonKey(),
-  NEXT_PUBLIC_DEV_ROOT_EMAILS: "guihmonteiro.2014@gmail.com,cityvoleicampeonatos@gmail.com",
-  NEXT_PUBLIC_VAPID_PUBLIC_KEY: await resolveVapidPublicKey(),
-};
+  const secrets = {
+    NEXT_PUBLIC_SUPABASE_URL: "https://armrortldtqxmgvvcbko.supabase.co",
+    // Nome do secret mantido por compatibilidade com o código atual — o
+    // VALOR resolvido aqui é sempre uma Publishable Key moderna (validado em
+    // resolveAnonKey()/assertPublishableKey()), nunca a legacy anon JWT.
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: await resolveAnonKey(),
+    NEXT_PUBLIC_DEV_ROOT_EMAILS: "guihmonteiro.2014@gmail.com,cityvoleicampeonatos@gmail.com",
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: await resolveVapidPublicKey(),
+  };
 
-for (const [name, value] of Object.entries(secrets)) {
-  setSecret(name, value, ghToken);
+  for (const [name, value] of Object.entries(secrets)) {
+    setSecret(name, value, ghToken);
+  }
+
+  console.log(
+    execSync(`gh secret list --repo ${REPO}`, {
+      encoding: "utf8",
+      env: { ...process.env, GH_TOKEN: ghToken, GITHUB_TOKEN: ghToken },
+    }),
+  );
 }
 
-console.log(
-  execSync(`gh secret list --repo ${REPO}`, {
-    encoding: "utf8",
-    env: { ...process.env, GH_TOKEN: ghToken, GITHUB_TOKEN: ghToken },
-  }),
-);
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  await main();
+}
