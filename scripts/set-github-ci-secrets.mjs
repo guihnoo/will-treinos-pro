@@ -21,14 +21,31 @@ const REPO = "guihnoo/will-treinos-pro";
 const PROD_BASE = "https://will-treinos-pro.vercel.app";
 
 const PUBLISHABLE_KEY_PREFIX = "sb_publishable_";
+// Corpo da chave: payload não vazio, só caracteres esperados (alfanumérico,
+// underscore, hífen). Fonte única — o padrão "ancorado" (match da string
+// inteira, usado para validar) e o padrão "de busca" (usado para procurar a
+// chave dentro do texto de um bundle) derivam dos MESMOS PUBLISHABLE_KEY_PREFIX
+// e PUBLISHABLE_KEY_BODY, para nunca divergir entre si.
+const PUBLISHABLE_KEY_BODY = "[A-Za-z0-9_-]+";
+const PUBLISHABLE_KEY_PATTERN = new RegExp(`^${PUBLISHABLE_KEY_PREFIX}${PUBLISHABLE_KEY_BODY}$`);
+export const PUBLISHABLE_KEY_SEARCH_PATTERN = new RegExp(`${PUBLISHABLE_KEY_PREFIX}${PUBLISHABLE_KEY_BODY}`);
+
 const LEGACY_JWT_PREFIX = "eyJ";
 
 export function isLegacyJwtFormat(value) {
   return typeof value === "string" && value.startsWith(LEGACY_JWT_PREFIX);
 }
 
+/**
+ * Match ANCORADO da string inteira: exige o prefixo exato "sb_publishable_",
+ * um payload não vazio, e somente os caracteres esperados — nada de prefixo
+ * sozinho, sufixo inválido, ou caracteres fora do conjunto permitido. Não faz
+ * trim: espaços antes/depois (ou embutidos) fazem a validação falhar, em vez
+ * de serem silenciosamente ignorados — política deliberada de rejeitar
+ * whitespace em vez de normalizá-lo.
+ */
 export function isPublishableKeyFormat(value) {
-  return typeof value === "string" && value.startsWith(PUBLISHABLE_KEY_PREFIX);
+  return typeof value === "string" && PUBLISHABLE_KEY_PATTERN.test(value);
 }
 
 /**
@@ -142,9 +159,7 @@ async function resolveAnonKey() {
     return value;
   }
 
-  const fromProd = await findInProductionBundles(
-    new RegExp(`${PUBLISHABLE_KEY_PREFIX}[A-Za-z0-9_-]{20,}`),
-  );
+  const fromProd = await findInProductionBundles(PUBLISHABLE_KEY_SEARCH_PATTERN);
   assertPublishableKey(fromProd, "bundle de produção");
   return fromProd;
 }

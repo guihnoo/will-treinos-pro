@@ -35,8 +35,13 @@ console.log("=== Self-tests: set-github-ci-secrets (validação de formato) ===\
 // Fixtures sintéticas — nenhuma é uma chave real.
 const FAKE_PUBLISHABLE_KEY = "sb_publishable_" + "x".repeat(40);
 const FAKE_LEGACY_JWT = "eyJ" + "a".repeat(20) + "." + "b".repeat(20) + "." + "c".repeat(20);
+const PREFIX_ONLY_NO_PAYLOAD = "sb_publishable_";
+const INVALID_CHARACTER = "sb_publishable_" + "x".repeat(20) + "!" + "x".repeat(20);
+const LEADING_WHITESPACE = " " + FAKE_PUBLISHABLE_KEY;
+const TRAILING_WHITESPACE = FAKE_PUBLISHABLE_KEY + " ";
+const EMBEDDED_WHITESPACE = "sb_publishable_" + "x".repeat(10) + " " + "x".repeat(10);
 
-check("sb_publishable_... é reconhecida como Publishable Key", () => {
+check("sb_publishable_... válida é reconhecida como Publishable Key", () => {
   assert.equal(isPublishableKeyFormat(FAKE_PUBLISHABLE_KEY), true);
 });
 
@@ -48,7 +53,27 @@ check("eyJ... é reconhecida como legacy JWT", () => {
   assert.equal(isLegacyJwtFormat(FAKE_LEGACY_JWT), true);
 });
 
-check("assertPublishableKey aceita sb_publishable_... sem lançar", () => {
+check("prefixo sb_publishable_ sem payload é rejeitado (isPublishableKeyFormat)", () => {
+  assert.equal(isPublishableKeyFormat(PREFIX_ONLY_NO_PAYLOAD), false);
+});
+
+check("caractere inválido (!) no payload é rejeitado (isPublishableKeyFormat)", () => {
+  assert.equal(isPublishableKeyFormat(INVALID_CHARACTER), false);
+});
+
+check("whitespace no início é rejeitado (isPublishableKeyFormat)", () => {
+  assert.equal(isPublishableKeyFormat(LEADING_WHITESPACE), false);
+});
+
+check("whitespace no fim é rejeitado (isPublishableKeyFormat)", () => {
+  assert.equal(isPublishableKeyFormat(TRAILING_WHITESPACE), false);
+});
+
+check("whitespace embutido no meio do payload é rejeitado (isPublishableKeyFormat)", () => {
+  assert.equal(isPublishableKeyFormat(EMBEDDED_WHITESPACE), false);
+});
+
+check("assertPublishableKey aceita sb_publishable_... válida sem lançar", () => {
   assertPublishableKey(FAKE_PUBLISHABLE_KEY, "fixture");
 });
 
@@ -66,6 +91,22 @@ check("assertPublishableKey rejeita valor ausente (undefined)", () => {
 
 check("assertPublishableKey rejeita formato desconhecido (nem publishable nem JWT)", () => {
   assertThrows(() => assertPublishableKey("valor-qualquer-sem-prefixo-reconhecido", "fixture"));
+});
+
+check("assertPublishableKey rejeita prefixo sem payload", () => {
+  assertThrows(() => assertPublishableKey(PREFIX_ONLY_NO_PAYLOAD, "fixture"));
+});
+
+check("assertPublishableKey rejeita caractere inválido no payload", () => {
+  assertThrows(() => assertPublishableKey(INVALID_CHARACTER, "fixture"));
+});
+
+check("assertPublishableKey rejeita whitespace no início", () => {
+  assertThrows(() => assertPublishableKey(LEADING_WHITESPACE, "fixture"));
+});
+
+check("assertPublishableKey rejeita whitespace no fim", () => {
+  assertThrows(() => assertPublishableKey(TRAILING_WHITESPACE, "fixture"));
 });
 
 console.log(`\n${passed} ok, ${failed} falhas`);
