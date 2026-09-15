@@ -1,0 +1,85 @@
+# E2E autenticado — somente manual (workflow_dispatch).
+# Fase 1A: NÃO roda em PR e NÃO é required check.
+# Fase 1B: promover para CI com secrets + Supabase staging (nunca produção).
+#
+# Secrets necessários (ainda ausentes na prática):
+#   PLAYWRIGHT_TEST_CREDS=1
+#   TEST_ADMIN_EMAIL / TEST_ADMIN_PASS
+#   TEST_COACH_EMAIL / TEST_COACH_PASS
+#   TEST_STUDENT_A_EMAIL / TEST_STUDENT_A_PASS
+#   TEST_STUDENT_B_EMAIL / TEST_STUDENT_B_PASS
+#   PLAYWRIGHT_BASE_URL = Preview/staging (NUNCA https://will-treinos-pro.vercel.app para writes)
+
+name: E2E Auth (manual / Fase 1B)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL base (Preview/staging). Proibido apontar writes para produção."
+        required: true
+        default: "http://127.0.0.1:3000"
+
+jobs:
+  e2e-auth:
+    name: E2E Auth (chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar secrets e URL
+        env:
+          PLAYWRIGHT_TEST_CREDS: ${{ secrets.PLAYWRIGHT_TEST_CREDS }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASS: ${{ secrets.TEST_ADMIN_PASS }}
+          BASE_URL: ${{ inputs.base_url }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PLAYWRIGHT_TEST_CREDS:-}" ] || [ -z "${TEST_ADMIN_EMAIL:-}" ] || [ -z "${TEST_ADMIN_PASS:-}" ]; then
+            echo "::error::Secrets de contas de teste ausentes. Configure PLAYWRIGHT_TEST_CREDS e TEST_* antes da Fase 1B."
+            exit 1
+          fi
+          case "$BASE_URL" in
+            *will-treinos-pro.vercel.app*)
+              echo "::error::Proibido usar produção como base URL para E2E autenticado (writes)."
+              exit 1
+              ;;
+          esac
+          echo "URL alvo: $BASE_URL"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - name: Suites autenticadas (staging/preview apenas)
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ inputs.base_url }}
+          PLAYWRIGHT_TEST_CREDS: ${{ secrets.PLAYWRIGHT_TEST_CREDS }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASS: ${{ secrets.TEST_ADMIN_PASS }}
+          TEST_COACH_EMAIL: ${{ secrets.TEST_COACH_EMAIL }}
+          TEST_COACH_PASS: ${{ secrets.TEST_COACH_PASS }}
+          TEST_STUDENT_A_EMAIL: ${{ secrets.TEST_STUDENT_A_EMAIL }}
+          TEST_STUDENT_A_PASS: ${{ secrets.TEST_STUDENT_A_PASS }}
+          TEST_STUDENT_B_EMAIL: ${{ secrets.TEST_STUDENT_B_EMAIL }}
+          TEST_STUDENT_B_PASS: ${{ secrets.TEST_STUDENT_B_PASS }}
+          CI: "true"
+        run: >
+          pnpm exec playwright test
+          e2e/admin-approval-flow.spec.ts
+          e2e/rls-isolation.spec.ts
+          e2e/offline-sync.spec.ts
+          --project=chromium
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-auth
+          path: playwright-report/
+          retention-days: 7

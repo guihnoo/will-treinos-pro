@@ -1,102 +1,60 @@
-# E2E Tests — Will Treinos PRO
+# Testes E2E — Will Treinos PRO
 
-End-to-end tests for critical user flows using Playwright.
+Testes end-to-end com Playwright. Conteúdo e documentação em **pt-BR**.
 
 ## Setup
 
 ```bash
-# Install Playwright if not already done
 pnpm install
-
-# Install browsers (required once)
 pnpm exec playwright install
 ```
 
-## Running Tests
+## Execução local
 
 ```bash
-# Run all tests
+# Todos os testes
 pnpm exec playwright test
 
-# Run specific test file
-pnpm exec playwright test gamification-ui.spec.ts
+# Smoke público (mesmo conjunto do CI Fase 1A)
+pnpm exec playwright test e2e/student-journey.spec.ts e2e/auth.spec.ts --project=chromium
 
-# Run in UI mode (watch mode with visual inspector)
+# UI mode / headed / debug
 pnpm exec playwright test --ui
-
-# Run with headed browser (see what's happening)
 pnpm exec playwright test --headed
-
-# Debug mode
 pnpm exec playwright test --debug
 ```
 
-## Test Files
+Base URL padrão: `http://localhost:3000` (sobe `pnpm dev` via `webServer` se `PLAYWRIGHT_BASE_URL` não estiver definido).
 
-### `gamification-ui.spec.ts` — Component & Integration Tests
-Tests that validate Gamification UI components render correctly and integrate properly:
-- XPBadge structure and responsiveness
-- AwardShowcase displays all 5 tiers
-- GamificationPanel layout
-- Training + Gamification integration
-- Dashboard displays gamification data
+## Suites
 
-**Status:** ✅ Ready to run (UI tests, no backend mocking needed)
+| Arquivo | Auth? | No CI PR (1A)? |
+|---|---|---|
+| `student-journey.spec.ts` | Não | ✅ Sim |
+| `auth.spec.ts` | Não (UI / redirect / erro) | ✅ Sim |
+| `admin-approval-flow.spec.ts` | Sim (`PLAYWRIGHT_TEST_CREDS`) | ❌ Manual / 1B |
+| `rls-isolation.spec.ts` | Sim | ❌ Manual / 1B |
+| `offline-sync.spec.ts` | Sim | ❌ Manual / 1B |
+| `gamification-*.spec.ts` / `xp-*` / `training-plans-*` | Sim | ❌ |
+| `push-notifications.spec.ts` | Parcial | ❌ |
+| `full-audit.spec.ts` | Híbrido | ❌ Nightly futuro |
 
-### `gamification-training-flow.spec.ts` — Full Flow Test
-End-to-end test simulating:
-1. Student logs in
-2. Navigates to /treinos
-3. Completes a training plan
-4. XP is logged to Supabase
-5. Dashboard updates in real-time
-6. Award tiers reflect new XP
+Specs autenticados usam `test.skip` sem `PLAYWRIGHT_TEST_CREDS` — isso **não** é falso-verde no job de smoke (essas suites simplesmente não são invocadas no PR).
 
-**Status:** ⚠️ Requires test user credentials (see `playwright.config.ts`)
+## CI (Fase 1A)
 
-## Configuration
+Ver `docs/WILL_CI_FASE_1A.md` e `.github/workflows/ci.yml`.
 
-See `playwright.config.ts` for:
-- Base URL (localhost:3000 for dev, deployed URL for staging)
-- Browser settings (Chromium, Firefox, Webkit)
-- Timeout settings
-- Screenshot/video on failure
+- Smoke em todo PR contra `http://127.0.0.1:3000` (build + `next start`)
+- **Proibido** apontar E2E autenticado para produção
+- Auth E2E: `.github/workflows/e2e-auth-manual.yml` (`workflow_dispatch`)
 
-## CI/CD Integration
+## Credenciais (Fase 1B)
 
-To add to GitHub Actions:
+Contas dedicadas de teste + projeto Supabase **staging**. Nunca contas humanas reais no CI.
 
-```yaml
-name: E2E Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm exec playwright install --with-deps
-      - run: pnpm exec playwright test
-```
+## Próximos passos
 
-## Next Steps
-
-1. **Run UI tests** to verify component rendering:
-   ```bash
-   pnpm exec playwright test gamification-ui.spec.ts
-   ```
-
-2. **Update test credentials** in `.env.test` if full flow test is needed
-
-3. **Add to CI/CD** pipeline for automated testing on every push
-
-4. **Expand coverage** for:
-   - Coach features (evaluation, check-in flow)
-   - Admin cockpit
-   - Payment flow
-   - Real-time Supabase features (Realtime subscriptions)
+1. Branch protection com required checks da 1A  
+2. Staging + secrets para promover auth E2E  
+3. Mobile Chrome smoke na 1B  

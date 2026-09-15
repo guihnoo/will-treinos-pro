@@ -1,0 +1,197 @@
+# Will Treinos PRO — CI Fase 1A
+# Gates reais de Pull Request antes de merge em main.
+# Ver: docs/WILL_RELEASE_PIPELINE_PLAN_2026_09.md (§17 Fase 1A)
+#      docs/WILL_CI_FASE_1A.md
+#
+# Nomes dos jobs = nomes dos required checks no GitHub Branch Protection.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_POSTHOG_HOST: https://us.posthog.com
+  # Build de PR/CI usa URL local — nunca produção como base de escrita E2E.
+  NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+
+jobs:
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build Next.js
+        run: pnpm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          NEXT_PUBLIC_DEV_ROOT_EMAILS: ${{ secrets.NEXT_PUBLIC_DEV_ROOT_EMAILS }}
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+          NEXT_PUBLIC_POSTHOG_HOST: https://us.posthog.com
+
+  e2e-smoke:
+    name: E2E Smoke (chromium)
+    runs-on: ubuntu-latest
+    needs: build
+    # Roda em todo PR e em push na main — sem apontar writes para produção.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build para smoke local
+        run: pnpm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          NEXT_PUBLIC_DEV_ROOT_EMAILS: ${{ secrets.NEXT_PUBLIC_DEV_ROOT_EMAILS }}
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+          NEXT_PUBLIC_POSTHOG_HOST: https://us.posthog.com
+      - name: Instalar Chromium (Playwright)
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Subir app (next start)
+        run: |
+          nohup pnpm exec next start -H 127.0.0.1 -p 3000 > /tmp/will-next.log 2>&1 &
+          echo $! > /tmp/will-next.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3000/api/health >/dev/null; then
+              echo "App pronto em http://127.0.0.1:3000"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Timeout aguardando /api/health"
+          cat /tmp/will-next.log || true
+          exit 1
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+          PORT: "3000"
+      - name: Smoke E2E público (sem credenciais)
+        run: >
+          pnpm exec playwright test
+          e2e/student-journey.spec.ts
+          e2e/auth.spec.ts
+          --project=chromium
+        env:
+          # NUNCA produção neste job — evita poluir dados reais.
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+          # Explicitamente ausente: suites autenticadas NÃO rodam aqui.
+          # PLAYWRIGHT_TEST_CREDS / TEST_*_EMAIL → Fase 1B + staging.
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-smoke
+          path: playwright-report/
+          retention-days: 7
+      - name: Encerrar app
+        if: always()
+        run: |
+          if [ -f /tmp/will-next.pid ]; then
+            kill "$(cat /tmp/will-next.pid)" 2>/dev/null || true
+          fi
+
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Binário oficial (sem licença da Action comercial em repo privado).
+      - name: Instalar Gitleaks
+        env:
+          GITLEAKS_VERSION: "8.21.2"
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+      - name: Scan de secrets
+        run: gitleaks detect --source . --verbose --redact --config .gitleaks.toml
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Auditoria de dependências (high+)
+        run: pnpm audit --audit-level=high
+
+  rls-audit:
+    name: RLS Audit (experimental)
+    runs-on: ubuntu-latest
+    # Fase 1A: NÃO é required check. Schema vazio ainda pode gerar falso-verde;
+    # job marcado experimental até migrations reais no CI (Fase 1B).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ankane/setup-postgres@v1
+        with:
+          postgres-version: 15
+      - name: Aviso — job experimental
+        run: |
+          echo "::warning::RLS Audit é experimental na Fase 1A (Postgres sem migrations)."
+          echo "Não usar como required check até a Fase 1B."
+      - name: Executar script RLS
+        run: psql postgres://postgres:postgres@localhost/postgres -f supabase/rls-audit.sql 2>&1 | tee rls-audit.log
+        continue-on-error: true
+      - name: Avaliar saída
+        run: |
+          if grep -q "FAILED" rls-audit.log 2>/dev/null; then
+            echo "⚠️ Issues RLS no log — revisar (job experimental, não bloqueia merge na 1A)"
+            cat rls-audit.log
+            exit 1
+          fi
+          echo "ℹ️ Sem FAILED no log — NÃO significa RLS OK em produção (schema CI incompleto)."
+          cat rls-audit.log
