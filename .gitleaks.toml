@@ -1,0 +1,7 @@
+# Will Treinos PRO — Gitleaks (Fase 1A)
+# Estende o ruleset padrão. Allowlist só com justificativa em PR.
+
+title = "Will Treinos PRO"
+
+[extend]
+useDefault = true

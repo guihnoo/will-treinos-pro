@@ -1,0 +1,34 @@
+# Smoke read-only pós-deploy em produção.
+# NÃO executa Playwright autenticado nem mutações.
+# Alerta operacional — configurar como required opcional; falha não faz rollback automático (Fase 1A).
+
+name: Smoke Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  health:
+    name: Production Health
+    runs-on: ubuntu-latest
+    steps:
+      - name: GET /api/health (produção, somente leitura)
+        run: |
+          set -euo pipefail
+          URL="https://will-treinos-pro.vercel.app/api/health"
+          echo "Consultando $URL"
+          code=$(curl -sS -o /tmp/will-health.json -w "%{http_code}" --max-time 30 "$URL")
+          echo "HTTP $code"
+          cat /tmp/will-health.json
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Health check falhou (HTTP $code)"
+            exit 1
+          fi
+          if ! grep -q '"ok":true\|"ok": true' /tmp/will-health.json; then
+            echo "::error::Resposta de health sem ok:true"
+            exit 1
+          fi
+          echo "✅ Produção respondeu /api/health com OK"
