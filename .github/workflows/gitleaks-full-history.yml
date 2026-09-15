@@ -17,7 +17,7 @@ jobs:
     # Explicitamente NÃO é required check / branch protection.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Instalar Gitleaks
