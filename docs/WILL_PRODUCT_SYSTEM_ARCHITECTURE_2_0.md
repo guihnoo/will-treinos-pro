@@ -140,6 +140,8 @@ Função principal: dar ao dono do negócio uma leitura rápida de saúde geral 
 
 Função principal: dar ao professor uma ferramenta rápida de uso **durante** a aula (Modo Quadra, avaliação em poucos toques) e uma visão pós-aula (o que avaliar, quem faltou, quem precisa de atenção). A prancheta de avaliação já segue esse espírito (5 sliders + feedback opcional escondido) — o 2.0 estende esse padrão para o resto da experiência do coach, priorizando velocidade de toque sobre densidade de dados.
 
+> ⚠️ **Mudança de RBAC/rota necessária (não é comportamento atual):** o AS-IS (`WILL_CURRENT_SYSTEM_MAP_2026_09.md`, Seção 3) confirma que hoje `/will/court` e `/will/court/[lessonId]/live` — as telas que fisicamente implementam "Modo Quadra" — são acessíveis **somente a admin/owner** (`PREFIX_ROLE_GUARD["/will"] = ["will_owner"]` em `src/domain/v1/rbac.ts`; professor está mapeado só ao prefixo `/prof`). A visão de produto "Professor = execução na quadra" descrita aqui é **alvo do Will 2.0**, e exige que a Sprint 7 (Coach 2.0 + Modo Quadra, Seção 12) inclua explicitamente uma mudança de RBAC/rota (ex.: mover Modo Quadra para dentro de `/prof/*`, ou ampliar `PREFIX_ROLE_GUARD["/will"]` para incluir `professor` nas sub-rotas de quadra) — **nenhuma mudança de RBAC foi feita neste PR**, isso é trabalho futuro de uma sprint dedicada.
+
 ### Atleta/Aluno — "progresso e pertencimento"
 
 Função principal: fazer o aluno **voltar todo dia** por progresso visível (XP, cards, streaks) e pertencimento social (feed, ranking de turma). A regra "zero facilidade" na gamificação (cards não destravam fácil) é uma escolha de produto deliberada — o 2.0 não a relaxa, apenas garante que a experiência em torno dela (onde estou, quanto falta, o que fiz essa semana) seja clara sem precisar abrir múltiplos modais para entender.
@@ -151,7 +153,7 @@ Função principal: fazer o aluno **voltar todo dia** por progresso visível (XP
 Mantém o padrão **Modal-First** já estabelecido (não é uma mudança) — `router.push()` só para navegação de seção, fluxos de trabalho abrem sobre a tela atual. A mudança-alvo é de **quais seções existem por papel**, não do padrão de navegação em si:
 
 - **Admin:** Hoje/Alertas · Turma · Financeiro · Feed · Configurações (já reorganizado em Cockpit por auditoria de UX de junho/2026 segundo o histórico do produto — o 2.0 formaliza essa divisão como fronteira de domínio, não só de aba visual).
-- **Professor:** Quadra (Modo Quadra + avaliação) · Agenda · Turma · Feed.
+- **Professor:** Quadra (Modo Quadra + avaliação) · Agenda · Turma · Feed. **Depende de mudança de RBAC/rota ainda não feita** — ver aviso na Seção 6.
 - **Aluno:** Hoje (treino do dia, XP) · Treinos · Feed · Ranking · Perfil.
 
 Nenhuma navegação nova precisa ser implementada nesta sprint — isso é input para a Sprint 5 (UX / Navegação / Information Architecture) do roadmap.
@@ -160,15 +162,25 @@ Nenhuma navegação nova precisa ser implementada nesta sprint — isso é input
 
 ## 8. Estratégia de refatoração
 
-**Regra geral: incremental, por domínio, nunca "big bang".** Cada sprint do roadmap (Seção 12) que envolve refactor (6, 7, 8, 9) escolhe **um domínio por vez**, extrai seus arquivos de `components/`/`hooks/`/`lib/`/`context/` para `domains/<nome>/`, e só então remove o código antigo do lugar original — nunca as duas coisas em paralelo por muito tempo.
+**Regra geral: incremental, por domínio, nunca "big bang".** Mas "incremental por domínio" ainda deixa uma pergunta em aberto: **na ordem de qual coisa?** Este documento separa deliberadamente duas ordens diferentes, que **não precisam coincidir**:
 
-Ordem sugerida de extração (do menor risco para o maior):
+### 8.1 Roadmap de produto (por papel) — Seção 12, Sprints 6–9
+
+Ordem definida por **prioridade de negócio**: qual experiência de papel (Admin, Coach, Athlete, Feed) recebe atenção de UX/produto primeiro. Essa ordem já reflete decisões de produto tomadas antes desta sprint (ex.: Admin como Sprint 6 por ser a experiência mais usada no dia a dia operacional) e **não é alterada por este documento** — mexer nessa ordem só por conveniência técnica de pastas seria subordinar prioridade de negócio a conveniência de refactor, o que é o oposto do que faz sentido.
+
+### 8.2 Roadmap técnico de extração (por menor risco) — esta seção
+
+Ordem separada, definida por **menor risco de regressão ao mover código para `domains/<nome>/`**:
 1. **Gamificação** — já é um domínio bem isolado (context próprio, tabelas próprias), bom primeiro caso de teste do padrão `domains/`.
 2. **Presença/QR** — igualmente isolado, e tem um item de segurança pendente (QR falsificável) que se beneficia de estar num lugar único.
 3. **Training** — médio acoplamento com Performance.
-4. **Financeiro/Admin** e **WillCockpit** por último — maior risco, exige o Cockpit já estar decomposto por domínio antes de tentar movê-lo.
+4. **Financeiro/Admin** e **WillCockpit** por último — maior risco, exige que os domínios que hoje vivem *dentro* do Cockpit (Financeiro, Analytics, etc.) já tenham sido extraídos individualmente antes de o Cockpit em si deixar de ser o dono da lógica deles.
 
-Cada extração deve manter os testes E2E existentes passando (Playwright) antes de ser considerada concluída.
+### 8.3 Como as duas ordens se relacionam (a dependência explícita que faltava)
+
+**A Sprint 6 (Admin 2.0, roadmap de produto) NÃO é o primeiro piloto de extração técnica de domínio** — isso seria inconsistente com a Seção 8.2, que coloca Financeiro/Admin/WillCockpit por último por serem o maior risco técnico. O que a Sprint 6 de fato entrega é **trabalho de produto/UX na experiência do Admin** (aplicar Fast Before Fancy, 1 Hero + 3 sinais, ao que o Cockpit já mostra hoje) — sem depender de o `WillCockpit.tsx` já estar fisicamente decomposto em `domains/`. A extração técnica de Admin/WillCockpit (Seção 8.2, item 4) só acontece depois que Gamificação, Presença/QR e Training (Sprints 8, 7 e parte da 7, respectivamente, no roadmap de produto) já tiverem servido de prova de conceito do padrão `domains/` em código de menor risco. Ou seja: **o roadmap de produto decide a ordem de valor entregue ao usuário; o roadmap técnico decide a ordem de extração de pastas — a segunda tende a terminar depois da primeira para os domínios de Admin/Financeiro, e isso é esperado, não uma inconsistência.**
+
+Cada extração técnica deve manter os testes E2E existentes passando (Playwright) antes de ser considerada concluída, independentemente de qual sprint de produto estiver em andamento no momento.
 
 ---
 
@@ -222,6 +234,8 @@ Sem mudanças de infraestrutura previstas nesta sprint. Pontos a observar quando
 
 Cada sprint tem um dono único de execução (uma IA por vez, conforme regra operacional já em vigor no projeto) e produz um PR próprio, sem mesclar em `main` sem revisão humana.
 
+> **Nota de leitura — Sprints 6–9:** esta tabela é o **roadmap de produto** (ordem de valor entregue por papel). A **ordem técnica de extração de código para `domains/`** é uma sequência separada, definida por menor risco (Seção 8.2: Gamificação → Presença/QR → Training → Financeiro/Admin/WillCockpit por último). As duas ordens não coincidem por design — ver Seção 8.3 para a explicação completa de como elas se relacionam.
+
 | Sprint | Nome | Status | Conteúdo |
 |---|---|---|---|
 | **0** | Fundação / Segurança | ✅ **Concluído** | Sprints 0A–0D-C: JWT real em `lesson_ratings`, Permissions-Policy da câmera, dependências vulneráveis do `pnpm audit` (2 críticas → 0), gate de CI real para Dependency Audit + Gitleaks por range, remoção de credenciais versionadas (`check_second_admin.js`, `VERCEL_ENV_CHECKLIST.md`), runbook de rotação de chaves e **migração das chaves Supabase para Publishable/Secret Key moderna concluída** (legacy `anon`/`service_role` desativadas, produção validada) (PRs #2, #12, #13, #14, #15) |
@@ -230,10 +244,10 @@ Cada sprint tem um dono único de execução (uma IA por vez, conforme regra ope
 | **3** | Performance e Capacity Audit | ⏳ Pendente | Bundle size real por rota, Core Web Vitals de `/dashboard`, revisão de N+1 já corrigidos, plano de capacity para crescimento de alunos/turmas |
 | **4** | PWA / Service Worker / Push | ⏳ Pendente | **Execução da rotação do par de chaves VAPID** (gerar novo par, atualizar Vercel, desativar o antigo) + estratégia de re-subscribe de `push_subscriptions` existentes (Android e iOS PWA instalado), plano de migração para Serwist (não executar ainda), `screenshots` do manifest |
 | **5** | UX / Navegação / Information Architecture | ⏳ Pendente | Navegação-alvo por papel (Seção 7) aplicada de fato, auditoria de telas contra o princípio "1 Hero + 3 sinais + 1 ação" |
-| **6** | Admin 2.0 | ⏳ Pendente | Início da decomposição do `WillCockpit.tsx` por domínio (Financeiro, Analytics primeiro — menor acoplamento) |
-| **7** | Coach 2.0 + Modo Quadra | ⏳ Pendente | Extração do domínio Presença/Training para `domains/`, revisão da experiência "execução na quadra" |
-| **8** | Athlete 2.0 | ⏳ Pendente | Extração do domínio Gamificação para `domains/`, revisão da experiência "progresso e pertencimento" |
-| **9** | Feed 2.0 | ⏳ Pendente | Extração do domínio Feed & Comunidade, revisão de moderação |
+| **6** | Admin 2.0 | ⏳ Pendente | Revisão de **produto/UX** do Cockpit sob Fast Before Fancy (1 Hero + 3 sinais + 1 ação) — sem depender da extração técnica de `WillCockpit.tsx`, que continua sendo o item de **maior risco** e **último** na ordem técnica da Seção 8.2 |
+| **7** | Coach 2.0 + Modo Quadra | ⏳ Pendente | Revisão de produto/UX da experiência do professor + **mudança de RBAC/rota necessária** para liberar Modo Quadra (ver aviso na Seção 6). Candidata natural para a extração técnica de **Presença/QR** (2º item da ordem técnica, Seção 8.2), já que a sprint mexe diretamente nessa área |
+| **8** | Athlete 2.0 | ⏳ Pendente | Revisão de produto/UX da experiência do aluno. Candidata natural para a extração técnica de **Gamificação** (1º item, menor risco) e possivelmente **Training** (3º item), Seção 8.2 |
+| **9** | Feed 2.0 | ⏳ Pendente | Revisão de produto/UX + moderação do Feed & Comunidade |
 | **10** | Performance System | ⏳ Pendente | Consolidação do domínio Performance (avaliações, scouting, fundamentos, posições) |
 | **11** | Gamificação | ⏳ Pendente | Consolidação dos 4 arquivos lib de XP fragmentados (`xpAntiCheat`, `xpEventLogger`, `xpIntegration`, `xpLogger`) num módulo único do domínio |
 | **12** | Escala / Observabilidade / Hardening | ⏳ Pendente | Dashboards de saúde por domínio, revisão de plano Vercel/cron, hardening final antes de abrir para mais clientes |
