@@ -109,8 +109,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // XP de check-in: valor fixo decidido pelo servidor (mesma regra hoje
   // usada por FIXED_XP_VALUES.checkin em src/lib/xpEventLogger.ts — 50 XP).
-  // Best-effort: se o insert falhar, a presença já registrada continua
-  // válida (não bloqueia o check-in por causa da auditoria de XP).
+  //
+  // XP é BEST-EFFORT nesta PR, deliberadamente — a presença (linha crítica
+  // de segurança/negócio: "o aluno esteve na aula") já foi confirmada pela
+  // RPC acima antes de chegarmos aqui, e não deve ser desfeita nem
+  // bloqueada por causa de uma falha no log de XP:
+  //   - se este insert falhar, a presença registrada continua válida e a
+  //     resposta ainda é "success" (com xpEarned: 0, ver abaixo);
+  //   - um retry do mesmo check-in (mesmo token, ainda dentro do TTL) cai
+  //     no ramo `already_present` da RPC acima e retorna
+  //     "already_checked_in" SEM tentar inserir XP de novo — ou seja, não
+  //     há um mecanismo automático de "tentar de novo só o XP que falhou"
+  //     nesta PR, e o aluno pode legitimamente ficar com presença
+  //     registrada mas sem o XP daquela aula se o insert falhar uma vez;
+  //   - uma estratégia de reconciliação (detectar/reprocessar check-ins
+  //     com presença confirmada mas sem xp_log correspondente) fica para
+  //     a Sprint 2A.2 — XP Integration Hardening, junto do achado mais
+  //     amplo de policies conflitantes em xp_log. Não implementada aqui
+  //     para não expandir o escopo desta PR de segurança.
   //
   // xp_log.student_id É FK para students(auth_user_id), NÃO para
   // students.id (ver supabase/migrations/20260505150000_xp_log.sql) — por

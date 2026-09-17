@@ -14,6 +14,17 @@
 -- necessidade de elevar privilégio dentro da função — evita ampliar a
 -- superfície de escalonamento.
 --
+-- `set search_path = public`: fixa o search_path da função (boa prática
+-- para funções SQL/plpgsql — evita que um search_path malicioso/alterado
+-- na sessão que chama a função faça `lessons` resolver para uma tabela
+-- de outro schema).
+--
+-- REVOKE/GRANT ao final do arquivo: a RPC só pode ser chamada com a
+-- service role (é assim que o endpoint server-side de check-in a
+-- invoca). `anon`/`authenticated` NÃO podem chamar esta função
+-- diretamente via PostgREST (`/rest/v1/rpc/register_lesson_checkin`) —
+-- só o servidor, usando SUPABASE_SERVICE_ROLE_KEY, pode.
+--
 -- Esta migration NÃO foi aplicada no Supabase remoto. Ela deve ser
 -- aplicada manualmente/via pipeline de release controlado, fora desta
 -- sprint (ver docs/WILL_RELEASE_PIPELINE_PLAN_2026_09.md).
@@ -29,6 +40,7 @@ returns table (
   already_present boolean
 )
 language plpgsql
+set search_path = public
 as $$
 declare
   v_status text;
@@ -75,3 +87,13 @@ $$;
 
 comment on function public.register_lesson_checkin(text, text) is
   'Sprint 2A — registra presença de aluno em uma aula de forma atômica (FOR UPDATE), evitando lost update em check-ins concorrentes. Chamada só pelo endpoint server-side de check-in via QR, usando SERVICE_ROLE_KEY.';
+
+-- Restringe quem pode executar a função via PostgREST/API. PostgREST
+-- concede EXECUTE a `public` por padrão em `create or replace function` —
+-- sem estes REVOKEs, `anon`/`authenticated` conseguiriam chamar a RPC
+-- diretamente (bypassando o endpoint server-side e sua validação de
+-- token/enrollment). Só `service_role` pode executar esta função.
+revoke execute on function public.register_lesson_checkin(text, text) from public;
+revoke execute on function public.register_lesson_checkin(text, text) from anon;
+revoke execute on function public.register_lesson_checkin(text, text) from authenticated;
+grant execute on function public.register_lesson_checkin(text, text) to service_role;
