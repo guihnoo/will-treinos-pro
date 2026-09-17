@@ -58,6 +58,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   // Resolve o aluno a partir do JWT verificado — o client nunca escolhe studentId.
+  // Dois identificadores distintos coexistem aqui — não misturar:
+  //   - student.id     (CRM, students.id)         → presença (enrolled_students/
+  //                                                   present_students/RPC)
+  //   - user.id         (auth.users.id)             → xp_log.student_id, que é FK
+  //                                                   para students(auth_user_id),
+  //                                                   não para students.id
+  //                                                   (ver supabase/migrations/
+  //                                                   20260505150000_xp_log.sql)
   const { data: student } = await sb
     .from("students")
     .select("id, status")
@@ -76,6 +84,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     already_present: boolean;
   };
 
+  // PRESENÇA usa o CRM id (student.id) — é o formato armazenado em
+  // lessons.enrolled_students/present_students.
   const { data: rpcResult, error: rpcError } = await sb
     .rpc("register_lesson_checkin", { p_lesson_id: lessonId, p_student_id: student.id })
     .maybeSingle<RegisterCheckinResult>();
@@ -101,9 +111,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // usada por FIXED_XP_VALUES.checkin em src/lib/xpEventLogger.ts — 50 XP).
   // Best-effort: se o insert falhar, a presença já registrada continua
   // válida (não bloqueia o check-in por causa da auditoria de XP).
+  //
+  // xp_log.student_id É FK para students(auth_user_id), NÃO para
+  // students.id (ver supabase/migrations/20260505150000_xp_log.sql) — por
+  // isso usa user.id (já validado por auth.getUser() acima), não
+  // student.id. Usar student.id aqui violaria a FK / gravaria sob o
+  // identificador errado.
   const CHECKIN_XP_POINTS = 50;
   const { error: xpError } = await sb.from("xp_log").insert({
-    student_id: student.id,
+    student_id: user.id,
     points: CHECKIN_XP_POINTS,
     base_points: CHECKIN_XP_POINTS,
     multiplier_type: "none",
