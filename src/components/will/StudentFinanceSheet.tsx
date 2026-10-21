@@ -2,9 +2,12 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, CheckCircle2, Clock3, AlertTriangle, DollarSign, Circle } from "lucide-react";
+import { X, CheckCircle2, Clock3, AlertTriangle, DollarSign, Circle, Calendar, Save } from "lucide-react";
 import type { Student, Payment, PaymentStatus } from "@/context/types";
 import { usePayments } from "@/context/PaymentsContext";
+import { useStudents } from "@/context/StudentsContext";
+import { useToast } from "@/components/Toast";
+import { triggerHapticImpact, triggerHapticCelebration } from "@/lib/hapticFeedback";
 import { MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import {
   MODAL_BODY_SCROLL,
@@ -66,9 +69,18 @@ const STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }>
 
 export default function StudentFinanceSheet({ student, onClose }: Props) {
   const { markPayment } = usePayments();
+  const { updateStudent } = useStudents();
+  const { toast } = useToast();
   const [rows, setRows] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [markingId, setMarkingId] = useState<string | null>(null);
+
+  // Setup financeiro editável pelo professor
+  const [paymentDay, setPaymentDay] = useState<number>(student.paymentDay || 5);
+  const [monthlyValue, setMonthlyValue] = useState<number>(student.monthlyValue || 0);
+  const [plan, setPlan] = useState<string>(student.plan || "Performance Mensal");
+  const [isEditingSetup, setIsEditingSetup] = useState(false);
+  const [savingSetup, setSavingSetup] = useState(false);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -104,10 +116,30 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
     void fetchPayments();
   }, [fetchPayments]);
 
-  const handleMarkPayment = async (paymentId: string) => {
-    setMarkingId(paymentId);
+  const handleSaveSetup = async () => {
+    setSavingSetup(true);
     try {
-      await markPayment(paymentId);
+      updateStudent(student.id, {
+        paymentDay: Number(paymentDay),
+        monthlyValue: Number(monthlyValue),
+        plan,
+      });
+      triggerHapticCelebration();
+      toast("Setup financeiro do aluno atualizado!");
+      setIsEditingSetup(false);
+    } catch {
+      toast("Erro ao salvar configuração.", "error");
+    } finally {
+      setSavingSetup(false);
+    }
+  };
+
+  const handleMarkPayment = async (paymentId: string, method: string = "pix") => {
+    setMarkingId(paymentId);
+    triggerHapticImpact("medium");
+    try {
+      await markPayment(paymentId, method);
+      triggerHapticCelebration();
       // Optimistic update
       setRows((prev) =>
         prev.map((r) =>
@@ -225,6 +257,101 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
 
           {/* Body */}
           <div className={`${MODAL_BODY_SCROLL} px-5 py-4`}>
+            {/* Setup Financeiro (Dia de Vencimento e Mensalidade) */}
+            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-3.5 space-y-3 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#EAB308]" />
+                  <span className="text-[11px] font-bold text-zinc-200 uppercase tracking-wider">
+                    Condições da Mensalidade
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingSetup(!isEditingSetup)}
+                  className="text-xs font-bold text-[#EAB308] hover:underline"
+                >
+                  {isEditingSetup ? "Cancelar" : "Editar Condições"}
+                </button>
+              </div>
+
+              {!isEditingSetup ? (
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-xl bg-black/40 border border-zinc-800/60 p-2.5">
+                    <p className="text-[10px] text-zinc-500 font-semibold uppercase">Dia de Vencimento</p>
+                    <p className="font-black text-white mt-0.5">
+                      Todo dia {student.paymentDay || 5} do mês
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-black/40 border border-zinc-800/60 p-2.5">
+                    <p className="text-[10px] text-zinc-500 font-semibold uppercase">Valor Mensal</p>
+                    <p className="font-black text-[#EAB308] mt-0.5">
+                      {currencyBRL(student.monthlyValue || 0)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 pt-1">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                        Dia de Vencimento
+                      </label>
+                      <select
+                        value={paymentDay}
+                        onChange={(e) => setPaymentDay(Number(e.target.value))}
+                        className="w-full h-11 bg-black border border-zinc-700 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+                      >
+                        {[1, 5, 8, 10, 12, 15, 20, 25, 28].map((d) => (
+                          <option key={d} value={d}>
+                            Dia {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                        Valor Mensal (R$)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={10}
+                        value={monthlyValue}
+                        onChange={(e) => setMonthlyValue(Number(e.target.value))}
+                        className="w-full h-11 bg-black border border-zinc-700 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+                        placeholder="Ex: 180"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                      Plano Esportivo
+                    </label>
+                    <input
+                      type="text"
+                      value={plan}
+                      onChange={(e) => setPlan(e.target.value)}
+                      className="w-full h-11 bg-black border border-zinc-700 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+                      placeholder="Ex: Performance Mensal"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={savingSetup}
+                    onClick={handleSaveSetup}
+                    className="w-full h-11 rounded-xl bg-[#EAB308] text-black font-black text-xs flex items-center justify-center gap-2 hover:bg-[#EAB308]/90 transition-all disabled:opacity-50 shadow-md"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    {savingSetup ? "Salvando…" : "Salvar Configuração"}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {loading ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12">
                 <Circle className="h-6 w-6 animate-spin text-[#EAB308]" />

@@ -32,6 +32,8 @@ type PaymentsContextValue = {
   proofPendingCount: number;
   markPayment: AppContextType["markPayment"];
   submitStudentPaymentProof: AppContextType["submitStudentPaymentProof"];
+  createPayment: AppContextType["createPayment"];
+  generateMonthlyBillingBatch: AppContextType["generateMonthlyBillingBatch"];
 };
 
 const PaymentsContext = createContext<PaymentsContextValue | undefined>(undefined);
@@ -105,6 +107,8 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
       proofPendingCount,
       markPayment: app.markPayment,
       submitStudentPaymentProof: app.submitStudentPaymentProof,
+      createPayment: app.createPayment,
+      generateMonthlyBillingBatch: app.generateMonthlyBillingBatch,
     }),
     [
       app.payments,
@@ -112,6 +116,8 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
       monthlyRevenue,
       app.markPayment,
       app.submitStudentPaymentProof,
+      app.createPayment,
+      app.generateMonthlyBillingBatch,
       currentMonthReference,
       currentMonthBuckets,
       totalsByStatus,

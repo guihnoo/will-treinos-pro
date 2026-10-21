@@ -80,7 +80,12 @@ export interface AppContextType {
   /** Após aprovar com mensalidade: cria cobrança `pending` do mês corrente se ainda não existir. */
   seedPendingTuitionForStudent: (studentId: string, monthlyValue: number, paymentDay: number) => Promise<void>;
   // Payments
-  markPayment: (id: string) => void;
+  markPayment: (id: string, method?: string) => void;
+  createPayment: (payment: WithoutId<Payment> & { id?: string }) => Promise<Payment>;
+  generateMonthlyBillingBatch: (
+    studentsList: Array<{ id: string; monthlyValue: number; paymentDay: number; status: string }>,
+    referenceMonth?: string,
+  ) => Promise<{ createdCount: number; skippedCount: number }>;
   /** Aluno: registra comprovante (texto e/ou arquivo imagem/PDF; não altera status até o staff confirmar). */
   submitStudentPaymentProof: (
     id: string,
@@ -376,7 +381,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     loadSupabaseCriticalData,
   });
 
-  const { seedPendingTuitionForStudent, markPayment, submitStudentPaymentProof } = usePaymentMutations({
+  const {
+    seedPendingTuitionForStudent,
+    markPayment,
+    submitStudentPaymentProof,
+    createPayment,
+    generateMonthlyBillingBatch,
+  } = usePaymentMutations({
     usingSupabaseSession,
     supabaseAuthUserRef,
     setPayments,
@@ -417,7 +428,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       students, lessons, payments, notifications,
       addLesson, updateLesson, deleteLesson, addToWaitlist, promoteFromWaitlist,
       addStudent, approveStudent, suspendStudent, updateStudent, seedPendingTuitionForStudent,
-      markPayment, submitStudentPaymentProof, addNotification, markNotificationRead, markAllNotificationsRead,
+      markPayment, submitStudentPaymentProof, createPayment, generateMonthlyBillingBatch, addNotification, markNotificationRead, markAllNotificationsRead,
       checkInStudent,
       requestCheckIn, approveCheckIn, rejectCheckIn, endClassCheckIn,
       requestReposition, approveReposition, declineReposition,

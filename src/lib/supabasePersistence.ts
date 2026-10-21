@@ -455,10 +455,10 @@ export async function deleteLessonRemote(supabase: SupabaseClient, lessonId: str
   }
 }
 
-export async function markPaymentPaidRemote(supabase: SupabaseClient, id: string) {
+export async function markPaymentPaidRemote(supabase: SupabaseClient, id: string, method: string = "pix") {
   const { data, error } = await supabase
     .from("payments")
-    .update({ status: "paid", paid_date: new Date().toISOString().slice(0, 10), method: "pix" })
+    .update({ status: "paid", paid_date: new Date().toISOString().slice(0, 10), method })
     .eq("id", id)
     .select("*")
     .single();

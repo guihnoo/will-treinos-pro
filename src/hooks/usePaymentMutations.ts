@@ -2,7 +2,7 @@
 
 import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import type { Payment, PaymentStatus } from "@/context/types";
+import type { Payment, PaymentStatus, WithoutId } from "@/context/types";
 import { dueDateForBillingMonth, localDateISO, paymentReferenceForDate } from "@/lib/dateUtils";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import {
@@ -75,12 +75,13 @@ export function usePaymentMutations(options: {
   );
 
   const markPayment = useCallback(
-    (id: string) => {
+    (id: string, method: string = "pix") => {
+      const selectedMethod = method || "pix";
       if (!usingSupabaseSession) {
         setPayments((p) =>
           p.map((py) =>
             py.id === id
-              ? { ...py, status: "paid" as PaymentStatus, paidDate: localDateISO(), method: "pix" }
+              ? { ...py, status: "paid" as PaymentStatus, paidDate: localDateISO(), method: selectedMethod }
               : py,
           ),
         );
@@ -91,7 +92,7 @@ export function usePaymentMutations(options: {
         setCriticalDataError("Cliente Supabase indisponível.");
         return;
       }
-      void markPaymentPaidRemote(supabase, id)
+      void markPaymentPaidRemote(supabase, id, selectedMethod)
         .then((updated) => {
           setPayments((p) => p.map((py) => (py.id === id ? updated : py)));
           void logDevEvent("payment_marked", "payment", id, {
@@ -103,6 +104,122 @@ export function usePaymentMutations(options: {
         .catch((error) => setCriticalDataError(error instanceof Error ? error.message : "Falha ao confirmar pagamento."));
     },
     [usingSupabaseSession, setPayments, setCriticalDataError],
+  );
+
+  const createPayment = useCallback(
+    async (payload: WithoutId<Payment> & { id?: string }): Promise<Payment> => {
+      const ref = payload.reference || paymentReferenceForDate();
+      const newPayment: Payment = {
+        id: payload.id || `pay_${willUid()}`,
+        studentId: payload.studentId,
+        amount: payload.amount,
+        dueDate: payload.dueDate || localDateISO(),
+        paidDate: payload.status === "paid" ? (payload.paidDate || localDateISO()) : null,
+        status: payload.status || "pending",
+        method: payload.method || null,
+        reference: ref,
+      };
+
+      if (!usingSupabaseSession) {
+        setPayments((prev) => [newPayment, ...prev]);
+        return newPayment;
+      }
+
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        throw new Error("Cliente Supabase indisponível.");
+      }
+
+      try {
+        const created = await insertPaymentRemote(supabase, {
+          ...payload,
+          reference: ref,
+        });
+        setPayments((prev) => [created, ...prev.filter((p) => p.id !== created.id)]);
+        return created;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Falha ao registrar pagamento.";
+        setCriticalDataError(msg);
+        throw error;
+      }
+    },
+    [usingSupabaseSession, setPayments, setCriticalDataError],
+  );
+
+  const generateMonthlyBillingBatch = useCallback(
+    async (
+      studentsList: Array<{ id: string; monthlyValue: number; paymentDay: number; status: string }>,
+      referenceMonth?: string,
+    ): Promise<{ createdCount: number; skippedCount: number }> => {
+      const ref = referenceMonth || paymentReferenceForDate();
+      const eligibleStudents = studentsList.filter(
+        (s) => s.status === "active" && s.monthlyValue > 0,
+      );
+
+      let createdCount = 0;
+      let skippedCount = 0;
+
+      for (const student of eligibleStudents) {
+        const dueDate = dueDateForBillingMonth(student.paymentDay);
+        if (!usingSupabaseSession) {
+          setPayments((prev) => {
+            if (prev.some((p) => p.studentId === student.id && p.reference === ref)) {
+              skippedCount++;
+              return prev;
+            }
+            createdCount++;
+            return [
+              {
+                id: `pay_${willUid()}`,
+                studentId: student.id,
+                amount: student.monthlyValue,
+                dueDate,
+                paidDate: null,
+                status: "pending" as PaymentStatus,
+                method: null,
+                reference: ref,
+              },
+              ...prev,
+            ];
+          });
+          continue;
+        }
+
+        const supabase = getSupabaseClient();
+        if (!supabase) continue;
+
+        try {
+          const { data: existing } = await supabase
+            .from("payments")
+            .select("id")
+            .eq("student_id", student.id)
+            .eq("reference", ref)
+            .maybeSingle();
+
+          if (existing) {
+            skippedCount++;
+            continue;
+          }
+
+          const created = await insertPaymentRemote(supabase, {
+            studentId: student.id,
+            amount: student.monthlyValue,
+            dueDate,
+            paidDate: null,
+            status: "pending",
+            method: null,
+            reference: ref,
+          });
+          setPayments((prev) => (prev.some((p) => p.id === created.id) ? prev : [created, ...prev]));
+          createdCount++;
+        } catch {
+          // segue para próximo aluno
+        }
+      }
+
+      return { createdCount, skippedCount };
+    },
+    [usingSupabaseSession, setPayments],
   );
 
   const submitStudentPaymentProof = useCallback(
@@ -220,5 +337,11 @@ export function usePaymentMutations(options: {
     [usingSupabaseSession, supabaseAuthUserRef, setPayments, setCriticalDataError],
   );
 
-  return { seedPendingTuitionForStudent, markPayment, submitStudentPaymentProof };
+  return {
+    seedPendingTuitionForStudent,
+    markPayment,
+    submitStudentPaymentProof,
+    createPayment,
+    generateMonthlyBillingBatch,
+  };
 }

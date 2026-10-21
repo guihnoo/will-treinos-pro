@@ -2,7 +2,9 @@
 import React, { useState, useMemo, useRef } from "react";
 import { formatBRL } from "@/lib/formatCurrency";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, CheckCircle2, Clock, AlertTriangle, TrendingUp, TrendingDown, DollarSign, QrCode, Copy, Check, X, PhoneCall, CalendarRange, ChevronRight, Send, Upload, FileText, Eye, RotateCcw } from "lucide-react";
+import { Wallet, CheckCircle2, Clock, AlertTriangle, TrendingUp, TrendingDown, DollarSign, QrCode, Copy, Check, X, PhoneCall, CalendarRange, ChevronRight, Send, Upload, FileText, Eye, RotateCcw, Plus, Zap, MessageSquare, CreditCard, Banknote, Users } from "lucide-react";
+import { triggerHapticCelebration, triggerHapticImpact } from "@/lib/hapticFeedback";
+import { dueDateForBillingMonth, paymentReferenceForDate } from "@/lib/dateUtils";
 import { useAuth } from "@/context/AuthContext";
 import { useCriticalData } from "@/context/CriticalDataContext";
 import { useLessons } from "@/context/LessonsContext";
@@ -403,8 +405,8 @@ function AlunoFinanceiro() {
   );
 }
 
-/* ─── COACH VIEW ─── */
-function CoachFinanceiro() {
+/* ─── COACH VIEW CONTENT ─── */
+function CoachFinanceiroContent() {
   const { lessons } = useLessons();
   const now = new Date();
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
@@ -506,10 +508,11 @@ function AdminPaymentDetailModal({
   pay: Pay;
   studentName: string;
   onClose: () => void;
-  onMarkPaid: () => void;
+  onMarkPaid: (method?: string) => void;
 }) {
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
   useBodyScrollLock(true);
+  const [selectedMethod, setSelectedMethod] = useState<string>("pix");
   const fmtDate = (d?: string | null) =>
     d ? new Date(d).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
   const status = statusCfg[pay.status] ?? statusCfg.pending;
@@ -533,7 +536,7 @@ function AdminPaymentDetailModal({
       >
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Validação de comprovante</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Validação de pagamento</p>
             <h3 className="text-lg font-black text-white">{studentName}</h3>
             <p className="text-xs text-zinc-500">{pay.reference} · {formatBRL(pay.amount)}</p>
           </div>
@@ -553,14 +556,45 @@ function AdminPaymentDetailModal({
               {status.label}
             </p>
           </div>
-          <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500">Comprovante enviado em</p>
-            <p className="mt-1 text-sm font-bold text-zinc-100">{fmtDate(pay.studentProofSubmittedAt)}</p>
-          </div>
-          <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500">Observação do aluno</p>
-            <p className="mt-1 text-sm text-zinc-300">{pay.studentProofNote?.trim() || "Sem observação."}</p>
-          </div>
+          {pay.studentProofSubmittedAt && (
+            <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500">Comprovante enviado em</p>
+              <p className="mt-1 text-sm font-bold text-zinc-100">{fmtDate(pay.studentProofSubmittedAt)}</p>
+            </div>
+          )}
+          {pay.studentProofNote && (
+            <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500">Observação do aluno</p>
+              <p className="mt-1 text-sm text-zinc-300">{pay.studentProofNote}</p>
+            </div>
+          )}
+
+          {pay.status !== "paid" && (
+            <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">Meio de Recebimento</p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { id: "pix", label: "PIX" },
+                  { id: "dinheiro", label: "Dinheiro" },
+                  { id: "cartao_credito", label: "Crédito" },
+                  { id: "cartao_debito", label: "Débito" },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedMethod(m.id)}
+                    className={`h-9 rounded-lg text-xs font-bold border transition-all ${
+                      selectedMethod === m.id
+                        ? "bg-[#22C55E] text-black border-[#22C55E]"
+                        : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
@@ -573,14 +607,14 @@ function AdminPaymentDetailModal({
           {pay.status !== "paid" ? (
             <button
               type="button"
-              onClick={onMarkPaid}
+              onClick={() => onMarkPaid(selectedMethod)}
               className={`min-h-11 rounded-xl border border-emerald-500/35 bg-emerald-500/10 text-sm font-black text-emerald-300 hover:bg-emerald-500/20 ${ctaClass}`}
             >
               Confirmar como Pago ✓
             </button>
           ) : (
             <div className="flex min-h-11 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900/60 text-sm font-bold text-zinc-500">
-              Já confirmado
+              Já confirmado ({pay.method || "PIX"})
             </div>
           )}
         </div>
@@ -589,19 +623,255 @@ function AdminPaymentDetailModal({
   );
 }
 
-/* ─── ADMIN VIEW ─── */
-function AdminFinanceiro() {
+function CreateChargeModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const { students } = useStudents();
-  const { payments, totalsByStatus, proofPendingCount, markPayment } = usePayments();
+  const { createPayment } = usePayments();
+  const { toast } = useToast();
+  useBodyScrollLock(true);
+  const activeStudents = useMemo(() => students.filter((s) => s.status !== "suspended"), [students]);
+
+  const [studentId, setStudentId] = useState(activeStudents[0]?.id || "");
+  const [reference, setReference] = useState(paymentReferenceForDate());
+  const [amount, setAmount] = useState<number>(activeStudents[0]?.monthlyValue || 150);
+  const [dueDate, setDueDate] = useState<string>(
+    dueDateForBillingMonth(activeStudents[0]?.paymentDay || 5),
+  );
+  const [status, setStatus] = useState<"pending" | "paid">("pending");
+  const [method, setMethod] = useState<string>("pix");
+  const [loading, setLoading] = useState(false);
+
+  const handleStudentSelect = (id: string) => {
+    setStudentId(id);
+    const st = students.find((s) => s.id === id);
+    if (st) {
+      if (st.monthlyValue > 0) setAmount(st.monthlyValue);
+      setDueDate(dueDateForBillingMonth(st.paymentDay || 5));
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentId) {
+      toast("Selecione um aluno.", "error");
+      return;
+    }
+    if (amount <= 0) {
+      toast("Informe um valor válido maior que zero.", "error");
+      return;
+    }
+    setLoading(true);
+    try {
+      await createPayment({
+        studentId,
+        amount,
+        dueDate,
+        paidDate: status === "paid" ? new Date().toISOString().slice(0, 10) : null,
+        status,
+        method: status === "paid" ? method : null,
+        reference,
+      });
+      triggerHapticCelebration();
+      toast("Cobrança registrada com sucesso!");
+      onCreated();
+      onClose();
+    } catch {
+      toast("Erro ao registrar cobrança.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      data-modal-overlay
+      className="fixed inset-0 z-[250] overflow-y-auto overscroll-y-contain flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 15 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 15 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-[#0A0A0A] p-5 shadow-2xl space-y-4"
+      >
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div>
+            <h3 className="text-base font-black text-white flex items-center gap-2">
+              <Plus className="w-4 h-4 text-[#EAB308]" />
+              Nova Cobrança / Mensalidade
+            </h3>
+            <p className="text-xs text-zinc-500">Lançamento de mensalidade ou taxa avulsa</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-zinc-700 p-2 text-zinc-400 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-3.5">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+              Aluno
+            </label>
+            <select
+              value={studentId}
+              onChange={(e) => handleStudentSelect(e.target.value)}
+              className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+            >
+              {activeStudents.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name} {st.plan ? `(${st.plan})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                Referência / Tipo
+              </label>
+              <input
+                type="text"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder="Ex: 2026-10 ou Matrícula"
+                className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                Valor (R$)
+              </label>
+              <input
+                type="number"
+                min={1}
+                step={5}
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                Data de Vencimento
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                Status Inicial
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as "pending" | "paid")}
+                className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
+              >
+                <option value="pending">Pendente (a pagar)</option>
+                <option value="paid">Já Pago (baixa imediata)</option>
+              </select>
+            </div>
+          </div>
+
+          {status === "paid" && (
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                Meio de Pagamento Recebido
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { id: "pix", label: "PIX" },
+                  { id: "dinheiro", label: "Dinheiro" },
+                  { id: "cartao_credito", label: "Crédito" },
+                  { id: "cartao_debito", label: "Débito" },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setMethod(m.id)}
+                    className={`h-10 rounded-xl text-xs font-bold border transition-all ${
+                      method === m.id
+                        ? "bg-[#EAB308] text-black border-[#EAB308]"
+                        : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 h-12 rounded-xl border border-zinc-800 text-xs font-bold text-zinc-400 hover:text-white"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#EAB308] to-amber-500 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-lg disabled:opacity-50"
+            >
+              {loading ? "Salvando…" : "Confirmar Lançamento"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── STAFF VIEW (ADMIN & COACH) ─── */
+function StaffFinanceiro({ currentRole }: { currentRole?: string }) {
+  const { students } = useStudents();
+  const {
+    payments,
+    totalsByStatus,
+    proofPendingCount,
+    markPayment,
+    generateMonthlyBillingBatch,
+    currentMonthReference,
+  } = usePayments();
+  const { appConfig } = useAppConfig();
   const { usingSupabaseSession } = useAuth();
   const { criticalDataLoading, criticalDataError, retryCriticalDataSync } = useCriticalData();
   const { toast } = useToast();
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
+
+  const [staffTab, setStaffTab] = useState<"mensalidades" | "cache">("mensalidades");
   const [filter, setFilter] = useState<"all"|"paid"|"pending"|"late"|"proof_pending">("all");
   const [proofViewer, setProofViewer] = useState<{ dataUrl: string; fileName: string } | null>(null);
   const [selectedPayId, setSelectedPayId] = useState<string | null>(null);
   const [busyPayId, setBusyPayId] = useState<string | null>(null);
   const [loadingProofId, setLoadingProofId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [generatingBatch, setGeneratingBatch] = useState(false);
 
   const openProofViewer = async (pay: {
     id: string;
@@ -649,32 +919,69 @@ function AdminFinanceiro() {
       setLoadingProofId(null);
     }
   };
-  const getStudent = (id: string) => students.find(s=>s.id===id);
-  const total = totalsByStatus.paid+totalsByStatus.pending+totalsByStatus.late;
+
+  const getStudent = (id: string) => students.find((s) => s.id === id);
+  const total = totalsByStatus.paid + totalsByStatus.pending + totalsByStatus.late;
   const filtered = payments
     .filter((p) => {
       if (filter === "all") return true;
       if (filter === "proof_pending") return p.status !== "paid" && Boolean(p.studentProofSubmittedAt);
       return p.status === filter;
     })
-    .sort((a,b)=>new Date(b.dueDate).getTime()-new Date(a.dueDate).getTime());
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+
   const selectedPay = payments.find((pay) => pay.id === selectedPayId) ?? null;
-  const handleMarkPaid = (payId: string, studentName?: string) => {
+
+  const handleMarkPaid = (payId: string, studentName?: string, method: string = "pix") => {
     if (busyPayId === payId) return;
     setBusyPayId(payId);
-    markPayment(payId);
-    if (studentName) toast(`✅ ${studentName.split(" ")[0]} confirmado!`);
-    const pay = payments.find(p => p.id === payId);
-    const student = pay ? students.find(s => s.id === pay.studentId) : undefined;
+    triggerHapticImpact("medium");
+    markPayment(payId, method);
+    if (studentName) toast(`✅ ${studentName.split(" ")[0]} confirmado via ${method.toUpperCase()}!`);
+    const pay = payments.find((p) => p.id === payId);
+    const student = pay ? students.find((s) => s.id === pay.studentId) : undefined;
     if (student?.authUserId) {
       void sendPushToUser(student.authUserId, {
         title: "✅ Pagamento confirmado!",
-        body: `Sua mensalidade foi confirmada pelo Will Treinos. Tudo certo por aqui! 🏐`,
+        body: `Sua mensalidade foi confirmada pelo Will Treinos (${method.toUpperCase()}). Tudo certo por aqui! 🏐`,
         url: "/dashboard",
       });
     }
     window.setTimeout(() => setBusyPayId((current) => (current === payId ? null : current)), 700);
   };
+
+  const handleGenerateBatch = async () => {
+    setGeneratingBatch(true);
+    triggerHapticImpact("medium");
+    try {
+      const eligible = students.map((s) => ({
+        id: s.id,
+        monthlyValue: s.monthlyValue,
+        paymentDay: s.paymentDay || 5,
+        status: s.status,
+      }));
+      const res = await generateMonthlyBillingBatch(eligible, currentMonthReference);
+      triggerHapticCelebration();
+      toast(`✅ ${res.createdCount} mensalidade(s) gerada(s)! (${res.skippedCount} já existiam).`);
+    } catch {
+      toast("Erro ao gerar mensalidades em lote.", "error");
+    } finally {
+      setGeneratingBatch(false);
+    }
+  };
+
+  const openWhatsAppBilling = (st: any, pay: Pay) => {
+    const phone = st?.phone || "";
+    const digits = waDigits(phone);
+    if (!digits) {
+      toast("Aluno sem telefone cadastrado.", "error");
+      return;
+    }
+    const formattedDate = new Date(pay.dueDate + "T12:00:00").toLocaleDateString("pt-BR");
+    const msg = `Olá, ${st.name.split(" ")[0]}! Tudo bem? Aqui é do Will Treinos PRO 🏐.\n\nPassando para lembrar da sua mensalidade referente a *${pay.reference}* no valor de *${formatBRL(pay.amount)}* (vencimento: ${formattedDate}).\n\nChave PIX: *${appConfig.pixKey || "Consulte o professor"}*\nFavorecido: *${appConfig.pixOwnerName || "Will Treinos PRO"}*\n\nAssim que fizer o pagamento, você pode anexar o comprovante direto no app ou responder por aqui. Bom treino! 🏐`;
+    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+  };
+
   if (usingSupabaseSession && criticalDataLoading) {
     return (
       <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
@@ -687,6 +994,7 @@ function AdminFinanceiro() {
       </div>
     );
   }
+
   if (usingSupabaseSession && criticalDataError) {
     return (
       <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
@@ -704,152 +1012,274 @@ function AdminFinanceiro() {
       </div>
     );
   }
+
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <AppPageHeader
         title="Financeiro"
-        subtitle="Controle de pagamentos e inadimplência."
+        subtitle="Controle real de pagamentos, cobranças e inadimplência."
         icon={Wallet}
         className="mb-6"
       />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {[
-          { label: "Recebido", value: totalsByStatus.paid, color: "#22C55E", icon: TrendingUp },
-          { label: "Pendente", value: totalsByStatus.pending, color: "#F97316", icon: Clock },
-          { label: "Em Atraso", value: totalsByStatus.late, color: "#EF4444", icon: TrendingDown },
-        ].map((kpi, i) => (
-          <StatCard
-            key={kpi.label}
-            label={kpi.label}
-            value={`R$ ${kpi.value.toLocaleString("pt-BR")}`}
-            icon={kpi.icon}
-            color={kpi.color}
-            delay={i * 0.1}
-          />
-        ))}
-      </div>
-      {proofPendingCount > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-sky-500/30 bg-sky-500/[0.07] px-4 py-3"
+
+      {/* Seletor de Abas Staff */}
+      <div className="flex items-center gap-2 mb-6 p-1 bg-zinc-900/80 rounded-2xl border border-zinc-800">
+        <button
+          type="button"
+          onClick={() => setStaffTab("mensalidades")}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+            staffTab === "mensalidades"
+              ? "bg-[#EAB308] text-black shadow-lg shadow-[#EAB308]/20"
+              : "text-zinc-400 hover:text-white"
+          }`}
         >
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 shrink-0 text-sky-300" />
-            <p className="text-sm font-bold text-sky-200">
-              {proofPendingCount} comprovante{proofPendingCount > 1 ? "s" : ""} aguardando validação
-            </p>
+          <Users className="w-4 h-4" />
+          Mensalidades & Alunos
+        </button>
+        <button
+          type="button"
+          onClick={() => setStaffTab("cache")}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+            staffTab === "cache"
+              ? "bg-[#EAB308] text-black shadow-lg shadow-[#EAB308]/20"
+              : "text-zinc-400 hover:text-white"
+          }`}
+        >
+          <CalendarRange className="w-4 h-4" />
+          Meu Cachê & Aulas
+        </button>
+      </div>
+
+      {staffTab === "cache" ? (
+        <CoachFinanceiroContent />
+      ) : (
+        <>
+          {/* Barra de Ações Rápidas do Treinador */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 shadow-md">
+            <div>
+              <p className="text-xs font-black text-white flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-[#EAB308]" />
+                Ações Rápidas de Cobrança
+              </p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                Gere o lote do mês ou lance recebimentos avulsos
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                disabled={generatingBatch}
+                onClick={handleGenerateBatch}
+                className={`min-h-11 px-3.5 rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/15 text-xs font-black text-[#EAB308] hover:bg-[#EAB308]/25 flex items-center gap-2 transition-all disabled:opacity-50 ${ctaClass}`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                {generatingBatch ? "Gerando…" : "Gerar Mensalidades do Mês"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className={`min-h-11 px-4 rounded-xl bg-[#EAB308] text-black text-xs font-black hover:bg-[#EAB308]/90 flex items-center gap-2 shadow-lg shadow-[#EAB308]/20 transition-all ${ctaClass}`}
+              >
+                <Plus className="w-4 h-4" />
+                Nova Cobrança
+              </button>
+            </div>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setFilter("proof_pending")}
-            className={`shrink-0 rounded-xl border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-500/20 transition-colors ${ctaClass}`}
-          >
-            Ver
-          </motion.button>
-        </motion.div>
-      )}
-      {total>0&&(
-        <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.3}} className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-5 mb-6">
-          <div className="flex justify-between text-sm mb-3"><span className="text-zinc-500">Composição</span><span className="text-zinc-400 font-mono">R$ {total.toLocaleString("pt-BR")}</span></div>
-          <div className="flex h-4 rounded-full overflow-hidden bg-zinc-900">
-            {[{v:totalsByStatus.paid,c:"#22C55E"},{v:totalsByStatus.pending,c:"#F97316"},{v:totalsByStatus.late,c:"#EF4444"}].map((b,i)=>(
-              <motion.div key={i} initial={{width:0}} animate={{width:`${(b.v/total)*100}%`}} transition={{duration:1,delay:0.5+i*0.2}} style={{background:b.c}} className={i===0?"rounded-l-full":i===2?"rounded-r-full":""}/>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {[
+              { label: "Recebido", value: totalsByStatus.paid, color: "#22C55E", icon: TrendingUp },
+              { label: "Pendente", value: totalsByStatus.pending, color: "#F97316", icon: Clock },
+              { label: "Em Atraso", value: totalsByStatus.late, color: "#EF4444", icon: TrendingDown },
+            ].map((kpi, i) => (
+              <StatCard
+                key={kpi.label}
+                label={kpi.label}
+                value={`R$ ${kpi.value.toLocaleString("pt-BR")}`}
+                icon={kpi.icon}
+                color={kpi.color}
+                delay={i * 0.1}
+              />
             ))}
           </div>
-        </motion.div>
-      )}
-      <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
-        {(["all","proof_pending","paid","pending","late"] as const).map(f=>(
-          <motion.button key={f} whileTap={{scale:0.95}} onClick={()=>setFilter(f)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border whitespace-nowrap ${filter===f?"bg-[#EAB308] text-black border-[#EAB308]":"bg-[#0A0A0A] text-zinc-400 border-zinc-800 hover:border-zinc-600"} ${ctaClass}`}>
-            {{all:"Todos",proof_pending:"Com comprovante",paid:"Pagos",pending:"Pendentes",late:"Atrasados"}[f]}
-          </motion.button>
-        ))}
-      </div>
-      <div className="space-y-2">
-        {filtered.length === 0 ? (
-          <AppEmptyState
-            icon={Wallet}
-            title={filter === "all" ? "Nenhum pagamento cadastrado" : "Nenhum pagamento neste filtro"}
-            description={filter === "all" ? "Quando alunos tiverem mensalidades geradas, elas aparecerão aqui." : "Tente outro filtro ou veja todos os pagamentos."}
-            actionLabel={filter !== "all" ? "Ver todos" : undefined}
-            onAction={filter !== "all" ? () => setFilter("all") : undefined}
-          />
-        ) : null}
-        {filtered.map((pay,i)=>{const st=getStudent(pay.studentId);const cfg=statusCfg[pay.status];const Icon=cfg.icon;if(!st)return null;return(
-          <motion.div key={pay.id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.03}} className="flex items-center justify-between p-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-all">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <UserAvatar name={st.name} photo={avatarSrc(st.avatar, st.name)} size="sm" className="flex-shrink-0 !border-zinc-800" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap"><span className="font-bold text-white text-sm truncate">{st.name}</span><span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{color:cfg.color,background:`${cfg.color}15`}}><Icon className="w-3 h-3"/>{cfg.label}</span>{pay.studentProofSubmittedAt && pay.status !== "paid" ? <span className="text-[9px] font-bold uppercase tracking-wide rounded-full border border-sky-500/40 bg-sky-500/15 px-2 py-0.5 text-sky-300">Comprovante do aluno</span> : null}</div>
-                <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">
-                  <span>Venc: {new Date(pay.dueDate).toLocaleDateString("pt-BR")}</span>
-                  <span>{pay.reference}</span>
-                  {pay.studentProofSubmittedAt ? (
-                    <span className="text-sky-300">Envio: {new Date(pay.studentProofSubmittedAt).toLocaleDateString("pt-BR")}</span>
-                  ) : null}
-                </div>
+
+          {proofPendingCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 flex items-center justify-between gap-3 rounded-2xl border border-sky-500/30 bg-sky-500/[0.07] px-4 py-3"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 shrink-0 text-sky-300" />
+                <p className="text-sm font-bold text-sky-200">
+                  {proofPendingCount} comprovante{proofPendingCount > 1 ? "s" : ""} aguardando validação
+                </p>
               </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <span className="text-lg font-bold text-white">{formatBRL(pay.amount)}</span>
-              {pay.studentProofSubmittedAt ? (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  disabled={loadingProofId === pay.id}
-                  onClick={() => void openProofViewer(pay)}
-                  className={`inline-flex items-center gap-1 rounded-lg border border-sky-500/35 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-500/15 disabled:opacity-50 ${ctaClass}`}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setFilter("proof_pending")}
+                className={`shrink-0 rounded-xl border border-sky-500/40 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-500/20 transition-colors ${ctaClass}`}
+              >
+                Ver
+              </motion.button>
+            </motion.div>
+          )}
+
+          {total > 0 && (
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.3}} className="bg-[#0A0A0A] border border-zinc-800/60 rounded-2xl p-5 mb-6">
+              <div className="flex justify-between text-sm mb-3"><span className="text-zinc-500">Composição</span><span className="text-zinc-400 font-mono">R$ {total.toLocaleString("pt-BR")}</span></div>
+              <div className="flex h-4 rounded-full overflow-hidden bg-zinc-900">
+                {[{v:totalsByStatus.paid,c:"#22C55E"},{v:totalsByStatus.pending,c:"#F97316"},{v:totalsByStatus.late,c:"#EF4444"}].map((b,i)=>(
+                  <motion.div key={i} initial={{width:0}} animate={{width:`${(b.v/total)*100}%`}} transition={{duration:1,delay:0.5+i*0.2}} style={{background:b.c}} className={i===0?"rounded-l-full":i===2?"rounded-r-full":""}/>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+            {(["all","proof_pending","paid","pending","late"] as const).map(f=>(
+              <motion.button key={f} whileTap={{scale:0.95}} onClick={()=>setFilter(f)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border whitespace-nowrap ${filter===f?"bg-[#EAB308] text-black border-[#EAB308]":"bg-[#0A0A0A] text-zinc-400 border-zinc-800 hover:border-zinc-600"} ${ctaClass}`}>
+                {{all:"Todos",proof_pending:"Com comprovante",paid:"Pagos",pending:"Pendentes",late:"Atrasados"}[f]}
+              </motion.button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            {filtered.length === 0 ? (
+              <AppEmptyState
+                icon={Wallet}
+                title={filter === "all" ? "Nenhum pagamento cadastrado" : "Nenhum pagamento neste filtro"}
+                description={filter === "all" ? "Gere as mensalidades do mês ou lance um pagamento avulso acima." : "Tente outro filtro ou veja todos os pagamentos."}
+                actionLabel={filter !== "all" ? "Ver todos" : undefined}
+                onAction={filter !== "all" ? () => setFilter("all") : undefined}
+              />
+            ) : null}
+
+            {filtered.map((pay, i) => {
+              const st = getStudent(pay.studentId);
+              const cfg = statusCfg[pay.status];
+              const Icon = cfg.icon;
+              if (!st) return null;
+              return (
+                <motion.div
+                  key={pay.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="flex items-center justify-between p-4 bg-[#0A0A0A] border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-all gap-3"
                 >
-                  <Eye className="h-3.5 w-3.5" /> {loadingProofId === pay.id ? "Abrindo…" : "Ver anexo"}
-                </motion.button>
-              ) : null}
-              {pay.studentProofSubmittedAt ? (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={() => setSelectedPayId(pay.id)}
-                  className={`inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900/60 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-zinc-500 ${ctaClass}`}
-                >
-                  Detalhes
-                </motion.button>
-              ) : null}
-              {pay.status !== "paid" ? (
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={() => {
-                    handleMarkPaid(pay.id, st.name);
-                  }}
-                  disabled={busyPayId === pay.id}
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#22C55E]/10 text-[#22C55E] text-xs font-bold hover:bg-[#22C55E]/20 border border-[#22C55E]/20 disabled:cursor-not-allowed disabled:opacity-60 ${ctaClass}`}
-                >
-                  {busyPayId === pay.id ? <RotateCcw className="h-3.5 w-3.5 animate-spin" /> : null}
-                  Pago ✓
-                </motion.button>
-              ) : null}
-            </div>
-          </motion.div>
-        );})}
-      </div>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <UserAvatar name={st.name} photo={avatarSrc(st.avatar, st.name)} size="sm" className="flex-shrink-0 !border-zinc-800" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-white text-sm truncate">{st.name}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{color:cfg.color,background:`${cfg.color}15`}}>
+                          <Icon className="w-3 h-3"/>{cfg.label}
+                        </span>
+                        {pay.method && pay.status === "paid" && (
+                          <span className="text-[9px] font-black uppercase tracking-wider rounded-md border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 text-zinc-400">
+                            {pay.method}
+                          </span>
+                        )}
+                        {pay.studentProofSubmittedAt && pay.status !== "paid" ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wide rounded-full border border-sky-500/40 bg-sky-500/15 px-2 py-0.5 text-sky-300">
+                            Comprovante enviado
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">
+                        <span>Venc: {new Date(pay.dueDate + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                        <span>{pay.reference}</span>
+                        {pay.studentProofSubmittedAt ? (
+                          <span className="text-sky-300">Envio: {new Date(pay.studentProofSubmittedAt).toLocaleDateString("pt-BR")}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span className="text-base sm:text-lg font-bold text-white">{formatBRL(pay.amount)}</span>
+
+                    {pay.status !== "paid" && (
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        title="Cobrar via WhatsApp"
+                        onClick={() => openWhatsAppBilling(st, pay)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 border border-emerald-500/25 ${ctaClass}`}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="hidden sm:inline">Cobrar</span>
+                      </motion.button>
+                    )}
+
+                    {pay.studentProofSubmittedAt ? (
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        disabled={loadingProofId === pay.id}
+                        onClick={() => void openProofViewer(pay)}
+                        className={`inline-flex items-center gap-1 rounded-lg border border-sky-500/35 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-300 hover:bg-sky-500/15 disabled:opacity-50 ${ctaClass}`}
+                      >
+                        <Eye className="h-3.5 w-3.5" /> {loadingProofId === pay.id ? "Abrindo…" : "Ver anexo"}
+                      </motion.button>
+                    ) : null}
+
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      type="button"
+                      onClick={() => setSelectedPayId(pay.id)}
+                      className={`inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900/60 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:border-zinc-500 ${ctaClass}`}
+                    >
+                      Detalhes
+                    </motion.button>
+
+                    {pay.status !== "paid" ? (
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        onClick={() => setSelectedPayId(pay.id)}
+                        disabled={busyPayId === pay.id}
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#22C55E]/15 text-[#22C55E] text-xs font-black hover:bg-[#22C55E]/25 border border-[#22C55E]/30 disabled:cursor-not-allowed disabled:opacity-60 ${ctaClass}`}
+                      >
+                        {busyPayId === pay.id ? <RotateCcw className="h-3.5 w-3.5 animate-spin" /> : null}
+                        Dar Baixa ✓
+                      </motion.button>
+                    ) : null}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
       <AnimatePresence>
         {selectedPay ? (
           <AdminPaymentDetailModal
             pay={selectedPay}
             studentName={getStudent(selectedPay.studentId)?.name ?? "Aluno"}
             onClose={() => setSelectedPayId(null)}
-            onMarkPaid={() => {
-              handleMarkPaid(selectedPay.id);
-              toast("Pagamento confirmado com sucesso.");
+            onMarkPaid={(method) => {
+              handleMarkPaid(selectedPay.id, getStudent(selectedPay.studentId)?.name, method);
+              toast("Pagamento confirmado com sucesso!");
               setSelectedPayId(null);
             }}
           />
         ) : null}
+
         {proofViewer ? (
           <AdminProofLightbox
             dataUrl={proofViewer.dataUrl}
             fileName={proofViewer.fileName}
             onClose={() => setProofViewer(null)}
+          />
+        ) : null}
+
+        {showCreateModal ? (
+          <CreateChargeModal
+            onClose={() => setShowCreateModal(false)}
+            onCreated={() => {}}
           />
         ) : null}
       </AnimatePresence>
@@ -861,7 +1291,6 @@ function AdminFinanceiro() {
 export default function FinanceiroPage() {
   const { user } = useAuth();
   if (!user) return null;
-  if (user.role === "aluno") return <AlunoFinanceiro/>;
-  if (user.role === "coach") return <CoachFinanceiro/>;
-  return <AdminFinanceiro/>;
+  if (user.role === "aluno") return <AlunoFinanceiro />;
+  return <StaffFinanceiro currentRole={user.role} />;
 }
