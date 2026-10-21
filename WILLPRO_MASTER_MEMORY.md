@@ -15,6 +15,44 @@
 - **CTO Antigravity (O Arquiteto de Elite):** Refinamento premium, física de animação (Framer Motion), interações táteis, layouts globais.
 - **Integração:** Alterações de interface profunda devem ser documentadas aqui para evitar regressão.
 
+## 🏆 RELEASE 2.0 — A REVOLUÇÃO DO MODO QUADRA E FINANCEIRO
+
+> **Status de Deploy:** Pronto para Produção na Vercel (Next.js 15 App Router).  
+> **Compilação Estrita TypeScript (`tsc --noEmit`):** ✅ 0 Erros.  
+> **Next.js Production Build (`pnpm run build`):** ✅ 65/65 rotas estáticas e dinâmicas geradas.  
+> **Arquitetura de Modais Desacoplada:** 69 modais gerenciados sob demanda via `useSyncExternalStore` (zero prop-drilling).
+
+### 🚀 Os Grandes Marcos da Release 2.0:
+
+1. **🏛️ Desacoplamento Arquitetural dos God Components (`CockpitModalHost` & `StudentModalHost`):**
+   - Extraídos 69 modais sob demanda com code-splitting dinâmico (`next/dynamic`), eliminando o prop-drilling e o inchaço de memória.
+   - `StudentHome.tsx` otimizado: redução de 79.5% em `useState` locais (de 44 para apenas 9).
+   - `WillCockpit.tsx` aliviado: mais de 360 linhas de código redundante e mais de 35 `useState` de modais eliminados.
+
+2. **🏐 PWA Modo Quadra Offline-First (Resiliência sob Sol e Suor):**
+   - Cache offline transparente com sincronização sob reconexão para presenças (`pendingAttendance`) e avaliações esportivas (`pendingEvaluations`).
+   - Touch targets ergonômicos para a quadra ($\ge 56\text{px}$) e motor de feedback háptico duplo (`triggerHapticImpact` e `triggerHapticCelebration`).
+   - Rota `/offline.html` pública e pré-cacheadas via Workbox Service Worker.
+
+3. **⚡ Interface de Avaliação Rápida (Swipe & Sliders):**
+   - Componente `CourtEvaluationSlider` com touch range suave de 1 a 10 e atalhos rápidos `[2, 4, 6, 8, 10]`.
+   - Modais `BulkEvaluationModal` e `LessonRatingsSheet` integrados, permitindo avaliar turmas completas em segundos com gradientes semânticos (Laranja/Ajuste, Dourado/Will, Esmeralda/Elite).
+
+4. **💎 Motor Financeiro Conceito C & Régua de Cobrança WhatsApp:**
+   - **Visão do Treinador / Staff:** Desbloqueio completo da rota `/financeiro` para Coach/Admin, ficha financeira individual do atleta (`StudentFinanceSheet`), lançamento rápido com múltiplos métodos (PIX, Dinheiro, Cartão), geração em lote de faturas do mês e cobrança via WhatsApp em 1 clique.
+   - **Visão Espelhada do Aluno (`StudentPaymentSheet`):** Card Hero com semáforo de status (🟢 Em Dia, 🟡 Vence em Breve, 🔴 Vencida), chave PIX + QR Code EMV com valor preenchido, upload de comprovante e botão tátil de autodeclaração *"💵 Avisar que pagarei no próximo treino"*.
+
+5. **🛡️ Blindagem de Auth e Rotas Públicas:**
+   - Rotas `/termos`, `/privacidade` e `/offline.html` liberadas no `AuthWrapper`.
+   - Tradutor universal de erros do Supabase Auth para português amigável (`authErrorTranslator.ts`).
+   - UX de boas-vindas com convite exclusivo na rota `/signup`.
+
+6. **🤖 Infraestrutura de Agentes & Fiscal de Governança:**
+   - Pasta de governança `.agents/` instalada com as 5 skills mestras do projeto.
+   - Script fiscal de qualidade arquitetural `scripts/run-agent-audit.mjs` automatizado.
+
+---
+
 ## 3. LOG DE ATUALIZAÇÕES E ESTADO ATUAL (Changelog Vivo)
 
 - **[21/10/2026 17:45 BRT] (Antigravity):** **[FEATURE/FINANCE] Visão Espelhada do Aluno (`StudentPaymentSheet`) & Autodeclaração de Pagamento (Fase 2)** — (1) `src/components/student/StudentPaymentSheet.tsx`: modernizado no padrão do ecossistema WillPRO com: Card Hero com semáforo de status em tempo real (🟢 Mensalidade em Dia, 🟡 Vence em Breve, 🔴 Mensalidade Vencida), exibindo o valor mensal (`monthlyValue`), dia de vencimento (`paymentDay`) e plano (`plan`) acordados com o treinador via `resolveStudentCrmId`. (2) Fluxo de Autodeclaração com abas intuitivas: aba **PIX (Recomendado)** com cópia rápida de chave/payload EMV real, QR Code responsivo, upload de foto/PDF do comprovante e campo de observação; aba **Dinheiro na Quadra** com botão tátil grande ($\ge 56\text{px}$) `"💵 Avisar que pagarei no próximo treino"`, gravando o aviso diretamente na fatura com feedback háptico de celebração (`triggerHapticCelebration`) e aviso em tempo real para a prancheta do treinador. (3) Fiscal de governança: `node scripts/run-agent-audit.mjs` com **0 erros** e `pnpm run build` (Next.js 15) com **65 rotas estáticas e dinâmicas geradas com sucesso**. Status: ✅ Módulo Financeiro Completo de Ponta a Ponta.
