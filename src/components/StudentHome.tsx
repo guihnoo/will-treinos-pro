@@ -58,9 +58,8 @@ const StudentGoalsCard     = dynamic(() => import("@/components/student/StudentG
 const FrequencyAlertBanner = dynamic(() => import("@/components/student/FrequencyAlertBanner"), { ssr: false, loading: () => null });
 const MilestoneTracker     = dynamic(() => import("@/components/student/MilestoneTracker"),     { ssr: false, loading: () => null });
 const MonthlySummaryCard   = dynamic(() => import("@/components/student/MonthlySummaryCard"),   { ssr: false, loading: () => null });
-import StudentHomeModals from "@/components/student/StudentHomeModals";
-import StudentHomePrimaryModals from "@/components/student/StudentHomePrimaryModals";
-import { StudentAgendaPanel } from "@/components/student/StudentAgendaPanel";
+import StudentModalHost from "@/components/student/StudentModalHost";
+import { studentModalManager, useStudentModalStore } from "@/lib/studentModalManager";
 // ─── Shared constants / helpers (extracted) ───────────────────────────────────
 import {
   SPORTS_QUOTES,
@@ -85,7 +84,6 @@ import AppSectionCard from "@/components/ui/AppSectionCard";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 import { FloatingActionMenu } from "@/components/FloatingActionMenu";
-import WelcomeModal from "@/components/student/WelcomeModal";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
 import { useRealtimeXP } from "@/hooks/useRealtimeXP";
 import type { XPEvent } from "@/hooks/useRealtimeXP";
@@ -197,7 +195,7 @@ export default function StudentHome() {
     const key = `wt_welcomed_${user.id}`;
     try {
       if (!localStorage.getItem(key)) {
-        setShowWelcome(true);
+        studentModalManager.openModal("welcome");
       }
     } catch { /* ignore */ }
   }, [hydrated, user?.id]);
@@ -227,9 +225,8 @@ export default function StudentHome() {
       const threshold = CARD_TIER_THRESHOLDS[tier];
       if (prev < threshold && totalXP >= threshold) {
         const meta = TIER_META[tier];
-        setJustUnlockedTier(tier);
         const autoShareText = `Acabei de desbloquear o Card ${meta.label} ${meta.emoji} no Will Treinos PRO! ${totalXP} XP conquistados na quadra. Quem tá chegando no mesmo nível? 🏐🔥`;
-        setShareText(autoShareText);
+        studentModalManager.openModal("tierUnlocked", { tier, autoShareText });
         // Auto-post silencioso no feed (conquista oficial)
         try {
           const currentProfile = students.find(s => s.authUserId === user?.id || s.id === user?.id);
@@ -252,86 +249,20 @@ export default function StudentHome() {
     }
     prevXPRef.current = totalXP;
   }, [totalXP, hydrated]);
-  const [showNotif, setShowNotif] = useState(false);
-  const [lessonModal, setLessonModal] = useState<Lesson | null>(null);
-  const [evolModal, setEvolModal] = useState(false);
-  const [trackModalId, setTrackModalId] = useState<(typeof ACHIEVEMENT_TRACKS)[number]["id"] | null>(null);
-  const [statsModal, setStatsModal] = useState<"aulas"|"streak"|"nota"|"freq"|null>(null);
+
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [showAgendaPanel, setShowAgendaPanel] = useState(false);
-  const [ratingLesson, setRatingLesson] = useState<Lesson | null>(null);
-  const [confettiActive, setConfettiActive] = useState(false);
   const [equippedTierId, setEquippedTierId] = useState<string | null>(null);
   const [localNow, setLocalNow] = useState<Date | null>(null);
   const [kpiCount, setKpiCount] = useState({ aulas: 0, streak: 0, nota: 0, freq: 0 });
-  const [showDailyQuote, setShowDailyQuote] = useState(false);
-  const [showXpModal, setShowXpModal] = useState(false);
-  const [showGamificationDashboard, setShowGamificationDashboard] = useState(false);
-  const [showConquistasMore, setShowConquistasMore] = useState(false);
   const [evolutionExpanded, setEvolutionExpanded] = useState(false);
-  const [showDailyChallenges, setShowDailyChallenges] = useState(false);
-  const [showStudentTwin, setShowStudentTwin] = useState(false);
-  const [showPillarPanel, setShowPillarPanel] = useState(false);
-  const [showMessagesPanel, setShowMessagesPanel] = useState(false);
-  const [showAbsenceSheet, setShowAbsenceSheet] = useState(false);
-  const [showRepositionSheet, setShowRepositionSheet] = useState(false);
-  const [showTimeline, setShowTimeline] = useState(false);
-  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
-  const [showPushSettings, setShowPushSettings] = useState(false);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
-  const [showFreeTraining, setShowFreeTraining] = useState(false);
-  const [showAchievementFeed, setShowAchievementFeed] = useState(false);
-  const [showReferralPanel, setShowReferralPanel] = useState(false);
-  const [showTrainingPlan, setShowTrainingPlan] = useState(false);
-  const [showQRScanner, setShowQRScanner] = useState(false);
-  const [showAttendanceCalendar, setShowAttendanceCalendar] = useState(false);
-  const [showLessonHistory, setShowLessonHistory] = useState(false);
-  const [showStudentSchedule, setShowStudentSchedule] = useState(false);
-  const [showShareCard, setShowShareCard] = useState(false);
-  const [xpLogEntries, setXpLogEntries] = useState<XpLogEntry[]>([]);
-  const [showPayments, setShowPayments] = useState(false);
-  const [justUnlockedTier, setJustUnlockedTier] = useState<CardTier | null>(null);
-  const [shareText, setShareText] = useState("");
-  const [showWelcome, setShowWelcome] = useState(false);
   const [realtimeXPEvent, setRealtimeXPEvent] = useState<XPEvent | null>(null);
   const prevXPRef = useRef<number | null>(null);
   const hasInitializedRef = useRef(false);
   const ctaClass = `${TOUCH_TARGET_MIN} ${FOCUS_RING_GOLD}`;
-  const hasOverlayOpen = Boolean(
-    showWelcome ||
-    showNotif ||
-      lessonModal ||
-      evolModal ||
-      trackModalId ||
-      statsModal ||
-      showAgendaPanel ||
-      ratingLesson ||
-      showDailyQuote ||
-      showXpModal ||
-      showConquistasMore ||
-      showGamificationDashboard ||
-      showDailyChallenges ||
-      showStudentTwin ||
-      showPillarPanel ||
-      showMessagesPanel ||
-      showAbsenceSheet ||
-      showRepositionSheet ||
-      showTimeline ||
-      showNotificationCenter ||
-      showPushSettings ||
-      showFreeTraining ||
-      showAchievementFeed ||
-      showReferralPanel ||
-      showTrainingPlan ||
-      showQRScanner ||
-      showAttendanceCalendar ||
-      showLessonHistory ||
-      showPayments ||
-      showStudentSchedule ||
-      showShareCard ||
-      justUnlockedTier,
-  );
-  useBodyScrollLock(hasOverlayOpen);
+  const { isAnyModalOpen: isAnyStudentModalOpen } = useStudentModalStore();
+  useBodyScrollLock(isAnyStudentModalOpen);
+
   useEffect(() => {
     setLocalNow(new Date());
     const id = setInterval(() => setLocalNow(new Date()), 30_000);
@@ -348,30 +279,21 @@ export default function StudentHome() {
     if (!hydrated) return;
     const today = new Date().toDateString();
     const lastSeen = wtLsGetString("daily_quote_date", "");
-    if (lastSeen !== today) setShowDailyQuote(true);
+    if (lastSeen !== today) studentModalManager.openModal("dailyQuote");
   }, [hydrated]);
+
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
     const savedTier = wtLsGetString("equipped_tier_id", "");
     if (savedTier) setEquippedTierId(savedTier);
   }, [hydrated]);
 
-  useEffect(() => {
-    if (!showXpModal || !user?.id) {
-      setXpLogEntries([]);
-      return;
-    }
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
-    void fetchXpLogEntriesRemote(supabase, user.id, 10).then(entries => setXpLogEntries(entries));
-  }, [showXpModal, user?.id]);
-
   const profile = crmStudentId ? students.find((s) => s.id === crmStudentId) : undefined;
   const studentIdForData = crmStudentId ?? profile?.id ?? user?.id ?? "";
 
   useEffect(() => {
     if (!hydrated || searchParams.get("recados") !== "1" || !crmStudentId) return;
-    setShowMessagesPanel(true);
+    studentModalManager.openModal("messages");
   }, [hydrated, searchParams, crmStudentId]);
 
   // Sprint 104: Realtime XP via Supabase subscription
@@ -383,8 +305,7 @@ export default function StudentHome() {
       richToast.xp(xpAmount, "XP ganho em tempo real!");
     },
     onTierUnlock: (newTier, _xpGained) => {
-      setJustUnlockedTier(newTier);
-      setConfettiActive(true);
+      studentModalManager.openModal("tierUnlocked", { tier: newTier });
     },
   });
 
@@ -724,7 +645,7 @@ export default function StudentHome() {
     };
   });
   const unlockedTracksCount = achievementTracks.filter((track) => track.unlocked).length;
-  const activeTrack = trackModalId ? achievementTracks.find((track) => track.id === trackModalId) ?? null : null;
+  const activeTrack = null;
   const greeting = () => {
     if (!localNow) return "Olá";
     const h = localNow.getHours();
@@ -885,15 +806,6 @@ export default function StudentHome() {
         />
       )}
     </AnimatePresence>
-    {showWelcome && (
-      <WelcomeModal
-        name={(profile?.name || user?.name || "Atleta").split(" ")[0]!}
-        onClose={() => {
-          try { localStorage.setItem(`wt_welcomed_${user?.id ?? ""}`, "1"); } catch { /* ignore */ }
-          setShowWelcome(false);
-        }}
-      />
-    )}
     <PushPermissionBanner role="aluno" />
     <OfflineBanner />
     <AnimatePresence>
@@ -946,10 +858,10 @@ export default function StudentHome() {
             localNow={localNow}
             courtLocation={appConfig.courtLocation}
             getCategory={getCategory}
-            onOpenLesson={(lesson) => setLessonModal(lesson)}
+            onOpenLesson={(lesson) => studentModalManager.openModal("lesson", { lesson })}
             onOpenAgenda={() => {
               setSelectedDay(week7[0] ?? null);
-              setShowAgendaPanel(true);
+              studentModalManager.openModal("agenda");
             }}
             onCheckIn={(lessonId, uid) => {
               haptic([18, 12, 20]);
@@ -1038,7 +950,7 @@ export default function StudentHome() {
               </div>
               <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); haptic([16, 12, 24]); setShowNotif(true); }}
+                onClick={(e) => { e.preventDefault(); haptic([16, 12, 24]); studentModalManager.openModal("notif"); }}
                 className="relative mt-0.5"
                 aria-label="Notificações"
               >
@@ -1057,7 +969,7 @@ export default function StudentHome() {
         <button
           type="button"
           data-testid="btn-share-progress-card"
-          onClick={(e) => { e.preventDefault(); setShowShareCard(true); }}
+          onClick={(e) => { e.preventDefault(); studentModalManager.openModal("shareCard"); }}
           className="w-full flex items-center justify-center gap-2 rounded-2xl border border-[#EAB308]/20 bg-[#EAB308]/5 py-2.5 text-[11px] font-bold text-amber-400/80 hover:bg-[#EAB308]/10 hover:border-[#EAB308]/35 transition-all"
         >
           <span>📸</span>
@@ -1072,7 +984,7 @@ export default function StudentHome() {
             lessons={lessons}
             studentId={user.id}
             targetFrequency={profile.frequency}
-            onCheckIn={() => setShowAgendaPanel(true)}
+            onCheckIn={() => studentModalManager.openModal("agenda")}
           />
         </motion.div>
       )}
@@ -1093,7 +1005,7 @@ export default function StudentHome() {
         <motion.div variants={homeItem} className="px-1">
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={() => setRatingLesson(unratedLessons[0])}
+            onClick={() => studentModalManager.openModal("rating", { lesson: unratedLessons[0] })}
             className="w-full flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-left hover:bg-amber-500/12 transition-all"
           >
             <span className="text-2xl flex-shrink-0">⭐</span>
@@ -1115,7 +1027,7 @@ export default function StudentHome() {
       {/* BLOCO 2: XP + Progresso */}
       <motion.div variants={homeItem} className="grid grid-cols-2 gap-3">
         <button
-          onClick={() => { haptic([22, 16, 22]); setShowXpModal(true); }}
+          onClick={() => { haptic([22, 16, 22]); studentModalManager.openModal("xpHistory"); }}
           className={`rounded-2xl border border-white/[0.07] bg-zinc-950/50 p-4 text-left flex items-center gap-3 ${ctaClass}`}
         >
           <div className="relative h-14 w-14 flex-shrink-0">
@@ -1165,7 +1077,7 @@ export default function StudentHome() {
             ))}
           </div>
           <button
-            onClick={() => { haptic(16); setEvolModal(true); }}
+            onClick={() => { haptic(16); studentModalManager.openModal("evol"); }}
             className={`w-full text-[10px] font-bold text-zinc-500 hover:text-[#EAB308] transition-colors ${ctaClass}`}
           >
             Ver evolução completa →
@@ -1178,7 +1090,7 @@ export default function StudentHome() {
         <div className="flex items-center justify-between gap-2 mb-3">
           <h2 className="text-sm font-black uppercase tracking-[0.15em] text-[#EAB308]">Minha Semana</h2>
           <button
-            onClick={() => { setSelectedDay(week7[0] ?? null); setShowAgendaPanel(true); }}
+            onClick={() => { setSelectedDay(week7[0] ?? null); studentModalManager.openModal("agenda"); }}
             className={`text-[10px] font-bold text-[#EAB308] border border-[#EAB308]/25 bg-[#EAB308]/10 px-2.5 py-1 rounded-lg ${ctaClass}`}
           >
             Ver agenda
@@ -1239,7 +1151,7 @@ export default function StudentHome() {
         return (
           <motion.div variants={homeItem}>
             <button
-              onClick={() => { haptic(16); setShowPayments(true); }}
+              onClick={() => { haptic(16); studentModalManager.openModal("payments"); }}
               className={`w-full rounded-2xl border p-4 flex items-center gap-3 text-left transition-all ${
                 isLate || hasLate
                   ? "border-red-500/35 bg-red-500/8 hover:border-red-500/55"
@@ -1390,22 +1302,6 @@ export default function StudentHome() {
         );
       })()}
 
-      <StudentAgendaPanel
-        showAgendaPanel={showAgendaPanel}
-        setShowAgendaPanel={setShowAgendaPanel}
-        selectedDay={selectedDay}
-        setSelectedDay={setSelectedDay}
-        week7={week7}
-        myLessons={myLessons}
-        weekScheduledCount={weekScheduledCount}
-        weekCompletedCount={weekCompletedCount}
-        executionRate={executionRate}
-        setLessonModal={setLessonModal}
-        getLessonExecutionStage={getLessonExecutionStage}
-        haptic={haptic}
-        ctaClass={ctaClass}
-      />
-
       {/* Minha Evolução — colapsável (P2) */}
       {myLessons.length > 0 && (
         <motion.div variants={homeItem} className="mb-5">
@@ -1452,20 +1348,20 @@ export default function StudentHome() {
                 >
                   <div className="border-t border-white/[0.06] px-4 pb-4 pt-3 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowPillarPanel(true)}
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => studentModalManager.openModal("pillar")}
                         className={`text-[10px] font-bold text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-colors ${ctaClass}`}>
                         Notas do Coach
                       </motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowAttendanceCalendar(true)}
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => studentModalManager.openModal("attendanceCalendar")}
                         className={`text-[10px] font-bold text-zinc-300 bg-zinc-800/60 px-3 py-1.5 rounded-lg border border-zinc-700/40 hover:bg-zinc-700/60 transition-colors ${ctaClass}`}>
                         📅 Histórico
                       </motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setShowLessonHistory(true)}
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => studentModalManager.openModal("lessonHistory")}
                         data-testid="btn-lesson-history"
                         className={`text-[10px] font-bold text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/25 hover:bg-amber-500/20 transition-colors ${ctaClass}`}>
                         📋 Treinos
                       </motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEvolModal(true)}
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => studentModalManager.openModal("evol")}
                         className={`text-[10px] font-bold text-[#EAB308] bg-[#EAB308]/10 px-3 py-1.5 rounded-lg border border-[#EAB308]/20 hover:bg-[#EAB308]/20 transition-colors ${ctaClass}`}>
                         Relatório completo
                       </motion.button>
@@ -1522,7 +1418,7 @@ export default function StudentHome() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => setEvolModal(true)}
+                          onClick={() => studentModalManager.openModal("evol")}
                           className={`w-full rounded-xl border border-[#EAB308]/25 bg-[#EAB308]/8 py-2.5 text-[11px] font-bold text-[#EAB308] hover:bg-[#EAB308]/12 transition-colors ${ctaClass}`}
                         >
                           Ver gráfico completo e histórico de notas →
@@ -1573,7 +1469,10 @@ export default function StudentHome() {
                 studentId={profile.id}
                 authUserId={user.id}
                 totalXP={totalXP}
-                onConfetti={() => setConfettiActive(true)}
+                onConfetti={() => {
+                  richToast.xp(100, "Desafio semanal da turma!");
+                  studentModalManager.openModal("shareCard");
+                }}
               />
             )}
             {/* Priority 3: Onboarding (só novos atletas, não-Sex/Sáb para evitar stack) */}
@@ -1582,8 +1481,8 @@ export default function StudentHome() {
                 studentId={profile.id}
                 totalXP={totalXP}
                 hasAvatar={!!(profile.avatar && !profile.avatar.includes("dicebear"))}
-                onOpenChallenges={() => setShowDailyChallenges(true)}
-                onOpenTwin={() => { markTwinViewed(profile.id); setShowStudentTwin(true); }}
+                onOpenChallenges={() => studentModalManager.openModal("dailyChallenges")}
+                onOpenTwin={() => { markTwinViewed(profile.id); studentModalManager.openModal("studentTwin"); }}
                 onOpenFeed={() => { }}
                 onOpenProfile={() => { }}
               />
@@ -1605,14 +1504,14 @@ export default function StudentHome() {
             </div>
             <div className="flex flex-wrap items-center gap-1.5 justify-end">
               <button
-                onClick={() => { haptic([16, 12, 24]); setShowDailyChallenges(true); }}
+                onClick={() => { haptic([16, 12, 24]); studentModalManager.openModal("dailyChallenges"); }}
                 className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-violet-500/40 bg-violet-500/12 text-violet-300 transition-colors hover:bg-violet-500/20 ${ctaClass}`}
               >
                 Desafios ⚡
               </button>
               {crmStudentId && (
                 <button
-                  onClick={() => { haptic(18); setShowMessagesPanel(true); }}
+                  onClick={() => { haptic(18); studentModalManager.openModal("messages"); }}
                   className={`relative text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#EAB308]/40 bg-[#EAB308]/10 text-amber-300 transition-colors hover:bg-[#EAB308]/20 ${ctaClass}`}
                 >
                   💬 Recados
@@ -1624,7 +1523,7 @@ export default function StudentHome() {
                 </button>
               )}
               <button
-                onClick={() => { haptic(8); setShowConquistasMore(true); }}
+                onClick={() => { haptic(8); studentModalManager.openModal("conquistasMore"); }}
                 className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border border-zinc-700/60 bg-zinc-900/60 text-zinc-300 hover:text-white hover:border-zinc-600 transition-colors ${ctaClass}`}
               >
                 Mais ···
@@ -1643,7 +1542,7 @@ export default function StudentHome() {
           <p className="mt-1 text-[10px] text-zinc-600">Conquistas por trilha: consistência, técnica, fundamentos e execução competitiva.</p>
           <button
             type="button"
-            onClick={() => { haptic([16, 12, 24]); setShowGamificationDashboard(true); }}
+            onClick={() => { haptic([16, 12, 24]); studentModalManager.openModal("gamificationDashboard"); }}
             className={`mt-3 w-full rounded-xl border border-[#EAB308]/25 bg-[#EAB308]/8 px-3 py-2.5 text-left hover:bg-[#EAB308]/12 transition-colors ${ctaClass}`}
           >
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#EAB308]">XP e progresso</p>
@@ -1656,13 +1555,13 @@ export default function StudentHome() {
               <StudentTwinCard
                 studentId={user.id}
                 studentName={user.name ?? "Atleta"}
-                onOpenFull={() => setShowStudentTwin(true)}
+                onOpenFull={() => studentModalManager.openModal("studentTwin")}
               />
             </div>
           )}
         </div>
         <button
-          onClick={() => setTrackModalId("competitive")}
+          onClick={() => studentModalManager.openModal("track", { trackId: "competitive" })}
           className={`w-full rounded-2xl border border-zinc-800 bg-zinc-950/55 p-3 text-left hover:border-zinc-700 transition-colors ${ctaClass}`}
         >
           <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Jornada de conquistas</p>
@@ -1671,55 +1570,25 @@ export default function StudentHome() {
         </button>
       </motion.div>
 
-      <StudentHomePrimaryModals
-        showConquistasMore={showConquistasMore}
-        showNotif={showNotif}
-        lessonModal={lessonModal}
-        ratingLesson={ratingLesson}
-        confettiActive={confettiActive}
-        evolModal={evolModal}
-        trackModalId={trackModalId}
-        statsModal={statsModal}
-        showDailyQuote={showDailyQuote}
-        showXpModal={showXpModal}
-        showGamificationDashboard={showGamificationDashboard}
-        showDailyChallenges={showDailyChallenges}
-        showStudentTwin={showStudentTwin}
-        showPillarPanel={showPillarPanel}
-        showMessagesPanel={showMessagesPanel}
-        justUnlockedTier={justUnlockedTier}
-        showShareCard={showShareCard}
-        setShowConquistasMore={setShowConquistasMore}
-        setShowNotif={setShowNotif}
-        setLessonModal={setLessonModal}
-        setRatingLesson={setRatingLesson}
-        setConfettiActive={setConfettiActive}
-        setEvolModal={setEvolModal}
-        setTrackModalId={setTrackModalId}
-        setStatsModal={setStatsModal}
-        setShowDailyQuote={setShowDailyQuote}
-        setShowXpModal={setShowXpModal}
-        setShowGamificationDashboard={setShowGamificationDashboard}
-        setShowDailyChallenges={setShowDailyChallenges}
-        setShowStudentTwin={setShowStudentTwin}
-        setShowPillarPanel={setShowPillarPanel}
-        setShowMessagesPanel={setShowMessagesPanel}
-        setJustUnlockedTier={setJustUnlockedTier}
-        setShowShareCard={setShowShareCard}
-        setShowTimeline={setShowTimeline}
-        setShowNotificationCenter={setShowNotificationCenter}
-        setShowPushSettings={setShowPushSettings}
-        setShowAchievementFeed={setShowAchievementFeed}
-        setShowTrainingPlan={setShowTrainingPlan}
-        setShowReferralPanel={setShowReferralPanel}
-        user={user}
+      {/* Floating Action Menu */}
+      <FloatingActionMenu
+        onCheckIn={() => toast("💚 Check-in: vá até a quadra e pressione o botão de check-in da turma", "info")}
+        onViewLessons={() => studentModalManager.openModal("agenda")}
+        onViewSchedule={() => studentModalManager.openModal("studentSchedule")}
+        onReportAbsence={() => studentModalManager.openModal("absenceSheet")}
+        onRequestReposition={() => studentModalManager.openModal("repositionSheet")}
+        onViewPayments={() => studentModalManager.openModal("payments")}
+        onFreeTraining={() => studentModalManager.openModal("freeTraining")}
+        onQRScan={() => studentModalManager.openModal("qrScanner")}
+      />
+
+      {/* Central Desacoplada de Modais do Aluno */}
+      <StudentModalHost
         profile={profile}
-        students={students}
+        crmStudentId={crmStudentId}
         myLessons={myLessons}
         myFeedbacks={myFeedbacks}
         visibleNotifications={visibleNotifications}
-        xpLogEntries={xpLogEntries}
-        totalXP={totalXP}
         streak={streak}
         bestStreak={bestStreak}
         frequency={frequency}
@@ -1744,75 +1613,18 @@ export default function StudentHome() {
         equippedTier={equippedTier}
         xpByFundamental={xpByFundamental}
         dailyQuote={dailyQuote}
-        crmStudentId={crmStudentId}
-        shareText={shareText}
-        setShareText={setShareText}
-        xpFloatEvents={xpFloatEvents}
-        removeXPFloat={removeXPFloat}
-        haptic={haptic}
         checkInGate={checkInGate}
-        getLessonRating={getLessonRating}
-        addLessonRating={addLessonRating}
-        requestCheckIn={requestCheckIn}
-        markNotificationRead={markNotificationRead}
-        refreshCoachMessagesUnread={refreshCoachMessagesUnread}
-        addPost={addPost}
+        haptic={haptic}
         toast={toast}
         markTwinViewed={markTwinViewed}
         ctaClass={ctaClass}
-      />
-
-      {/* Floating Action Menu */}
-      <FloatingActionMenu
-        onCheckIn={() => toast("💚 Check-in: vá até a quadra e pressione o botão de check-in da turma", "info")}
-        onViewLessons={() => setShowAgendaPanel(true)}
-        onViewSchedule={() => setShowStudentSchedule(true)}
-        onReportAbsence={() => setShowAbsenceSheet(true)}
-        onRequestReposition={() => setShowRepositionSheet(true)}
-        onViewPayments={() => setShowPayments(true)}
-        onFreeTraining={() => setShowFreeTraining(true)}
-        onQRScan={() => setShowQRScanner(true)}
-      />
-
-      <StudentHomeModals
-        showAttendanceCalendar={showAttendanceCalendar}
-        showLessonHistory={showLessonHistory}
-        showStudentSchedule={showStudentSchedule}
-        showAbsenceSheet={showAbsenceSheet}
-        showRepositionSheet={showRepositionSheet}
-        showTimeline={showTimeline}
-        showNotificationCenter={showNotificationCenter}
-        showPushSettings={showPushSettings}
-        showFreeTraining={showFreeTraining}
-        showAchievementFeed={showAchievementFeed}
-        showReferralPanel={showReferralPanel}
-        showTrainingPlan={showTrainingPlan}
-        showQRScanner={showQRScanner}
-        showPayments={showPayments}
-        setShowAttendanceCalendar={setShowAttendanceCalendar}
-        setShowLessonHistory={setShowLessonHistory}
-        setShowStudentSchedule={setShowStudentSchedule}
-        setShowAbsenceSheet={setShowAbsenceSheet}
-        setShowRepositionSheet={setShowRepositionSheet}
-        setShowTimeline={setShowTimeline}
-        setShowNotificationCenter={setShowNotificationCenter}
-        setShowPushSettings={setShowPushSettings}
-        setShowFreeTraining={setShowFreeTraining}
-        setShowAchievementFeed={setShowAchievementFeed}
-        setShowReferralPanel={setShowReferralPanel}
-        setShowTrainingPlan={setShowTrainingPlan}
-        setShowQRScanner={setShowQRScanner}
-        setShowPayments={setShowPayments}
-        lessons={lessons}
-        profile={profile}
-        user={user}
-        streak={streak}
-        bestStreak={bestStreak}
-        getCategory={getCategory}
-        sessionExpired={sessionExpired}
-        sessionRecovering={sessionRecovering}
-        recoverSession={recoverSession}
-        sessionForceLogout={sessionForceLogout}
+        selectedDay={selectedDay}
+        setSelectedDay={setSelectedDay}
+        week7={week7}
+        weekScheduledCount={weekScheduledCount}
+        weekCompletedCount={weekCompletedCount}
+        executionRate={executionRate}
+        getLessonExecutionStage={getLessonExecutionStage}
       />
 
       {/* Invisible presence tracker — registra o aluno no canal Realtime de presença */}

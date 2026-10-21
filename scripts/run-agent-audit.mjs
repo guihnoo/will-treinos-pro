@@ -37,16 +37,22 @@ const studentHomePath = path.join(rootDir, "src/components/StudentHome.tsx");
 const cockpitStats = analyzeComponent(cockpitPath);
 const studentHomeStats = analyzeComponent(studentHomePath);
 
-// 2. Análise do CockpitModalHost
+// 2. Análise dos Hosts de Modais Desacoplados (Cockpit + Aluno)
 const modalHostPath = path.join(rootDir, "src/components/will/CockpitModalHost.tsx");
 let registeredModalsCount = 0;
 if (fs.existsSync(modalHostPath)) {
   const hostContent = fs.readFileSync(modalHostPath, "utf-8");
-  // Contar dynamic imports
   const dynamicImports = (hostContent.match(/dynamic\s*\(\s*\(\)\s*=>\s*import/g) || []).length;
-  // Ou contar casos do switch
   const caseMatches = (hostContent.match(/case\s+"[^"]+":/g) || []).length;
   registeredModalsCount = Math.max(dynamicImports, caseMatches);
+}
+
+const studentModalManagerPath = path.join(rootDir, "src/lib/studentModalManager.ts");
+let registeredStudentModalsCount = 0;
+if (fs.existsSync(studentModalManagerPath)) {
+  const managerContent = fs.readFileSync(studentModalManagerPath, "utf-8");
+  const keyMatches = (managerContent.match(/\|\s*"[a-zA-Z0-9_]+"/g) || []).length;
+  registeredStudentModalsCount = keyMatches;
 }
 
 // 3. Verificação do AuthWrapper
@@ -80,8 +86,9 @@ console.log(`│ WillCockpit.tsx                   │ ${cockpitStats.lines.toSt
 console.log(`│ StudentHome.tsx                   │ ${studentHomeStats.lines.toString().padEnd(12)} │ ${studentHomeStats.useStates.toString().padEnd(13)} │`);
 console.log("└───────────────────────────────────┴──────────────┴───────────────┘");
 
-console.log(`\n${c.bold}📦 CENTRAL DE MODAIS DESACOPLADA (CockpitModalHost.tsx):${c.reset}`);
-console.log(`  • Modais sob demanda registrados: ${c.gold}${c.bold}${registeredModalsCount}${c.reset}`);
+console.log(`\n${c.bold}📦 CENTRAIS DE MODAIS DESACOPLADAS:${c.reset}`);
+console.log(`  • CockpitModalHost.tsx (Admin/Coach): ${c.gold}${c.bold}${registeredModalsCount} modais sob demanda${c.reset}`);
+console.log(`  • StudentModalHost.tsx (Aluno/Mobile): ${c.gold}${c.bold}${registeredStudentModalsCount} modais gerenciados${c.reset}`);
 
 console.log(`\n${c.bold}🛡️ SEGURANÇA E ROTAS PÚBLICAS (AuthWrapper.tsx):${c.reset}`);
 const checkMark = (ok) => ok ? `${c.green}✅ Presente${c.reset}` : `${c.red}❌ Faltando${c.reset}`;
