@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, QrCode, Clock, RefreshCw, Users, Maximize2, Minimize2 } from "lucide-react";
 import QRCode from "react-qr-code";
 import type { Lesson } from "@/context/types";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 interface Props {
   lesson: Lesson;
@@ -12,53 +13,85 @@ interface Props {
   onClose: () => void;
 }
 
-const QR_TTL_SECONDS = 300; // 5 minutes
-
-function buildCheckInUrl(lessonId: string, ts: number): string {
-  const base = typeof window !== "undefined" ? window.location.origin : "";
-  return `${base}/checkin/${lessonId}?t=${ts}`;
-}
+const QR_TTL_SECONDS = 300; // 5 minutes — deve bater com QR_CHECKIN_TTL_SECONDS no servidor
 
 export default function QRCheckInModal({ lesson, lessonTitle, onClose }: Props) {
-  const [ts, setTs] = useState(() => Math.floor(Date.now() / 1000));
+  const [checkInUrl, setCheckInUrl] = useState<string | null>(null);
   const [remaining, setRemaining] = useState(QR_TTL_SECONDS);
   const [liveCount, setLiveCount] = useState<number>(lesson.presentStudents?.length ?? 0);
+  const [tokenError, setTokenError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const fullscreenRef = useRef<HTMLDivElement | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const enrolled = lesson.enrolledStudents?.length ?? 0;
-  const qrUrl = buildCheckInUrl(lesson.id, ts);
   const pct = Math.round((remaining / QR_TTL_SECONDS) * 100);
   const isUrgent = remaining <= 30;
 
-  // Countdown + auto-refresh
+  // Busca um token de check-in assinado no servidor — nunca gerado no client.
+  const fetchToken = useCallback(async () => {
+    try {
+      const sb = getSupabaseClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.access_token) {
+        setTokenError("Sessão expirada. Recarregue a página.");
+        return;
+      }
+      const res = await fetch("/api/checkin/qr-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ lessonId: lesson.id }),
+      });
+      const json = (await res.json()) as { checkInUrl?: string; error?: string };
+      if (!res.ok || !json.checkInUrl) {
+        setTokenError(json.error ?? "Não foi possível gerar o QR code.");
+        return;
+      }
+      setTokenError(null);
+      setCheckInUrl(json.checkInUrl);
+      setRemaining(QR_TTL_SECONDS);
+    } catch {
+      setTokenError("Falha de rede ao gerar QR code.");
+    }
+  }, [lesson.id]);
+
+  // Gera o primeiro token ao abrir + countdown/auto-renovação
+  useEffect(() => {
+    void fetchToken();
+  }, [fetchToken]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setRemaining(prev => {
         if (prev <= 1) {
-          setTs(Math.floor(Date.now() / 1000));
+          void fetchToken();
           return QR_TTL_SECONDS;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchToken]);
 
-  // Live check-in counter polling every 5s
+  // Live check-in counter polling every 5s — via endpoint staff-autenticado
   const pollCount = useCallback(async () => {
     try {
-      const currentTs = Math.floor(Date.now() / 1000);
+      const sb = getSupabaseClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.access_token) return;
       const res = await fetch(
-        `/api/student/qr-checkin?lessonId=${encodeURIComponent(lesson.id)}&token=${ts}`,
+        `/api/checkin/qr-token?lessonId=${encodeURIComponent(lesson.id)}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } },
       );
       if (res.ok) {
         const json = (await res.json()) as { count?: number };
         if (typeof json.count === "number") setLiveCount(json.count);
       }
     } catch { /* silently ignore */ }
-  }, [lesson.id, ts]);
+  }, [lesson.id]);
 
   useEffect(() => {
     void pollCount();
@@ -90,9 +123,8 @@ export default function QRCheckInModal({ lesson, lessonTitle, onClose }: Props) 
   }, []);
 
   const handleManualRefresh = useCallback(() => {
-    setTs(Math.floor(Date.now() / 1000));
-    setRemaining(QR_TTL_SECONDS);
-  }, []);
+    void fetchToken();
+  }, [fetchToken]);
 
   return (
     <motion.div
@@ -145,15 +177,25 @@ export default function QRCheckInModal({ lesson, lessonTitle, onClose }: Props) 
 
         {/* QR Code */}
         <div className="flex flex-col items-center px-8 py-6 gap-4">
-          <motion.div
-            key={ts}
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            className={`p-5 bg-white rounded-2xl shadow-[0_0_32px_rgba(234,179,8,0.15)] ${isFullscreen ? "p-8" : ""}`}
-          >
-            <QRCode value={qrUrl} size={isFullscreen ? 300 : 240} level="M" />
-          </motion.div>
+          {tokenError ? (
+            <div className="p-5 w-full text-center">
+              <p className="text-sm font-bold text-red-400">{tokenError}</p>
+            </div>
+          ) : checkInUrl ? (
+            <motion.div
+              key={checkInUrl}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className={`p-5 bg-white rounded-2xl shadow-[0_0_32px_rgba(234,179,8,0.15)] ${isFullscreen ? "p-8" : ""}`}
+            >
+              <QRCode value={checkInUrl} size={isFullscreen ? 300 : 240} level="M" />
+            </motion.div>
+          ) : (
+            <div className="p-5 w-full text-center">
+              <p className="text-sm text-zinc-500">Gerando QR code…</p>
+            </div>
+          )}
 
           {/* Timer bar */}
           <div className="w-full space-y-1.5">
