@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Mail, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { translateAuthError } from "@/lib/authErrorTranslator";
 
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState("");
@@ -31,7 +32,7 @@ export default function EsqueciSenhaPage() {
       if (sbError) throw sbError;
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar e-mail.");
+      setError(err instanceof Error ? translateAuthError(err.message) : "Erro ao enviar e-mail.");
     } finally {
       setLoading(false);
     }

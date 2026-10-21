@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Lock, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { translateAuthError } from "@/lib/authErrorTranslator";
 
 export default function NovaSenhaPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function NovaSenhaPage() {
       setDone(true);
       setTimeout(() => router.push("/login"), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao atualizar senha.");
+      setError(err instanceof Error ? translateAuthError(err.message) : "Erro ao atualizar senha.");
     } finally {
       setLoading(false);
     }

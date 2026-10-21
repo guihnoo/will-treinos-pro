@@ -12,13 +12,26 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 
-const PUBLIC_ROUTES = new Set(["/", "/login", "/cadastro", "/preview", "/signup", "/aguardando", "/esqueci-senha", "/nova-senha"]);
+const PUBLIC_ROUTES = new Set([
+  "/",
+  "/login",
+  "/cadastro",
+  "/preview",
+  "/signup",
+  "/aguardando",
+  "/esqueci-senha",
+  "/nova-senha",
+  "/termos",
+  "/privacidade",
+  "/offline.html",
+]);
 
 function isPublicRoute(pathname: string | null): boolean {
   if (!pathname) return false;
-  if (PUBLIC_ROUTES.has(pathname)) return true;
+  const cleanPath = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+  if (PUBLIC_ROUTES.has(cleanPath)) return true;
   // OAuth PKCE: evita gate de matrícula enquanto role ainda não foi resolvido
-  if (pathname.startsWith("/auth/")) return true;
+  if (cleanPath.startsWith("/auth/")) return true;
   return false;
 }
 

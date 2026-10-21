@@ -13,6 +13,7 @@ import { cadastroInviteRequired, getStoredInviteToken } from "@/lib/enrollmentSe
 import { verifyEnrollmentInviteWithServer } from "@/lib/verifyEnrollmentInvite";
 import { useEnrollmentInviteGate } from "@/hooks/useEnrollmentInviteGate";
 import { useTurnstile } from "@/hooks/useTurnstile";
+import { useAppConfig } from "@/context/AppConfigContext";
 import { EnrollmentInviteBlocked } from "@/components/enrollment/EnrollmentInviteBlocked";
 import type { StudentRole } from "@/context/types";
 
@@ -20,6 +21,7 @@ export default function SignupPage() {
   const router = useRouter();
   const { user, authResolved } = useAuth();
   const { addStudent } = useApp();
+  const { appConfig } = useAppConfig();
   const inviteGate = useEnrollmentInviteGate();
   const turnstile = useTurnstile();
   const turnstileContainerRef = useRef<HTMLDivElement>(null);
@@ -35,12 +37,6 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (inviteGate.ready && !inviteGate.blocked && authResolved && !user) {
-      router.replace("/login");
-    }
-  }, [inviteGate.ready, inviteGate.blocked, authResolved, user, router]);
-
   // Capture referral ID from URL query param and persist to sessionStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -55,7 +51,7 @@ export default function SignupPage() {
     }
   }, []);
 
-  if (!inviteGate.ready) {
+  if (!inviteGate.ready || !authResolved) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-black">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-800 border-t-[#EAB308]" />
@@ -67,10 +63,65 @@ export default function SignupPage() {
     return <EnrollmentInviteBlocked reason={inviteGate.reason} />;
   }
 
-  if (!authResolved || !user) {
+  // Se o visitante acessar /signup sem sessão, exibe a interface exclusiva de Acesso por Convite
+  if (!user) {
+    const whatsappDigits = (appConfig?.whatsappNumber || "5521999999999").replace(/\D/g, "");
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-black">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-zinc-800 border-t-[#EAB308]" />
+      <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-[#050505] p-6">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#EAB308] opacity-[0.06] blur-[120px]" />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-zinc-950/90 p-8 text-center backdrop-blur-xl shadow-2xl"
+        >
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#EAB308]/30 bg-[#EAB308]/10 text-3xl">
+            ⚡
+          </div>
+          <h2 className="mb-2 text-2xl font-black uppercase tracking-tight text-white">
+            Acesso por Convite
+          </h2>
+          <p className="mb-6 text-sm leading-relaxed text-zinc-400">
+            O cadastro no <strong className="text-white">Will Treinos PRO</strong> é exclusivo para atletas da equipe e convidados oficiais.
+          </p>
+
+          <div className="mb-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-4 text-left space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#EAB308]">
+              Já possui convite ou conta?
+            </p>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Faça login com seu Google ou e-mail para validar seu acesso e preencher a ficha de matrícula.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/login?next=/signup"
+              className="flex w-full items-center justify-center rounded-xl py-3.5 text-sm font-bold text-black transition-all hover:brightness-110 shadow-lg shadow-[#EAB308]/20"
+              style={{ background: "linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)" }}
+            >
+              Entrar e Continuar Cadastro
+            </Link>
+
+            <a
+              href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent("Olá Will! Gostaria de solicitar meu link de convite para treinar na equipe Will Treinos PRO.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 py-3 text-sm font-bold text-zinc-200 transition-colors hover:border-[#EAB308]/40 hover:text-[#EAB308]"
+            >
+              <span>💬</span>
+              <span>Solicitar vaga com o treinador</span>
+            </a>
+
+            <Link
+              href="/"
+              className="mt-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              Voltar à página inicial
+            </Link>
+          </div>
+        </motion.div>
       </div>
     );
   }

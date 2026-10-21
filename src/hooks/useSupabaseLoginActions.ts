@@ -7,6 +7,7 @@ import { clearWtRoleCookie } from "@/lib/appSessionHelpers";
 import { computeEffectiveRole, type DevImpersonation } from "@/lib/authPostLogin";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabaseClient";
 import { wtLegacyRoleRemove } from "@/lib/willLocalStorage";
+import { translateAuthError } from "@/lib/authErrorTranslator";
 
 const MISSING_SUPABASE_MSG =
   "Supabase não configurado no ambiente. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY (ou NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).";
@@ -53,7 +54,7 @@ export function useSupabaseLoginActions(options: {
       });
 
       if (error || !data.user) {
-        return { ok: false as const, message: error?.message || "Não foi possível autenticar." };
+        return { ok: false as const, message: translateAuthError(error?.message) };
       }
 
       await applySupabaseSession(data.user);
@@ -87,7 +88,7 @@ export function useSupabaseLoginActions(options: {
         },
       });
       if (error) {
-        return { ok: false as const, message: error.message };
+        return { ok: false as const, message: translateAuthError(error.message) };
       }
       const url = data?.url;
       if (typeof window !== "undefined" && url) {
