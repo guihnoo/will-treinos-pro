@@ -1,11 +1,19 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence } from "framer-motion";
 import { useModalStore } from "@/lib/modalManager";
+import { useStudents } from "@/context/StudentsContext";
+import { useLessons } from "@/context/LessonsContext";
+import { usePayments } from "@/context/PaymentsContext";
+import { useCatalog } from "@/context/CatalogContext";
+import { useSessionRecovery } from "@/hooks/useSessionRecovery";
+import type { Student } from "@/context/types";
 
-// Carregamento sob demanda (lazy loading) dos modais autossuficientes do Cockpit
+// ==========================================
+// LOTE 1: MODAIS AUTOSSUFICIENTES (18 MODAIS)
+// ==========================================
 const XPModerationPanel = dynamic(() => import("./XPModerationPanel"), {
   ssr: false,
   loading: () => null,
@@ -96,15 +104,102 @@ const AdminSettingsPanel = dynamic(() => import("./AdminSettingsPanel"), {
   loading: () => null,
 });
 
+// ==========================================
+// LOTE 2: MODAIS DE ALUNO & FLUXO (10 MODAIS)
+// ==========================================
+const AthleteTwinPanel = dynamic(() => import("./AthleteTwinPanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const EvaluationHistoryPanel = dynamic(() => import("./EvaluationHistoryPanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const StudentFinanceSheet = dynamic(() => import("./StudentFinanceSheet"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const TemporalComparisonPanel = dynamic(() => import("./TemporalComparisonPanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const StudentReportSheet = dynamic(() => import("./StudentReportSheet"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const ScoutModePanel = dynamic(() => import("./ScoutModePanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const ImportStudentsModal = dynamic(() => import("./ImportStudentsModal"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const BroadcastMessagePanel = dynamic(() => import("./BroadcastMessagePanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const GlobalSearchModal = dynamic(() => import("./GlobalSearchModal"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const SessionExpiredModal = dynamic(() => import("@/components/SessionExpiredModal"), {
+  ssr: false,
+  loading: () => null,
+});
+
+export interface CockpitModalHostProps {
+  onSelectStudent?: (studentId: string) => void;
+  onSelectLesson?: (lessonId: string) => void;
+  onGoToApproval?: () => void;
+}
+
 /**
- * Orquestrador Central de Modais Autossuficientes do WillCockpit (Lote 1).
- * Consome useModalStore() sem re-renderizar o Cockpit inteiro.
+ * Orquestrador Central de Modais Desacoplados do WillCockpit (Lotes 1 e 2).
+ * Consome useModalStore(), useStudents(), useLessons() e usePayments() sem re-renderizar o corpo do Cockpit.
  */
-export function CockpitModalHost() {
-  const { activeModal, closeModal } = useModalStore();
+export function CockpitModalHost({
+  onSelectStudent,
+  onSelectLesson,
+  onGoToApproval,
+}: CockpitModalHostProps = {}) {
+  const { activeModal, modalPayload, closeModal } = useModalStore();
+  const { students } = useStudents();
+  const { lessons } = useLessons();
+  const { payments } = usePayments();
+  const { getCategory } = useCatalog();
+
+  // Monitoramento global de sessão expirada
+  const {
+    isExpired: sessionExpired,
+    recovering: sessionRecovering,
+    recover: recoverSession,
+    forceLogout: sessionForceLogout,
+  } = useSessionRecovery();
+
+  // Resolver aluno com memoização segura
+  const resolvedStudent = useMemo<Student | null>(() => {
+    if (!modalPayload) return null;
+    if (modalPayload.student && typeof modalPayload.student === "object") {
+      return modalPayload.student as Student;
+    }
+    const id = modalPayload.studentId as string | undefined;
+    if (!id) return null;
+    return students.find((s) => s.id === id) ?? null;
+  }, [modalPayload, students]);
 
   return (
     <>
+      {/* ── LOTE 1: MODAIS AUTOSSUFICIENTES ── */}
       <AnimatePresence>
         {activeModal === "xpModeration" ? <XPModerationPanel onClose={closeModal} /> : null}
       </AnimatePresence>
@@ -190,6 +285,102 @@ export function CockpitModalHost() {
       <AnimatePresence>
         {activeModal === "adminSettings" ? <AdminSettingsPanel onClose={closeModal} /> : null}
       </AnimatePresence>
+
+      {/* ── LOTE 2: MODAIS DE ALUNO & FLUXO ── */}
+      <AnimatePresence>
+        {activeModal === "athleteTwin" && resolvedStudent ? (
+          <AthleteTwinPanel student={resolvedStudent} onClose={closeModal} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "evaluationHistory" && (resolvedStudent || modalPayload?.studentId) ? (
+          <EvaluationHistoryPanel
+            studentId={resolvedStudent?.id ?? (modalPayload?.studentId as string)}
+            studentName={resolvedStudent?.name ?? ((modalPayload?.studentName as string) || "Aluno")}
+            onClose={closeModal}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "studentFinance" && resolvedStudent ? (
+          <StudentFinanceSheet student={resolvedStudent} onClose={closeModal} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "temporalComparison" && resolvedStudent ? (
+          <TemporalComparisonPanel student={resolvedStudent} onClose={closeModal} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "studentReport" && resolvedStudent ? (
+          <StudentReportSheet student={resolvedStudent} onClose={closeModal} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "scoutMode" ? (
+          <ScoutModePanel
+            students={(modalPayload?.students as Student[]) ?? students}
+            onClose={closeModal}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "importStudents" ? (
+          <ImportStudentsModal
+            onClose={closeModal}
+            onGoToApproval={() => {
+              closeModal();
+              if (typeof modalPayload?.onGoToApproval === "function") {
+                modalPayload.onGoToApproval();
+              } else if (onGoToApproval) {
+                onGoToApproval();
+              }
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "broadcast" ? (
+          <BroadcastMessagePanel onClose={closeModal} />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "globalSearch" ? (
+          <GlobalSearchModal
+            students={students}
+            lessons={lessons}
+            payments={payments}
+            getCategory={getCategory}
+            onClose={closeModal}
+            onSelectStudent={(id) => {
+              closeModal();
+              const callback = (modalPayload?.onSelectStudent as ((id: string) => void) | undefined) ?? onSelectStudent;
+              callback?.(id);
+            }}
+            onSelectLesson={(id) => {
+              closeModal();
+              const callback = (modalPayload?.onSelectLesson as ((id: string) => void) | undefined) ?? onSelectLesson;
+              callback?.(id);
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      {/* Modal global de recuperação de sessão */}
+      <SessionExpiredModal
+        isOpen={sessionExpired}
+        onReconnect={recoverSession}
+        onLogout={sessionForceLogout}
+        recovering={sessionRecovering}
+      />
     </>
   );
 }

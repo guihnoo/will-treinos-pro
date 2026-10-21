@@ -84,22 +84,13 @@ const CreateLessonModal    = dynamic(() => import("@/components/CreateLessonModa
 const LessonRatingsSheet   = dynamic(() => import("./LessonRatingsSheet"), { ssr: false, loading: () => null });
 const LiveLessonCoachPanel = dynamic(() => import("./LiveLessonCoachPanel"), { ssr: false, loading: () => null });
 const TrainingPlansPanel   = dynamic(() => import("./TrainingPlansPanel"), { ssr: false, loading: () => null });
-const AthleteTwinPanel     = dynamic(() => import("./AthleteTwinPanel"), { ssr: false, loading: () => null });
-const EvaluationHistoryPanel = dynamic(() => import("./EvaluationHistoryPanel"), { ssr: false, loading: () => null });
-const BroadcastMessagePanel  = dynamic(() => import("./BroadcastMessagePanel"),  { ssr: false, loading: () => null });
 const QRCheckInModal         = dynamic(() => import("./QRCheckInModal"),         { ssr: false, loading: () => null });
 const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),      { ssr: false, loading: () => null });
 const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),       { ssr: false, loading: () => null });
 const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),   { ssr: false, loading: () => null });
 const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),    { ssr: false, loading: () => null });
-const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet"),        { ssr: false, loading: () => null });
-const ScoutModePanel             = dynamic(() => import("./ScoutModePanel"),             { ssr: false, loading: () => null });
-const TemporalComparisonPanel    = dynamic(() => import("./TemporalComparisonPanel"),    { ssr: false, loading: () => null });
-const StudentReportSheet          = dynamic(() => import("./StudentReportSheet"),          { ssr: false, loading: () => null });
-const GlobalSearchModal           = dynamic(() => import("./GlobalSearchModal"),           { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import EmptyCockpitGuide from "./EmptyCockpitGuide";
-const ImportStudentsModal = dynamic(() => import("./ImportStudentsModal"), { ssr: false, loading: () => null });
 import StudentTagsEditor from "./StudentTagsEditor";
 import { STUDENT_TAGS } from "@/lib/studentTags";
 import KpiSparkline from "@/components/ui/KpiSparkline";
@@ -108,8 +99,6 @@ import { MODAL_BODY_SCROLL, MODAL_FIXED_OVERLAY_SCROLL, MODAL_OVERLAY_CENTER_WRA
 import { localDateISO, getMonday, paymentReferenceForDate } from "@/lib/dateUtils";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
-import { useSessionRecovery } from "@/hooks/useSessionRecovery";
-import SessionExpiredModal from "@/components/SessionExpiredModal";
 function currencyBRL(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -185,7 +174,6 @@ const INTERACTIVE_FOCUS_RING =
 export default function WillCockpit() {
   const router = useRouter();
   const { toast } = useToast();
-  const { isExpired: sessionExpired, recovering: sessionRecovering, recover: recoverSession, forceLogout: sessionForceLogout } = useSessionRecovery();
   const { payments, pendingOrLatePaymentsCount, currentMonthReference, currentMonthBuckets, proofPendingCount } = usePayments();
   const { appConfig, cadastroPath, cadastroInviteUrl, generateEnrollmentInviteCode } = useAppConfig();
   const { categories, venues, getCategory } = useCatalog();
@@ -208,24 +196,10 @@ export default function WillCockpit() {
   const [showLivePanel, setShowLivePanel] = useState(false);
   const [showTrainingPlans, setShowTrainingPlans] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
-  const [showAthleteTwin, setShowAthleteTwin] = useState(false);
-  const [twinStudentId, setTwinStudentId] = useState<string | null>(null);
-  const [showEvalHistory, setShowEvalHistory] = useState(false);
-  const [evalHistoryStudentId, setEvalHistoryStudentId] = useState<string | null>(null);
-  const [showBroadcast, setShowBroadcast] = useState(false);
   const [showQRCheckin, setShowQRCheckin] = useState(false);
   const [showLessonRecap, setShowLessonRecap] = useState(false);
   const [showQuickAttendance, setShowQuickAttendance] = useState(false);
   const [showBulkEval, setShowBulkEval] = useState(false);
-  const [showStudentFinance, setShowStudentFinance] = useState(false);
-  const [financeStudentId, setFinanceStudentId] = useState<string | null>(null);
-  const [showScoutMode, setShowScoutMode] = useState(false);
-  const [showStudentReport, setShowStudentReport] = useState(false);
-  const [reportStudentId, setReportStudentId] = useState<string | null>(null);
-  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
-  const [showTemporalComparison, setShowTemporalComparison] = useState(false);
-  const [temporalStudentId, setTemporalStudentId] = useState<string | null>(null);
-  const [showImportStudents, setShowImportStudents] = useState(false);
   const { isAnyModalOpen: isAnyHostModalOpen } = useModalStore();
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "alertas" | "turma" | "feed">("hoje");
@@ -385,15 +359,6 @@ export default function WillCockpit() {
     showCreateLesson ||
     showLivePanel ||
     showTrainingPlans ||
-    showAthleteTwin ||
-    showEvalHistory ||
-    showBroadcast ||
-    showStudentFinance ||
-    showScoutMode ||
-    showStudentReport ||
-    showGlobalSearch ||
-    showTemporalComparison ||
-    showImportStudents ||
     showQRCheckin ||
     showLessonRecap ||
     showQuickAttendance ||
@@ -401,12 +366,16 @@ export default function WillCockpit() {
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
-  // Ctrl+K / Cmd+K → Global Search
+  // Ctrl+K / Cmd+K → Global Search via Central de Modais
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        setShowGlobalSearch((v) => !v);
+        if (modalManager.isOpen("globalSearch")) {
+          modalManager.closeModal();
+        } else {
+          modalManager.openModal("globalSearch");
+        }
       }
     };
     window.addEventListener("keydown", handler);
@@ -535,11 +504,6 @@ export default function WillCockpit() {
   const selectedApprovalBlockedCount = selectedApprovalIds.length - selectedApprovalReadyCount;
   const selectedLesson = useMemo(() => lessons.find((lesson) => lesson.id === selectedLessonId) ?? null, [lessons, selectedLessonId]);
   const selectedStudent = useMemo(() => students.find((student) => student.id === selectedStudentId) ?? null, [selectedStudentId, students]);
-  const twinStudent = useMemo(() => students.find((s) => s.id === twinStudentId) ?? null, [twinStudentId, students]);
-  const evalHistoryStudent = useMemo(() => students.find((s) => s.id === evalHistoryStudentId) ?? null, [evalHistoryStudentId, students]);
-  const financeStudent = useMemo(() => students.find((s) => s.id === financeStudentId) ?? null, [financeStudentId, students]);
-  const reportStudent = useMemo(() => students.find((s) => s.id === reportStudentId) ?? null, [reportStudentId, students]);
-  const temporalStudent = useMemo(() => students.find((s) => s.id === temporalStudentId) ?? null, [temporalStudentId, students]);
   const birthdayStudents = useMemo(() => {
     const today = new Date();
     const todayM = today.getMonth() + 1;
@@ -754,7 +718,7 @@ export default function WillCockpit() {
         resolverLabel={resolverLabel}
         resolverHint={resolverHint}
         onResolver={handleCockpitResolver}
-        onSearch={() => setShowGlobalSearch(true)}
+        onSearch={() => modalManager.openModal("globalSearch")}
       />
 
       {/* ── Tab bar ── */}
@@ -1436,7 +1400,7 @@ export default function WillCockpit() {
             data-testid="btn-scout-mode"
             onClick={() => {
               haptic(20);
-              setShowScoutMode(true);
+              modalManager.openModal("scoutMode");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Comparar dois atletas lado a lado"
@@ -1557,7 +1521,7 @@ export default function WillCockpit() {
             data-testid="btn-import-students"
             onClick={() => {
               haptic(16);
-              setShowImportStudents(true);
+              modalManager.openModal("importStudents", { onGoToApproval: () => setActiveTab("turma") });
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 px-4 py-3 text-sm font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Importar alunos via CSV"
@@ -1927,7 +1891,7 @@ export default function WillCockpit() {
               </button>
               <button
                 type="button"
-                onClick={() => { haptic(18); setShowBroadcast(true); }}
+                onClick={() => { haptic(18); modalManager.openModal("broadcast"); }}
                 className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/8 px-4 py-3 text-sm font-black text-amber-200 transition hover:border-amber-400/55 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
               >
                 <Megaphone className="h-5 w-5 text-amber-400" />
@@ -1939,30 +1903,6 @@ export default function WillCockpit() {
       )}
 
       </motion.div>
-
-      <AnimatePresence>
-        {showGlobalSearch && (
-          <GlobalSearchModal
-            onClose={() => setShowGlobalSearch(false)}
-            students={students}
-            lessons={lessons}
-            payments={payments}
-            getCategory={getCategory}
-            onSelectStudent={(studentId) => {
-              setShowGlobalSearch(false);
-              setSelectedStudentId(studentId);
-              setSelectedStudentLayoutId(null);
-              setShowStudentModal(true);
-            }}
-            onSelectLesson={(lessonId) => {
-              setShowGlobalSearch(false);
-              setSelectedLessonId(lessonId);
-              setSelectedLessonLayoutId(null);
-              setShowLessonModal(true);
-            }}
-          />
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {showApprovalModal ? (
@@ -3058,9 +2998,8 @@ export default function WillCockpit() {
                   whileTap={PRESS_SCALE}
                   data-testid="btn-student-finance"
                   onClick={() => {
-                    setFinanceStudentId(selectedStudent.id);
                     setShowStudentModal(false);
-                    setShowStudentFinance(true);
+                    modalManager.openModal("studentFinance", { studentId: selectedStudent.id, student: selectedStudent });
                   }}
                   className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 py-3 text-[12px] font-black text-amber-200 transition-all hover:border-[#EAB308]/60 hover:bg-[#EAB308]/15"
                 >
@@ -3071,9 +3010,8 @@ export default function WillCockpit() {
                   type="button"
                   whileTap={PRESS_SCALE}
                   onClick={() => {
-                    setTwinStudentId(selectedStudent.id);
                     setShowStudentModal(false);
-                    setShowAthleteTwin(true);
+                    modalManager.openModal("athleteTwin", { studentId: selectedStudent.id, student: selectedStudent });
                   }}
                   className="w-full flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 py-3 text-[12px] font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15"
                 >
@@ -3084,9 +3022,8 @@ export default function WillCockpit() {
                   type="button"
                   whileTap={PRESS_SCALE}
                   onClick={() => {
-                    setEvalHistoryStudentId(selectedStudent.id);
                     setShowStudentModal(false);
-                    setShowEvalHistory(true);
+                    modalManager.openModal("evaluationHistory", { studentId: selectedStudent.id, studentName: selectedStudent.name });
                   }}
                   className="w-full flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 py-3 text-[12px] font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15"
                 >
@@ -3098,9 +3035,8 @@ export default function WillCockpit() {
                   whileTap={PRESS_SCALE}
                   data-testid="btn-student-report"
                   onClick={() => {
-                    setReportStudentId(selectedStudent.id);
                     setShowStudentModal(false);
-                    setShowStudentReport(true);
+                    modalManager.openModal("studentReport", { studentId: selectedStudent.id, student: selectedStudent });
                   }}
                   className="w-full flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 py-3 text-[12px] font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15"
                 >
@@ -3112,9 +3048,8 @@ export default function WillCockpit() {
                   whileTap={PRESS_SCALE}
                   data-testid="btn-temporal-comparison"
                   onClick={() => {
-                    setTemporalStudentId(selectedStudent.id);
                     setShowStudentModal(false);
-                    setShowTemporalComparison(true);
+                    modalManager.openModal("temporalComparison", { studentId: selectedStudent.id, student: selectedStudent });
                   }}
                   className="w-full flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 py-3 text-[12px] font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15"
                 >
@@ -3388,34 +3323,6 @@ export default function WillCockpit() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showAthleteTwin && twinStudent ? (
-          <AthleteTwinPanel
-            student={twinStudent}
-            onClose={() => {
-              setShowAthleteTwin(false);
-              setTwinStudentId(null);
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showEvalHistory && evalHistoryStudent ? (
-          <EvaluationHistoryPanel
-            studentId={evalHistoryStudent.id}
-            studentName={evalHistoryStudent.name}
-            onClose={() => { setShowEvalHistory(false); setEvalHistoryStudentId(null); }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showBroadcast ? (
-          <BroadcastMessagePanel onClose={() => setShowBroadcast(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showQRCheckin && selectedLesson ? (
           <QRCheckInModal
             lesson={selectedLesson}
@@ -3455,72 +3362,19 @@ export default function WillCockpit() {
         ) : null}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showStudentFinance && financeStudent ? (
-          <StudentFinanceSheet
-            student={financeStudent}
-            onClose={() => {
-              setShowStudentFinance(false);
-              setFinanceStudentId(null);
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showScoutMode ? (
-          <ScoutModePanel
-            students={students}
-            onClose={() => setShowScoutMode(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showStudentReport && reportStudent ? (
-          <StudentReportSheet
-            student={reportStudent}
-            onClose={() => {
-              setShowStudentReport(false);
-              setReportStudentId(null);
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showTemporalComparison && temporalStudent ? (
-          <TemporalComparisonPanel
-            student={temporalStudent}
-            onClose={() => {
-              setShowTemporalComparison(false);
-              setTemporalStudentId(null);
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showImportStudents ? (
-          <ImportStudentsModal
-            onClose={() => setShowImportStudents(false)}
-            onGoToApproval={() => {
-              setShowImportStudents(false);
-              setActiveTab("turma");
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      {/* Central Desacoplada de Modais (Lote 1) */}
-      <CockpitModalHost />
-
-      {/* ===== SESSION EXPIRED MODAL ===== */}
-      <SessionExpiredModal
-        isOpen={sessionExpired}
-        onReconnect={recoverSession}
-        onLogout={sessionForceLogout}
-        recovering={sessionRecovering}
+      {/* Central Desacoplada de Modais (Lotes 1 e 2) */}
+      <CockpitModalHost
+        onSelectStudent={(studentId) => {
+          setSelectedStudentId(studentId);
+          setSelectedStudentLayoutId(null);
+          setShowStudentModal(true);
+        }}
+        onSelectLesson={(lessonId) => {
+          setSelectedLessonId(lessonId);
+          setSelectedLessonLayoutId(null);
+          setShowLessonModal(true);
+        }}
+        onGoToApproval={() => setActiveTab("turma")}
       />
     </div>
     </LayoutGroup>

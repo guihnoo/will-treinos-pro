@@ -5,8 +5,10 @@
  */
 
 import { useSyncExternalStore, useEffect } from "react";
+import type { Student, Lesson, Payment } from "@/context/types";
 
 export type CockpitModalKey =
+  // Lote 1: Modais Autossuficientes
   | "adminSettings"
   | "appHealth"
   | "attendanceHeatmap"
@@ -23,11 +25,40 @@ export type CockpitModalKey =
   | "evaluationTemplates"
   | "weeklyChallenge"
   | "absenceTracker"
-  | "broadcast"
   | "attention"
   | "coachOnboarding"
+  // Lote 2: Modais de Aluno e Fluxo
+  | "athleteTwin"
+  | "evaluationHistory"
+  | "studentFinance"
+  | "temporalComparison"
+  | "studentReport"
+  | "scoutMode"
   | "importStudents"
+  | "broadcast"
+  | "globalSearch"
+  | "sessionExpired"
   | (string & {});
+
+export interface CockpitModalPayloadMap {
+  athleteTwin: { studentId?: string; student?: Student };
+  evaluationHistory: { studentId: string; studentName?: string };
+  studentFinance: { studentId?: string; student?: Student };
+  temporalComparison: { studentId?: string; student?: Student };
+  studentReport: { studentId?: string; student?: Student };
+  scoutMode: { students?: Student[] };
+  importStudents: { onGoToApproval?: () => void };
+  broadcast: Record<string, unknown> | undefined;
+  globalSearch: {
+    students?: Student[];
+    lessons?: Lesson[];
+    payments?: Payment[];
+    onSelectStudent?: (id: string) => void;
+    onSelectLesson?: (id: string) => void;
+  };
+  sessionExpired: Record<string, unknown> | undefined;
+  [key: string]: unknown;
+}
 
 export interface ModalState {
   activeModal: CockpitModalKey | null;
@@ -57,10 +88,13 @@ export const modalManager = {
     };
   },
 
-  openModal(key: CockpitModalKey, payload: Record<string, unknown> | null = null): void {
+  openModal<K extends CockpitModalKey>(
+    key: K,
+    payload: (K extends keyof CockpitModalPayloadMap ? CockpitModalPayloadMap[K] : Record<string, unknown>) | null = null
+  ): void {
     currentState = {
       activeModal: key,
-      modalPayload: payload,
+      modalPayload: payload as Record<string, unknown> | null,
     };
     notify();
   },
@@ -83,8 +117,8 @@ export const modalManager = {
  * Hook para componentes consumirem o estado do modal manager com re-renders cirúrgicos.
  */
 export function useModalStore(): ModalState & {
-  openModal: (key: CockpitModalKey, payload?: Record<string, unknown> | null) => void;
-  closeModal: () => void;
+  openModal: typeof modalManager.openModal;
+  closeModal: typeof modalManager.closeModal;
   isAnyModalOpen: boolean;
 } {
   const state = useSyncExternalStore(
