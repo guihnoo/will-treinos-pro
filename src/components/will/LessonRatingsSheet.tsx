@@ -2,12 +2,14 @@
 
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquarePlus, Users, User, Trophy, Save, Activity, Target, Shield, ArrowUpRight, Crosshair, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { MessageSquarePlus, Users, User, Trophy, Save, Activity, Target, Shield, ArrowUpRight, Crosshair, AlertCircle, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useStudents } from "@/context/StudentsContext";
 import { useLessons } from "@/context/LessonsContext";
 import { useGamification } from "@/context/GamificationContext";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { useAbsenceStreak } from "@/lib/useAbsenceStreak";
+import { triggerHapticImpact, triggerHapticCelebration } from "@/lib/hapticFeedback";
+import { CourtEvaluationSlider } from "./CourtEvaluationSlider";
 
 interface LessonRatingsSheetProps {
   lesson: any;
@@ -74,6 +76,7 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
   };
 
   const currentEval = selectedStudentId ? evaluations[selectedStudentId] || {} : {};
+  const currentAthleteIdx = enrolledAthletes.findIndex((athlete: any) => athlete.id === selectedStudentId);
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -197,7 +200,7 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
                   <div className="bg-[#050505] border border-white/5 rounded-2xl p-4">
                     <p className="text-[10px] uppercase tracking-widest text-[#EAB308] font-bold mb-4">Motor de XP (5 Fundamentos)</p>
                     
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {FUNDAMENTALS.map((fund) => {
                         const score = currentEval[fund.id] ?? 5;
                         const hasFeedback = !!currentEval[`${fund.id}_feedback`];
@@ -205,34 +208,19 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
                         const isInputActive = activeFeedbackInput === inputId;
 
                         return (
-                          <div key={fund.id} className="relative">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <fund.icon className={`w-4 h-4 ${fund.color}`} />
-                                <span className="text-[12px] font-bold text-white">{fund.label}</span>
-                                <span className="text-[9px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-zinc-500">Peso {fund.weight}x</span>
-                              </div>
-                              <span className="text-[14px] font-black tabular-nums text-white">{score.toFixed(1)}</span>
-                            </div>
-
+                          <div key={fund.id} className="space-y-2">
                             {/* Mini Historical Context */}
                             {selectedStudentId && (() => {
                               const history = getFundamentalHistory(selectedStudentId, fund.id);
-                              if (history.length === 0) {
-                                return (
-                                  <div className="text-[10px] text-zinc-600 mb-2 italic">
-                                    Primeira avaliação
-                                  </div>
-                                );
-                              }
+                              if (history.length === 0) return null;
                               const trend = history.length > 1
                                 ? history[history.length - 1].total_xp > history[0].total_xp ? "up" : history[history.length - 1].total_xp < history[0].total_xp ? "down" : "flat"
                                 : "flat";
                               return (
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-[10px] text-zinc-600">Últimas notas:</span>
+                                <div className="flex items-center gap-2 px-1">
+                                  <span className="text-[10px] text-zinc-500">Últimas notas:</span>
                                   <div className="flex items-center gap-1">
-                                    {history.map((log, idx) => (
+                                    {history.map((log) => (
                                       <span
                                         key={log.id}
                                         className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#EAB308]/20 text-[#EAB308]"
@@ -251,18 +239,16 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
                               );
                             })()}
 
-                            <input
-                              type="range"
-                              min={0}
-                              max={10}
-                              step={0.5}
+                            <CourtEvaluationSlider
+                              label={fund.label}
+                              icon={fund.icon}
+                              weightBadge={`Peso ${fund.weight}x`}
                               value={score}
-                              onChange={(e) => handleScoreChange(selectedStudentId, fund.id, Number(e.target.value))}
-                              className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#EAB308]"
+                              onChange={(val) => handleScoreChange(selectedStudentId, fund.id, val)}
                             />
 
                             {/* Hidden Feedback Toggle */}
-                            <div className="mt-2 flex justify-end">
+                            <div className="flex justify-end px-1">
                               <button
                                 onClick={() => setActiveFeedbackInput(isInputActive ? null : inputId)}
                                 className={`inline-flex items-center gap-1.5 text-[10px] font-bold transition-colors ${
@@ -281,7 +267,7 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: "auto", opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
-                                  className="overflow-hidden mt-2"
+                                  className="overflow-hidden mt-1"
                                 >
                                   <textarea
                                     autoFocus
@@ -306,9 +292,43 @@ export default function LessonRatingsSheet({ lesson, onSave }: LessonRatingsShee
         </AnimatePresence>
       </div>
 
-      <div className="pt-4 border-t border-white/5 mt-auto shrink-0">
+      <div className="pt-4 border-t border-white/5 mt-auto shrink-0 space-y-2">
+        {tab === "athlete" && enrolledAthletes.length > 1 && (
+          <div className="flex items-center gap-2 pb-1">
+            <button
+              type="button"
+              disabled={currentAthleteIdx <= 0}
+              onClick={() => {
+                triggerHapticImpact("light");
+                setSelectedStudentId(enrolledAthletes[currentAthleteIdx - 1]?.id);
+              }}
+              className="flex-1 flex h-12 items-center justify-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Anterior</span>
+            </button>
+            <span className="text-xs font-black text-zinc-400 px-2 tabular-nums">
+              {currentAthleteIdx >= 0 ? currentAthleteIdx + 1 : 1} / {enrolledAthletes.length}
+            </span>
+            <button
+              type="button"
+              disabled={currentAthleteIdx >= enrolledAthletes.length - 1}
+              onClick={() => {
+                triggerHapticImpact("light");
+                setSelectedStudentId(enrolledAthletes[currentAthleteIdx + 1]?.id);
+              }}
+              className="flex-1 flex h-12 items-center justify-center gap-1.5 rounded-xl border border-[#EAB308]/40 bg-[#EAB308]/15 text-xs font-black text-[#EAB308] hover:bg-[#EAB308]/25 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            >
+              <span>Próximo Atleta</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <button
-          onClick={onSave}
+          onClick={() => {
+            triggerHapticCelebration();
+            onSave();
+          }}
           className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#EAB308] to-amber-600 text-black font-black text-[13px] py-3.5 rounded-xl shadow-[0_10px_25px_rgba(234,179,8,0.3)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
         >
           <Save className="w-4 h-4" />

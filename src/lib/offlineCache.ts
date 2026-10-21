@@ -6,6 +6,7 @@ const CACHE_KEYS = {
   studentXP: "wt_offline_xp",
   pendingCheckins: "wt_offline_checkins",
   pendingAttendance: "wt_offline_attendance",
+  pendingEvaluations: "wt_offline_evaluations",
 } as const;
 
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -30,6 +31,18 @@ export type PendingAttendance = {
   presentIds: string[];
   absentIds: string[];
   savedAt: string;
+};
+
+export type PendingEvaluation = {
+  id: string;
+  studentId: string;
+  studentName?: string;
+  lessonId: string;
+  lessonTitle: string;
+  scores: Record<string, number>;
+  notes?: string;
+  savedAt: string;
+  synced: boolean;
 };
 
 type CacheEnvelope<T> = {
@@ -139,5 +152,26 @@ export const offlineCache = {
     const all = safeGet<Record<string, PendingAttendance>>(CACHE_KEYS.pendingAttendance) ?? {};
     delete all[lessonId];
     safeSet(CACHE_KEYS.pendingAttendance, all);
+  },
+
+  /** Registra avaliações de desempenho realizadas offline na quadra */
+  savePendingEvaluations(lessonId: string, evals: PendingEvaluation[]): void {
+    const all = safeGet<Record<string, PendingEvaluation[]>>(CACHE_KEYS.pendingEvaluations) ?? {};
+    all[lessonId] = evals;
+    safeSet(CACHE_KEYS.pendingEvaluations, all);
+  },
+
+  getPendingEvaluations(lessonId?: string): PendingEvaluation[] {
+    const all = safeGet<Record<string, PendingEvaluation[]>>(CACHE_KEYS.pendingEvaluations) ?? {};
+    if (lessonId) {
+      return all[lessonId] ?? [];
+    }
+    return Object.values(all).flat();
+  },
+
+  removePendingEvaluations(lessonId: string): void {
+    const all = safeGet<Record<string, PendingEvaluation[]>>(CACHE_KEYS.pendingEvaluations) ?? {};
+    delete all[lessonId];
+    safeSet(CACHE_KEYS.pendingEvaluations, all);
   },
 } as const;
