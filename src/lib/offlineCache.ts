@@ -5,6 +5,7 @@ const CACHE_KEYS = {
   upcomingLessons: "wt_offline_lessons",
   studentXP: "wt_offline_xp",
   pendingCheckins: "wt_offline_checkins",
+  pendingAttendance: "wt_offline_attendance",
 } as const;
 
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -22,6 +23,13 @@ type PendingCheckin = {
   lessonId: string;
   timestamp: string;
   synced: boolean;
+};
+
+export type PendingAttendance = {
+  lessonId: string;
+  presentIds: string[];
+  absentIds: string[];
+  savedAt: string;
 };
 
 type CacheEnvelope<T> = {
@@ -105,5 +113,31 @@ export const offlineCache = {
     const existing = offlineCache.getPendingCheckins();
     const unsync = existing.filter((c) => !c.synced);
     safeSet(CACHE_KEYS.pendingCheckins, unsync);
+  },
+
+  /** Registra chamada de presença realizada offline pelo treinador */
+  savePendingAttendance(lessonId: string, presentIds: string[], absentIds: string[]): void {
+    const all = safeGet<Record<string, PendingAttendance>>(CACHE_KEYS.pendingAttendance) ?? {};
+    all[lessonId] = {
+      lessonId,
+      presentIds,
+      absentIds,
+      savedAt: new Date().toISOString(),
+    };
+    safeSet(CACHE_KEYS.pendingAttendance, all);
+  },
+
+  getPendingAttendance(lessonId?: string): PendingAttendance[] {
+    const all = safeGet<Record<string, PendingAttendance>>(CACHE_KEYS.pendingAttendance) ?? {};
+    if (lessonId) {
+      return all[lessonId] ? [all[lessonId]] : [];
+    }
+    return Object.values(all);
+  },
+
+  removePendingAttendance(lessonId: string): void {
+    const all = safeGet<Record<string, PendingAttendance>>(CACHE_KEYS.pendingAttendance) ?? {};
+    delete all[lessonId];
+    safeSet(CACHE_KEYS.pendingAttendance, all);
   },
 } as const;

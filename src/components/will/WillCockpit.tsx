@@ -82,13 +82,8 @@ import CockpitModalHost from "./CockpitModalHost";
 // ─── Lazy-loaded panels (modal/drawer — zero cost at startup) ─────────────────
 const CreateLessonModal    = dynamic(() => import("@/components/CreateLessonModal"), { ssr: false, loading: () => null });
 const LessonRatingsSheet   = dynamic(() => import("./LessonRatingsSheet"), { ssr: false, loading: () => null });
-const LiveLessonCoachPanel = dynamic(() => import("./LiveLessonCoachPanel"), { ssr: false, loading: () => null });
 const TrainingPlansPanel   = dynamic(() => import("./TrainingPlansPanel"), { ssr: false, loading: () => null });
-const QRCheckInModal         = dynamic(() => import("./QRCheckInModal"),         { ssr: false, loading: () => null });
 const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),      { ssr: false, loading: () => null });
-const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),       { ssr: false, loading: () => null });
-const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),   { ssr: false, loading: () => null });
-const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),    { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import EmptyCockpitGuide from "./EmptyCockpitGuide";
 import StudentTagsEditor from "./StudentTagsEditor";
@@ -193,13 +188,8 @@ export default function WillCockpit() {
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [showCourtModal, setShowCourtModal] = useState(false);
   const [showLessonModal, setShowLessonModal] = useState(false);
-  const [showLivePanel, setShowLivePanel] = useState(false);
   const [showTrainingPlans, setShowTrainingPlans] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
-  const [showQRCheckin, setShowQRCheckin] = useState(false);
-  const [showLessonRecap, setShowLessonRecap] = useState(false);
-  const [showQuickAttendance, setShowQuickAttendance] = useState(false);
-  const [showBulkEval, setShowBulkEval] = useState(false);
   const { isAnyModalOpen: isAnyHostModalOpen } = useModalStore();
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "alertas" | "turma" | "feed">("hoje");
@@ -357,12 +347,7 @@ export default function WillCockpit() {
     showStudentModal ||
     showQuickActionModal !== null ||
     showCreateLesson ||
-    showLivePanel ||
     showTrainingPlans ||
-    showQRCheckin ||
-    showLessonRecap ||
-    showQuickAttendance ||
-    showBulkEval ||
     onboardingStudentId !== null;
   useBodyScrollLock(isAnyModalOpen);
 
@@ -2771,7 +2756,7 @@ export default function WillCockpit() {
                   <motion.button
                     whileTap={PRESS_SCALE}
                     type="button"
-                    onClick={() => setShowQRCheckin(true)}
+                    onClick={() => modalManager.openModal("qrCheckin", { lesson: selectedLesson })}
                     className={`min-h-11 min-w-11 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500/50 hover:bg-emerald-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
                     title="QR Code de check-in"
                   >
@@ -2780,7 +2765,12 @@ export default function WillCockpit() {
                   <motion.button
                     whileTap={PRESS_SCALE}
                     type="button"
-                    onClick={() => setShowQuickAttendance(true)}
+                    onClick={() =>
+                      modalManager.openModal("quickAttendance", {
+                        lesson: selectedLesson,
+                        onSave: (ids) => updateLesson(selectedLesson.id, { presentStudents: ids }),
+                      })
+                    }
                     className={`min-h-11 min-w-11 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:border-blue-500/50 hover:bg-blue-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
                     title="Chamada rápida"
                   >
@@ -2789,7 +2779,7 @@ export default function WillCockpit() {
                   <motion.button
                     whileTap={PRESS_SCALE}
                     type="button"
-                    onClick={() => setShowBulkEval(true)}
+                    onClick={() => modalManager.openModal("bulkEvaluation", { lesson: selectedLesson })}
                     className={`min-h-11 min-w-11 rounded-xl border border-[#EAB308]/30 bg-[#EAB308]/10 hover:border-[#EAB308]/50 hover:bg-[#EAB308]/20 transition ${INTERACTIVE_FOCUS_RING}`}
                     title="Avaliar turma toda"
                   >
@@ -2867,7 +2857,7 @@ export default function WillCockpit() {
                     <motion.button
                       whileTap={PRESS_SCALE}
                       type="button"
-                      onClick={() => setShowLessonRecap(true)}
+                      onClick={() => modalManager.openModal("lessonRecap", { lesson: selectedLesson })}
                       className={`min-h-11 min-w-11 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:border-violet-500/50 hover:bg-violet-500/20 transition ${INTERACTIVE_FOCUS_RING}`}
                       title="Recap da aula com IA"
                     >
@@ -2878,8 +2868,14 @@ export default function WillCockpit() {
                     whileTap={PRESS_SCALE}
                     type="button"
                     onClick={() => {
-                      setShowLivePanel(true);
                       setShowLessonModal(false);
+                      modalManager.openModal("liveLessonCoach", {
+                        lesson: selectedLesson,
+                        onEndClass: () => {
+                          setActionFeedback(`Aula "${selectedLesson.title}" encerrada.`);
+                          updateLesson(selectedLesson.id, { status: "completed" });
+                        },
+                      });
                     }}
                     className={`min-h-11 min-w-11 rounded-xl border border-[#EAB308]/30 bg-[#EAB308]/10 hover:border-[#EAB308]/50 hover:bg-[#EAB308]/20 transition ${INTERACTIVE_FOCUS_RING}`}
                     title="Abrir painel ao vivo"
@@ -3295,21 +3291,6 @@ export default function WillCockpit() {
       <CreateLessonModal isOpen={showCreateLesson} onClose={() => setShowCreateLesson(false)} defaultDate={localDateISO()} />
 
       <AnimatePresence>
-        {showLivePanel && selectedLesson ? (
-          <LiveLessonCoachPanel
-            lesson={selectedLesson}
-            students={students}
-            onClose={() => setShowLivePanel(false)}
-            onEndClass={() => {
-              setShowLivePanel(false);
-              setActionFeedback(`Aula "${selectedLesson.title}" encerrada.`);
-              updateLesson(selectedLesson.id, { status: "completed" });
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showTrainingPlans ? (
           <TrainingPlansPanel
             plans={[] as any[]}
@@ -3322,48 +3303,9 @@ export default function WillCockpit() {
         ) : null}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showQRCheckin && selectedLesson ? (
-          <QRCheckInModal
-            lesson={selectedLesson}
-            lessonTitle={selectedLesson.title || "Aula"}
-            onClose={() => setShowQRCheckin(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showLessonRecap && selectedLesson ? (
-          <LessonRecapPanel
-            lesson={selectedLesson}
-            students={students}
-            onClose={() => setShowLessonRecap(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showQuickAttendance && selectedLesson ? (
-          <QuickAttendancePanel
-            lesson={selectedLesson}
-            students={students}
-            onClose={() => setShowQuickAttendance(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showBulkEval && selectedLesson ? (
-          <BulkEvaluationModal
-            lesson={selectedLesson}
-            students={students}
-            onClose={() => setShowBulkEval(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      {/* Central Desacoplada de Modais (Lotes 1 e 2) */}
+      {/* Central Desacoplada de Modais (Lotes 1, 2 e 3 - 33 Modais) */}
       <CockpitModalHost
+        selectedLesson={selectedLesson}
         onSelectStudent={(studentId) => {
           setSelectedStudentId(studentId);
           setSelectedStudentLayoutId(null);

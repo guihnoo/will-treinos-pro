@@ -38,6 +38,12 @@ export type CockpitModalKey =
   | "broadcast"
   | "globalSearch"
   | "sessionExpired"
+  // Lote 3: Modais de Quadra e Aula
+  | "qrCheckin"
+  | "lessonRecap"
+  | "quickAttendance"
+  | "bulkEvaluation"
+  | "liveLessonCoach"
   | (string & {});
 
 export interface CockpitModalPayloadMap {
@@ -57,6 +63,11 @@ export interface CockpitModalPayloadMap {
     onSelectLesson?: (id: string) => void;
   };
   sessionExpired: Record<string, unknown> | undefined;
+  qrCheckin: { lessonId?: string; lesson?: Lesson };
+  lessonRecap: { lessonId?: string; lesson?: Lesson };
+  quickAttendance: { lessonId?: string; lesson?: Lesson; onSave?: (presentIds: string[]) => void };
+  bulkEvaluation: { lessonId?: string; lesson?: Lesson; onSaved?: () => void };
+  liveLessonCoach: { lessonId?: string; lesson?: Lesson; onEndClass?: () => void };
   [key: string]: unknown;
 }
 

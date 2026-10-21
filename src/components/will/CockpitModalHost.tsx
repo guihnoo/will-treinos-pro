@@ -3,13 +3,13 @@
 import React, { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { AnimatePresence } from "framer-motion";
-import { useModalStore } from "@/lib/modalManager";
+import { useModalStore, modalManager } from "@/lib/modalManager";
 import { useStudents } from "@/context/StudentsContext";
 import { useLessons } from "@/context/LessonsContext";
 import { usePayments } from "@/context/PaymentsContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useSessionRecovery } from "@/hooks/useSessionRecovery";
-import type { Student } from "@/context/types";
+import type { Student, Lesson } from "@/context/types";
 
 // ==========================================
 // LOTE 1: MODAIS AUTOSSUFICIENTES (18 MODAIS)
@@ -157,20 +157,50 @@ const SessionExpiredModal = dynamic(() => import("@/components/SessionExpiredMod
   loading: () => null,
 });
 
+// ==========================================
+// LOTE 3: MODAIS DE QUADRA & AULA (5 MODAIS)
+// ==========================================
+const QRCheckInModal = dynamic(() => import("./QRCheckInModal"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const LessonRecapPanel = dynamic(() => import("./LessonRecapPanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const QuickAttendancePanel = dynamic(() => import("./QuickAttendancePanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const BulkEvaluationModal = dynamic(() => import("./BulkEvaluationModal"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const LiveLessonCoachPanel = dynamic(() => import("./LiveLessonCoachPanel"), {
+  ssr: false,
+  loading: () => null,
+});
+
 export interface CockpitModalHostProps {
   onSelectStudent?: (studentId: string) => void;
   onSelectLesson?: (lessonId: string) => void;
   onGoToApproval?: () => void;
+  selectedLesson?: Lesson | null;
 }
 
 /**
- * Orquestrador Central de Modais Desacoplados do WillCockpit (Lotes 1 e 2).
- * Consome useModalStore(), useStudents(), useLessons() e usePayments() sem re-renderizar o corpo do Cockpit.
+ * Orquestrador Central de Modais Desacoplados do WillCockpit (Lotes 1, 2 e 3).
+ * Consome useModalStore(), useStudents(), useLessons(), usePayments() e useCatalog() sem re-renderizar o corpo do Cockpit.
  */
 export function CockpitModalHost({
   onSelectStudent,
   onSelectLesson,
   onGoToApproval,
+  selectedLesson: defaultLesson,
 }: CockpitModalHostProps = {}) {
   const { activeModal, modalPayload, closeModal } = useModalStore();
   const { students } = useStudents();
@@ -196,6 +226,18 @@ export function CockpitModalHost({
     if (!id) return null;
     return students.find((s) => s.id === id) ?? null;
   }, [modalPayload, students]);
+
+  // Resolver aula com memoização segura
+  const resolvedLesson = useMemo<Lesson | null>(() => {
+    if (modalPayload?.lesson && typeof modalPayload.lesson === "object") {
+      return modalPayload.lesson as Lesson;
+    }
+    const id = modalPayload?.lessonId as string | undefined;
+    if (id) {
+      return lessons.find((l) => l.id === id) ?? null;
+    }
+    return defaultLesson ?? null;
+  }, [modalPayload, lessons, defaultLesson]);
 
   return (
     <>
@@ -369,6 +411,79 @@ export function CockpitModalHost({
               closeModal();
               const callback = (modalPayload?.onSelectLesson as ((id: string) => void) | undefined) ?? onSelectLesson;
               callback?.(id);
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      {/* ── LOTE 3: MODAIS DE QUADRA & AULA ── */}
+      <AnimatePresence>
+        {activeModal === "qrCheckin" && resolvedLesson ? (
+          <QRCheckInModal
+            lesson={resolvedLesson}
+            lessonTitle={resolvedLesson.title || "Aula"}
+            onClose={closeModal}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "lessonRecap" && resolvedLesson ? (
+          <LessonRecapPanel
+            lesson={resolvedLesson}
+            students={students}
+            onClose={closeModal}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "quickAttendance" && resolvedLesson ? (
+          <QuickAttendancePanel
+            lesson={resolvedLesson}
+            students={students}
+            onClose={closeModal}
+            onSave={(presentIds) => {
+              if (typeof modalPayload?.onSave === "function") {
+                (modalPayload.onSave as (ids: string[]) => void)(presentIds);
+              }
+            }}
+            onOpenQR={() => {
+              modalManager.openModal("qrCheckin", { lesson: resolvedLesson });
+            }}
+            onOpenBulkEval={() => {
+              modalManager.openModal("bulkEvaluation", { lesson: resolvedLesson });
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "bulkEvaluation" && resolvedLesson ? (
+          <BulkEvaluationModal
+            lesson={resolvedLesson}
+            students={students}
+            onClose={closeModal}
+            onSaved={() => {
+              if (typeof modalPayload?.onSaved === "function") {
+                (modalPayload.onSaved as () => void)();
+              }
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeModal === "liveLessonCoach" && resolvedLesson ? (
+          <LiveLessonCoachPanel
+            lesson={resolvedLesson}
+            students={students}
+            onClose={closeModal}
+            onEndClass={() => {
+              closeModal();
+              if (typeof modalPayload?.onEndClass === "function") {
+                (modalPayload.onEndClass as () => void)();
+              }
             }}
           />
         ) : null}
