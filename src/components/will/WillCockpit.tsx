@@ -75,41 +75,27 @@ import CourtWeatherPanel from "./CourtWeatherPanel";  // inline card — keep st
 import OnlineStudentsPanel from "./OnlineStudentsPanel";  // Realtime widget — keep static (lightweight)
 const OracleInsights = dynamic(() => import("@/components/will/OracleInsights"), { ssr: false, loading: () => null });
 
+// ─── Modal Manager Desacoplado & Host (Lote 1) ──────────────────────────────
+import { modalManager, useModalStore } from "@/lib/modalManager";
+import CockpitModalHost from "./CockpitModalHost";
+
 // ─── Lazy-loaded panels (modal/drawer — zero cost at startup) ─────────────────
 const CreateLessonModal    = dynamic(() => import("@/components/CreateLessonModal"), { ssr: false, loading: () => null });
 const LessonRatingsSheet   = dynamic(() => import("./LessonRatingsSheet"), { ssr: false, loading: () => null });
 const LiveLessonCoachPanel = dynamic(() => import("./LiveLessonCoachPanel"), { ssr: false, loading: () => null });
 const TrainingPlansPanel   = dynamic(() => import("./TrainingPlansPanel"), { ssr: false, loading: () => null });
-const XPModerationPanel    = dynamic(() => import("./XPModerationPanel"), { ssr: false, loading: () => null });
-const XPAnalyticsPanel     = dynamic(() => import("@/components/will/XPAnalyticsPanel").then((m) => ({ default: m.XPAnalyticsPanel })), { ssr: false, loading: () => null });
-const CoachCopilotPanel    = dynamic(() => import("./CoachCopilotPanel"), { ssr: false, loading: () => null });
 const AthleteTwinPanel     = dynamic(() => import("./AthleteTwinPanel"), { ssr: false, loading: () => null });
-const FinancialForecastPanel = dynamic(() => import("./FinancialForecastPanel"), { ssr: false, loading: () => null });
 const EvaluationHistoryPanel = dynamic(() => import("./EvaluationHistoryPanel"), { ssr: false, loading: () => null });
-const MonthlyReportPanel   = dynamic(() => import("./MonthlyReportPanel"), { ssr: false, loading: () => null });
-const AbsenceTrackerPanel  = dynamic(() => import("./AbsenceTrackerPanel"), { ssr: false, loading: () => null });
 const BroadcastMessagePanel  = dynamic(() => import("./BroadcastMessagePanel"),  { ssr: false, loading: () => null });
-const TurmaAnalyticsPanel    = dynamic(() => import("./TurmaAnalyticsPanel"),    { ssr: false, loading: () => null });
 const QRCheckInModal         = dynamic(() => import("./QRCheckInModal"),         { ssr: false, loading: () => null });
 const StudentGoalEditor      = dynamic(() => import("./StudentGoalEditor"),      { ssr: false, loading: () => null });
 const LessonRecapPanel       = dynamic(() => import("./LessonRecapPanel"),       { ssr: false, loading: () => null });
 const QuickAttendancePanel   = dynamic(() => import("./QuickAttendancePanel"),   { ssr: false, loading: () => null });
 const BulkEvaluationModal    = dynamic(() => import("./BulkEvaluationModal"),    { ssr: false, loading: () => null });
-const AttentionPanel         = dynamic(() => import("./AttentionPanel"),         { ssr: false, loading: () => null });
-const CoachOnboarding        = dynamic(() => import("./CoachOnboarding"),        { ssr: false, loading: () => null });
-const AttendanceHeatmapPanel = dynamic(() => import("./AttendanceHeatmapPanel"), { ssr: false, loading: () => null });
-const BusinessAnalyticsPanel = dynamic(() => import("./BusinessAnalyticsPanel"), { ssr: false, loading: () => null });
-const WeeklyChallengeEditor  = dynamic(() => import("./WeeklyChallengeEditor"),  { ssr: false, loading: () => null });
-const ChurnPreventionPanel       = dynamic(() => import("./ChurnPreventionPanel"),       { ssr: false, loading: () => null });
 const StudentFinanceSheet        = dynamic(() => import("./StudentFinanceSheet"),        { ssr: false, loading: () => null });
 const ScoutModePanel             = dynamic(() => import("./ScoutModePanel"),             { ssr: false, loading: () => null });
-const EvaluationTemplateManager  = dynamic(() => import("./EvaluationTemplateManager"), { ssr: false, loading: () => null });
-const CategoryManagerPanel       = dynamic(() => import("./CategoryManagerPanel"),       { ssr: false, loading: () => null });
-const ExportDataPanel            = dynamic(() => import("./ExportDataPanel"),            { ssr: false, loading: () => null });
 const TemporalComparisonPanel    = dynamic(() => import("./TemporalComparisonPanel"),    { ssr: false, loading: () => null });
-const AppHealthPanel              = dynamic(() => import("./AppHealthPanel"),              { ssr: false, loading: () => null });
 const StudentReportSheet          = dynamic(() => import("./StudentReportSheet"),          { ssr: false, loading: () => null });
-const AdminSettingsPanel          = dynamic(() => import("./AdminSettingsPanel"),          { ssr: false, loading: () => null });
 const GlobalSearchModal           = dynamic(() => import("./GlobalSearchModal"),           { ssr: false, loading: () => null });
 import WeeklyScheduleView from "./WeeklyScheduleView";
 import EmptyCockpitGuide from "./EmptyCockpitGuide";
@@ -221,43 +207,26 @@ export default function WillCockpit() {
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [showLivePanel, setShowLivePanel] = useState(false);
   const [showTrainingPlans, setShowTrainingPlans] = useState(false);
-  const [showXPModeration, setShowXPModeration] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
-  const [showXPAnalytics, setShowXPAnalytics] = useState(false);
-  const [showCoachCopilot, setShowCoachCopilot] = useState(false);
   const [showAthleteTwin, setShowAthleteTwin] = useState(false);
   const [twinStudentId, setTwinStudentId] = useState<string | null>(null);
-  const [showFinancialForecast, setShowFinancialForecast] = useState(false);
   const [showEvalHistory, setShowEvalHistory] = useState(false);
   const [evalHistoryStudentId, setEvalHistoryStudentId] = useState<string | null>(null);
-  const [showMonthlyReport, setShowMonthlyReport] = useState(false);
-  const [showAbsenceTracker, setShowAbsenceTracker] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
-  const [showTurmaAnalytics, setShowTurmaAnalytics] = useState(false);
   const [showQRCheckin, setShowQRCheckin] = useState(false);
   const [showLessonRecap, setShowLessonRecap] = useState(false);
   const [showQuickAttendance, setShowQuickAttendance] = useState(false);
   const [showBulkEval, setShowBulkEval] = useState(false);
-  const [showAttention, setShowAttention] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showBusinessAnalytics, setShowBusinessAnalytics] = useState(false);
-  const [showWeeklyChallenge, setShowWeeklyChallenge] = useState(false);
-  const [showChurnPrevention, setShowChurnPrevention] = useState(false);
   const [showStudentFinance, setShowStudentFinance] = useState(false);
   const [financeStudentId, setFinanceStudentId] = useState<string | null>(null);
   const [showScoutMode, setShowScoutMode] = useState(false);
-  const [showEvalTemplates, setShowEvalTemplates] = useState(false);
-  const [showAppHealth, setShowAppHealth] = useState(false);
   const [showStudentReport, setShowStudentReport] = useState(false);
   const [reportStudentId, setReportStudentId] = useState<string | null>(null);
-  const [showAdminSettings, setShowAdminSettings] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [showTemporalComparison, setShowTemporalComparison] = useState(false);
   const [temporalStudentId, setTemporalStudentId] = useState<string | null>(null);
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [showExportData, setShowExportData] = useState(false);
   const [showImportStudents, setShowImportStudents] = useState(false);
+  const { isAnyModalOpen: isAnyHostModalOpen } = useModalStore();
   const [calendarView, setCalendarView] = useState<"grid" | "detail">("grid");
   const [activeTab, setActiveTab] = useState<"hoje" | "alertas" | "turma" | "feed">("hoje");
   const [messageText, setMessageText] = useState("");
@@ -303,7 +272,7 @@ export default function WillCockpit() {
   useEffect(() => {
     if (!user) return;
     import("./CoachOnboarding").then(({ shouldShowOnboarding }) => {
-      if (shouldShowOnboarding()) setShowOnboarding(true);
+      if (shouldShowOnboarding()) modalManager.openModal("coachOnboarding");
     });
   }, [user]);
 
@@ -406,6 +375,7 @@ export default function WillCockpit() {
   }, [onboardingStudentId, students]);
 
   const isAnyModalOpen =
+    isAnyHostModalOpen ||
     showApprovalModal ||
     showFinancialModal ||
     showCourtModal ||
@@ -415,30 +385,14 @@ export default function WillCockpit() {
     showCreateLesson ||
     showLivePanel ||
     showTrainingPlans ||
-    showXPModeration ||
-    showXPAnalytics ||
-    showCoachCopilot ||
     showAthleteTwin ||
-    showFinancialForecast ||
     showEvalHistory ||
-    showMonthlyReport ||
-    showAbsenceTracker ||
     showBroadcast ||
-    showTurmaAnalytics ||
-    showAttention ||
-    showHeatmap ||
-    showBusinessAnalytics ||
-    showWeeklyChallenge ||
-    showChurnPrevention ||
     showStudentFinance ||
     showScoutMode ||
-    showEvalTemplates ||
     showStudentReport ||
-    showAdminSettings ||
     showGlobalSearch ||
     showTemporalComparison ||
-    showCategoryManager ||
-    showExportData ||
     showImportStudents ||
     showQRCheckin ||
     showLessonRecap ||
@@ -1342,7 +1296,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowAbsenceTracker(true);
+              modalManager.openModal("absenceTracker");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-orange-500/35 bg-orange-500/10 px-4 py-3 text-sm font-black text-orange-200 transition-all hover:border-orange-400/60 hover:bg-orange-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver ausências e notificar alunos para reposição"
@@ -1354,7 +1308,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowAttention(true);
+              modalManager.openModal("attention");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver alunos que precisam de atenção"
@@ -1367,7 +1321,7 @@ export default function WillCockpit() {
             data-testid="btn-churn-prevention"
             onClick={() => {
               haptic(20);
-              setShowChurnPrevention(true);
+              modalManager.openModal("churnPrevention");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 text-sm font-black text-rose-200 transition-all hover:border-rose-400/60 hover:bg-rose-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver alunos em risco de churn e acionar retenção"
@@ -1394,7 +1348,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowCoachCopilot(true);
+              modalManager.openModal("coachCopilot");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-4 py-3 text-sm font-black text-cyan-200 transition-all hover:border-cyan-400/60 hover:bg-cyan-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Abrir copiloto do coach com IA"
@@ -1406,7 +1360,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowXPAnalytics(true);
+              modalManager.openModal("xpAnalytics");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver análise de XP distribuído"
@@ -1418,7 +1372,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowFinancialForecast(true);
+              modalManager.openModal("financialForecast");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Abrir previsão financeira com IA"
@@ -1430,7 +1384,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowMonthlyReport(true);
+              modalManager.openModal("monthlyReport");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-[#EAB308]/35 bg-[#EAB308]/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-[#EAB308]/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver relatório mensal com IA"
@@ -1442,7 +1396,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowTurmaAnalytics(true);
+              modalManager.openModal("turmaAnalytics");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/35 bg-indigo-500/10 px-4 py-3 text-sm font-black text-indigo-200 transition-all hover:border-indigo-400/60 hover:bg-indigo-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver evolução e analytics da turma"
@@ -1455,7 +1409,7 @@ export default function WillCockpit() {
             data-testid="btn-business-analytics"
             onClick={() => {
               haptic(20);
-              setShowBusinessAnalytics(true);
+              modalManager.openModal("businessAnalytics");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Abrir painel de analytics executivo do negócio"
@@ -1469,7 +1423,7 @@ export default function WillCockpit() {
             data-testid="btn-heatmap"
             onClick={() => {
               haptic(20);
-              setShowHeatmap(true);
+              modalManager.openModal("attendanceHeatmap");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm font-black text-amber-200 transition-all hover:border-amber-400/60 hover:bg-amber-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver mapa de calor de presença"
@@ -1497,7 +1451,7 @@ export default function WillCockpit() {
             type="button"
             onClick={() => {
               haptic(20);
-              setShowXPModeration(true);
+              modalManager.openModal("xpModeration");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition-all hover:border-red-400/60 hover:bg-red-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Revisar transações de XP bloqueadas"
@@ -1510,7 +1464,7 @@ export default function WillCockpit() {
             data-testid="btn-eval-templates"
             onClick={() => {
               haptic(18);
-              setShowEvalTemplates(true);
+              modalManager.openModal("evaluationTemplates");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Gerenciar templates de avaliação por categoria"
@@ -1523,7 +1477,7 @@ export default function WillCockpit() {
             data-testid="btn-category-manager"
             onClick={() => {
               haptic(18);
-              setShowCategoryManager(true);
+              modalManager.openModal("categoryManager");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/10 px-4 py-3 text-sm font-black text-violet-200 transition-all hover:border-violet-400/60 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Gerenciar turmas e categorias"
@@ -1536,7 +1490,7 @@ export default function WillCockpit() {
             data-testid="btn-app-health"
             onClick={() => {
               haptic(16);
-              setShowAppHealth(true);
+              modalManager.openModal("appHealth");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 px-4 py-3 text-sm font-black text-teal-200 transition-all hover:border-teal-400/60 hover:bg-teal-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Ver painel de saúde e métricas do app"
@@ -1549,7 +1503,7 @@ export default function WillCockpit() {
             data-testid="btn-admin-settings"
             onClick={() => {
               haptic(14);
-              setShowAdminSettings(true);
+              modalManager.openModal("adminSettings");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-600/40 bg-zinc-800/40 px-4 py-3 text-sm font-black text-zinc-300 transition-all hover:border-zinc-400/50 hover:bg-zinc-700/40 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Abrir configurações do admin"
@@ -1590,7 +1544,7 @@ export default function WillCockpit() {
             data-testid="btn-export-data"
             onClick={() => {
               haptic(16);
-              setShowExportData(true);
+              modalManager.openModal("exportData");
             }}
             className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-200 transition-all hover:border-emerald-400/60 hover:bg-emerald-500/15 ${INTERACTIVE_FOCUS_RING}`}
             aria-label="Exportar dados em CSV"
@@ -1965,7 +1919,7 @@ export default function WillCockpit() {
             <div className="grid gap-2 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => { haptic(18); setShowWeeklyChallenge(true); }}
+                onClick={() => { haptic(18); modalManager.openModal("weeklyChallenge"); }}
                 className={`min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/35 bg-violet-500/8 px-4 py-3 text-sm font-black text-violet-200 transition hover:border-violet-400/55 hover:bg-violet-500/15 ${INTERACTIVE_FOCUS_RING}`}
               >
                 <Target className="h-5 w-5 text-violet-400" />
@@ -3434,31 +3388,6 @@ export default function WillCockpit() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showXPModeration ? (
-          <XPModerationPanel
-            onClose={() => setShowXPModeration(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showXPAnalytics ? (
-          <XPAnalyticsPanel
-            isOpen={showXPAnalytics}
-            onClose={() => setShowXPAnalytics(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showCoachCopilot ? (
-          <CoachCopilotPanel
-            onClose={() => setShowCoachCopilot(false)}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showAthleteTwin && twinStudent ? (
           <AthleteTwinPanel
             student={twinStudent}
@@ -3467,18 +3396,6 @@ export default function WillCockpit() {
               setTwinStudentId(null);
             }}
           />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showFinancialForecast ? (
-          <FinancialForecastPanel onClose={() => setShowFinancialForecast(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showMonthlyReport ? (
-          <MonthlyReportPanel onClose={() => setShowMonthlyReport(false)} />
         ) : null}
       </AnimatePresence>
 
@@ -3493,56 +3410,8 @@ export default function WillCockpit() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showAbsenceTracker ? (
-          <AbsenceTrackerPanel onClose={() => setShowAbsenceTracker(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showBroadcast ? (
           <BroadcastMessagePanel onClose={() => setShowBroadcast(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showTurmaAnalytics ? (
-          <TurmaAnalyticsPanel onClose={() => setShowTurmaAnalytics(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showAttention ? (
-          <AttentionPanel onClose={() => setShowAttention(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showOnboarding ? (
-          <CoachOnboarding onClose={() => setShowOnboarding(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showHeatmap ? (
-          <AttendanceHeatmapPanel onClose={() => setShowHeatmap(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showBusinessAnalytics ? (
-          <BusinessAnalyticsPanel onClose={() => setShowBusinessAnalytics(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showWeeklyChallenge ? (
-          <WeeklyChallengeEditor onClose={() => setShowWeeklyChallenge(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showChurnPrevention ? (
-          <ChurnPreventionPanel onClose={() => setShowChurnPrevention(false)} />
         ) : null}
       </AnimatePresence>
 
@@ -3608,18 +3477,6 @@ export default function WillCockpit() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showEvalTemplates ? (
-          <EvaluationTemplateManager onClose={() => setShowEvalTemplates(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showAppHealth ? (
-          <AppHealthPanel onClose={() => setShowAppHealth(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showStudentReport && reportStudent ? (
           <StudentReportSheet
             student={reportStudent}
@@ -3628,12 +3485,6 @@ export default function WillCockpit() {
               setReportStudentId(null);
             }}
           />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showAdminSettings ? (
-          <AdminSettingsPanel onClose={() => setShowAdminSettings(false)} />
         ) : null}
       </AnimatePresence>
 
@@ -3650,18 +3501,6 @@ export default function WillCockpit() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showCategoryManager ? (
-          <CategoryManagerPanel onClose={() => setShowCategoryManager(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showExportData ? (
-          <ExportDataPanel onClose={() => setShowExportData(false)} />
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {showImportStudents ? (
           <ImportStudentsModal
             onClose={() => setShowImportStudents(false)}
@@ -3672,6 +3511,9 @@ export default function WillCockpit() {
           />
         ) : null}
       </AnimatePresence>
+
+      {/* Central Desacoplada de Modais (Lote 1) */}
+      <CockpitModalHost />
 
       {/* ===== SESSION EXPIRED MODAL ===== */}
       <SessionExpiredModal
