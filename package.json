@@ -23,7 +23,7 @@
     "jsqr": "^1.4.0",
     "lucide-react": "^1.8.0",
     "next": "^15.5.25",
-    "posthog-js": "^1.372.6",
+    "posthog-js": "^1.434.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-qr-code": "^2.0.21",
