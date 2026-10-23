@@ -140,7 +140,7 @@ Fluxo típico:
 - **Stack:** Next.js 15 (App Router) · TypeScript · Supabase · Tailwind CSS · Framer Motion
 - **Deploy:** Vercel via `git push origin main`
 - **Repo:** `https://github.com/guihnoo/will-treinos-pro.git`
-- **DNA Visual:** Dark (#000000) · Gold (#EAB308) · Sensação de app nativo — o resto é criativo livre
+- **DNA Visual:** Dark (#000000) · **Azul elétrico (#29C4F0)** como cor de marca primária (da logo real: coroa + "WT" + relâmpago) · Dourado/âmbar como acento raro, nunca dominante · Sensação de app nativo — o resto é criativo livre. *(Correção de 23/10/2026 — a versão anterior deste arquivo assumia Gold #EAB308 como cor primária antes da logo oficial existir; isso bloqueava exploração visual nova nos agentes. Time de design real configurado em `.claude/agents/visual-director.md` + skills em `.claude/skills/README.md`.)*
 
 ---
 

@@ -23,7 +23,7 @@ A cada componente que analisar, pergunte: *"Como eu posso fazer isso 10x mais im
 
 ## Fundação Imutável (o que proteger)
 - Background sempre escuro (`#000000` a `zinc-900`)
-- Gold (`#EAB308`) como cor de destaque primário
+- **Azul elétrico (`#29C4F0`) é a cor de marca primária** — vem da logo real (coroa + "WT" + relâmpago). Dourado/âmbar (`#EAB308`/`#E8A33D`) só como acento raro, nunca dominante. *(Correção de 23/10/2026: a doc antiga do projeto assumia dark+gold antes de termos a logo real; essa suposição está obsoleta — ver `docs/WILL_STACK_SSOT.md` e CLAUDE.md pendentes de atualização.)*
 - App nativo de alta performance (nunca site genérico)
 - Touch targets ≥ 44px (quadra, suor, mãos)
 
