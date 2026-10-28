@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Camera, CheckCircle2, AlertCircle, Zap } from "lucide-react";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 type ScanState = "scanning" | "success" | "error";
 
@@ -32,21 +33,27 @@ export default function QRScannerSheet({ onClose }: Props) {
   const [xpEarned, setXpEarned] = useState<number | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // Parse token + lessonId from QR url
-  function parseQRUrl(url: string): { token: string; lessonId: string } | null {
+  // Extrai o token assinado do QR (URL no formato /checkin/<lessonId>?token=<token>)
+  function parseQRUrl(url: string): { token: string } | null {
     try {
       const parsed = new URL(url);
-      // Expected: /checkin/<lessonId>?t=<token>
-      const parts = parsed.pathname.split("/").filter(Boolean);
-      const lessonIdx = parts.indexOf("checkin");
-      const lessonId = lessonIdx >= 0 ? (parts[lessonIdx + 1] ?? "") : "";
-      const token = parsed.searchParams.get("t") ?? "";
-      if (!lessonId || !token) return null;
-      return { lessonId, token };
+      const token = parsed.searchParams.get("token") ?? "";
+      if (!token) return null;
+      return { token };
     } catch {
       return null;
     }
   }
+
+  const STATE_MESSAGES: Record<string, string> = {
+    expired: "QR code expirado. Peça ao professor para renovar.",
+    invalid_qr: "QR code inválido. Peça ao professor para exibir o código correto.",
+    not_enrolled: "Você não está inscrito nesta aula.",
+    cancelled: "Esta aula foi cancelada.",
+    needs_login: "Sua sessão expirou. Faça login novamente.",
+    already_checked_in: "Você já estava presente nesta aula!",
+    generic_error: "Erro ao registrar check-in. Tente novamente.",
+  };
 
   const handleQRDetected = useCallback(async (raw: string) => {
     if (hasProcessedRef.current) return;
@@ -64,24 +71,36 @@ export default function QRScannerSheet({ onClose }: Props) {
     }
 
     try {
-      const res = await fetch("/api/student/qr-checkin", {
+      const sb = getSupabaseClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.access_token) {
+        setScanState("error");
+        setResultMessage(STATE_MESSAGES.needs_login);
+        return;
+      }
+
+      const res = await fetch("/api/checkin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(parsed),
       });
-      const json = (await res.json()) as {
-        success?: boolean;
-        xpEarned?: number;
-        studentName?: string;
-        error?: string;
-      };
-      if (json.success) {
+      const json = (await res.json()) as { state?: string; xpEarned?: number; message?: string };
+      const state = json.state ?? "generic_error";
+
+      if (state === "success" || state === "already_checked_in") {
         setScanState("success");
-        setXpEarned(json.xpEarned ?? 50);
-        setResultMessage(`Check-in confirmado${json.studentName ? `, ${json.studentName.split(" ")[0]}` : ""}!`);
+        setXpEarned(json.xpEarned ?? null);
+        setResultMessage(
+          state === "already_checked_in"
+            ? STATE_MESSAGES.already_checked_in
+            : "Check-in confirmado!",
+        );
       } else {
         setScanState("error");
-        setResultMessage(json.error ?? "Erro ao registrar check-in. Tente novamente.");
+        setResultMessage(json.message ?? STATE_MESSAGES[state] ?? STATE_MESSAGES.generic_error);
       }
     } catch {
       setScanState("error");
