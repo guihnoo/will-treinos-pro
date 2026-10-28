@@ -26,6 +26,7 @@ import AppPageHeader from "@/components/ui/AppPageHeader";
 import StatCard from "@/components/ui/StatCard";
 import UserAvatar from "@/components/ui/UserAvatar";
 import AppEmptyState from "@/components/ui/AppEmptyState";
+import PaymentDaySelect from "@/components/ui/PaymentDaySelect";
 import SkeletonLoader from "@/components/ui/SkeletonLoader";
 import { FOCUS_RING_GOLD, TOUCH_TARGET_MIN } from "@/components/ui/interactionTokens";
 
@@ -620,11 +621,18 @@ export default function AlunosPage() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Valor (R$)</label>
-                            <input 
+                            <input
+                              key={selectedStudent.id}
                               type="number"
-                              value={selectedStudent.monthlyValue || 0}
-                              onChange={e => {
+                              inputMode="decimal"
+                              min={0}
+                              defaultValue={selectedStudent.monthlyValue || ""}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") e.currentTarget.blur();
+                              }}
+                              onBlur={(e) => {
                                 const val = Number(e.target.value);
+                                if (!Number.isFinite(val) || val < 0 || val === selectedStudent.monthlyValue) return;
                                 updateStudent(selectedStudent.id, { monthlyValue: val });
                                 setSelectedStudent(prev => prev ? { ...prev, monthlyValue: val } : prev);
                               }}
@@ -632,16 +640,15 @@ export default function AlunosPage() {
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Dia Vencimento</label>
-                            <input 
-                              type="number" min="1" max="31"
-                              value={selectedStudent.paymentDay || 5}
-                              onChange={e => {
-                                const val = Number(e.target.value);
-                                updateStudent(selectedStudent.id, { paymentDay: val });
-                                setSelectedStudent(prev => prev ? { ...prev, paymentDay: val } : prev);
+                            <label htmlFor="aluno-dia-vencimento" className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Dia Vencimento</label>
+                            <PaymentDaySelect
+                              id="aluno-dia-vencimento"
+                              value={selectedStudent.paymentDay}
+                              onChange={(dia) => {
+                                updateStudent(selectedStudent.id, { paymentDay: dia });
+                                setSelectedStudent(prev => prev ? { ...prev, paymentDay: dia } : prev);
                               }}
-                              className="w-full mt-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-[#EAB308]/50"
+                              className="w-full mt-1 min-h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-[#EAB308]/50"
                             />
                           </div>
                         </div>

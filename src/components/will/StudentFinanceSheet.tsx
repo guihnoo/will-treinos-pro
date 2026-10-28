@@ -8,6 +8,7 @@ import { usePayments } from "@/context/PaymentsContext";
 import { useStudents } from "@/context/StudentsContext";
 import { useToast } from "@/components/Toast";
 import { triggerHapticImpact, triggerHapticCelebration } from "@/lib/hapticFeedback";
+import PaymentDaySelect, { isValidPaymentDay } from "@/components/ui/PaymentDaySelect";
 import { MODAL_OVERLAY_FADE, PRESS_SCALE, SPRING_PREMIUM } from "@/components/ui/motionTokens";
 import {
   MODAL_BODY_SCROLL,
@@ -76,9 +77,15 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
   const [markingId, setMarkingId] = useState<string | null>(null);
 
   // Setup financeiro editável pelo professor
-  const [paymentDay, setPaymentDay] = useState<number>(student.paymentDay || 5);
-  const [monthlyValue, setMonthlyValue] = useState<number>(student.monthlyValue || 0);
-  const [plan, setPlan] = useState<string>(student.plan || "Performance Mensal");
+  // `student` chega como retrato de quando a ficha abriu; `salvo` guarda o que foi gravado depois, pro resumo não voltar ao valor antigo.
+  const [salvo, setSalvo] = useState(() => ({
+    paymentDay: isValidPaymentDay(student.paymentDay) ? student.paymentDay : null,
+    monthlyValue: student.monthlyValue || 0,
+    plan: student.plan || "Performance Mensal",
+  }));
+  const [paymentDay, setPaymentDay] = useState<number | null>(salvo.paymentDay);
+  const [monthlyValue, setMonthlyValue] = useState<number>(salvo.monthlyValue);
+  const [plan, setPlan] = useState<string>(salvo.plan);
   const [isEditingSetup, setIsEditingSetup] = useState(false);
   const [savingSetup, setSavingSetup] = useState(false);
 
@@ -117,13 +124,15 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
   }, [fetchPayments]);
 
   const handleSaveSetup = async () => {
+    if (!isValidPaymentDay(paymentDay)) {
+      toast("Escolha o dia de vencimento.", "error");
+      return;
+    }
     setSavingSetup(true);
     try {
-      updateStudent(student.id, {
-        paymentDay: Number(paymentDay),
-        monthlyValue: Number(monthlyValue),
-        plan,
-      });
+      const novo = { paymentDay, monthlyValue: Math.max(0, Number(monthlyValue) || 0), plan };
+      updateStudent(student.id, novo);
+      setSalvo(novo);
       triggerHapticCelebration();
       toast("Setup financeiro do aluno atualizado!");
       setIsEditingSetup(false);
@@ -268,7 +277,14 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsEditingSetup(!isEditingSetup)}
+                  onClick={() => {
+                    if (isEditingSetup) {
+                      setPaymentDay(salvo.paymentDay);
+                      setMonthlyValue(salvo.monthlyValue);
+                      setPlan(salvo.plan);
+                    }
+                    setIsEditingSetup(!isEditingSetup);
+                  }}
                   className="text-xs font-bold text-[#EAB308] hover:underline"
                 >
                   {isEditingSetup ? "Cancelar" : "Editar Condições"}
@@ -280,13 +296,13 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
                   <div className="rounded-xl bg-black/40 border border-zinc-800/60 p-2.5">
                     <p className="text-[10px] text-zinc-500 font-semibold uppercase">Dia de Vencimento</p>
                     <p className="font-black text-white mt-0.5">
-                      Todo dia {student.paymentDay || 5} do mês
+                      {salvo.paymentDay ? `Todo dia ${salvo.paymentDay} do mês` : "Dia não definido"}
                     </p>
                   </div>
                   <div className="rounded-xl bg-black/40 border border-zinc-800/60 p-2.5">
                     <p className="text-[10px] text-zinc-500 font-semibold uppercase">Valor Mensal</p>
                     <p className="font-black text-[#EAB308] mt-0.5">
-                      {currencyBRL(student.monthlyValue || 0)}
+                      {currencyBRL(salvo.monthlyValue)}
                     </p>
                   </div>
                 </div>
@@ -297,17 +313,11 @@ export default function StudentFinanceSheet({ student, onClose }: Props) {
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
                         Dia de Vencimento
                       </label>
-                      <select
+                      <PaymentDaySelect
                         value={paymentDay}
-                        onChange={(e) => setPaymentDay(Number(e.target.value))}
+                        onChange={setPaymentDay}
                         className="w-full h-11 bg-black border border-zinc-700 rounded-xl px-3 text-xs font-bold text-white outline-none focus:border-[#EAB308]"
-                      >
-                        {[1, 5, 8, 10, 12, 15, 20, 25, 28].map((d) => (
-                          <option key={d} value={d}>
-                            Dia {d}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     <div>

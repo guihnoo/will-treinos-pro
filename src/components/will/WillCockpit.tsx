@@ -1,7 +1,8 @@
 
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import PaymentDaySelect, { isValidPaymentDay } from "@/components/ui/PaymentDaySelect";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -321,17 +322,24 @@ export default function WillCockpit() {
     void sb;
   }, [showStudentModal, user]);
 
+  // `students` muda a todo momento (tempo real): preencher o rascunho só uma vez por aluno, senão a edição do dono é sobrescrita.
+  const onboardingDraftFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!onboardingStudentId) return;
+    if (!onboardingStudentId) {
+      onboardingDraftFor.current = null;
+      return;
+    }
     const s = students.find((st) => st.id === onboardingStudentId);
     if (!s) {
       setOnboardingStudentId(null);
       return;
     }
+    if (onboardingDraftFor.current === onboardingStudentId) return;
+    onboardingDraftFor.current = onboardingStudentId;
     setOnboardingDraft({
       plan: s.plan || "mensal",
       monthlyValue: s.monthlyValue ?? 0,
-      paymentDay: Math.min(28, Math.max(1, s.paymentDay ?? 10)),
+      paymentDay: isValidPaymentDay(s.paymentDay) ? s.paymentDay : 10,
       frequency: s.frequency ?? 2,
       notes: s.notes || "",
       categoryIds: [...(s.categories || [])],
@@ -2354,18 +2362,10 @@ export default function WillCockpit() {
                           </label>
                           <label className="block">
                             <span className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-zinc-500">Dia do pagamento</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={28}
+                            <PaymentDaySelect
                               value={onboardingDraft.paymentDay}
-                              onChange={(e) =>
-                                setOnboardingDraft((d) => ({
-                                  ...d,
-                                  paymentDay: Math.min(28, Math.max(1, Math.round(Number(e.target.value)) || 10)),
-                                }))
-                              }
-                              className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EAB308]/45"
+                              onChange={(dia) => setOnboardingDraft((d) => ({ ...d, paymentDay: dia }))}
+                              className="w-full min-h-11 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2.5 text-sm text-white outline-none focus:border-[#EAB308]/45"
                             />
                           </label>
                         </div>
